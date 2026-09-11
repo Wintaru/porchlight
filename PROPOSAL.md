@@ -174,6 +174,9 @@ erDiagram
     text body_md
     text body_html "cached, sanitized"
     text status "draft | pending | published | rejected | hidden | removed"
+    text visibility "public | unlisted"
+    uuid cover_media_id FK "optional, drives the preview card"
+    text summary "optional one-liner for the preview card"
     timestamptz published_at
   }
   comments {

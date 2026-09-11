@@ -31,6 +31,7 @@ section in [PROPOSAL.md](PROPOSAL.md).
 - 2026-09-11 — **D9 Reactions: a small fixed emoji set, counts on the item only.** No totals on profiles, no sorting by reactions. Single like rejected (less fun). None rejected (quiet members lose a way to say "I saw this").
 - 2026-09-11 — **D10 Thread depth: cap at 6.** Deeper replies attach at level 6 and mention who they answer. Cap at 3 rejected (long talks get awkward). Unlimited rejected (slivers on mobile, where arguments live).
 - 2026-09-11 — **D11 URL shape: `/@handle/slug`.** Author page is `/@handle`. Anonymous posts live at `/p/slug` and redirect (301) to `/@handle/slug` once claimed. Erased authors' URLs return 410 Gone. Reserved handles: `anon`, `p`, `admin`, `mod`, and every top-level route. `/p/slug` for all rejected (says nothing about the author). Dated URLs rejected (stale in search).
+- 2026-09-11 — **D18 Sharing: public and unlisted visibility, a preview card the author can shape.** Unlisted posts open by link but stay out of feeds, tag pages, sitemap, RSS and search (`noindex`). Every post gets OpenGraph and Twitter tags plus a generated preview image (cover image if set, else a branded card with title and author). The author can pick the cover image and write a one-line summary for the card, else the first sentence is used. No off switch: a shared link always previews. Share button copies the link and opens the native share sheet on mobile. Members-only tier rejected (crawlers cannot preview it, splits SEO). Preview off switch rejected (a bare card looks broken, not private).
 
 ## Not yet specified (the frontier)
 
@@ -46,8 +47,6 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
       (d) **Legal duties (US).** Provider reporting to NCMEC CyberTipline, evidence preservation window, a law-enforcement contact path, and an "illegal content" report reason separate from normal reports. Verify current statute details in research.
       (e) **Moderator wellbeing.** Blur by default, reveal on click, one-click escalation, and a written procedure so no one is surprised.
       Blocks: MediaManager upload flow, ModerationPolicyEngine, the queue UI, terms page.
-- [ ] **D18** Sharing: what does a shared link look like, and what can an author control? `[grilling]`
-      Josh's requirement: a post shared to Discord (or Slack, iMessage, Bluesky) shows a good preview. Draft to confirm: every post gets OpenGraph and Twitter card tags, plus a generated preview image (title, author, cover image or a branded card) through Next.js `opengraph-image`. A share button copies the link and offers the native share sheet on mobile. Per-post visibility: public, or unlisted (reachable by link, absent from feeds, sitemap and search). Question to settle: does unlisted exist in phase 1, and can an author turn off the rich preview for a post? Blocks: post page metadata, the share button, D12 mockups.
 - [ ] **D12** Name and visual identity. `[prototype]`
       Josh likes "Porch". The official name is a riff on it. Includes the anonymous placeholder avatar (D13). Mock the six main screens on a design canvas: home feed, post page, editor, profile, moderation queue, account settings.
 
