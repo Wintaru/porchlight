@@ -84,6 +84,7 @@ flowchart TD
     mediaM[MediaManager]
     modM[ModerationManager]
     accountM[AccountManager]
+    notifyM[NotificationManager]
   end
 
   subgraph engines[Engines]
@@ -100,6 +101,7 @@ flowchart TD
     mediaA[MediaStorageAccessor]
     reportA[ReportAccessor]
     auditA[AuditAccessor]
+    notifyA[NotificationAccessor]
   end
 
   subgraph utils[Utilities]
@@ -108,12 +110,13 @@ flowchart TD
     md[Markdown parser and sanitizer]
   end
 
-  web --> postM & commentM & mediaM & modM & accountM
-  postM --> render & perm & postA & mediaA
-  commentM --> perm & policy & commentA
+  web --> postM & commentM & mediaM & modM & accountM & notifyM
+  postM --> render & perm & postA & mediaA & notifyA
+  commentM --> perm & policy & commentA & notifyA
   mediaM --> quota & mediaA
-  modM --> policy & reportA & auditA & postA & commentA
+  modM --> policy & reportA & auditA & postA & commentA & notifyA
   accountM --> profileA & postA & commentA & mediaA & auditA
+  notifyM --> notifyA
   render --> md
   quota --> profileA
 ```
@@ -145,32 +148,42 @@ erDiagram
   posts ||--o{ reports : about
   comments ||--o{ reports : about
   profiles ||--o| quotas : has
-  profiles ||--o{ invitations : issues
+  anonymous_authors ||--o{ posts : writes
+  anonymous_authors ||--o{ comments : writes
+  profiles ||--o{ notifications : receives
 
   profiles {
     uuid id PK
     text handle UK
     text display_name
     text role "admin | moderator | member"
+    text trust_level "probation | trusted"
     text status "active | suspended | banned | erased"
+  }
+  anonymous_authors {
+    uuid id PK
+    text secret_hash UK
+    uuid claimed_by FK "profile, null until claimed"
   }
   posts {
     uuid id PK
-    uuid author_id FK
+    uuid author_id FK "null when anonymous"
+    uuid anonymous_author_id FK "null when a member wrote it"
     text slug UK
     text title
     text body_md
     text body_html "cached, sanitized"
-    text status "draft | published | hidden | removed"
+    text status "draft | pending | published | rejected | hidden | removed"
     timestamptz published_at
   }
   comments {
     uuid id PK
     uuid post_id FK
     uuid parent_id FK
-    uuid author_id FK "null when tombstoned"
+    uuid author_id FK "null when anonymous or tombstoned"
+    uuid anonymous_author_id FK
     text body_md
-    text status "visible | hidden | removed | tombstone"
+    text status "pending | visible | rejected | hidden | removed | tombstone"
   }
   media_assets {
     uuid id PK
@@ -181,7 +194,19 @@ erDiagram
   }
 ```
 
-Roles: `admin` (you), `moderator`, `member`. Signed-out visitors read only.
+Roles: `admin` (you), `moderator`, `member`. Members carry a trust level: `probation`
+(everything they write waits for approval) or `trusted` (publishes at once).
+
+**Anonymous posting (decision D7).** Anyone can post or comment without an account.
+Nothing anonymous shows until an admin approves it. On the first anonymous post the
+server creates an `anonymous_authors` row: a random secret, stored only as a hash.
+The secret goes back in an httpOnly cookie (page scripts cannot read it) and as a
+one-time claim code the person can save. Later, signed in, the cookie or the code
+proves the posts are theirs and `ClaimAnonymousPostsHandler` moves them to the
+profile. If cookies are cleared and the code was not saved, the link is gone.
+
+Every post and comment has a status that includes `pending`. The approval queue is
+the heart of moderation, not an add-on.
 
 ## Feature list by phase
 
@@ -194,18 +219,22 @@ Roles: `admin` (you), `moderator`, `member`. Signed-out visitors read only.
 - Image upload with per-role quotas. Admin has no quota.
 - SEO: server rendering, `sitemap.xml`, `robots.txt`, OpenGraph and Twitter cards,
   JSON-LD `Article`, canonical URLs, RSS feed.
-- Moderation v1: report a post or comment, a moderation queue, hide or remove
-  content, suspend or ban a member, an audit log of every mod action.
+- Anonymous posting and commenting, gated by the approval queue. Claim flow for
+  anonymous posts (cookie plus claim code). Abuse guards for anonymous input (D15).
+- Trust levels: probation and trusted. Admin promotion. Optional auto-promote rule.
+- Moderation v1: the approval queue (pending posts and comments), report a post or
+  comment, hide or remove content, suspend or ban a member, an audit log of every
+  mod action.
+- Notifications v1: in-app, through a `notifications` table and Supabase realtime.
+  Events and channels are decisions D13 and D14.
 - Account: "delete all my contributions" and "export my data".
 - Code of conduct page. Report reasons that match it.
 
 ### Phase 2 — a good community
 
 - Video upload under a size cap, plus YouTube and Vimeo embeds.
-- Membership mode switch: open, invite-only, or approve-new-members.
-- New-member limits: rate limits and a "first N posts need approval" rule.
 - Block and mute per member.
-- Notifications for replies (in-app, email later).
+- Email notifications through one `EmailAccessor` (D14).
 - Search with Postgres full-text search.
 - Reactions with no public totals on profiles.
 - Post revisions and edit history.
@@ -221,11 +250,11 @@ Roles: `admin` (you), `moderator`, `member`. Signed-out visitors read only.
 
 - **Kill the vote, keep the signal.** No downvotes. No public karma. Sort comments
   by time or by "author picks". This removes the main toxicity engine.
-- **Gate posting, not reading.** Everyone can read (SEO). Only approved members
-  can post or comment. An invite code or admin approval is the strongest single
-  tool for "a safe place".
-- **Real identities, quietly.** OAuth means no throwaway accounts. You do not need
-  to show real names, but you always know a person is a person.
+- **Gate showing, not writing.** Everyone can read (SEO). Anyone can write, even
+  without an account. But nothing from an anonymous or probation author shows
+  until an admin approves it. The approval queue is the wall (decision D7).
+- **Trust is earned and visible to admins only.** Members start on probation.
+  Admins promote by hand, or an optional rule promotes after N approved posts.
 - **Slow mode.** A per-thread cooldown a moderator can switch on.
 - **Tombstones for erasure.** When a member erases everything, their comments
   become empty `[deleted]` nodes so other people's replies keep their place.
