@@ -1,0 +1,55 @@
+import nextPlugin from "@next/eslint-plugin-next";
+import prettier from "eslint-config-prettier";
+import tseslint from "typescript-eslint";
+
+import { boundariesConfig } from "./eslint.boundaries.js";
+
+export default tseslint.config(
+  {
+    ignores: [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/dist/**",
+      "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "**/next-env.d.ts",
+      "design/**",
+      // Boundary fixtures break the rules on purpose. The core test lints them itself.
+      "packages/core/test/fixtures/**",
+    ],
+  },
+  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/consistent-type-imports": "error",
+    },
+  },
+  {
+    // Config files and scripts live outside any tsconfig project.
+    files: ["**/*.{js,mjs,cjs}"],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ["apps/web/**/*.{ts,tsx}"],
+    plugins: { "@next/next": nextPlugin },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+    },
+    settings: { next: { rootDir: "apps/web" } },
+  },
+  boundariesConfig,
+  prettier,
+);

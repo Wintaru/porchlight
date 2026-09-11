@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "allowJs": true
+  },
+  "include": ["src", "test", "vitest.config.ts", "../../eslint.boundaries.js"],
+  "exclude": ["test/fixtures"]
+}

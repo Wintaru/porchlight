@@ -1,0 +1,12 @@
+node_modules
+pnpm-lock.yaml
+.next
+dist
+coverage
+playwright-report
+test-results
+next-env.d.ts
+# Design boards are generated canvas artboards, not hand-written source.
+design/
+# Prose and decision records keep their own wrapping.
+*.md

@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@porchlight/core": ["packages/core/src/index.ts"],
+      "@porchlight/db": ["packages/db/src/index.ts"]
+    }
+  },
+  "include": ["apps", "packages"]
+}

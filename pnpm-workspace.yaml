@@ -1,0 +1,29 @@
+packages:
+  - apps/*
+  - packages/*
+
+# unrs-resolver's postinstall only picks the prebuilt native binding for this platform.
+allowBuilds:
+  unrs-resolver: true
+
+# One version per dependency for the whole workspace. Packages reference these as
+# `catalog:` so a version bump happens in exactly one place.
+catalog:
+  "@next/eslint-plugin-next": ^16.3.4
+  "@playwright/test": ^1.63.0
+  "@types/node": ^22.20.2
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
+  "@typescript-eslint/parser": ^8.70.0
+  eslint: ^10.10.0
+  eslint-config-prettier: ^10.1.8
+  eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-boundaries: ^7.2.0
+  next: ^16.3.4
+  prettier: ^3.9.6
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  typescript: ^6.0.3
+  typescript-eslint: ^8.70.0
+  vite: ^8.3.0
+  vitest: ^5.0.0
