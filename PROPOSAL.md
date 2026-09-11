@@ -189,7 +189,8 @@ erDiagram
     uuid id PK
     uuid owner_id FK
     text storage_path
-    text kind "image | video"
+    text kind "image | document | model | track | video"
+    text scan_status "pending | clear | flagged | blocked"
     bigint bytes
   }
 ```
@@ -216,7 +217,12 @@ the heart of moderation, not an add-on.
 - Posts: create, edit, publish, draft, delete. Markdown and WYSIWYG editor.
 - Comments: threaded replies, edit, delete.
 - Tags. Tag pages. A home feed sorted by time (not by votes).
-- Image upload with per-role quotas. Admin has no quota.
+- Attachments with an admin-extendable allowlist (images, PDF, Office without
+  macros, text, STL, GPX — audio off by default) and per-trust-level quotas. Admin has no quota. Server
+  checks magic bytes. Non-image files download from the storage domain (D16).
+- Illegal and violent content protections: hash matching before a human sees an
+  upload, classifier holds with blur-by-default in the queue, a reporting
+  procedure (D17).
 - SEO: server rendering, `sitemap.xml`, `robots.txt`, OpenGraph and Twitter cards,
   JSON-LD `Article`, canonical URLs, RSS feed.
 - Anonymous posting and commenting, gated by the approval queue. Claim flow for
