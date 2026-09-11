@@ -16,13 +16,12 @@ it a safe place.
 - 2026-09-11 — **D8 License: MIT.** Josh picked maximum adoption over copyleft. AGPL-3.0 rejected.
 - 2026-09-11 — **D1 Framework: Next.js App Router.** Server rendering and SEO APIs built in, Supabase SSR docs, largest contributor pool. React Router v7 and Astro rejected.
 - 2026-09-11 — **D2 Data access: hybrid.** Every write goes through a Manager. Public reads may call Supabase from the browser under RLS, but only from one `read-model` module that a lint rule fences. Realtime and presence (typing indicators, who is online) stay possible through browser channels. Not planned yet, not ruled out. Server-only rejected because it discards Supabase features out of hand.
+- 2026-09-11 — **D3 Content format: markdown + cached HTML.** Markdown is the source of truth. A server engine renders sanitized HTML once on save. ProseMirror JSON rejected (not readable, ties data to Tiptap). Storing both rejected (two copies that drift).
 
 ## Not yet specified (the frontier)
 
 Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[research]` = look it up · `[task]` = manual work.
 
-- [ ] **D3** Stored content format: markdown, ProseMirror JSON, or both? `[grilling]`
-      Recommendation: markdown as source of truth plus a cached HTML column. Blocks: editor, render engine, export.
 - [ ] **D4** Media storage: Supabase Storage, or Cloudflare R2 behind a CDN? `[research]`
       Recommendation: Supabase Storage behind one `MediaStorageAccessor`. Compare egress cost at expected volume.
 - [ ] **D5** Erasure: cascade delete, or tombstone comments? `[grilling]`
