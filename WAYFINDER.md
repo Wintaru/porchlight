@@ -2,6 +2,7 @@
 
 Created 2026-09-11. Backend: markdown (no git remote yet). One decision per session.
 See [PROPOSAL.md](PROPOSAL.md) for the full sketch and the reasoning behind each recommendation.
+The builder-facing bundle of every settled decision is [SPEC.md](SPEC.md). When the two disagree, this map wins.
 
 ## Destination
 
