@@ -28,6 +28,9 @@ section in [PROPOSAL.md](PROPOSAL.md).
 - 2026-09-11 — **D14 Notification channels: in-app now, email in phase 2. Bell is immediate, email is a digest.** A `notifications` table and Supabase realtime drive a live bell. Email arrives in phase 2 through one `EmailAccessor`, bundled on a member-set schedule, with an immediate option for the admin queue only. Email-from-day-one rejected (deliverability setup before launch). Email-only rejected (no live feel, ignores realtime). Everything-immediate rejected (noisy inboxes as the porch grows).
 - 2026-09-11 — **D15 Anonymous guards, phase 1: Turnstile on every anonymous submit, rate limits per IP and per anonymous token (a small Postgres table, no Redis), images only with a small hard cap (for example 3 files, 2 MB each), links inert until approved, one-click admin block by anonymous token plus salted IP hash.** Moderators see full content through the same sanitizer as published pages. Documents from anonymous authors rejected (a PDF is the classic phishing carrier). Plain-text-only queue view rejected (a mod cannot judge what readers would see).
 - 2026-09-11 — **D16 Attachments: an allowlist that admins can extend in site config.** Default set: images (png, jpeg, gif, webp, avif), PDF, Office without macros (docx, xlsx, pptx), OpenDocument, text, markdown, csv, STL (3D models), GPX (GPS tracks). Not in the default set: audio, because copyrighted music is a DMCA magnet — an admin can add it in config with eyes open. Denied outright: executables, scripts, HTML, SVG, archives, macro-enabled Office. The server checks magic bytes, not extensions. Non-image files are served as downloads from the storage domain, never inline on the site origin. Per-file and per-account byte caps by trust level, admin unlimited. Denylist rejected (always misses something new). Fixed list rejected (a maker or hiking crowd wants STL or GPX without a release).
+- 2026-09-11 — **D9 Reactions: a small fixed emoji set, counts on the item only.** No totals on profiles, no sorting by reactions. Single like rejected (less fun). None rejected (quiet members lose a way to say "I saw this").
+- 2026-09-11 — **D10 Thread depth: cap at 6.** Deeper replies attach at level 6 and mention who they answer. Cap at 3 rejected (long talks get awkward). Unlimited rejected (slivers on mobile, where arguments live).
+- 2026-09-11 — **D11 URL shape: `/@handle/slug`.** Author page is `/@handle`. Anonymous posts live at `/p/slug` and redirect (301) to `/@handle/slug` once claimed. Erased authors' URLs return 410 Gone. Reserved handles: `anon`, `p`, `admin`, `mod`, and every top-level route. `/p/slug` for all rejected (says nothing about the author). Dated URLs rejected (stale in search).
 
 ## Not yet specified (the frontier)
 
@@ -43,12 +46,8 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
       (d) **Legal duties (US).** Provider reporting to NCMEC CyberTipline, evidence preservation window, a law-enforcement contact path, and an "illegal content" report reason separate from normal reports. Verify current statute details in research.
       (e) **Moderator wellbeing.** Blur by default, reveal on click, one-click escalation, and a written procedure so no one is surprised.
       Blocks: MediaManager upload flow, ModerationPolicyEngine, the queue UI, terms page.
-- [ ] **D9** Reactions: none, likes only, or emoji reactions? `[grilling]`
-      Recommendation: emoji reactions with counts on posts, never on profiles. Blocks: post schema, post page.
-- [ ] **D10** Comment threading depth: unlimited, or capped? `[grilling]`
-      Recommendation: cap at 6. Blocks: comment schema, comment UI.
-- [ ] **D11** Post URL shape: `/p/slug`, `/@handle/slug`, or `/yyyy/mm/slug`? `[grilling]`
-      Recommendation: `/@handle/slug`. Blocks: routing, sitemap, canonical URLs.
+- [ ] **D18** Sharing: what does a shared link look like, and what can an author control? `[grilling]`
+      Josh's requirement: a post shared to Discord (or Slack, iMessage, Bluesky) shows a good preview. Draft to confirm: every post gets OpenGraph and Twitter card tags, plus a generated preview image (title, author, cover image or a branded card) through Next.js `opengraph-image`. A share button copies the link and offers the native share sheet on mobile. Per-post visibility: public, or unlisted (reachable by link, absent from feeds, sitemap and search). Question to settle: does unlisted exist in phase 1, and can an author turn off the rich preview for a post? Blocks: post page metadata, the share button, D12 mockups.
 - [ ] **D12** Name and visual identity. `[prototype]`
       Josh likes "Porch". The official name is a riff on it. Includes the anonymous placeholder avatar (D13). Mock the six main screens on a design canvas: home feed, post page, editor, profile, moderation queue, account settings.
 

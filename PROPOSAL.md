@@ -225,6 +225,9 @@ the heart of moderation, not an add-on.
   procedure (D17).
 - SEO: server rendering, `sitemap.xml`, `robots.txt`, OpenGraph and Twitter cards,
   JSON-LD `Article`, canonical URLs, RSS feed.
+- Sharing: a generated preview image per post so a link pasted into Discord,
+  Slack or iMessage shows a good card. A share button with the native share
+  sheet on mobile (D18).
 - Anonymous posting and commenting, gated by the approval queue. Claim flow for
   anonymous posts (cookie plus claim code). Abuse guards for anonymous input (D15).
 - Trust levels: probation and trusted. Admin promotion. Optional auto-promote rule.
