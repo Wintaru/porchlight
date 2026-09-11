@@ -1,6 +1,7 @@
 # Wayfinder — Porch (working name)
 
-Created 2026-09-11. Backend: markdown (no git remote yet). One decision per session.
+Created 2026-09-11. Backend: markdown (kept after the remote arrived — the frontier was already clear). One decision per session.
+Implementation work is tracked as GitHub issues on `Wintaru/porchlight`. See `CLAUDE.md` for the "next issue" procedure.
 See [PROPOSAL.md](PROPOSAL.md) for the full sketch and the reasoning behind each recommendation.
 The builder-facing bundle of every settled decision is [SPEC.md](SPEC.md). When the two disagree, this map wins.
 
