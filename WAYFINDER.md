@@ -25,6 +25,7 @@ section in [PROPOSAL.md](PROPOSAL.md).
 - 2026-09-11 — **D6 Erasure of posts: delete with the post.** Other people's comments on an erased post go with it. The terms say so, and every member can export their own data any time. Tombstoned posts rejected (ghost pages in search). Grace period rejected (content lingers after an erase request).
 - 2026-09-11 — **D7 Membership: anonymous allowed, approval gate, trust levels.** Anyone can post or comment without an account. Nothing anonymous shows until an admin approves it. Members are on **probation** (posts and comments need approval) or **trusted** (publish at once). Admins promote by hand, and an optional policy can auto-promote after N approved posts (default off). An anonymous poster gets a secret httpOnly cookie plus a one-time claim code, so they can claim their posts after they create an account. Lost if cookies are cleared and the code was not saved. The three-mode switch (open, invite, approve) is rejected in favor of this. Guards for anonymous input are a phase 1 requirement (Turnstile, rate limits per IP and per anonymous token, no media for anonymous).
 - 2026-09-11 — **D13 Notification events, phase 1: all five.** Pending item in the queue → admins and moderators. Reply to your post or comment → author, only once the reply is visible. Your item approved or rejected → author, with the moderator's reason. Report filed → moderators. Mod action on your content → author, with the reason. Anonymous authors get a status page keyed by their cookie (pending, approved, rejected, reply counts), no push. Anonymous authors show a deliberately unflattering placeholder avatar as a nudge to make an account — the exact avatar is a D12 design call.
+- 2026-09-11 — **D14 Notification channels: in-app now, email in phase 2. Bell is immediate, email is a digest.** A `notifications` table and Supabase realtime drive a live bell. Email arrives in phase 2 through one `EmailAccessor`, bundled on a member-set schedule, with an immediate option for the admin queue only. Email-from-day-one rejected (deliverability setup before launch). Email-only rejected (no live feel, ignores realtime). Everything-immediate rejected (noisy inboxes as the porch grows).
 
 ## Not yet specified (the frontier)
 
@@ -32,8 +33,6 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
 
 - [ ] **D4b** Video storage for phase 2: Cloudflare R2 (S3 API, zero egress), or Supabase Pro? `[grilling]`
       Research is done (see D4). Decide when video upload is next on the list. Blocks: phase 2 video, nothing in phase 1.
-- [ ] **D14** Notification channels: in-app only, email, or both, and immediate or digest? `[grilling]`
-      Recommendation: in-app first through a `notifications` table with Supabase realtime for the bell, email in phase 2 through one `EmailAccessor`. Blocks: D13 delivery, phase 2 email vendor.
 - [ ] **D15** Anonymous abuse guards: which ones ship in phase 1? `[grilling]`
       Candidates: Turnstile on anonymous submit, rate limit per IP and per anonymous token, no media for anonymous, link-free until approved, admin block of an anonymous token or IP hash. Blocks: the anonymous submit path.
 - [ ] **D9** Reactions: none, likes only, or emoji reactions? `[grilling]`
