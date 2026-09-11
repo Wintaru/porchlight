@@ -29,6 +29,18 @@ The MIT license covers the code only.
 the wrong way fails `pnpm lint`, and `packages/core/test/boundaries.test.ts` proves the
 policy still refuses each forbidden path.
 
+### How a request moves through the core
+
+Every operation is a typed request class that a Manager's `execute` (writes) or `query`
+(reads) hands to a `HandlerResolver`. The resolver maps the request's class to one
+handler file, and the handler does the work. `packages/core/src/Composition/` registers
+every handler once (Manager handlers in `DependencyContainer.ts`, each accessor's handlers
+in its `create*Accessor.ts`), so it is the one folder to read to learn what a request
+dispatches to. `GreetingManager` and `GET/POST /api/greeting` are the worked example and
+the template to copy for a real Manager: a request, a handler, an accessor interface, a
+fake accessor with an env toggle, and a route handler that narrows the response with
+`instanceof`.
+
 ## Run it locally
 
 You need Node 22 or newer, [pnpm](https://pnpm.io) 11, and Docker for the Supabase
