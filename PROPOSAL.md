@@ -40,11 +40,13 @@ like the same things.**
 | Boundary guard | `eslint-plugin-boundaries` | The layer call graph fails the build when broken. |
 | Hosting (later) | Vercel or a Docker image | Both work with Next.js. Docker matters for self-hosters. |
 
-One important consequence of R8: **the browser never talks to Supabase directly.**
-The browser talks to the Next.js server (the iDesign Client). The Client calls
-Managers. Only Accessors hold a Supabase client. Row-level security stays on as a
-second wall, not as the design. You give up some Supabase convenience (realtime,
-direct client queries) and get the architecture you asked for.
+Data access is **hybrid** (decision D2 on the map). Every write goes through the
+Next.js server (the iDesign Client) and a Manager. Only Accessors hold a server
+Supabase client. Public reads (feed, post page, profile) may query Supabase from the
+browser under row-level security, but only from one `read-model` module that a lint
+rule fences. This is a deliberate, bounded iDesign exception. It keeps Supabase
+realtime and presence available for later. RLS policies are a primary wall for
+reads, so they get tests.
 
 ## Architecture (iDesign)
 

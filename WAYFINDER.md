@@ -15,13 +15,12 @@ it a safe place.
 - 2026-09-11 — **D0 Product shape: a porch, not a forum.** A blog with many authors and threaded comments. Feeds sort by time, not by votes. Josh confirmed the framing.
 - 2026-09-11 — **D8 License: MIT.** Josh picked maximum adoption over copyleft. AGPL-3.0 rejected.
 - 2026-09-11 — **D1 Framework: Next.js App Router.** Server rendering and SEO APIs built in, Supabase SSR docs, largest contributor pool. React Router v7 and Astro rejected.
+- 2026-09-11 — **D2 Data access: hybrid.** Every write goes through a Manager. Public reads may call Supabase from the browser under RLS, but only from one `read-model` module that a lint rule fences. Realtime and presence (typing indicators, who is online) stay possible through browser channels. Not planned yet, not ruled out. Server-only rejected because it discards Supabase features out of hand.
 
 ## Not yet specified (the frontier)
 
 Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[research]` = look it up · `[task]` = manual work.
 
-- [ ] **D2** Does the browser ever call Supabase directly? `[grilling]`
-      Recommendation: no, all access through Managers, RLS as a second wall. Blocks: Accessor design, auth flow.
 - [ ] **D3** Stored content format: markdown, ProseMirror JSON, or both? `[grilling]`
       Recommendation: markdown as source of truth plus a cached HTML column. Blocks: editor, render engine, export.
 - [ ] **D4** Media storage: Supabase Storage, or Cloudflare R2 behind a CDN? `[research]`
@@ -47,3 +46,4 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
 - ActivityPub federation. Revisit only if the community asks.
 - Karma, downvotes, leaderboards, and anonymous accounts. Ruled out on purpose.
 - A separate backend service. The iDesign layers live in `packages/core`, called from Next.js.
+- Realtime and presence features in phase 1. The door stays open (see D2), but nothing is designed for them yet.
