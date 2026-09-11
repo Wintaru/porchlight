@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .muted { color: #75695C; }
+    .chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #EFE7DA; color: #5C5147; }
+    .react { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; border: 1px solid #E6DDD0; background: #FFFCF7; font-size: 14px; }
+    .body p { margin: 0 0 18px; font-size: 18px; line-height: 1.65; color: #2A2622; }
+    .comment { display: flex; gap: 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 999px; background: #C9BEAF; flex-shrink: 0; }
+    .cbody { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+    .cmeta { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .cactions { display: flex; gap: 14px; font-size: 13px; color: #75695C; font-weight: 500; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1920px; background: #F6F1E8; display: flex; flex-direction: column;">
+
+  <div style="height: 64px; border-bottom: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 36px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="13" fill="#F2B441" stroke="none" opacity="0.35"></circle><path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="#FFFCF7"></path><path d="M24 6v6"></path><path d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" fill="#F2B441" stroke="#B4530A"></path></svg>
+        <h2 style="font-size: 24px;">Porchlight</h2>
+      </div>
+      <div style="display: flex; gap: 24px; font-size: 15px; font-weight: 500;"><div class="muted">Home</div><div class="muted">Tags</div><div class="muted">About</div></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="display: flex; align-items: center; gap: 8px; background: #B4530A; color: #FFFCF7; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 15px;">Write</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9Z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: #C9BEAF;"></div>
+    </div>
+  </div>
+
+  <div style="width: 760px; margin: 0 auto; padding: 48px 0 80px; display: flex; flex-direction: column; gap: 28px;">
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; gap: 8px;"><div class="chip">woodworking</div><div class="chip">garden</div></div>
+      <h1 style="font-size: 44px; line-height: 1.12;">I finally finished the cedar planter box, and the raccoons approve</h1>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <div style="width: 36px; height: 36px; border-radius: 999px; background: #B9AE9F;"></div>
+          <div><span style="font-weight: 600;">@marisol</span> <span class="muted">· Sep 9, 2026 · 4 min read</span></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid #C9BEAF; border-radius: 8px; font-size: 14px; font-weight: 600;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M12 3v13"></path><path d="M7 8l5-5 5 5"></path></svg>
+          Share
+        </div>
+      </div>
+    </div>
+
+    <div style="height: 380px; border-radius: 12px; background: linear-gradient(135deg, #D9CFC2, #B9AE9F);"></div>
+
+    <div class="body">
+      <p>Three weekends, one trip back to the lumber yard, and a lot of sanding. I wanted something that would sit on the back porch, hold a season of tomatoes, and not fall apart when the sprinkler hits it.</p>
+      <p>Cedar was the right call. It is soft enough to cut with a hand saw and it smells like a sauna for a week. The corners are simple butt joints with exterior screws, and I lined the inside with landscape fabric so the soil stays put.</p>
+      <p>What I would change: make it two inches shorter so it fits under the railing, and pre-drill everything. I split one board on the last screw and had to start that side over.</p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; padding: 18px 0; border-top: 1px solid #E6DDD0; border-bottom: 1px solid #E6DDD0;">
+      <div class="react" style="border-color: #B4530A; background: #F8E7CF;">🔥 <span>12</span></div>
+      <div class="react">❤️ <span>8</span></div>
+      <div class="react">👏 <span>3</span></div>
+      <div class="react">💡 <span>1</span></div>
+      <div class="react muted" style="border-style: dashed;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#75695C" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 22px;">
+      <h2 style="font-size: 26px;">6 comments</h2>
+
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="min-height: 64px; font-size: 15px; color: #9A8E80;">Say something kind or useful…</div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;" class="muted">
+            <div style="width: 16px; height: 16px; border: 1.5px solid #C9BEAF; border-radius: 4px;"></div>
+            Post anonymously
+          </div>
+          <div style="background: #B4530A; color: #FFFCF7; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 14px;">Comment</div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="avatar"></div>
+        <div class="cbody">
+          <div class="cmeta"><span style="font-weight: 600;">@tomas</span><span class="muted">· 1 hour ago</span></div>
+          <div>Pre-drilling cedar is the whole game. Also try stainless screws next time, the coated ones streak after a winter.</div>
+          <div class="cactions"><span>❤️ 4</span><span>Reply</span></div>
+
+          <div class="comment" style="margin-top: 12px; padding-left: 12px; border-left: 2px solid #E6DDD0;">
+            <div class="avatar" style="background: #B9AE9F;"></div>
+            <div class="cbody">
+              <div class="cmeta"><span style="font-weight: 600;">@marisol</span><span class="chip" style="background: #F8E7CF; color: #8F3F05;">author</span><span class="muted">· 40 min ago</span></div>
+              <div>Noted for the next one. The streaking is already starting on the bottom rail.</div>
+              <div class="cactions"><span>❤️ 1</span><span>Reply</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="avatar" style="background: #E6DDD0; display: flex; align-items: center; justify-content: center;">
+          <svg width="32" height="32" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20l4-8 6 5h4l6-5 4 8" fill="#B9AE9F"></path><path d="M12 20c0 9 5 15 12 15s12-6 12-15" fill="#D9CFC2"></path><path d="M14 22c2-3 5-4 8-2 1 1 1 3 0 4-3 2-6 1-8-2Z" fill="#2A2622"></path><path d="M34 22c-2-3-5-4-8-2-1 1-1 3 0 4 3 2 6 1 8-2Z" fill="#2A2622"></path><circle cx="19" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle><circle cx="29" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle></svg>
+        </div>
+        <div class="cbody">
+          <div class="cmeta"><span style="font-weight: 600;">Porch raccoon</span><span class="chip" style="background: #F8E7CF; color: #8F3F05;">anonymous</span><span class="muted">· 3 hours ago</span></div>
+          <div>Where did you get the cedar? Every yard near me only has the knotty stuff.</div>
+          <div class="cactions"><span>Reply</span></div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="avatar" style="background: #E6DDD0;"></div>
+        <div class="cbody">
+          <div class="cmeta"><span class="muted" style="font-style: italic;">[deleted]</span><span class="muted">· 2 days ago</span></div>
+          <div class="muted" style="font-style: italic;">This comment was erased by its author.</div>
+          <div class="comment" style="margin-top: 12px; padding-left: 12px; border-left: 2px solid #E6DDD0;">
+            <div class="avatar"></div>
+            <div class="cbody">
+              <div class="cmeta"><span style="font-weight: 600;">@priya</span><span class="muted">· 2 days ago</span></div>
+              <div>Agreed, the fabric liner is the trick. Mine lasted three seasons.</div>
+              <div class="cactions"><span>❤️ 2</span><span>Reply</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

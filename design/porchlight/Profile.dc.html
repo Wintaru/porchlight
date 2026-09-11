@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .muted { color: #75695C; }
+    .chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #EFE7DA; color: #5C5147; }
+    .row { display: flex; gap: 20px; padding: 20px 0; border-bottom: 1px solid #E6DDD0; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 900px; background: #F6F1E8; display: flex; flex-direction: column;">
+
+  <div style="height: 64px; border-bottom: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 36px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="13" fill="#F2B441" stroke="none" opacity="0.35"></circle><path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="#FFFCF7"></path><path d="M24 6v6"></path><path d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" fill="#F2B441" stroke="#B4530A"></path></svg>
+        <h2 style="font-size: 24px;">Porchlight</h2>
+      </div>
+      <div style="display: flex; gap: 24px; font-size: 15px; font-weight: 500;"><div class="muted">Home</div><div class="muted">Tags</div><div class="muted">About</div></div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="background: #B4530A; color: #FFFCF7; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 15px;">Write</div>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9Z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: #C9BEAF;"></div>
+    </div>
+  </div>
+
+  <div style="width: 880px; margin: 0 auto; padding: 48px 0 80px; display: flex; flex-direction: column; gap: 32px;">
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="width: 112px; height: 112px; border-radius: 999px; background: #B9AE9F; flex-shrink: 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 10px; flex-grow: 1;">
+        <div style="display: flex; align-items: baseline; gap: 12px;">
+          <h1 style="font-size: 36px;">Marisol Vega</h1>
+          <div class="muted" style="font-size: 18px;">@marisol</div>
+        </div>
+        <div style="font-size: 17px; max-width: 560px;">Backyard carpenter, tomato optimist. I post the cut list so you do not have to guess.</div>
+        <div style="display: flex; gap: 16px; font-size: 14px;" class="muted">
+          <div>On the porch since March 2026</div>
+          <div>·</div>
+          <a href="#">marisol.garden</a>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <div style="padding: 9px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; border: 1px solid #C9BEAF;">RSS</div>
+        <div style="padding: 9px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; border: 1px solid #C9BEAF;">Mute</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; border-bottom: 1px solid #E6DDD0; font-size: 15px; font-weight: 600;">
+      <div style="padding-bottom: 10px; border-bottom: 2px solid #B4530A;">Posts</div>
+      <div class="muted" style="padding-bottom: 10px;">Comments</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column;">
+      <div class="row">
+        <div style="width: 140px; height: 96px; border-radius: 8px; background: linear-gradient(135deg, #D9CFC2, #B9AE9F); flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="font-size: 22px;">I finally finished the cedar planter box, and the raccoons approve</h3>
+          <div class="muted" style="font-size: 14px;">Sep 9, 2026 · 6 comments · 🔥 12 · ❤️ 8</div>
+          <div style="display: flex; gap: 6px;"><div class="chip">woodworking</div><div class="chip">garden</div></div>
+        </div>
+      </div>
+      <div class="row">
+        <div style="width: 140px; height: 96px; border-radius: 8px; background: #E6DDD0; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="font-size: 22px;">Starting tomatoes indoors without a grow light</h3>
+          <div class="muted" style="font-size: 14px;">Aug 22, 2026 · 11 comments · ❤️ 15 · 💡 4</div>
+          <div style="display: flex; gap: 6px;"><div class="chip">garden</div></div>
+        </div>
+      </div>
+      <div class="row">
+        <div style="width: 140px; height: 96px; border-radius: 8px; background: #E6DDD0; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h3 style="font-size: 22px;">The sawhorse plan I keep sending people</h3>
+          <div class="muted" style="font-size: 14px;">Jul 3, 2026 · 3 comments · 🔥 7</div>
+          <div style="display: flex; gap: 6px;"><div class="chip">woodworking</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="muted" style="font-size: 14px; text-align: center;">No totals, no rankings. Reactions live on the posts, not the person.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

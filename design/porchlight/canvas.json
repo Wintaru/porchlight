@@ -1,0 +1,19 @@
+{
+  "artboards": [
+    { "file": "Brand.dc.html", "x": 0, "y": 0, "w": 1440, "h": 760, "title": "Brand" },
+    { "file": "FeedPhone.dc.html", "x": 1520, "y": 0, "w": 390, "h": 844, "title": "Feed · phone" },
+    { "file": "PostPhone.dc.html", "x": 1990, "y": 0, "w": 390, "h": 844, "title": "Post · phone" },
+    { "file": "Main.dc.html", "x": 0, "y": 1000, "w": 1440, "h": 1340, "title": "Home feed" },
+    { "file": "Post.dc.html", "x": 1520, "y": 1000, "w": 1440, "h": 1920, "title": "Post page" },
+    { "file": "Editor.dc.html", "x": 0, "y": 3080, "w": 1440, "h": 960, "title": "Editor" },
+    { "file": "Profile.dc.html", "x": 1520, "y": 3080, "w": 1440, "h": 900, "title": "Profile" },
+    { "file": "Queue.dc.html", "x": 0, "y": 4260, "w": 1440, "h": 1300, "title": "Moderation queue" },
+    { "file": "Settings.dc.html", "x": 1520, "y": 4260, "w": 1440, "h": 1700, "title": "Account settings" }
+  ],
+  "annotations": [
+    { "id": "direction", "x": 0, "y": -140, "w": 520, "text": "Porchlight — warm modern direction.\nCream surfaces, one amber accent, Newsreader titles, Source Sans body.\nNo karma, no rankings anywhere. Anonymous authors show the porch raccoon." },
+    { "id": "queue-note", "x": 0, "y": 4110, "w": 520, "text": "Queue: flagged items blurred + grayscale, click to reveal. Locked items are never shown — only an escalation view with metadata. Duty checklist is region-gated (D17)." },
+    { "id": "settings-note", "x": 1520, "y": 4110, "w": 520, "text": "Settings: export sits right above erase, on purpose (D5/D6). Claim flow for anonymous posts uses the cookie first, then a pasted code (D7)." }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .label { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #75695C; font-weight: 600; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 760px; box-sizing: border-box; padding: 56px 64px; display: flex; flex-direction: column; gap: 40px; background: #F6F1E8;">
+
+  <div style="display: flex; align-items: center; gap: 24px;">
+    <svg width="72" height="72" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="24" cy="26" r="13" fill="#F2B441" stroke="none" opacity="0.35"></circle>
+      <path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="#FFFCF7"></path>
+      <path d="M24 6v6"></path>
+      <path d="M20 12h8"></path>
+      <path d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" fill="#F2B441" stroke="#B4530A"></path>
+      <path d="M14 34h20"></path>
+    </svg>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <h1 style="font-size: 56px; line-height: 1;">Porchlight</h1>
+      <div style="font-size: 18px; color: #75695C;">The light is on. Come sit a while.</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px;">
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="label">Palette</div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #F6F1E8; border: 1px solid #E6DDD0;"></div><div style="font-size: 13px;">Cream · #F6F1E8</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #FFFCF7; border: 1px solid #E6DDD0;"></div><div style="font-size: 13px;">Surface · #FFFCF7</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #2A2622;"></div><div style="font-size: 13px;">Ink · #2A2622</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #75695C;"></div><div style="font-size: 13px;">Muted · #75695C</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #B4530A;"></div><div style="font-size: 13px;">Amber · #B4530A</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #F2B441;"></div><div style="font-size: 13px;">Glow · #F2B441</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #A83A2B;"></div><div style="font-size: 13px;">Danger · #A83A2B</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 64px; border-radius: 8px; background: #221F1C;"></div><div style="font-size: 13px;">Dark · #221F1C</div></div>
+      </div>
+      <div class="label" style="margin-top: 12px;">Anonymous avatar · Porch raccoon</div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <svg width="56" height="56" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="24" cy="24" r="22" fill="#E6DDD0" stroke="none"></circle>
+          <path d="M12 20l4-8 6 5h4l6-5 4 8" fill="#B9AE9F"></path>
+          <path d="M12 20c0 9 5 15 12 15s12-6 12-15" fill="#D9CFC2"></path>
+          <path d="M14 22c2-3 5-4 8-2 1 1 1 3 0 4-3 2-6 1-8-2Z" fill="#2A2622"></path>
+          <path d="M34 22c-2-3-5-4-8-2-1 1-1 3 0 4 3 2 6 1 8-2Z" fill="#2A2622"></path>
+          <circle cx="19" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle>
+          <circle cx="29" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle>
+          <path d="M22 29h4l-2 2Z" fill="#2A2622"></path>
+        </svg>
+        <div style="font-size: 14px; color: #75695C; max-width: 360px;">A visitor who has not introduced themselves. Shown on anonymous posts until the author claims them.</div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="label">Type</div>
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="font-size: 36px; line-height: 1.15;">Newsreader for titles</h2>
+        <div style="font-size: 17px;">Source Sans 3 for everything you read at length. Warm, plain, and easy on a phone at night.</div>
+        <div style="font-size: 14px; color: #75695C;">Meta text, timestamps, and labels sit in muted.</div>
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+          <div style="background: #B4530A; color: #FFFCF7; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 15px;">Primary</div>
+          <div style="background: transparent; color: #2A2622; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 15px; border: 1px solid #C9BEAF;">Secondary</div>
+          <div style="color: #B4530A; font-weight: 600; font-size: 15px;">Text link</div>
+        </div>
+      </div>
+      <div class="label" style="margin-top: 12px;">Voice</div>
+      <div style="font-size: 15px; color: #2A2622; max-width: 520px;">Plain words, short sentences. No karma, no leaderboards, no dark patterns. The terms read like a neighbor wrote them.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

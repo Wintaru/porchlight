@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .muted { color: #75695C; }
+    .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #EFE7DA; color: #5C5147; }
+    .react { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; border: 1px solid #E6DDD0; background: #FFFCF7; font-size: 13px; }
+    .comment { display: flex; gap: 10px; }
+    .avatar { width: 28px; height: 28px; border-radius: 999px; background: #C9BEAF; flex-shrink: 0; }
+    .cbody { display: flex; flex-direction: column; gap: 4px; flex-grow: 1; font-size: 15px; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #F6F1E8; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="height: 56px; border-bottom: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box; margin-top: 44px;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><path d="M12 3v13"></path><path d="M7 8l5-5 5 5"></path></svg>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+    </div>
+  </div>
+
+  <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; flex-grow: 1; overflow: hidden;">
+    <div style="display: flex; gap: 6px;"><div class="chip">woodworking</div><div class="chip">garden</div></div>
+    <h1 style="font-size: 28px; line-height: 1.15;">I finally finished the cedar planter box, and the raccoons approve</h1>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+      <div style="width: 28px; height: 28px; border-radius: 999px; background: #B9AE9F;"></div>
+      <div><span style="font-weight: 600;">@marisol</span> <span class="muted">· Sep 9 · 4 min</span></div>
+    </div>
+    <div style="height: 200px; border-radius: 10px; background: linear-gradient(135deg, #D9CFC2, #B9AE9F);"></div>
+    <div style="font-size: 17px; line-height: 1.6;">Three weekends, one trip back to the lumber yard, and a lot of sanding. I wanted something that would sit on the back porch, hold a season of tomatoes, and not fall apart when the sprinkler hits it.</div>
+    <div style="display: flex; gap: 6px; padding: 12px 0; border-top: 1px solid #E6DDD0; border-bottom: 1px solid #E6DDD0;">
+      <div class="react" style="border-color: #B4530A; background: #F8E7CF;">🔥 12</div><div class="react">❤️ 8</div><div class="react">👏 3</div><div class="react muted" style="border-style: dashed;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#75695C" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div>
+    </div>
+    <div style="font-weight: 600; font-size: 15px;">6 comments</div>
+    <div class="comment">
+      <div class="avatar"></div>
+      <div class="cbody">
+        <div style="font-size: 13px;"><span style="font-weight: 600;">@tomas</span> <span class="muted">· 1h</span></div>
+        <div>Pre-drilling cedar is the whole game. Also try stainless screws next time.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height: 76px; border-top: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box;">
+    <div style="flex-grow: 1; border: 1px solid #C9BEAF; border-radius: 999px; padding: 10px 14px; font-size: 15px; color: #9A8E80;">Say something kind or useful…</div>
+    <div style="width: 44px; height: 44px; border-radius: 999px; background: #B4530A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFCF7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7Z"></path></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

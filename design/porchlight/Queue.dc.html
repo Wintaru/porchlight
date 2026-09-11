@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .muted { color: #75695C; }
+    .chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: #EFE7DA; color: #5C5147; }
+    .item { background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .btn { padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 14px; border: 1px solid #C9BEAF; }
+    .nav { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; font-size: 15px; font-weight: 500; color: #5C5147; }
+    .duty { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; }
+    .box { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #C9BEAF; flex-shrink: 0; margin-top: 3px; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1300px; background: #F6F1E8; display: flex; flex-direction: column;">
+
+  <div style="height: 64px; border-bottom: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg width="28" height="28" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="13" fill="#F2B441" stroke="none" opacity="0.35"></circle><path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="#FFFCF7"></path><path d="M24 6v6"></path><path d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" fill="#F2B441" stroke="#B4530A"></path></svg>
+      <h2 style="font-size: 24px;">Porchlight</h2>
+      <div class="chip" style="margin-left: 8px; background: #2A2622; color: #FFFCF7;">Admin</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div class="muted" style="font-size: 14px;">Viewed today: 7 items</div>
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: #C9BEAF;"></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 220px minmax(0, 1fr) 300px; gap: 40px; padding: 36px 64px 64px; box-sizing: border-box;">
+
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div class="nav" style="background: #EFE7DA; color: #2A2622;">Approval queue <span class="chip" style="margin-left: auto; background: #B4530A; color: #FFFCF7;">4</span></div>
+      <div class="nav">Reports <span class="chip" style="margin-left: auto;">1</span></div>
+      <div class="nav">Members</div>
+      <div class="nav">Blocked</div>
+      <div class="nav">Audit log</div>
+      <div class="nav">Settings</div>
+      <div style="height: 1px; background: #E6DDD0; margin: 12px 0;"></div>
+      <div class="nav" style="color: #A83A2B;">Escalations <span class="chip" style="margin-left: auto; background: #A83A2B; color: #FFFCF7;">1</span></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h1 style="font-size: 30px;">Waiting for a read</h1>
+        <div style="display: flex; gap: 8px; font-size: 14px;">
+          <div class="chip" style="background: #2A2622; color: #FFFCF7;">All</div><div class="chip">Anonymous</div><div class="chip">Probation</div><div class="chip">Flagged</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div class="chip" style="background: #F8E7CF; color: #8F3F05;">anonymous</div>
+          <div class="chip" style="background: #E4EFE2; color: #2E6B34;">scan clear</div>
+          <div class="muted">Post · 18 min ago · token a91f…c2</div>
+        </div>
+        <h3 style="font-size: 22px;">Sourdough starter from grocery-store flour, day 1 to day 7</h3>
+        <div style="font-size: 15px; color: #3E3833;">No fancy flour, no scale, one jar. Photos of every day so you know what "normal" looks like before it smells like beer.</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 14px;" class="muted">
+          <div class="chip">3 images · 1.8 MB</div>
+          <div>links: none</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="btn" style="background: #B4530A; color: #FFFCF7; border-color: #B4530A;">Approve</div>
+          <div class="btn">Reject with reason</div>
+          <div class="btn muted" style="margin-left: auto;">Block token</div>
+          <div class="btn" style="color: #A83A2B; border-color: #A83A2B;">Escalate</div>
+        </div>
+      </div>
+
+      <div class="item" style="border-color: #E0B08A;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div class="chip">probation · @newkid</div>
+          <div class="chip" style="background: #F8E7CF; color: #8F3F05;">flagged · nudity 0.81</div>
+          <div class="muted">Post · 2 hours ago</div>
+        </div>
+        <h3 style="font-size: 22px;">Figure study, charcoal, 20 minutes</h3>
+        <div style="display: flex; gap: 16px;">
+          <div style="width: 200px; height: 140px; border-radius: 8px; background: repeating-linear-gradient(45deg, #9A9A9A 0 6px, #7C7C7C 6px 12px); filter: blur(6px); flex-shrink: 0;"></div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+            <div style="font-weight: 600;">Image blurred and grayscale. Click to reveal.</div>
+            <div class="muted">Held by the classifier. Nothing shows until you decide. If it is art, approve with the mature tag. If it is porn, reject.</div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;"><div class="box" style="background: #B4530A; border-color: #B4530A;"></div>Approve only with <span class="chip">mature</span> tag</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="btn" style="background: #B4530A; color: #FFFCF7; border-color: #B4530A;">Approve as mature</div>
+          <div class="btn">Reject with reason</div>
+          <div class="btn" style="color: #A83A2B; border-color: #A83A2B; margin-left: auto;">Escalate</div>
+        </div>
+      </div>
+
+      <div class="item" style="border-color: #3F3A46; background: #EDE9E4;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div class="chip" style="background: #F8E7CF; color: #8F3F05;">anonymous</div>
+          <div class="chip" style="background: #3F3A46; color: #FFFCF7;">locked · hash match</div>
+          <div class="muted">Upload · 5 hours ago · evidence frozen until Sep 2027</div>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: center;">
+          <div style="width: 200px; height: 100px; border-radius: 8px; background: #3F3A46; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFCF7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px;">
+            <div style="font-weight: 600;">Not shown to anyone. Reported automatically.</div>
+            <div class="muted">Matched a known-illegal hash. The file, the source IP and port, and the timestamp are preserved and cannot be deleted. Your region: United States · report filed to NCMEC CyberTipline · reference in the escalation view.</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="btn" style="background: #3F3A46; color: #FFFCF7; border-color: #3F3A46;">Open escalation</div>
+          <div class="btn">Block token and IP</div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div class="chip">probation · @newkid</div>
+          <div class="chip" style="background: #E4EFE2; color: #2E6B34;">scan clear</div>
+          <div class="muted">Comment on "Printable hinge…" · 6 hours ago</div>
+        </div>
+        <div style="font-size: 15px; color: #3E3833;">Would this work in PLA if I bump the wall thickness? My printer hates PETG.</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="btn" style="background: #B4530A; color: #FFFCF7; border-color: #B4530A;">Approve</div>
+          <div class="btn">Reject with reason</div>
+          <div class="btn" style="margin-left: auto;">Mark @newkid trusted</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h3 style="font-size: 18px;">Your duties</h3>
+          <div class="chip">United States</div>
+        </div>
+        <div class="duty"><div class="box" style="background: #2E6B34; border-color: #2E6B34;"></div><div>Hash matching active · Arachnid Shield</div></div>
+        <div class="duty"><div class="box" style="background: #2E6B34; border-color: #2E6B34;"></div><div>Image classifier active · Sightengine</div></div>
+        <div class="duty"><div class="box" style="background: #2E6B34; border-color: #2E6B34;"></div><div>Report target set · NCMEC CyberTipline</div></div>
+        <div class="duty"><div class="box"></div><div>Retention: 1 year · evidence frozen on lock</div></div>
+        <div class="duty"><div class="box"></div><div>Terms page states erasure edges and content policy</div></div>
+        <a href="#" style="font-size: 13px; font-weight: 600;">Setup guides →</a>
+      </div>
+      <div style="border: 1px solid #E6DDD0; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+        <div style="font-weight: 600;">Take a break</div>
+        <div class="muted">You have opened 7 held items today. Blur stays on by default. Grayscale is on. Nobody has to look at a locked item.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

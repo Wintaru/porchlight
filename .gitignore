@@ -1,0 +1,8 @@
+# Assembled design canvas (regenerated from the .dc.html boards and canvas.json)
+design/**/porchlight-screens.html
+
+# Node
+node_modules/
+.env
+.env.*
+!.env.example

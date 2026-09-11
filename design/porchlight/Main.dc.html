@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; background: #F6F1E8; color: #2A2622; font-family: "Source Sans 3", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; }
+    h1, h2, h3 { font-family: Newsreader, Georgia, "Times New Roman", serif; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+    a { color: #B4530A; text-decoration: none; } a:hover { color: #8F3F05; }
+    .muted { color: #75695C; }
+    .chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: #EFE7DA; color: #5C5147; }
+    .react { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; border: 1px solid #E6DDD0; background: #FFFCF7; font-size: 14px; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1340px; background: #F6F1E8; display: flex; flex-direction: column;">
+
+  <div style="height: 64px; border-bottom: 1px solid #E6DDD0; background: #FFFCF7; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; gap: 36px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="13" fill="#F2B441" stroke="none" opacity="0.35"></circle><path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="#FFFCF7"></path><path d="M24 6v6"></path><path d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z" fill="#F2B441" stroke="#B4530A"></path></svg>
+        <h2 style="font-size: 24px;">Porchlight</h2>
+      </div>
+      <div style="display: flex; gap: 24px; font-size: 15px; font-weight: 500;">
+        <div style="color: #2A2622; border-bottom: 2px solid #B4530A; padding-bottom: 2px;">Home</div>
+        <div class="muted">Tags</div>
+        <div class="muted">About</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px;">
+      <div style="display: flex; align-items: center; gap: 8px; background: #B4530A; color: #FFFCF7; padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Write
+      </div>
+      <div style="position: relative;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9Z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+        <div style="position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 999px; background: #B4530A; border: 2px solid #FFFCF7;"></div>
+      </div>
+      <div style="width: 36px; height: 36px; border-radius: 999px; background: #C9BEAF;"></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px; padding: 40px 64px 64px; box-sizing: border-box; max-width: 1200px; width: 100%; margin: 0 auto;">
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between;">
+        <h1 style="font-size: 32px;">Latest on the porch</h1>
+        <div class="muted" style="font-size: 14px;">Newest first · no votes, no rankings</div>
+      </div>
+
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div style="width: 28px; height: 28px; border-radius: 999px; background: #B9AE9F;"></div>
+          <div style="font-weight: 600;">@marisol</div>
+          <div class="muted">· 2 hours ago</div>
+        </div>
+        <h2 style="font-size: 26px; line-height: 1.2;">I finally finished the cedar planter box, and the raccoons approve</h2>
+        <div style="height: 220px; border-radius: 10px; background: linear-gradient(135deg, #D9CFC2, #B9AE9F); display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box;"><div class="chip" style="background: rgba(255,252,247,0.85);">cover image</div></div>
+        <div style="font-size: 16px; color: #3E3833;">Three weekends, one trip back to the lumber yard, and a lot of sanding. Here is the cut list and what I would do differently next time…</div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 8px;">
+            <div class="react">🔥 <span>12</span></div>
+            <div class="react">❤️ <span>8</span></div>
+            <div class="react">👏 <span>3</span></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: center; font-size: 14px;" class="muted">
+            <div class="chip">woodworking</div>
+            <div class="chip">garden</div>
+            <div>6 comments</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <svg width="28" height="28" viewBox="0 0 48 48" fill="none" stroke="#2A2622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="22" fill="#E6DDD0" stroke="none"></circle><path d="M12 20l4-8 6 5h4l6-5 4 8" fill="#B9AE9F"></path><path d="M12 20c0 9 5 15 12 15s12-6 12-15" fill="#D9CFC2"></path><path d="M14 22c2-3 5-4 8-2 1 1 1 3 0 4-3 2-6 1-8-2Z" fill="#2A2622"></path><path d="M34 22c-2-3-5-4-8-2-1 1-1 3 0 4 3 2 6 1 8-2Z" fill="#2A2622"></path><circle cx="19" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle><circle cx="29" cy="23" r="1.4" fill="#FFFCF7" stroke="none"></circle><path d="M22 29h4l-2 2Z" fill="#2A2622"></path></svg>
+          <div style="font-weight: 600;">Porch raccoon</div>
+          <div class="chip" style="background: #F8E7CF; color: #8F3F05;">anonymous</div>
+          <div class="muted">· yesterday</div>
+        </div>
+        <h2 style="font-size: 26px; line-height: 1.2;">A GPX track for the ridge loop nobody talks about</h2>
+        <div style="font-size: 16px; color: #3E3833;">Eleven miles, two creek crossings, and a view at mile eight that made me sit down. Track attached. Bring more water than you think.</div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid #E6DDD0; border-radius: 8px; background: #F6F1E8; font-size: 14px; width: fit-content;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#75695C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"></path><path d="M14 3v5h5"></path></svg>
+          <div>ridge-loop.gpx</div><div class="muted">· 84 KB</div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 8px;">
+            <div class="react">🥾 <span>5</span></div>
+            <div class="react">❤️ <span>2</span></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: center; font-size: 14px;" class="muted">
+            <div class="chip">hiking</div>
+            <div>2 comments</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px;">
+          <div style="width: 28px; height: 28px; border-radius: 999px; background: #C9BEAF;"></div>
+          <div style="font-weight: 600;">@devon</div>
+          <div class="muted">· 3 days ago</div>
+        </div>
+        <h2 style="font-size: 26px; line-height: 1.2;">Printable hinge that actually survives the dishwasher</h2>
+        <div style="font-size: 16px; color: #3E3833;">PETG, 0.2 layer height, and a living hinge geometry I stole from a shampoo bottle. STL inside.</div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; gap: 8px;">
+            <div class="react">🔥 <span>21</span></div>
+            <div class="react">💡 <span>9</span></div>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: center; font-size: 14px;" class="muted">
+            <div class="chip">3d-printing</div>
+            <div>14 comments</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <div style="background: #FFFCF7; border: 1px solid #E6DDD0; border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 10px;">
+        <h3 style="font-size: 20px;">Leave the light on</h3>
+        <div style="font-size: 15px; color: #3E3833;">A small place to share the things you make and find. No karma, no rankings. Your posts stay yours: export or erase them any time.</div>
+        <a href="#" style="font-weight: 600; font-size: 14px;">How this place works →</a>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #75695C; font-weight: 600;">Tags</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div class="chip">woodworking</div><div class="chip">hiking</div><div class="chip">3d-printing</div><div class="chip">garden</div><div class="chip">recipes</div><div class="chip">art</div><div class="chip">maps</div>
+        </div>
+      </div>
+      <div style="border: 1px dashed #C9BEAF; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-weight: 600; font-size: 15px;">Posting without an account?</div>
+        <div style="font-size: 14px; color: #75695C;">You can. An admin reads it before it shows. Save your claim code if you want to keep it later.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
