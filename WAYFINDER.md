@@ -38,6 +38,7 @@ section in [PROPOSAL.md](PROPOSAL.md).
 - 2026-09-11 — **D19 Local development: Supabase CLI local stack plus fake providers.** `supabase start` runs Postgres, Auth, Storage and Realtime in Docker. `pnpm dev` runs Next.js. Every external accessor (hash match, classifier, Turnstile, email, storage) has a fake mode a dev can flip to "match" or "flag" to exercise the queue. Seed data and one `.env.example`. No vendor keys needed to run or test. Docker-compose-for-everything rejected (duplicates the CLI, slower to iterate).
 - 2026-09-11 — **D12a Name: Porchlight.** The light left on so people know they are welcome. A quick search found a family social app ("Porchlight — Being There"), a health platform, and three unrelated GitHub projects with the name. Josh keeps it. A domain and trademark check goes on the launch checklist, and the name can change before anything ships. Screendoor, Porchside and Backporch rejected. **Visual direction: warm modern** (cream and warm neutrals, one amber accent, serif titles, sans body, warm charcoal dark mode). **Anonymous avatar: a raccoon**, labeled "Porch raccoon" — a visitor who has not introduced themselves.
 - 2026-09-11 — **D12b Screens: first mockups on the design canvas.** Static, desktop first, with two phone boards. Brand board plus home feed, post page, editor, profile, moderation queue, account settings, feed on phone, post on phone. Canvas: https://claude.ai/code/artifact/9a8cf86a-2969-4c94-9105-ab98cab14397 — source boards in `design/porchlight/`. Josh reviews and edits on the canvas.
+- 2026-09-11 — **D17b Arachnid Shield approved.** Josh holds the credentials. They enter the gitignored `.env` when issue #10 wires `HashMatchAccessor`. Never in the repo, never in an issue. Issue #20 closed.
 - 2026-09-11 — **D12c Screens signed off.** Josh approved the nine boards as the basis for the scaffold. Later visual changes happen on the canvas or in code, not on the map.
 
 ## Not yet specified (the frontier)
@@ -46,8 +47,6 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
 
 - [ ] **D4b** Video storage for phase 2: Cloudflare R2 (S3 API, zero egress), or Supabase Pro? `[grilling]`
       Research is done (see D4). Decide when video upload is next on the list. Blocks: phase 2 video, nothing in phase 1.
-- [ ] **D17b** Hash-match provider: apply to Arachnid Shield, and confirm which alternates to wire first. `[task]`
-      Josh applies as a service provider. Until approved, the fake provider runs and the admin checklist shows "hash matching: not yet active" in red. Blocks: production launch, not development.
 
 ## Standing constraints (apply to every decision)
 
