@@ -99,6 +99,8 @@ flowchart TD
     commentA[CommentAccessor]
     profileA[ProfileAccessor]
     mediaA[MediaStorageAccessor]
+    hashA[HashMatchAccessor]
+    classA[ClassifierAccessor]
     reportA[ReportAccessor]
     auditA[AuditAccessor]
     notifyA[NotificationAccessor]
@@ -113,7 +115,7 @@ flowchart TD
   web --> postM & commentM & mediaM & modM & accountM & notifyM
   postM --> render & perm & postA & mediaA & notifyA
   commentM --> perm & policy & commentA & notifyA
-  mediaM --> quota & mediaA
+  mediaM --> quota & policy & mediaA & hashA & classA & auditA
   modM --> policy & reportA & auditA & postA & commentA & notifyA
   accountM --> profileA & postA & commentA & mediaA & auditA
   notifyM --> notifyA
@@ -151,6 +153,9 @@ erDiagram
   anonymous_authors ||--o{ posts : writes
   anonymous_authors ||--o{ comments : writes
   profiles ||--o{ notifications : receives
+  posts ||--o| submission_evidence : "captured at submit"
+  comments ||--o| submission_evidence : "captured at submit"
+  media_assets ||--o| submission_evidence : "captured at submit"
 
   profiles {
     uuid id PK
@@ -193,8 +198,22 @@ erDiagram
     uuid owner_id FK
     text storage_path
     text kind "image | document | model | track | video"
-    text scan_status "pending | clear | flagged | blocked"
+    text scan_status "pending | clear | flagged | locked"
+    timestamptz retain_until "set when locked, blocks deletion"
     bigint bytes
+  }
+  submission_evidence {
+    uuid id PK
+    inet source_ip "raw for a window, then null"
+    int source_port
+    text ip_hash "salted, kept after the window"
+    timestamptz submitted_at
+    text user_agent
+    uuid anonymous_author_id FK
+    uuid author_id FK
+    text sha256
+    text perceptual_hash
+    boolean frozen "true when the item is locked"
   }
 ```
 
@@ -223,9 +242,19 @@ the heart of moderation, not an add-on.
 - Attachments with an admin-extendable allowlist (images, PDF, Office without
   macros, text, STL, GPX — audio off by default) and per-trust-level quotas. Admin has no quota. Server
   checks magic bytes. Non-image files download from the storage domain (D16).
-- Illegal and violent content protections: hash matching before a human sees an
-  upload, classifier holds with blur-by-default in the queue, a reporting
-  procedure (D17).
+- Illegal and violent content protections (D17): every upload quarantined until
+  scanned. Hash matching and a classifier behind two swappable accessors. Flagged
+  items held, blurred and grayscale in the queue. The worst hits locked and
+  undeletable until the retention clock ends. Scanning can never be turned off.
+- Evidence envelope on every submission (IP, port, time, user agent, hashes,
+  original bytes) so a report to authorities is complete. Raw IP kept for a
+  short window, then hashed. Frozen for the retention period when locked.
+- Site policy: no gore, no self-harm imagery, no pornography. Artistic nudity
+  allowed only with a mandatory `mature` tag, blurred with click-to-reveal.
+- Region setting (US, EU, UK, Canada, Australia, Other) that wires the reporting
+  target, deadline and retention, and shows a duty checklist to the admin.
+- Terms page and code of conduct that state the ownership principle, the erasure
+  edges, and the content policy in plain words.
 - SEO: server rendering, `sitemap.xml`, `robots.txt`, OpenGraph and Twitter cards,
   JSON-LD `Article`, canonical URLs, RSS feed.
 - Sharing: a generated preview image per post so a link pasted into Discord,
@@ -240,7 +269,14 @@ the heart of moderation, not an add-on.
 - Notifications v1: in-app, through a `notifications` table and Supabase realtime.
   Events and channels are decisions D13 and D14.
 - Account: "delete all my contributions" and "export my data".
-- Code of conduct page. Report reasons that match it.
+- Report reasons that match the code of conduct, plus a separate "illegal
+  content" reason that escalates at once.
+- Local development with no vendor keys: `supabase start`, `pnpm dev`, seed
+  data, and a fake mode on every external accessor (D19).
+- A README plus one setup guide per external service under `docs/setup/`:
+  Supabase, Google OAuth, Turnstile, storage, hash matching, classifiers, email.
+  Each guide says what the service is for, how to get credentials, where they
+  go, and what runs without them. The admin checklist links the same guides.
 
 ### Phase 2 — a good community
 
@@ -275,8 +311,9 @@ the heart of moderation, not an add-on.
   and it is the honest partner of one-click delete.
 - **Spam and abuse at the edge.** Cloudflare Turnstile on sign-up. Rate limits per
   IP and per member. A word filter that holds, not blocks, for review.
-- **Self-host story from day one.** A `docker compose` file with local Supabase,
-  seed data, and one `.env.example`. Open-source projects live or die on this.
+- **Self-host story from day one.** The Supabase CLI local stack, seed data, one
+  `.env.example`, and fake providers so nothing needs a vendor key to run.
+  Open-source projects live or die on this.
 - **Observability.** Sentry for errors. A simple audit log table for anything a
   moderator does.
 - **Accessibility.** Keyboard-first editor, alt text required on images, high
