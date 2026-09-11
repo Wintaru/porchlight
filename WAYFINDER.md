@@ -18,6 +18,8 @@ it a safe place.
 - 2026-09-11 — **D2 Data access: hybrid.** Every write goes through a Manager. Public reads may call Supabase from the browser under RLS, but only from one `read-model` module that a lint rule fences. Realtime and presence (typing indicators, who is online) stay possible through browser channels. Not planned yet, not ruled out. Server-only rejected because it discards Supabase features out of hand.
 - 2026-09-11 — **D3 Content format: markdown + cached HTML.** Markdown is the source of truth. A server engine renders sanitized HTML once on save. ProseMirror JSON rejected (not readable, ties data to Tiptap). Storing both rejected (two copies that drift).
 - 2026-09-11 — **D4 Media storage: Supabase Storage, images only, for phase 1.** Video upload moves to phase 2 so the Free plan works now (50 MB cap, 1 GB). One `MediaStorageAccessor` contains the volatility, so the phase 2 swap to R2 or S3 is one file. Research: [docs/research/D4-media-storage.md](docs/research/D4-media-storage.md). R2-from-day-one rejected as a second vendor before there is a need.
+- 2026-09-11 — **D5 Erasure of comments: tombstone.** A comment with replies keeps an empty `[deleted]` slot with no body and no author. A comment with no replies is hard-deleted. Cascade delete rejected (erases other members' words). Reparenting rejected (replies end up under the wrong parent).
+- 2026-09-11 — **D6 Erasure of posts: delete with the post.** Other people's comments on an erased post go with it. The terms say so, and every member can export their own data any time. Tombstoned posts rejected (ghost pages in search). Grace period rejected (content lingers after an erase request).
 
 ## Not yet specified (the frontier)
 
@@ -25,10 +27,6 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
 
 - [ ] **D4b** Video storage for phase 2: Cloudflare R2 (S3 API, zero egress), or Supabase Pro? `[grilling]`
       Research is done (see D4). Decide when video upload is next on the list. Blocks: phase 2 video, nothing in phase 1.
-- [ ] **D5** Erasure: cascade delete, or tombstone comments? `[grilling]`
-      Recommendation: tombstone comments, hard-delete posts, media and profile. Blocks: comment schema, AccountManager.
-- [ ] **D6** What happens to other people's comments on an erased post? `[grilling]`
-      Recommendation: delete them with the post and say so in the terms. Blocks: D5 handler, terms page.
 - [ ] **D7** Membership: open, invite-only, or approve-new-members? `[grilling]`
       Recommendation: ship the switch, default to approve. Blocks: sign-up flow, PermissionEngine.
 - [ ] **D9** Reactions: none, likes only, or emoji reactions? `[grilling]`
