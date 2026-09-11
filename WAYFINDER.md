@@ -7,8 +7,11 @@ See [PROPOSAL.md](PROPOSAL.md) for the full sketch and the reasoning behind each
 
 A safe, searchable, open-source community blog with iDesign server layers, ready to scaffold.
 Members share posts and comment. No karma, no downvotes, no leaderboards. Public pages that
-search engines index. One-click erasure for any member. Admin and moderator controls that make
-it a safe place.
+search engines index. Admin and moderator controls that make it a safe place.
+
+Headline principle: **members own their content fully, always.** One-click export and one-click
+erasure. Porch never resells, licenses out, or trains on member content. See the principle
+section in [PROPOSAL.md](PROPOSAL.md).
 
 ## Decisions so far
 

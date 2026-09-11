@@ -13,6 +13,28 @@ none of the parts that make people mean (karma, downvotes, leaderboards, anonymi
 The one-line goal: **a safe, searchable place to share fun things with people who
 like the same things.**
 
+## Principle: you own your content, fully, always
+
+This is the headline difference from Reddit, Facebook and the rest. Their terms
+give the platform a broad license to your words. Porch does not. What it means in
+practice:
+
+- **Yours to keep.** You hold the copyright to everything you post. Porch gets only
+  the permission it needs to show it on the site. Nothing more.
+- **Yours to take.** Export everything you made, in markdown and JSON, any time, in
+  one click. No waiting period, no support ticket.
+- **Yours to erase.** Delete everything you made, in one click. It is gone from the
+  database and from storage, not hidden. Only an empty slot remains where a comment
+  had replies, so other people's words still read in order (decision D5).
+- **Never resold, never trained on.** Porch does not sell content, license it to
+  third parties, or feed it to AI training. The open-source license covers the
+  code, not the content.
+- **Honest about the edges.** If someone erases a post, the comments on it go too
+  (decision D6). The terms say this up front, and export exists so nobody loses
+  their own words to someone else's erase.
+
+The terms page and the account settings page both state this in plain words.
+
 ## Your requirements, restated
 
 | # | Requirement | Notes |
