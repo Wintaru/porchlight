@@ -222,6 +222,8 @@ Roles: `admin` (you), `moderator`, `member`. Signed-out visitors read only.
 ## Decisions to make (the frontier)
 
 These are the forks that change the shape of the work. Each is one conversation.
+This table is the snapshot from the first sketch. [WAYFINDER.md](WAYFINDER.md) holds
+the current state of each decision.
 
 | # | Question | My recommendation |
 | --- | --- | --- |
