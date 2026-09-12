@@ -1,6 +1,15 @@
-// What an action is aimed at. One kind today; the second turns this into a union and the
-// rules that read `id` without checking `kind` stop compiling until they do.
-export interface PermissionSubject {
-  readonly kind: "profile";
-  readonly id: string;
-}
+import type { PostAuthor } from "../../Common/PostAuthor";
+import type { PostStatus } from "../../Common/PostStatus";
+
+// What an action is aimed at. A rule narrows on `kind` before it reads anything else,
+// so a rule handed the wrong subject is a type error. `site` is for actions with no
+// target of their own, such as creating a post.
+export type PermissionSubject =
+  | { readonly kind: "profile"; readonly id: string }
+  | {
+      readonly kind: "post";
+      readonly id: string;
+      readonly author: PostAuthor;
+      readonly status: PostStatus;
+    }
+  | { readonly kind: "site" };

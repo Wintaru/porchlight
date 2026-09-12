@@ -1,3 +1,5 @@
+import type { DbClient } from "@porchlight/db";
+
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import { AccountManager } from "../Managers/AccountManager/AccountManager";
 import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/EnsureProfileHandler";
@@ -16,6 +18,8 @@ import { SetGreetingRequest } from "../Managers/GreetingManager/Requests/SetGree
 import { createGreetingAccessor } from "./createGreetingAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createProfileAccessor } from "./createProfileAccessor";
+import { createServiceDbClient } from "./createServiceDbClient";
+import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
 import type { Environment } from "./Environment";
 
 // The composition root. Every handler in the system is registered in this folder and
@@ -27,9 +31,15 @@ export class DependencyContainer {
   readonly accountManager: IAccountManager;
 
   constructor(env: Environment) {
+    // One service-role client for every Supabase accessor, built on the first that
+    // asks for it, so a container of fakes never needs the keys.
+    let serviceDb: DbClient | undefined;
+    const db = (): DbClient => (serviceDb ??= createServiceDbClient(env));
+
     const greetings = createGreetingAccessor(env);
-    const profiles = createProfileAccessor(env);
-    const permissions = createPermissionEngine();
+    const profiles = createProfileAccessor(env, db);
+    const siteConfig = createSiteConfigAccessor(env, db);
+    const permissions = createPermissionEngine(siteConfig);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
