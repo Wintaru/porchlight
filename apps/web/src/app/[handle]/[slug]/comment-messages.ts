@@ -14,6 +14,7 @@ type CommentErrorCode =
   | "no-such-comment"
   | "no-such-target"
   | "too-long"
+  | "guard-refused"
   | "unavailable";
 
 // What a successful action reports: the status a new comment landed in, or what a
@@ -32,6 +33,9 @@ const ERROR_TEXT: Readonly<Record<CommentErrorCode, string>> = {
   "no-such-comment": "That comment is gone.",
   "no-such-target": "That is gone.",
   "too-long": "That comment is too long.",
+  // Deliberately generic (D15): a visitor cannot tell a Turnstile failure from a block
+  // from a busy rate limiter.
+  "guard-refused": "That could not be posted. Try again in a moment.",
   unavailable: "That did not go through. Try again in a moment.",
 };
 

@@ -7,6 +7,7 @@ import {
 import type { CommentFormState } from "@/lib/can-comment";
 import type { CommentPageNode } from "@/read-model/comments";
 import type { ItemReactions } from "@/read-model/reactions";
+import { AnonymousCommentForm } from "./AnonymousCommentForm";
 import { CommentForm } from "./CommentForm";
 import styles from "./comments.module.css";
 import { CommentThread, type CommentViewer } from "./CommentThread";
@@ -59,6 +60,9 @@ export function CommentSection({
       )}
       {formState === "open" && (
         <CommentForm postId={postId} parentId={null} returnTo={returnTo} />
+      )}
+      {formState === "anonymous" && (
+        <AnonymousCommentForm postId={postId} returnTo={returnTo} />
       )}
       {formState === "signed-out" && (
         <p className={styles.notice} data-testid="comment-sign-in">
