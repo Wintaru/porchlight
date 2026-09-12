@@ -14,4 +14,5 @@ The admin duty checklist links the same guides.
 | `classifiers.md` (issue #18)        | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
 | `email.md` (issue #18, phase 2)     | Digest email                             | `EMAIL_*`                             |
 
+The order to do these in for a hosted instance is [../deploy.md](../deploy.md).
 Research that fed the decisions lives in [../research/](../research/).

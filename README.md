@@ -14,6 +14,8 @@ The MIT license covers the code only.
   the map wins.
 - [PROPOSAL.md](PROPOSAL.md) — the original sketch, the ER diagram, and the reasoning.
 - [docs/setup/](docs/setup/README.md) — one guide per external service.
+- [docs/deploy.md](docs/deploy.md) — the step-by-step sequence for putting an instance
+  online. Grows as issues land. Not needed for local work.
 
 ## Layout
 
@@ -24,6 +26,7 @@ The MIT license covers the code only.
 | `packages/db`    | The typed Supabase client, generated database types, and the RLS tests. |
 | `supabase`       | The local stack config, the migrations, and the seed.               |
 | `docs/setup`     | Setup guides for Supabase, Google OAuth, Turnstile, storage, hash matching, classifiers, email. |
+| `docs/deploy.md` | The ordered go-live steps that link those guides.                  |
 | `design`         | Approved screen boards.                                            |
 
 `eslint.boundaries.js` encodes the iDesign call graph. An import that crosses a layer

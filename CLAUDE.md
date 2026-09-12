@@ -100,3 +100,6 @@ SPEC.md is the source for all of these; this list is a reminder, not a second co
 - Reactions never total on a profile and never sort a feed.
 - Reference decisions by their map id (D7, D17) in commit bodies and issue comments when
   a change is explained by one.
+- When an issue adds a production step (a key to paste, a dashboard switch, a bucket to
+  create), add it to `docs/deploy.md` in the same change. Local work never needs that
+  file; it is the go-live sequence Josh follows later.
