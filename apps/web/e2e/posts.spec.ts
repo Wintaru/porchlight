@@ -1,26 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { deleteCurrentPost, devSignIn, fillBodyMarkdown, JUNE, THEO } from "./helpers";
+
 // The issue #5 acceptance test: a trusted member publishes and the post renders at
 // /@handle/slug with sanitized HTML; a probation member's post lands in pending; the
 // feed, author and tag pages list what they should; an erased author is 410. Runs
 // against the seeded local stack (docs/setup/supabase.md). Every post a test creates,
 // it deletes at the end, so the seed is the same for the next run. The editor tests
 // (#6) live in editor.spec.ts; the helpers here drive it through its markdown mode.
-const THEO = { email: "theo@porchlight.local", handle: "theo" };
-const JUNE = { email: "june@porchlight.local", handle: "june" };
-const SEED_PASSWORD = "porchlight";
-
-async function devSignIn(
-  page: Page,
-  member: { email: string; handle: string },
-): Promise<void> {
-  await page.goto("/auth/dev-sign-in");
-  await page.getByLabel("Email").fill(member.email);
-  await page.getByLabel("Password").fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Sign in as this member" }).click();
-  await expect(page.getByTestId("session-handle")).toHaveText(`@${member.handle}`);
-}
-
 async function fillPost(
   page: Page,
   fields: {
@@ -41,20 +28,6 @@ async function fillPost(
     }
   }
   await page.getByLabel(fields.unlisted ? /^Unlisted/ : /^Public/).check();
-}
-
-// The body through the editor's markdown mode: the textarea is the same string the
-// form submits, so a test writes exactly the `body_md` it expects.
-async function fillBodyMarkdown(page: Page, body: string): Promise<void> {
-  await page.getByRole("button", { name: "Markdown", exact: true }).click();
-  await page.getByLabel("Body (markdown)").fill(body);
-}
-
-// Deletes the post the editor page is showing. Every test that creates one ends here.
-async function deleteCurrentPost(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page).toHaveURL(/\/write\?deleted=1$/);
-  await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
 }
 
 test("the seeded feed lists public published posts newest first and no unlisted one", async ({

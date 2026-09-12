@@ -1,38 +1,18 @@
 import { expect, type Page, test } from "@playwright/test";
 
 import { AUTOSAVE_DELAY_MS } from "../src/components/editor/autosave-delay";
+import { deleteCurrentPost, devSignIn, JUNE, THEO } from "./helpers";
 
 // The issue #6 acceptance test: a post written in rich text, switched to markdown and
 // back, saves the same `body_md`. Plus the rest of the Editor board: preview, autosave,
 // the tag chips, the content note and the probation card. Runs against the seeded local
 // stack (docs/setup/supabase.md); every post a test creates, it deletes at the end.
-const THEO = { email: "theo@porchlight.local", handle: "theo" };
-const JUNE = { email: "june@porchlight.local", handle: "june" };
-const SEED_PASSWORD = "porchlight";
-
-async function devSignIn(
-  page: Page,
-  member: { email: string; handle: string },
-): Promise<void> {
-  await page.goto("/auth/dev-sign-in");
-  await page.getByLabel("Email").fill(member.email);
-  await page.getByLabel("Password").fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Sign in as this member" }).click();
-  await expect(page.getByTestId("session-handle")).toHaveText(`@${member.handle}`);
-}
-
 function modeButton(page: Page, mode: "Rich text" | "Markdown") {
   return page.getByRole("button", { name: mode, exact: true });
 }
 
 function tool(page: Page, name: string) {
   return page.getByRole("toolbar", { name: "Formatting" }).getByRole("button", { name });
-}
-
-async function deleteCurrentPost(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page).toHaveURL(/\/write\?deleted=1$/);
-  await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
 }
 
 test("rich text to markdown and back saves the same body_md", async ({ page }) => {
