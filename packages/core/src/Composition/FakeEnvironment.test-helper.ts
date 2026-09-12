@@ -5,5 +5,7 @@ import type { Environment } from "./Environment";
 export const FAKE_ENV: Environment = {
   PROFILE_PROVIDER: "fake",
   POST_PROVIDER: "fake",
+  COMMENT_PROVIDER: "fake",
+  REACTION_PROVIDER: "fake",
   SITE_CONFIG_PROVIDER: "fake",
 };
