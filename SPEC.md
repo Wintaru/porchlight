@@ -32,6 +32,7 @@ has a setup guide.
 | Stored content | Markdown (`body_md`) is canonical. Sanitized HTML (`body_html`) cached on save. |
 | Monorepo | pnpm workspaces: `apps/web`, `packages/core`, `packages/db` |
 | Boundary guard | `eslint-plugin-boundaries` enforcing the iDesign call graph |
+| Agent door | MCP endpoint at `/api/mcp` (Streamable HTTP, stateless, `@modelcontextprotocol/server`), bearer tokens minted in the app. Section 17. |
 | Tests | Vitest for units, Playwright for end to end |
 | Local dev | `supabase start`, `pnpm dev`, seed data, fake providers |
 
@@ -256,7 +257,9 @@ code of conduct and `/about` are phase 1 pages.
 
 ## 14. Phases
 
-**Phase 1** — everything in sections 3 through 13 except where marked phase 2.
+**Phase 1** — everything in sections 3 through 13 except where marked phase 2, plus the
+agent door in section 17 (tokens and post tools after posts land, upload tools after the
+scan pipeline lands).
 **Phase 2** — video upload (storage choice D4b, research favors R2), email
 notifications, block and mute per member, full-text search, post revisions, presence.
 Plus the social layer (D20): follow an author, follow a tag, a "Following" feed beside
@@ -279,3 +282,60 @@ service. Realtime features in phase 1 beyond the notification bell.
   provider runs and the admin checklist shows "hash matching: not yet active" in red.
 - **D4b** — phase 2 video storage. Research done, decision parked.
 - **Launch checklist** — domain and trademark check for the name Porchlight.
+
+## 17. Agents (D22)
+
+Porchlight is an MCP **server**. A member's own agent (Claude Code on the member's
+subscription) is the client. Porchlight never calls a model vendor and needs no API key
+for this. Design and reasoning: [AGENT-PUBLISHING-PROPOSAL.md](AGENT-PUBLISHING-PROPOSAL.md).
+
+**The door.** `POST /api/mcp`, Streamable HTTP, stateless, built on
+`@modelcontextprotocol/server`. Auth is `Authorization: Bearer plt_…`. The route is a
+Client: it resolves the token to an actor once per request and maps each tool to one
+Manager request. The server's MCP `instructions` state the house rules to every agent:
+draft from the author's notes and voice guide only, do not pad, do not add a closing
+summary, do not invent facts or opinions.
+
+**Tokens.** `agent_tokens`: owner, name, `token_hash` (SHA-256 of `plt_` + 32 random
+bytes, base64url), scopes, `expires_at`, `revoked_at`, `last_used_at`. Shown once on
+`/settings`, section Agents. Scopes: `posts:draft` (default), `posts:publish`,
+`media:upload`, `voice:write`. RLS denies the table to every browser role.
+
+**The agent actor.** `Actor` gains `{ kind: "agent", profile, grant }`. `PermissionEngine`
+rules on agents for every action, exhaustively. Agents may create, edit and delete their
+member's **drafts**, upload with the scope, and publish only with the scope. Everything
+else is denied: profile edits, moderation, erasure, token management, deleting a
+published post. The member's trust level carries through unchanged: a probation member's
+agent lands in `pending`. Text moderation and the upload quarantine apply as to any post.
+
+**Provenance.** `posts.origin` (`editor | agent`), `posts.agent_token_id`,
+`posts.agent_draft_md` (the agent's original text, frozen at first agent write),
+`posts.reviewed_at` (first save or publish by a signed-in person). `submission_evidence`
+gains `agent_token_id`. The drafts list and the queue show an "agent draft, not yet
+reviewed" badge. The editor's publish button warns on an unreviewed agent draft. It
+warns, it does not block.
+
+**Voice guide.** `profiles.voice_guide_md`, edited on the settings page. `get_voice_guide`
+returns it with the member's recent published posts where `origin = editor` as samples.
+Agent-written posts never feed the guide. A default banned-phrase list ships as a named
+constant. The guide exports and erases with the account (section 10).
+
+**Settings** (D20-shaped, in `site_config`):
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `agents` | `members` · `staff` · `off` (`off` hides the Agents section and `/api/mcp` answers 403) | `members` |
+| `agent_limits` | `{"drafts_per_day": n, "publishes_per_day": n}`, per token, through `rate_limits` | 5 and 2 |
+| `agent_disclosure` | `off` · `footer` ("Drafted with an assistant, edited by @handle", or "Posted by an assistant for @handle" when unreviewed) | `footer` |
+
+**Tools.** `get_me`, `get_voice_guide`, `update_voice_guide`, `list_posts`, `get_post`,
+`create_draft`, `update_draft`, `delete_draft`, `publish_post`, `request_upload`,
+`finalize_upload`, `get_media`. Uploads reuse the section 6 signed-URL flow: the agent's
+client sends the bytes to storage itself, so they never pass through the model.
+
+**Docs.** `docs/agents.md`: what the door is, how to mint a token, the `claude mcp add`
+line, the notes-to-draft workflow, and the fake mode. No production step: tokens are
+minted in the app.
+
+**Later.** OAuth 2.1 for claude.ai connectors. A `check_draft` heuristic tool. A local
+stdio wrapper. Voice guide revisions with phase 2 post revisions.
