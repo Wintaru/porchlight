@@ -9,7 +9,9 @@ spec has a bug.
 
 A public, open-source community blog. Members and anonymous visitors share posts and
 comments. An admin approves what shows. No karma, no downvotes, no leaderboards.
-Search engines index every public page.
+Search engines index every public page. It works as well for one person who blogs alone
+as for a group of friends with their own blogs (D20). There is no mode switch: three
+settings in section 4 and social features that hide with one author cover both.
 
 **Headline principle: members own their content, fully, always.** Copyright stays with
 the author. One-click export. One-click erasure that deletes, not hides. Porchlight never
@@ -70,6 +72,24 @@ Roles: `admin`, `moderator`, `member`. Signed-out visitors read everything publi
   auto-promotes after N approved posts, default off.
 - Sign-in is Google OAuth through Supabase Auth. No passwords.
 
+**Who can write is a setting, not a mode (D20).** Three `site_config` keys:
+
+| Key | Values | Default |
+| --- | --- | --- |
+| `posting` | `anyone` (anonymous allowed) · `members` · `staff` (admin and moderator) | `anyone` |
+| `comments` | `anyone` · `members` · `off` | `anyone` |
+| `sign_up` | `open` (new members land on probation) · `invite` (phase 2 invite links) · `closed` | `open` |
+
+`PermissionEngine` reads these on every write. A denied write returns a typed error, and
+the editor and comment form hide when the actor cannot write. The setup wizard offers
+three presets that only fill these keys: **Just me** (`staff` / `anyone` / `closed`),
+**Friends** (`members` / `anyone` / `invite`), **Open porch** (`anyone` / `anyone` /
+`open`). An admin can change any single key later on the site config page.
+
+**Site identity** lives in `site_config` too: `site_name`, `site_tagline`, `about_md`.
+Every page title, the feed header, the RSS channel and the branded preview card use
+`site_name`. `/about` renders `about_md` and is a reserved route.
+
 **Anonymous claim flow.** On the first anonymous write the server creates
 `anonymous_authors` with a random 256-bit secret stored as `sha256(secret)`. The raw
 secret goes to the browser as an httpOnly, Secure, SameSite=Lax cookie and, once, as a
@@ -88,10 +108,13 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 
 - Posts: title, slug, `body_md`, `body_html`, cover image, summary (one line for the
   preview card), tags, `status` (`draft | pending | published | rejected | hidden |
-  removed`), `visibility` (`public | unlisted`).
+  removed`), `visibility` (`public | unlisted`), `comments_enabled` (default true, set
+  by the author in the editor; the comment form hides and new comments are refused
+  when false, existing comments stay visible).
 - Comments: threaded, `parent_id`, `depth` capped at 6 (deeper replies attach at 6 with
   an `@handle` mention), `status` (`pending | visible | rejected | hidden | removed |
-  tombstone`).
+  tombstone`). Comments render oldest first inside a thread, so a conversation reads
+  in order.
 - A CHECK constraint requires exactly one of `author_id` or `anonymous_author_id` on
   posts and comments, or neither for a tombstone.
 - Reactions: a small fixed emoji set with counts on the item. Never totals on a profile,
@@ -178,11 +201,18 @@ with an immediate option for the admin queue.
 ## 9. Sharing and SEO
 
 Server rendering for every public page. `sitemap.xml`, `robots.txt`, canonical URLs,
-JSON-LD `Article`, RSS. OpenGraph and Twitter tags on every post. A generated preview
+JSON-LD `Article`. OpenGraph and Twitter tags on every post. A generated preview
 image per post through Next.js `opengraph-image`: cover image if set, else a branded card
-with title and author. Author controls: pick the cover, write a one-line summary. No
-per-post off switch. Share button copies the link and calls `navigator.share` where
-available.
+with `site_name`, title and author. Author controls: pick the cover, write a one-line
+summary. No per-post off switch. Share button copies the link and calls
+`navigator.share` where available.
+
+**Three RSS feeds (D21):** `/feed.xml` (everything public), `/@handle/feed.xml` (one
+author), `/t/tag/feed.xml` (one tag). Each carries `site_name` as the channel title,
+`<link rel="alternate">` on the matching page, and the same exclusions as the feed
+(unlisted, pending, hidden never appear). Syndication to Discord or any other service
+is pull: the author tags the post, and a bot subscribes to that tag's feed. Phase 3
+adds push through `WebhookAccessor` (section 14).
 
 ## 10. Export and erasure
 
@@ -218,16 +248,25 @@ charcoal.
 ## 13. Documentation
 
 README plus one guide per external service under `docs/setup/`: Supabase, Google OAuth,
-Turnstile, storage, hash matching, classifiers, email. Each says what the service is for,
-how to get credentials, where they go, and what the fake mode does without it. The admin
-duty checklist links the same guides. Terms and code of conduct are phase 1 pages.
+Turnstile, storage, hash matching, classifiers, email, and (phase 3) Discord webhooks.
+Each says what the service is for, how to get credentials, where they go, and what the
+fake mode does without it. The Discord guide also shows how to point a Discord RSS bot
+at a tag feed, the phase 1 route. The admin duty checklist links the same guides. Terms,
+code of conduct and `/about` are phase 1 pages.
 
 ## 14. Phases
 
 **Phase 1** — everything in sections 3 through 13 except where marked phase 2.
 **Phase 2** — video upload (storage choice D4b, research favors R2), email
 notifications, block and mute per member, full-text search, post revisions, presence.
+Plus the social layer (D20): follow an author, follow a tag, a "Following" feed beside
+"Everything" (shown only with two or more authors), `post.published` to followers,
+invite links that land a friend as `trusted` (`sign_up = invite`), and new-post email
+for readers who subscribe.
 **Phase 3** — digests, scheduled posts, collections, link previews, content warnings, PWA.
+Plus outbound webhooks on publish (D21): `WebhookAccessor` with a fake mode, a retry
+rule, admin-set URLs in site config, a Discord-shaped payload as the first format, and
+`docs/setup/discord-webhook.md`.
 
 ## 15. Out of scope
 
