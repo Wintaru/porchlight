@@ -1,11 +1,11 @@
-import type { PostAuthor } from "../../Common/PostAuthor";
+import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { PostVisibility } from "../../Common/PostVisibility";
 import type { Tag } from "../../Common/Tag";
 
 // What the Manager decides about a post before its first write. Every post starts as a
 // draft; status, the cover (#9) and the timestamps come from the store's defaults.
 export interface NewPost {
-  readonly author: PostAuthor;
+  readonly author: ContentAuthor;
   readonly slug: string;
   readonly title: string;
   readonly bodyMd: string;

@@ -1,7 +1,7 @@
 import type { Tables } from "@porchlight/db";
 
 import type { Post } from "../../Common/Post";
-import type { PostAuthor } from "../../Common/PostAuthor";
+import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { Tag } from "../../Common/Tag";
 
 // The columns every post read names, with the post's tags embedded through post_tags.
@@ -61,7 +61,7 @@ export function toPost(row: PostRow): Post {
 // a response.
 function toAuthor(
   row: Pick<PostRow, "id" | "author_id" | "anonymous_author_id">,
-): PostAuthor {
+): ContentAuthor {
   if (row.author_id !== null) {
     return { kind: "member", profileId: row.author_id };
   }

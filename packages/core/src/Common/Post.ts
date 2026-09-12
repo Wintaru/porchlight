@@ -1,4 +1,4 @@
-import type { PostAuthor } from "./PostAuthor";
+import type { ContentAuthor } from "./ContentAuthor";
 import type { PostStatus } from "./PostStatus";
 import type { PostVisibility } from "./PostVisibility";
 import type { Tag } from "./Tag";
@@ -8,7 +8,7 @@ import type { Tag } from "./Tag";
 // its `post_tags` to this shape, so no layer above it knows the column names.
 export interface Post {
   readonly id: string;
-  readonly author: PostAuthor;
+  readonly author: ContentAuthor;
   readonly slug: string;
   readonly title: string;
   readonly bodyMd: string;

@@ -23,7 +23,7 @@ export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 export { type Actor, VISITOR } from "./Common/Actor";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export type { Post } from "./Common/Post";
-export type { PostAuthor } from "./Common/PostAuthor";
+export type { ContentAuthor } from "./Common/ContentAuthor";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export type { PostingPolicy } from "./Common/PostingPolicy";

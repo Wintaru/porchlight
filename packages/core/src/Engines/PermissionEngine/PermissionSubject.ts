@@ -1,4 +1,4 @@
-import type { PostAuthor } from "../../Common/PostAuthor";
+import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { PostStatus } from "../../Common/PostStatus";
 
 // What an action is aimed at. A rule narrows on `kind` before it reads anything else,
@@ -9,7 +9,7 @@ export type PermissionSubject =
   | {
       readonly kind: "post";
       readonly id: string;
-      readonly author: PostAuthor;
+      readonly author: ContentAuthor;
       readonly status: PostStatus;
     }
   | { readonly kind: "site" };
