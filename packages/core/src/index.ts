@@ -21,6 +21,7 @@ export { ResponseBase } from "./Common/ResponseBase";
 export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 
 export { type Actor, VISITOR } from "./Common/Actor";
+export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export type { Post } from "./Common/Post";
 export type { PostAuthor } from "./Common/PostAuthor";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";

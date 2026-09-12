@@ -1,4 +1,5 @@
 import type { SanitizeSchema } from "../../Utilities/markdown/renderMarkdown";
+import { LINK_PROTOCOLS } from "../../Common/LinkProtocols";
 
 // What a post or comment body may contain after rendering (SPEC.md §5: the editor
 // offers only what markdown can store). Everything not named here is dropped, tags and
@@ -36,7 +37,7 @@ export const HTML_ALLOWLIST: SanitizeSchema = {
     code: [["className", /^language-[a-z0-9-]+$/]],
   },
   protocols: {
-    href: ["http", "https", "mailto"],
+    href: [...LINK_PROTOCOLS],
     src: ["http", "https"],
   },
   required: {},
