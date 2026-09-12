@@ -54,6 +54,7 @@ Copy `.env.example` as the starting point and set these on the host:
 | `PORCHLIGHT_ADMIN_EMAIL`        | Your Google account's email. It becomes admin on its first sign-in. Without it, the first profile ever is the admin. |
 | `AUTH_DEV_SIGN_IN`              | Leave unset. A production build ignores it, but it should not be there. |
 | `PROFILE_PROVIDER`              | Leave unset (`supabase`). `fake` is refused in production. |
+| `POST_PROVIDER`, `SITE_CONFIG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. |
 | `GREETING_PROVIDER`             | Leave unset. The greeting example has no production provider. |
 
 Every other variable in `.env.example` belongs to a service whose production setup is a

@@ -21,8 +21,14 @@ export { ResponseBase } from "./Common/ResponseBase";
 export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 
 export { type Actor, VISITOR } from "./Common/Actor";
+export type { Post } from "./Common/Post";
+export type { PostAuthor } from "./Common/PostAuthor";
+export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
+export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
+export type { PostingPolicy } from "./Common/PostingPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
+export type { Tag } from "./Common/Tag";
 export type { TrustLevel } from "./Common/TrustLevel";
 export type { UserRole } from "./Common/UserRole";
 
@@ -38,6 +44,31 @@ export { ActionForbiddenResponse } from "./Managers/AccountManager/Responses/Act
 export { HandleRejectedResponse } from "./Managers/AccountManager/Responses/HandleRejectedResponse";
 export { NoSuchProfileResponse } from "./Managers/AccountManager/Responses/NoSuchProfileResponse";
 export { ProfileResponse } from "./Managers/AccountManager/Responses/ProfileResponse";
+
+// PostManager: drafts, publishing, the author's list (SPEC.md §5, issue #5).
+export type { IPostManager } from "./Managers/PostManager/IPostManager";
+export type { PostDraft } from "./Managers/PostManager/PostDraft";
+export type { PostDraftChanges } from "./Managers/PostManager/PostDraftChanges";
+export type { PostRejectionReason } from "./Managers/PostManager/PostRejectionReason";
+export type { PostSelector } from "./Managers/PostManager/PostSelector";
+export { CheckCanPostRequest } from "./Managers/PostManager/Requests/CheckCanPostRequest";
+export { CreateDraftRequest } from "./Managers/PostManager/Requests/CreateDraftRequest";
+export { DeletePostRequest } from "./Managers/PostManager/Requests/DeletePostRequest";
+export { GetPostRequest } from "./Managers/PostManager/Requests/GetPostRequest";
+export { ListPostsForAuthorRequest } from "./Managers/PostManager/Requests/ListPostsForAuthorRequest";
+export { PublishPostRequest } from "./Managers/PostManager/Requests/PublishPostRequest";
+export { UnpublishPostRequest } from "./Managers/PostManager/Requests/UnpublishPostRequest";
+export { UpdateDraftRequest } from "./Managers/PostManager/Requests/UpdateDraftRequest";
+export { CannotPostResponse } from "./Managers/PostManager/Responses/CannotPostResponse";
+export { CanPostResponse } from "./Managers/PostManager/Responses/CanPostResponse";
+export { NoSuchPostResponse } from "./Managers/PostManager/Responses/NoSuchPostResponse";
+export { PostDeletedResponse } from "./Managers/PostManager/Responses/PostDeletedResponse";
+export { PostForbiddenResponse } from "./Managers/PostManager/Responses/PostForbiddenResponse";
+export { PostNotPublishableResponse } from "./Managers/PostManager/Responses/PostNotPublishableResponse";
+export { PostRejectedResponse } from "./Managers/PostManager/Responses/PostRejectedResponse";
+export { PostResponse } from "./Managers/PostManager/Responses/PostResponse";
+export { PostsResponse } from "./Managers/PostManager/Responses/PostsResponse";
+export { PostUnavailableResponse } from "./Managers/PostManager/Responses/PostUnavailableResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.
