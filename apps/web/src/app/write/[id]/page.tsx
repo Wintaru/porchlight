@@ -15,7 +15,7 @@ import styles from "@/components/editor/editor.module.css";
 import { classNames } from "@/lib/class-names";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
-import { isPostId } from "@/lib/post-id";
+import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { deletePost, unpublishPost } from "../actions";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
@@ -42,7 +42,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   if (actor.kind !== "member") {
     redirect(signInPathFor(`/write/${id}`));
   }
-  if (!isPostId(id)) {
+  if (!isEntityId(id)) {
     notFound();
   }
   const response = await getDependencyContainer().postManager.query(

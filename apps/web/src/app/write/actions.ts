@@ -21,7 +21,7 @@ import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { isPostId } from "@/lib/post-id";
+import { isEntityId } from "@/lib/entity-id";
 import type { AutosaveResult, PreviewResult } from "./editor-results";
 import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
 
@@ -169,7 +169,7 @@ function optionalIdOf(formData: FormData): string | undefined | typeof INVALID_I
   if (id === null || id === "") {
     return undefined;
   }
-  return typeof id === "string" && isPostId(id) ? id : INVALID_ID;
+  return typeof id === "string" && isEntityId(id) ? id : INVALID_ID;
 }
 
 // The query-string code the page turns into a sentence. Unexpected responses are
