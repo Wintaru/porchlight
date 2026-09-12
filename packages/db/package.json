@@ -8,10 +8,15 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "postgres": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
