@@ -51,6 +51,8 @@ values, so nothing else needs an edit.
 | `theo`        | theo@porchlight.local         | member    | trusted   |
 | `june`        | june@porchlight.local         | member    | probation |
 
+A fifth profile, `wren`, is erased (no sign-in, blank fields): `/@wren` answers 410 Gone.
+
 The seed also holds published, unlisted, draft and pending posts, a comment thread with
 a tombstone, one anonymous author with a pending post, and the default site config.
 Google sign-in is not needed locally: open `/auth/dev-sign-in` in the running app and
@@ -82,8 +84,8 @@ service-role key (D2). The read policies:
 
 | Table           | Public reads                                  | A signed-in member also reads     |
 | --------------- | --------------------------------------------- | --------------------------------- |
-| `profiles`      | active profiles, without `trust_level`        | their own profile (still without `trust_level`: the settings page reads it on the server) |
-| `posts`         | `published` and `public`                      | their own posts in any status     |
+| `profiles`      | active profiles, and erased ones (only `handle` and `status` are left on those, so `/@handle` can answer 410), without `trust_level` | their own profile (still without `trust_level`: the settings page reads it on the server) |
+| `posts`         | `published`, unlisted included: an unlisted post is readable by link and the read-model keeps it out of every list | their own posts in any status     |
 | `comments`      | `visible` and `tombstone`, on a visible post  | their own comments in any status  |
 | `tags`          | all                                           |                                   |
 | `post_tags`     | tags of a visible post                        |                                   |
@@ -96,6 +98,10 @@ Everything else (`anonymous_authors`, `submission_evidence`, `reports`, `mod_act
 
 `packages/db/test/rls.test.ts` runs each policy as the browser role would and fails when a
 new table appears without RLS or with a write privilege.
+
+One SQL function, `replace_post_tags`, sets a post's tags in a single transaction. It is
+server-only like every write: the browser roles cannot execute it, and the same test
+checks that.
 
 ## Keys and where they go
 

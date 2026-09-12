@@ -130,13 +130,16 @@ describe("every table", () => {
 });
 
 describe("anon", () => {
-  test("reads only published, public posts", async () => {
+  test("reads published posts, unlisted included, and nothing else", async () => {
+    // Unlisted is a listing rule the read-model applies, not a read wall: anyone with
+    // the link may read the post (SPEC.md §5).
     const rows = await asRole(
       sql,
       "anon",
       (tx) => tx<{ slug: string }[]>`select slug from public.posts order by slug`,
     );
     expect(rows.map((row) => row.slug)).toEqual([
+      "an-unlisted-note",
       "hello-from-the-porch",
       "welcome-to-porchlight",
     ]);
@@ -159,7 +162,9 @@ describe("anon", () => {
     ]);
   });
 
-  test("reads active profiles but not trust_level", async () => {
+  test("reads active and erased profiles but not trust_level", async () => {
+    // An erased row is only its handle and status (profiles_erased_is_blank), and is
+    // what lets /@handle answer 410 instead of 404 (D11).
     const handles = await asRole(
       sql,
       "anon",
@@ -171,7 +176,16 @@ describe("anon", () => {
       "lamplighter",
       "mira",
       "theo",
+      "wren",
     ]);
+
+    const hidden = await asRole(sql, "anon", async (tx) => {
+      await tx`set local role service_role`;
+      await tx`update public.profiles set status = 'suspended' where id = ${SEED.trustedMember}`;
+      await tx`set local role anon`;
+      return tx<{ handle: string }[]>`select handle from public.profiles order by handle`;
+    });
+    expect(hidden.map((row) => row.handle)).not.toContain("theo");
 
     const code = await errorCodeOf(() =>
       asRole(sql, "anon", (tx) => tx`select trust_level from public.profiles`),
@@ -194,6 +208,20 @@ describe("anon", () => {
     );
     expect(postTags.map((row) => row.post_id)).not.toContain(SEED.pendingPost);
     expect(postTags).toHaveLength(2);
+  });
+
+  test("cannot call replace_post_tags: every write goes through a Manager", async () => {
+    for (const role of BROWSER_ROLES) {
+      const code = await errorCodeOf(() =>
+        asRole(
+          sql,
+          role,
+          (tx) => tx`select public.replace_post_tags(${SEED.publicPost}, '[]'::jsonb)`,
+          SEED.trustedMember,
+        ),
+      );
+      expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
+    }
   });
 
   test("reads reactions on items it can see", async () => {
@@ -237,7 +265,7 @@ describe("anon", () => {
 });
 
 describe("a signed-in member", () => {
-  test("reads their own drafts, unlisted and pending posts, and nobody else's", async () => {
+  test("reads their own drafts and pending posts, and nobody else's", async () => {
     const theo = await asRole(
       sql,
       "authenticated",
@@ -258,6 +286,7 @@ describe("a signed-in member", () => {
       SEED.probationMember,
     );
     expect(june.map((row) => row.slug)).toEqual([
+      "an-unlisted-note",
       "first-post-waiting-for-the-light",
       "hello-from-the-porch",
       "welcome-to-porchlight",

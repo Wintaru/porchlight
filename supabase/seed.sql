@@ -44,6 +44,11 @@ insert into public.profiles (id, handle, display_name, bio, role, trust_level) v
   ('00000000-0000-4000-8000-000000000004', 'june', 'June Park',
    'New here. On probation until the first few posts are approved.', 'member', 'probation');
 
+-- One erased member (§10): no auth user, personal fields null, the handle kept so
+-- /@wren answers 410 Gone (D11).
+insert into public.profiles (id, handle, role, trust_level, status) values
+  ('00000000-0000-4000-8000-000000000005', 'wren', 'member', 'trusted', 'erased');
+
 -- Quota rows for every member. Theo's counts his one approved upload below.
 insert into public.quotas (profile_id, bytes_used, files_count)
 select id, 0, 0 from public.profiles;

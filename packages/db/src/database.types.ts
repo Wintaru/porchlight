@@ -453,6 +453,7 @@ export type Database = {
           author_id: string | null
           body_html: string
           body_md: string
+          comments_enabled: boolean
           cover_media_id: string | null
           created_at: string
           id: string
@@ -469,6 +470,7 @@ export type Database = {
           author_id?: string | null
           body_html?: string
           body_md?: string
+          comments_enabled?: boolean
           cover_media_id?: string | null
           created_at?: string
           id?: string
@@ -485,6 +487,7 @@ export type Database = {
           author_id?: string | null
           body_html?: string
           body_md?: string
+          comments_enabled?: boolean
           cover_media_id?: string | null
           created_at?: string
           id?: string
@@ -862,7 +865,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      replace_post_tags: {
+        Args: { p_post_id: string; p_tags: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       comment_status:
