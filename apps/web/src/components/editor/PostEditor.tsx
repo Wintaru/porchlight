@@ -10,6 +10,7 @@ import {
   TITLE_MAX_LENGTH,
 } from "@/app/write/parse-post-form";
 import { errorTextFor } from "@/app/write/post-form-messages";
+import { AttachmentPanel } from "./AttachmentPanel";
 import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor } from "./BodyEditor";
 import { classNames } from "@/lib/class-names";
@@ -321,6 +322,7 @@ export function PostEditor({
               Allow comments
             </label>
           </div>
+          <AttachmentPanel />
           {trustLevel === "probation" && (
             <div className={styles.card} data-testid="probation-note">
               <strong>You are a new member</strong>
