@@ -7,7 +7,7 @@ import type { PostCardAuthor, PostCardTag } from "./post-card";
 // visitor gets a published post, an author also gets their own drafts (the editor's
 // preview), and anyone with the link gets an unlisted post.
 const POST_PAGE_COLUMNS =
-  "id, slug, title, summary, body_html, status, visibility, comments_enabled, published_at, author:profiles!posts_author_id_fkey(handle, display_name), post_tags(tag:tags(slug, name))";
+  "id, slug, title, summary, body_html, status, visibility, comments_enabled, published_at, author_id, author:profiles!posts_author_id_fkey(handle, display_name), post_tags(tag:tags(slug, name))";
 
 export interface PostPage {
   readonly id: string;
@@ -19,6 +19,8 @@ export interface PostPage {
   readonly visibility: "public" | "unlisted";
   readonly comments_enabled: boolean;
   readonly published_at: string | null;
+  // The author's profile id, so the comment tree can badge their own replies.
+  readonly author_id: string | null;
   readonly author: PostCardAuthor | null;
   readonly post_tags: readonly { readonly tag: PostCardTag | null }[];
 }

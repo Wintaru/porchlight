@@ -1,0 +1,198 @@
+/* The comment tree from the Post board: a count, the form, then rows that indent one
+   step per reply level with a hairline on the left. Tokens from globals.css. */
+.section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.heading {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+}
+
+.notice {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.error {
+  margin: 0 0 1rem;
+  color: var(--danger);
+}
+
+.form {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 5rem;
+  box-sizing: border-box;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.textarea::placeholder {
+  color: var(--placeholder);
+}
+
+.formRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--amber-dark);
+  border-color: var(--amber-dark);
+}
+
+.quietButton {
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--amber);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quietButton:hover {
+  color: var(--amber-dark);
+  text-decoration: underline;
+}
+
+.list,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.replies {
+  margin-top: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--line);
+}
+
+.comment {
+  padding: 0.75rem 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.handle {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.badge {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--label);
+  font-size: 0.8125rem;
+}
+
+.body {
+  margin: 0.35rem 0 0;
+}
+
+.body > :first-child {
+  margin-top: 0;
+}
+
+.body > :last-child {
+  margin-bottom: 0;
+}
+
+.tombstone {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-top: 0.4rem;
+}
+
+.reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reaction {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+button.reaction {
+  cursor: pointer;
+}
+
+button.reaction:hover {
+  border-color: var(--amber);
+}
+
+.reaction[aria-pressed="true"] {
+  border-color: var(--amber);
+  background: var(--chip);
+}
+
+.reply {
+  margin-top: 0.5rem;
+}
+
+.reply > summary {
+  cursor: pointer;
+  color: var(--amber);
+  width: max-content;
+}
+
+.status {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
