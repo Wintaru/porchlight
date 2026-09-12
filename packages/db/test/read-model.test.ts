@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
-import { createDbClient } from "../src/index.js";
-import { LOCAL_STACK, SEED } from "./local-stack.js";
+import { createDbClient } from "../src/index";
+import { LOCAL_STACK, SEED } from "./local-stack";
 
 // The issue #3 acceptance test: the feed read-model can query published posts with the
 // anon key, through PostgREST, the same path the browser takes (D2).

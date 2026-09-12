@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "./database.types.js";
+import type { Database } from "./database.types";
 
 /** A Supabase client typed against the generated schema. */
 export type DbClient = SupabaseClient<Database>;

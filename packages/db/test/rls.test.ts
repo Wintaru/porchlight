@@ -8,7 +8,7 @@ import {
   INSUFFICIENT_PRIVILEGE,
   SEED,
   type DbRole,
-} from "./local-stack.js";
+} from "./local-stack";
 
 // The read wall (SPEC.md §3, D2): what the browser roles can and cannot see. Every
 // policy in supabase/migrations/*_rls.sql has a test here, and the first block guards

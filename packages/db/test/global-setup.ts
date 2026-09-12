@@ -1,4 +1,4 @@
-import { connect, UNREACHABLE_MESSAGE } from "./local-stack.js";
+import { connect, UNREACHABLE_MESSAGE } from "./local-stack";
 
 // Fails the whole run with one clear message when the stack is down, instead of a
 // connection error inside every test file.

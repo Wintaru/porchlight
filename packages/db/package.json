@@ -12,6 +12,7 @@
     "gen:types": "supabase gen types typescript --local --schema public > src/database.types.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "catalog:",
     "@supabase/supabase-js": "catalog:"
   },
   "devDependencies": {

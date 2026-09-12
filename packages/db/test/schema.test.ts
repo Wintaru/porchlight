@@ -9,7 +9,7 @@ import {
   FOREIGN_KEY_VIOLATION,
   SEED,
   UNIQUE_VIOLATION,
-} from "./local-stack.js";
+} from "./local-stack";
 
 // The constraints SPEC.md §5, §7 and issue #3 call out by name, exercised as the service
 // role (the only writer). Each test runs in its own rolled-back transaction.

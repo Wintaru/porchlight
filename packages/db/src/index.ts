@@ -11,6 +11,12 @@ export type {
   Tables,
   TablesInsert,
   TablesUpdate,
-} from "./database.types.js";
-export { Constants } from "./database.types.js";
-export { createDbClient, type DbClient } from "./createDbClient.js";
+} from "./database.types";
+export { Constants } from "./database.types";
+export { createDbClient, type DbClient } from "./createDbClient";
+export {
+  createSessionDbClient,
+  type SessionCookie,
+  type SessionCookieStore,
+  type SessionCookieToSet,
+} from "./createSessionDbClient";
