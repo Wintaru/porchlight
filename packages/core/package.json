@@ -11,7 +11,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@porchlight/db": "workspace:*"
+    "@porchlight/db": "workspace:*",
+    "rehype-sanitize": "catalog:",
+    "rehype-stringify": "catalog:",
+    "remark-parse": "catalog:",
+    "remark-rehype": "catalog:",
+    "unified": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
