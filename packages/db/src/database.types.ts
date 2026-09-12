@@ -865,6 +865,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymous_status: {
+        Args: { p_anonymous_author_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["subject_kind"]
+          post_author_handle: string
+          post_slug: string
+          reply_count: number
+          status: string
+          title: string
+        }[]
+      }
+      bump_rate_limit: {
+        Args: { p_action: string; p_subject: string; p_window_start: string }
+        Returns: number
+      }
+      claim_anonymous_author: {
+        Args: { p_anonymous_author_id: string; p_profile_id: string }
+        Returns: string
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined

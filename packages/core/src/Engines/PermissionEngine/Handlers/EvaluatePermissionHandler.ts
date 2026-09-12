@@ -97,12 +97,14 @@ type Rule = (
 const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "profile.edit": mayEditProfile,
   "post.create": mayCreatePost,
+  "post.create.anonymous": mayCreatePostAnonymously,
   "post.view": mayViewPost,
   "post.list": mayListPosts,
   "post.edit": mayEditPost,
   "post.publish": mayPublishPost,
   "post.delete": mayEditPost,
   "comment.create": mayCreateComment,
+  "comment.create.anonymous": mayCreateCommentAnonymously,
   "comment.edit": mayEditComment,
   "comment.delete": mayEditComment,
   "reaction.toggle": mayToggleReaction,
@@ -175,6 +177,28 @@ function mayCreatePost(
     return Promise.resolve("not-allowed");
   }
   return postingOpenTo(gate, policy);
+}
+
+// The visitor entry point #8 adds: "may an anonymous write start here" (D20). Only a
+// visitor asks this in practice; a signed-in member has `post.create` instead, so a
+// member here is `not-allowed` rather than silently falling through to the visitor
+// answer. `anyone` is the only posting policy that opens it; `members` and `staff`
+// both close it with the same reason `post.create` gives a signed-in-required member,
+// since from a visitor's seat "closed to anonymous" and "closed to my trust level" are
+// the same fact.
+async function mayCreatePostAnonymously(
+  actor: Actor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  if (subject.kind !== "site") {
+    return "not-allowed";
+  }
+  if (actor.kind !== "visitor") {
+    return "not-allowed";
+  }
+  const posting = await policy.posting();
+  return posting === "anyone" ? undefined : "posting-closed";
 }
 
 // A published post is everyone's to read, visitors included. Any other status is the
@@ -257,6 +281,27 @@ async function mayCreateComment(
   }
   const comments = await policy.comments();
   return comments === "off" ? "comments-closed" : undefined;
+}
+
+// The visitor entry point #8 adds, the same shape as `mayCreatePostAnonymously`: the
+// post's own switch first (a visitor on a closed post is never offered the anonymous
+// form either), then `anyone` as the only comments policy that opens it.
+async function mayCreateCommentAnonymously(
+  actor: Actor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  if (subject.kind !== "post" || subject.status !== "published") {
+    return "not-allowed";
+  }
+  if (!subject.commentsEnabled) {
+    return "comments-closed";
+  }
+  if (actor.kind !== "visitor") {
+    return "not-allowed";
+  }
+  const comments = await policy.comments();
+  return comments === "anyone" ? undefined : "comments-closed";
 }
 
 // The author, or an admin, and never a tombstone: there is nothing left to edit and

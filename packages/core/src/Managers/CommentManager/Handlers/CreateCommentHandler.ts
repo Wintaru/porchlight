@@ -4,19 +4,13 @@ import { StoreNewCommentRequest } from "../../../Accessors/CommentAccessor/Reque
 import { CommentStoredResponse } from "../../../Accessors/CommentAccessor/Responses/CommentStoredResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
-import { LoadProfileByIdRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
-import { ProfileLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileLoadedResponse";
-import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
 import type { Actor } from "../../../Common/Actor";
-import { MAX_COMMENT_DEPTH } from "../../../Common/Comment";
 import type { IHandler } from "../../../Common/IHandler";
-import type { LiveComment } from "../../../Common/LiveComment";
-import type { RequestContext } from "../../../Common/RequestContext";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
-import { loadComment } from "../loadComment";
 import { loadPost, postSubjectOf } from "../loadPost";
 import { permit } from "../permit";
+import { isPlacement, place } from "../placeComment";
 import { renderBody } from "../renderBody";
 import type { CreateCommentRequest } from "../Requests/CreateCommentRequest";
 import type { CommentForbiddenResponse } from "../Responses/CommentForbiddenResponse";
@@ -31,20 +25,9 @@ type CreateCommentResult =
   | CommentRejectedResponse
   | CommentUnavailableResponse;
 
-// The handle an anonymous author is answered by. `anon` is a reserved handle (SPEC.md
-// §5), so it can never name a real member.
-const ANONYMOUS_MENTION = "anon";
-
-// Where the reply lands and what it says. A reply to a comment at the depth cap sits
-// beside it, under the same parent, and opens with a mention of who it answers (D10).
-interface Placement {
-  readonly parentId: string | null;
-  readonly bodyMd: string;
-}
-
 // Permission (the post's switch and the site's `comments` key, D20), then the parent
-// and the depth rule, then the render, then the write. Trust decides the status
-// (SPEC.md §4). Anonymous authors arrive with #8; today the actor is a member.
+// and the depth rule (D10, in `placeComment.ts`, shared with the anonymous flow),
+// then the render, then the write. Trust decides the status (SPEC.md §4).
 export class CreateCommentHandler implements IHandler<
   CreateCommentRequest,
   CreateCommentResult
@@ -91,7 +74,14 @@ export class CreateCommentHandler implements IHandler<
       return new CommentRejectedResponse(correlationId, "empty-body");
     }
 
-    const placed = await this.place(draft.parentId, post.id, bodyMd, context);
+    const placed = await place(
+      this.comments,
+      this.profiles,
+      draft.parentId,
+      post.id,
+      bodyMd,
+      context,
+    );
     if (!isPlacement(placed)) {
       return placed;
     }
@@ -116,67 +106,6 @@ export class CreateCommentHandler implements IHandler<
     }
     return unavailable(correlationId, stored, "store");
   }
-
-  // A root comment goes where it is. A reply needs a visible parent on this post; at
-  // the cap it moves up one level and names the comment it answers.
-  private async place(
-    parentId: string | null,
-    postId: string,
-    bodyMd: string,
-    context: Required<Pick<RequestContext, "correlationId">>,
-  ): Promise<Placement | CommentRejectedResponse | CommentUnavailableResponse> {
-    if (parentId === null) {
-      return { parentId: null, bodyMd };
-    }
-    const parent = await loadComment(this.comments, parentId, context);
-    if (parent instanceof CommentUnavailableResponse) {
-      return parent;
-    }
-    if (parent?.postId !== postId || parent.status !== "visible") {
-      return new CommentRejectedResponse(context.correlationId, "no-such-parent");
-    }
-    if (parent.depth < MAX_COMMENT_DEPTH) {
-      return { parentId: parent.id, bodyMd };
-    }
-    const mention = await this.mentionFor(parent, context);
-    if (mention instanceof CommentUnavailableResponse) {
-      return mention;
-    }
-    return { parentId: parent.parentId, bodyMd: `@${mention} ${bodyMd}` };
-  }
-
-  private async mentionFor(
-    parent: LiveComment,
-    context: Required<Pick<RequestContext, "correlationId">>,
-  ): Promise<string | CommentUnavailableResponse> {
-    if (parent.author.kind === "anonymous") {
-      return ANONYMOUS_MENTION;
-    }
-    const loaded = await this.profiles.load(
-      new LoadProfileByIdRequest(parent.author.profileId, context),
-    );
-    if (loaded instanceof ProfileLoadedResponse) {
-      return loaded.profile.handle;
-    }
-    if (loaded instanceof ProfileNotFoundResponse) {
-      // A profile row outlives every state a member can be in (erasure keeps the
-      // handle), so this is a broken reference, not a case with a name of its own.
-      return new CommentUnavailableResponse(
-        context.correlationId,
-        `comment ${parent.id} names profile ${parent.author.profileId}, which is gone`,
-      );
-    }
-    return unavailable(context.correlationId, loaded, "load");
-  }
-}
-
-function isPlacement(
-  value: Placement | CommentRejectedResponse | CommentUnavailableResponse,
-): value is Placement {
-  return (
-    !(value instanceof CommentRejectedResponse) &&
-    !(value instanceof CommentUnavailableResponse)
-  );
 }
 
 // Trust decides (SPEC.md §4). Staff are trusted by definition.

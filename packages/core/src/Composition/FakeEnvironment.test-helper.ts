@@ -8,4 +8,9 @@ export const FAKE_ENV: Environment = {
   COMMENT_PROVIDER: "fake",
   REACTION_PROVIDER: "fake",
   SITE_CONFIG_PROVIDER: "fake",
+  ANONYMOUS_AUTHOR_PROVIDER: "fake",
+  BLOCK_PROVIDER: "fake",
+  RATE_LIMIT_PROVIDER: "fake",
+  // Required unconditionally by createAnonymousGuardEngine, even with every store faked.
+  EVIDENCE_IP_HASH_SALT: "test-salt",
 };
