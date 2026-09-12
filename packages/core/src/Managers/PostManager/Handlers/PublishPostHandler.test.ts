@@ -78,7 +78,7 @@ function wire(state: FakePostState) {
       new HandlerResolverBuilder()
         .register(
           LoadPostingPolicyRequest,
-          new FakeLoadPostingPolicyHandler(new FakeSiteConfigState("anyone")),
+          new FakeLoadPostingPolicyHandler(new FakeSiteConfigState("anyone", "anyone")),
         )
         .build(),
     ),
