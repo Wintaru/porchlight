@@ -29,6 +29,8 @@ export type { CommentPolicy } from "./Common/CommentPolicy";
 export type { ContentAuthor } from "./Common/ContentAuthor";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export type { LiveComment } from "./Common/LiveComment";
+export type { MediaAsset } from "./Common/MediaAsset";
+export { MEDIA_KINDS, type MediaKind } from "./Common/MediaKind";
 export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
@@ -120,6 +122,26 @@ export { CommentUnavailableResponse } from "./Managers/CommentManager/Responses/
 export { NoSuchCommentResponse } from "./Managers/CommentManager/Responses/NoSuchCommentResponse";
 export { NoSuchReactionTargetResponse } from "./Managers/CommentManager/Responses/NoSuchReactionTargetResponse";
 export { ReactionToggledResponse } from "./Managers/CommentManager/Responses/ReactionToggledResponse";
+
+// MediaManager: attachments (SPEC.md §6, issue #9).
+export type { IMediaManager } from "./Managers/MediaManager/IMediaManager";
+export { DeleteMediaRequest } from "./Managers/MediaManager/Requests/DeleteMediaRequest";
+export { FinalizeUploadAnonymouslyRequest } from "./Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
+export { FinalizeUploadRequest } from "./Managers/MediaManager/Requests/FinalizeUploadRequest";
+export { GetMediaRequest } from "./Managers/MediaManager/Requests/GetMediaRequest";
+export { RequestUploadUrlAnonymouslyRequest } from "./Managers/MediaManager/Requests/RequestUploadUrlAnonymouslyRequest";
+export { RequestUploadUrlRequest } from "./Managers/MediaManager/Requests/RequestUploadUrlRequest";
+export { AnonymousUploadUrlIssuedResponse } from "./Managers/MediaManager/Responses/AnonymousUploadUrlIssuedResponse";
+export { MediaDeletedResponse } from "./Managers/MediaManager/Responses/MediaDeletedResponse";
+export { MediaFinalizedResponse } from "./Managers/MediaManager/Responses/MediaFinalizedResponse";
+export { MediaForbiddenResponse } from "./Managers/MediaManager/Responses/MediaForbiddenResponse";
+export { MediaGuardRefusedResponse } from "./Managers/MediaManager/Responses/MediaGuardRefusedResponse";
+export { MediaQuotaExceededResponse } from "./Managers/MediaManager/Responses/MediaQuotaExceededResponse";
+export { MediaRejectedResponse } from "./Managers/MediaManager/Responses/MediaRejectedResponse";
+export { MediaResponse } from "./Managers/MediaManager/Responses/MediaResponse";
+export { MediaUnavailableResponse } from "./Managers/MediaManager/Responses/MediaUnavailableResponse";
+export { NoSuchMediaResponse } from "./Managers/MediaManager/Responses/NoSuchMediaResponse";
+export { UploadUrlIssuedResponse } from "./Managers/MediaManager/Responses/UploadUrlIssuedResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.

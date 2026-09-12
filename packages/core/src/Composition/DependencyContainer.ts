@@ -37,6 +37,20 @@ import { SetGreetingHandler } from "../Managers/GreetingManager/Handlers/SetGree
 import type { IGreetingManager } from "../Managers/GreetingManager/IGreetingManager";
 import { GetGreetingRequest } from "../Managers/GreetingManager/Requests/GetGreetingRequest";
 import { SetGreetingRequest } from "../Managers/GreetingManager/Requests/SetGreetingRequest";
+import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
+import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
+import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
+import { GetMediaHandler } from "../Managers/MediaManager/Handlers/GetMediaHandler";
+import { RequestUploadUrlAnonymouslyHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlAnonymouslyHandler";
+import { RequestUploadUrlHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlHandler";
+import type { IMediaManager } from "../Managers/MediaManager/IMediaManager";
+import { MediaManager } from "../Managers/MediaManager/MediaManager";
+import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMediaRequest";
+import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
+import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
+import { GetMediaRequest } from "../Managers/MediaManager/Requests/GetMediaRequest";
+import { RequestUploadUrlAnonymouslyRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlAnonymouslyRequest";
+import { RequestUploadUrlRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlRequest";
 import { CheckCanPostAnonymouslyHandler } from "../Managers/PostManager/Handlers/CheckCanPostAnonymouslyHandler";
 import { CheckCanPostHandler } from "../Managers/PostManager/Handlers/CheckCanPostHandler";
 import { CreateAnonymousPostHandler } from "../Managers/PostManager/Handlers/CreateAnonymousPostHandler";
@@ -63,13 +77,19 @@ import { UnpublishPostRequest } from "../Managers/PostManager/Requests/Unpublish
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
 import { createAnonymousAuthorAccessor } from "./createAnonymousAuthorAccessor";
 import { createAnonymousGuardEngine } from "./createAnonymousGuardEngine";
+import { createAttachmentEngine } from "./createAttachmentEngine";
 import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
+import { createMediaAssetAccessor } from "./createMediaAssetAccessor";
+import { createMediaManagerOptions } from "./createMediaManagerOptions";
+import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
+import { createQuotaAccessor } from "./createQuotaAccessor";
+import { createQuotaEngine } from "./createQuotaEngine";
 import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
@@ -86,6 +106,7 @@ export class DependencyContainer {
   readonly accountManager: IAccountManager;
   readonly postManager: IPostManager;
   readonly commentManager: ICommentManager;
+  readonly mediaManager: IMediaManager;
 
   constructor(env: Environment) {
     // One service-role client for every Supabase accessor, built on the first that
@@ -112,6 +133,12 @@ export class DependencyContainer {
       blocks,
       rateLimits,
     );
+    const mediaStorage = createMediaStorageAccessor(env, db);
+    const mediaAssets = createMediaAssetAccessor(env, db);
+    const quotas = createQuotaAccessor(env, db);
+    const attachments = createAttachmentEngine();
+    const quotaEngine = createQuotaEngine();
+    const mediaOptions = createMediaManagerOptions(env);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -211,6 +238,75 @@ export class DependencyContainer {
         .register(
           CheckCanCommentAnonymouslyRequest,
           new CheckCanCommentAnonymouslyHandler(posts, permissions),
+        )
+        .build(),
+    );
+
+    this.mediaManager = new MediaManager(
+      new HandlerResolverBuilder()
+        .register(
+          RequestUploadUrlRequest,
+          new RequestUploadUrlHandler(
+            mediaStorage,
+            quotas,
+            siteConfig,
+            permissions,
+            quotaEngine,
+            mediaOptions,
+          ),
+        )
+        .register(
+          RequestUploadUrlAnonymouslyRequest,
+          new RequestUploadUrlAnonymouslyHandler(
+            mediaStorage,
+            mediaAssets,
+            siteConfig,
+            permissions,
+            anonymousGuard,
+            quotaEngine,
+            mediaOptions,
+          ),
+        )
+        .register(
+          FinalizeUploadRequest,
+          new FinalizeUploadHandler(
+            mediaStorage,
+            mediaAssets,
+            quotas,
+            siteConfig,
+            permissions,
+            attachments,
+            quotaEngine,
+            mediaOptions,
+          ),
+        )
+        .register(
+          FinalizeUploadAnonymouslyRequest,
+          new FinalizeUploadAnonymouslyHandler(
+            mediaStorage,
+            mediaAssets,
+            siteConfig,
+            anonymousAuthors,
+            attachments,
+            quotaEngine,
+            mediaOptions,
+          ),
+        )
+        .register(
+          DeleteMediaRequest,
+          new DeleteMediaHandler(
+            mediaStorage,
+            mediaAssets,
+            quotas,
+            permissions,
+            mediaOptions,
+          ),
+        )
+        .build(),
+      new HandlerResolverBuilder()
+        .register(
+          GetMediaRequest,
+          new GetMediaHandler(mediaStorage, mediaAssets, permissions, mediaOptions),
         )
         .build(),
     );

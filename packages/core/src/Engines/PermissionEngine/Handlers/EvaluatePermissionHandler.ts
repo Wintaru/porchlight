@@ -108,6 +108,10 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "comment.edit": mayEditComment,
   "comment.delete": mayEditComment,
   "reaction.toggle": mayToggleReaction,
+  "media.upload": mayUploadMedia,
+  "media.upload.anonymous": mayUploadMediaAnonymously,
+  "media.view": mayViewMedia,
+  "media.delete": mayDeleteMedia,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -333,4 +337,62 @@ function mayToggleReaction(actor: Actor, subject: PermissionSubject): Promise<De
     );
   }
   return Promise.resolve("not-allowed");
+}
+
+// Any active member may request an upload (SPEC.md §6). Not gated by the D20 posting or
+// comment policy: those govern where a file ends up attached, not whether the account
+// itself may hold one in quarantine.
+function mayUploadMedia(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(subject.kind === "site"));
+}
+
+// The visitor entry point, the same shape as `mayCreatePostAnonymously`: only open when
+// `anyone` may post, since an anonymous upload with nothing to attach it to has no
+// destination (SPEC.md §4).
+async function mayUploadMediaAnonymously(
+  actor: Actor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  if (subject.kind !== "site") {
+    return "not-allowed";
+  }
+  if (actor.kind !== "visitor") {
+    return "not-allowed";
+  }
+  const posting = await policy.posting();
+  return posting === "anyone" ? undefined : "posting-closed";
+}
+
+// A published copy is everyone's to read, visitors included, the same wall
+// `mayViewPost` draws. Nothing this issue builds ever sets `publishedPath` (#10/#11's
+// job), so in practice this branch is future-facing and every upload today falls to the
+// owner-or-admin check below.
+function mayViewMedia(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  if (subject.kind !== "media") {
+    return Promise.resolve("not-allowed");
+  }
+  if (subject.publishedPath !== null) {
+    return Promise.resolve(undefined);
+  }
+  return mayDeleteMedia(actor, subject);
+}
+
+// The owner, or an admin. An anonymous author's upload has no member to authorize a
+// delete for until it is claimed (D7); ModerationManager (#11) is the only door for one
+// before then.
+function mayDeleteMedia(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  if (subject.kind !== "media") {
+    return Promise.resolve("not-allowed");
+  }
+  const isOwner = subject.owner.kind === "member" && subject.owner.profileId === gate.id;
+  return Promise.resolve(verdict(isOwner || gate.role === "admin"));
 }

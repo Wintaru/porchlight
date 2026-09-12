@@ -22,4 +22,10 @@ export type PermissionSubject =
       readonly status: CommentStatus;
       readonly postStatus: PostStatus;
     }
+  | {
+      readonly kind: "media";
+      readonly id: string;
+      readonly owner: ContentAuthor;
+      readonly publishedPath: string | null;
+    }
   | { readonly kind: "site" };

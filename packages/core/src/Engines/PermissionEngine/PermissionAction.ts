@@ -15,6 +15,10 @@ export const PERMISSION_ACTIONS = [
   "comment.edit",
   "comment.delete",
   "reaction.toggle",
+  "media.upload",
+  "media.upload.anonymous",
+  "media.view",
+  "media.delete",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

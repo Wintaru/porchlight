@@ -76,10 +76,10 @@ Guide: [`setup/turnstile.md`](setup/turnstile.md). Guards every anonymous submit
 (D15). Needed before opening `posting` or `comments` to `anyone` (step 3's table has
 the rest of the anonymous-guard variables).
 
-## 6. Storage buckets — issue #9
+## 6. Storage buckets
 
-Guide: `setup/storage.md`. The quarantine and public buckets behind
-`MediaStorageAccessor` (D4).
+Guide: [`setup/storage.md`](setup/storage.md). The quarantine and public buckets
+behind `MediaStorageAccessor` (D4) are created by a migration; no dashboard step.
 
 ## 7. Hash matching and classifiers — issue #10
 
