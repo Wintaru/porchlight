@@ -1,8 +1,11 @@
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { LoadCommentPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadCommentPolicyRequest";
 import { LoadPostingPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
+import { CommentPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/CommentPolicyLoadedResponse";
 import { PostingPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/PostingPolicyLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigAccessFailedResponse";
 import type { Actor } from "../../../Common/Actor";
+import type { CommentPolicy } from "../../../Common/CommentPolicy";
 import type { IHandler } from "../../../Common/IHandler";
 import type { PostingPolicy } from "../../../Common/PostingPolicy";
 import type { Profile } from "../../../Common/Profile";
@@ -34,6 +37,7 @@ export class EvaluatePermissionHandler implements IHandler<
     try {
       const reason = await RULES[action](actor, subject, {
         posting: () => this.loadPostingPolicy({ correlationId }),
+        comments: () => this.loadCommentPolicy({ correlationId }),
       });
       return reason === undefined
         ? new PermissionGrantedResponse(correlationId)
@@ -57,6 +61,18 @@ export class EvaluatePermissionHandler implements IHandler<
         : `unexpected ${loaded.constructor.name} from load`,
     );
   }
+
+  private async loadCommentPolicy(context: RequestContext): Promise<CommentPolicy> {
+    const loaded = await this.siteConfig.load(new LoadCommentPolicyRequest(context));
+    if (loaded instanceof CommentPolicyLoadedResponse) {
+      return loaded.policy;
+    }
+    throw new PolicyUnavailable(
+      loaded instanceof SiteConfigAccessFailedResponse
+        ? loaded.reason
+        : `unexpected ${loaded.constructor.name} from load`,
+    );
+  }
 }
 
 // Thrown inside a rule when the policy read fails, caught once in `handle`, so the
@@ -65,6 +81,7 @@ class PolicyUnavailable extends Error {}
 
 interface SitePolicy {
   readonly posting: () => Promise<PostingPolicy>;
+  readonly comments: () => Promise<CommentPolicy>;
 }
 
 type Denial = PermissionDenialReason | undefined;
@@ -85,6 +102,10 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "post.edit": mayEditPost,
   "post.publish": mayPublishPost,
   "post.delete": mayEditPost,
+  "comment.create": mayCreateComment,
+  "comment.edit": mayEditComment,
+  "comment.delete": mayEditComment,
+  "reaction.toggle": mayToggleReaction,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -112,12 +133,13 @@ function isStaff(profile: Profile): boolean {
   return profile.role === "admin" || profile.role === "moderator";
 }
 
+// A post or a live comment the member wrote. A tombstone has no author, so it is
+// nobody's (D5).
 function isAuthor(profile: Profile, subject: PermissionSubject): boolean {
-  return (
-    subject.kind === "post" &&
-    subject.author.kind === "member" &&
-    subject.author.profileId === profile.id
-  );
+  if (subject.kind !== "post" && subject.kind !== "comment") {
+    return false;
+  }
+  return subject.author?.kind === "member" && subject.author.profileId === profile.id;
 }
 
 // A member edits their own profile; an admin edits anyone's (SPEC.md §4).
@@ -211,4 +233,59 @@ async function mayPublishPost(
     return gate;
   }
   return postingOpenTo(gate, policy);
+}
+
+// Comments need a published post with its switch on and a site policy that is not
+// `off` (D20). The post's own switch is checked before the session: a visitor on a
+// closed post must not be offered sign-in for a form that will not appear. `members`
+// and `anyone` both admit every active member; anonymous authors under `anyone` arrive
+// with #8. The policy is read last, so a visitor never costs a config round trip.
+async function mayCreateComment(
+  actor: Actor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  if (subject.kind !== "post" || subject.status !== "published") {
+    return "not-allowed";
+  }
+  if (!subject.commentsEnabled) {
+    return "comments-closed";
+  }
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  const comments = await policy.comments();
+  return comments === "off" ? "comments-closed" : undefined;
+}
+
+// The author, or an admin, and never a tombstone: there is nothing left to edit and
+// nothing left to delete (D5). Moderators act through ModerationManager (#11).
+function mayEditComment(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  if (subject.kind !== "comment" || subject.status === "tombstone") {
+    return Promise.resolve("not-allowed");
+  }
+  return Promise.resolve(verdict(isAuthor(gate, subject) || gate.role === "admin"));
+}
+
+// Any active member may react to what everyone can see: a published post, or a visible
+// comment on one (D9).
+function mayToggleReaction(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  if (subject.kind === "post") {
+    return Promise.resolve(verdict(subject.status === "published"));
+  }
+  if (subject.kind === "comment") {
+    return Promise.resolve(
+      verdict(subject.status === "visible" && subject.postStatus === "published"),
+    );
+  }
+  return Promise.resolve("not-allowed");
 }

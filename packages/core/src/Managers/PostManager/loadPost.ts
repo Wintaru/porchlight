@@ -42,5 +42,11 @@ export function isPost(
 
 // The subject the PermissionEngine rules on for an existing post.
 export function subjectOf(post: Post): PermissionSubject {
-  return { kind: "post", id: post.id, author: post.author, status: post.status };
+  return {
+    kind: "post",
+    id: post.id,
+    author: post.author,
+    status: post.status,
+    commentsEnabled: post.commentsEnabled,
+  };
 }
