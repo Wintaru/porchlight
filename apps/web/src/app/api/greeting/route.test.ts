@@ -7,6 +7,8 @@ async function loadRoute(env: Record<string, string> = {}) {
   vi.resetModules();
   vi.stubEnv("PROFILE_PROVIDER", "fake");
   vi.stubEnv("POST_PROVIDER", "fake");
+  vi.stubEnv("COMMENT_PROVIDER", "fake");
+  vi.stubEnv("REACTION_PROVIDER", "fake");
   vi.stubEnv("SITE_CONFIG_PROVIDER", "fake");
   for (const [key, value] of Object.entries(env)) {
     vi.stubEnv(key, value);

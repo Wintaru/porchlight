@@ -9,6 +9,20 @@ import type { IAccountManager } from "../Managers/AccountManager/IAccountManager
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
 import { GetProfileRequest } from "../Managers/AccountManager/Requests/GetProfileRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
+import { CommentManager } from "../Managers/CommentManager/CommentManager";
+import { CheckCanCommentHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentHandler";
+import { CreateCommentHandler } from "../Managers/CommentManager/Handlers/CreateCommentHandler";
+import { DeleteCommentHandler } from "../Managers/CommentManager/Handlers/DeleteCommentHandler";
+import { EditCommentHandler } from "../Managers/CommentManager/Handlers/EditCommentHandler";
+import { ListCommentsForPostHandler } from "../Managers/CommentManager/Handlers/ListCommentsForPostHandler";
+import { ToggleReactionHandler } from "../Managers/CommentManager/Handlers/ToggleReactionHandler";
+import type { ICommentManager } from "../Managers/CommentManager/ICommentManager";
+import { CheckCanCommentRequest } from "../Managers/CommentManager/Requests/CheckCanCommentRequest";
+import { CreateCommentRequest } from "../Managers/CommentManager/Requests/CreateCommentRequest";
+import { DeleteCommentRequest } from "../Managers/CommentManager/Requests/DeleteCommentRequest";
+import { EditCommentRequest } from "../Managers/CommentManager/Requests/EditCommentRequest";
+import { ListCommentsForPostRequest } from "../Managers/CommentManager/Requests/ListCommentsForPostRequest";
+import { ToggleReactionRequest } from "../Managers/CommentManager/Requests/ToggleReactionRequest";
 import { GreetingManager } from "../Managers/GreetingManager/GreetingManager";
 import { GetGreetingHandler } from "../Managers/GreetingManager/Handlers/GetGreetingHandler";
 import { SetGreetingHandler } from "../Managers/GreetingManager/Handlers/SetGreetingHandler";
@@ -35,11 +49,13 @@ import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPost
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
+import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
+import { createReactionAccessor } from "./createReactionAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
 import type { Environment } from "./Environment";
@@ -52,6 +68,7 @@ export class DependencyContainer {
   readonly greetingManager: IGreetingManager;
   readonly accountManager: IAccountManager;
   readonly postManager: IPostManager;
+  readonly commentManager: ICommentManager;
 
   constructor(env: Environment) {
     // One service-role client for every Supabase accessor, built on the first that
@@ -62,6 +79,8 @@ export class DependencyContainer {
     const greetings = createGreetingAccessor(env);
     const profiles = createProfileAccessor(env, db);
     const posts = createPostAccessor(env, db);
+    const comments = createCommentAccessor(env, db);
+    const reactions = createReactionAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine();
@@ -106,6 +125,34 @@ export class DependencyContainer {
         )
         .register(CheckCanPostRequest, new CheckCanPostHandler(permissions))
         .register(PreviewPostRequest, new PreviewPostHandler(content))
+        .build(),
+    );
+
+    this.commentManager = new CommentManager(
+      new HandlerResolverBuilder()
+        .register(
+          CreateCommentRequest,
+          new CreateCommentHandler(comments, posts, profiles, content, permissions),
+        )
+        .register(
+          EditCommentRequest,
+          new EditCommentHandler(comments, posts, content, permissions),
+        )
+        .register(
+          DeleteCommentRequest,
+          new DeleteCommentHandler(comments, posts, permissions),
+        )
+        .register(
+          ToggleReactionRequest,
+          new ToggleReactionHandler(reactions, posts, comments, permissions),
+        )
+        .build(),
+      new HandlerResolverBuilder()
+        .register(
+          ListCommentsForPostRequest,
+          new ListCommentsForPostHandler(comments, posts, permissions),
+        )
+        .register(CheckCanCommentRequest, new CheckCanCommentHandler(posts, permissions))
         .build(),
     );
   }

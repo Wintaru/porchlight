@@ -21,15 +21,22 @@ export { ResponseBase } from "./Common/ResponseBase";
 export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 
 export { type Actor, VISITOR } from "./Common/Actor";
-export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
-export type { Post } from "./Common/Post";
+export { type Comment, MAX_COMMENT_DEPTH } from "./Common/Comment";
+export { COMMENT_STATUSES, type CommentStatus } from "./Common/CommentStatus";
+export type { CommentPolicy } from "./Common/CommentPolicy";
 export type { ContentAuthor } from "./Common/ContentAuthor";
+export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
+export type { LiveComment } from "./Common/LiveComment";
+export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export type { PostingPolicy } from "./Common/PostingPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
+export { REACTION_KINDS, type ReactionKind } from "./Common/ReactionKind";
+export type { ReactionTarget } from "./Common/ReactionTarget";
 export type { Tag } from "./Common/Tag";
+export type { TombstoneComment } from "./Common/TombstoneComment";
 export type { TrustLevel } from "./Common/TrustLevel";
 export type { UserRole } from "./Common/UserRole";
 
@@ -72,6 +79,30 @@ export { PostRejectedResponse } from "./Managers/PostManager/Responses/PostRejec
 export { PostResponse } from "./Managers/PostManager/Responses/PostResponse";
 export { PostsResponse } from "./Managers/PostManager/Responses/PostsResponse";
 export { PostUnavailableResponse } from "./Managers/PostManager/Responses/PostUnavailableResponse";
+
+// CommentManager: threads, tombstones, reactions (SPEC.md §5, issue #7).
+export type { ICommentManager } from "./Managers/CommentManager/ICommentManager";
+export type { CommentDeletion } from "./Managers/CommentManager/CommentDeletion";
+export type { CommentDraft } from "./Managers/CommentManager/CommentDraft";
+export type { CommentNode } from "./Managers/CommentManager/CommentNode";
+export type { CommentRejectionReason } from "./Managers/CommentManager/CommentRejectionReason";
+export { CheckCanCommentRequest } from "./Managers/CommentManager/Requests/CheckCanCommentRequest";
+export { CreateCommentRequest } from "./Managers/CommentManager/Requests/CreateCommentRequest";
+export { DeleteCommentRequest } from "./Managers/CommentManager/Requests/DeleteCommentRequest";
+export { EditCommentRequest } from "./Managers/CommentManager/Requests/EditCommentRequest";
+export { ListCommentsForPostRequest } from "./Managers/CommentManager/Requests/ListCommentsForPostRequest";
+export { ToggleReactionRequest } from "./Managers/CommentManager/Requests/ToggleReactionRequest";
+export { CanCommentResponse } from "./Managers/CommentManager/Responses/CanCommentResponse";
+export { CannotCommentResponse } from "./Managers/CommentManager/Responses/CannotCommentResponse";
+export { CommentDeletedResponse } from "./Managers/CommentManager/Responses/CommentDeletedResponse";
+export { CommentForbiddenResponse } from "./Managers/CommentManager/Responses/CommentForbiddenResponse";
+export { CommentRejectedResponse } from "./Managers/CommentManager/Responses/CommentRejectedResponse";
+export { CommentResponse } from "./Managers/CommentManager/Responses/CommentResponse";
+export { CommentsResponse } from "./Managers/CommentManager/Responses/CommentsResponse";
+export { CommentUnavailableResponse } from "./Managers/CommentManager/Responses/CommentUnavailableResponse";
+export { NoSuchCommentResponse } from "./Managers/CommentManager/Responses/NoSuchCommentResponse";
+export { NoSuchReactionTargetResponse } from "./Managers/CommentManager/Responses/NoSuchReactionTargetResponse";
+export { ReactionToggledResponse } from "./Managers/CommentManager/Responses/ReactionToggledResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.
