@@ -4,7 +4,8 @@ import { expect, type Page, test } from "@playwright/test";
 // /@handle/slug with sanitized HTML; a probation member's post lands in pending; the
 // feed, author and tag pages list what they should; an erased author is 410. Runs
 // against the seeded local stack (docs/setup/supabase.md). Every post a test creates,
-// it deletes at the end, so the seed is the same for the next run.
+// it deletes at the end, so the seed is the same for the next run. The editor tests
+// (#6) live in editor.spec.ts; the helpers here drive it through its markdown mode.
 const THEO = { email: "theo@porchlight.local", handle: "theo" };
 const JUNE = { email: "june@porchlight.local", handle: "june" };
 const SEED_PASSWORD = "porchlight";
@@ -31,12 +32,22 @@ async function fillPost(
   },
 ): Promise<void> {
   await page.getByLabel("Title").fill(fields.title);
-  await page.getByLabel("Body (markdown)").fill(fields.body);
+  await fillBodyMarkdown(page, fields.body);
   await page.getByLabel("Summary for the preview card").fill(fields.summary ?? "");
-  await page.getByLabel("Tags (comma separated)").fill(fields.tags ?? "");
-  await page
-    .getByLabel("Visibility")
-    .selectOption(fields.unlisted ? "unlisted" : "public");
+  for (const tag of (fields.tags ?? "").split(",")) {
+    if (tag.trim() !== "") {
+      await page.getByLabel("Add a tag").fill(tag.trim());
+      await page.getByLabel("Add a tag").press("Enter");
+    }
+  }
+  await page.getByLabel(fields.unlisted ? /^Unlisted/ : /^Public/).check();
+}
+
+// The body through the editor's markdown mode: the textarea is the same string the
+// form submits, so a test writes exactly the `body_md` it expects.
+async function fillBodyMarkdown(page: Page, body: string): Promise<void> {
+  await page.getByRole("button", { name: "Markdown", exact: true }).click();
+  await page.getByLabel("Body (markdown)").fill(body);
 }
 
 // Deletes the post the editor page is showing. Every test that creates one ends here.
@@ -194,7 +205,7 @@ test("the editor refuses a blank title and saves a draft that only its author se
 }) => {
   await devSignIn(page, THEO);
   await page.goto("/write");
-  await page.getByLabel("Body (markdown)").fill("no title");
+  await fillBodyMarkdown(page, "no title");
   await page.getByLabel("Title").evaluate((input: HTMLInputElement) => {
     input.removeAttribute("required");
   });

@@ -7,12 +7,12 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PostForm } from "@/components/PostForm";
+import { PostEditor } from "@/components/editor/PostEditor";
+import styles from "@/components/editor/editor.module.css";
 import { canPost } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { createPost } from "./actions";
 import { errorTextFor } from "./post-form-messages";
 
 interface WritePageProps {
@@ -50,9 +50,8 @@ export default async function WritePage({ searchParams }: WritePageProps) {
   if (posts === undefined) {
     console.error(`post list failed [${listed.correlationId}]`, listed);
   }
-  return (
-    <main>
-      <h1>Write</h1>
+  const notices = (
+    <>
       {deleted !== undefined && (
         <p role="status" data-testid="form-status">
           Deleted.
@@ -63,25 +62,42 @@ export default async function WritePage({ searchParams }: WritePageProps) {
           {errorText}
         </p>
       )}
-      {refusal === undefined && <PostForm action={createPost} canPublish />}
-      {refusal instanceof CannotPostResponse && (
-        <p data-testid="cannot-post">{errorTextFor(refusal.reason)}</p>
-      )}
-      <h2>Your posts</h2>
-      {posts === undefined ? (
-        <p role="alert">Your posts could not be loaded. Try again in a moment.</p>
-      ) : posts.length === 0 ? (
-        <p>None yet.</p>
+    </>
+  );
+  return (
+    <main>
+      {refusal === undefined ? (
+        <PostEditor
+          heading="New post"
+          canPublish
+          trustLevel={actor.profile.trustLevel}
+          notices={notices}
+        />
       ) : (
-        <ul data-testid="my-posts">
-          {posts.map((post) => (
-            <li key={post.id}>
-              <Link href={`/write/${post.id}`}>{post.title}</Link> ·{" "}
-              {STATUS_TEXT[post.status]}
-            </li>
-          ))}
-        </ul>
+        <div className={styles.notices}>
+          {notices}
+          {refusal instanceof CannotPostResponse && (
+            <p data-testid="cannot-post">{errorTextFor(refusal.reason)}</p>
+          )}
+        </div>
       )}
+      <section className={styles.section}>
+        <h2>Your posts</h2>
+        {posts === undefined ? (
+          <p role="alert">Your posts could not be loaded. Try again in a moment.</p>
+        ) : posts.length === 0 ? (
+          <p>None yet.</p>
+        ) : (
+          <ul data-testid="my-posts">
+            {posts.map((post) => (
+              <li key={post.id}>
+                <Link href={`/write/${post.id}`}>{post.title}</Link> ·{" "}
+                {STATUS_TEXT[post.status]}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

@@ -10,12 +10,14 @@ import {
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { PostForm } from "@/components/PostForm";
+import { PostEditor } from "@/components/editor/PostEditor";
+import styles from "@/components/editor/editor.module.css";
+import { classNames } from "@/lib/class-names";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isPostId } from "@/lib/post-id";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { deletePost, savePost, unpublishPost } from "../actions";
+import { deletePost, unpublishPost } from "../actions";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
 
 interface EditPageProps {
@@ -59,9 +61,8 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   const errorText = errorTextFor(error);
   const savedText = savedTextFor(saved);
   const authorHandle = await handleOfAuthor(post, actor);
-  return (
-    <main>
-      <h1>Edit post</h1>
+  const notices = (
+    <>
       <p data-testid="post-status">{STATUS_TEXT[post.status]}</p>
       {authorHandle !== undefined && (
         <p>
@@ -78,17 +79,33 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
           {errorText}
         </p>
       )}
-      <PostForm action={savePost} post={post} canPublish={post.status === "draft"} />
-      {(post.status === "published" || post.status === "pending") && (
-        <form action={unpublishPost}>
+    </>
+  );
+  return (
+    <main>
+      <PostEditor
+        heading={post.title === "" ? "Edit post" : post.title}
+        post={post}
+        canPublish={post.status === "draft"}
+        trustLevel={actor.profile.trustLevel}
+        notices={notices}
+      />
+      <div className={classNames(styles.section, styles.footer)}>
+        {(post.status === "published" || post.status === "pending") && (
+          <form action={unpublishPost}>
+            <input type="hidden" name="postId" value={post.id} />
+            <button type="submit" className={styles.button}>
+              Unpublish
+            </button>
+          </form>
+        )}
+        <form action={deletePost}>
           <input type="hidden" name="postId" value={post.id} />
-          <button type="submit">Unpublish</button>
+          <button type="submit" className={classNames(styles.button, styles.danger)}>
+            Delete
+          </button>
         </form>
-      )}
-      <form action={deletePost}>
-        <input type="hidden" name="postId" value={post.id} />
-        <button type="submit">Delete</button>
-      </form>
+      </div>
     </main>
   );
 }
