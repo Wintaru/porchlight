@@ -55,6 +55,10 @@ Copy `.env.example` as the starting point and set these on the host:
 | `AUTH_DEV_SIGN_IN`              | Leave unset. A production build ignores it, but it should not be there. |
 | `PROFILE_PROVIDER`              | Leave unset (`supabase`). `fake` is refused in production. |
 | `POST_PROVIDER`, `COMMENT_PROVIDER`, `REACTION_PROVIDER`, `SITE_CONFIG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. |
+| `ANONYMOUS_AUTHOR_PROVIDER`, `BLOCK_PROVIDER`, `RATE_LIMIT_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. Behind the D15 anonymous guard (issue #8). |
+| `EVIDENCE_IP_HASH_SALT`         | Required to admit any anonymous write. Generate once, never rotate — see `setup/turnstile.md`. |
+| `ANONYMOUS_LIMIT_PER_IP_PER_HOUR`, `ANONYMOUS_LIMIT_PER_TOKEN_PER_HOUR` | Optional. Defaults: 30 and 15. |
+| `TRUST_FORWARDED_FOR`           | `true` only behind a reverse proxy that owns `X-Forwarded-For` (see `setup/turnstile.md`). Leave unset otherwise — every anonymous visitor then shares one IP bucket instead of the block list and rate limit being spoofable. |
 | `GREETING_PROVIDER`             | Leave unset. The greeting example has no production provider. |
 
 Every other variable in `.env.example` belongs to a service whose production setup is a
@@ -66,9 +70,11 @@ later step below.
    account.
 2. Open `/settings` and confirm the role line reads `Role: admin.` Pick your handle.
 
-## 5. Cloudflare Turnstile — issue #8
+## 5. Cloudflare Turnstile
 
-Guide: `setup/turnstile.md`. Guards every anonymous submit (D15).
+Guide: [`setup/turnstile.md`](setup/turnstile.md). Guards every anonymous submit
+(D15). Needed before opening `posting` or `comments` to `anyone` (step 3's table has
+the rest of the anonymous-guard variables).
 
 ## 6. Storage buckets — issue #9
 

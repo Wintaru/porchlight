@@ -25,12 +25,11 @@ export interface PostPage {
   readonly post_tags: readonly { readonly tag: PostCardTag | null }[];
 }
 
-// Slugs are unique across the site (D11), so the slug alone finds the post. The handle
-// in the URL must still match its author, or the page is a 404: a post is never
-// reachable under someone else's name.
-export async function loadPostPage(
+// Slugs are unique across the site (D11), so the slug alone finds the post. Shared by
+// `/@handle/slug` (which also checks the handle) and `/p/slug` (D11's anonymous route,
+// which has no handle to check yet).
+export async function loadPostBySlug(
   db: DbClient,
-  handle: string,
   slug: string,
 ): Promise<PostPage | undefined> {
   const { data, error } = await db
@@ -41,8 +40,38 @@ export async function loadPostPage(
   if (error) {
     throw new Error(`post ${slug}: ${error.message}`);
   }
-  if (data === null || data.author?.handle !== handle) {
-    return undefined;
+  return data ?? undefined;
+}
+
+// The handle in the URL must still match its author, or the page is a 404: a post is
+// never reachable under someone else's name.
+export async function loadPostPage(
+  db: DbClient,
+  handle: string,
+  slug: string,
+): Promise<PostPage | undefined> {
+  const post = await loadPostBySlug(db, slug);
+  return post?.author?.handle === handle ? post : undefined;
+}
+
+// `proxy.ts`'s 301 check on `/p/slug` (D11): only whether this slug now has a claiming
+// author, read under the requester's own session. A handful of columns instead of
+// `PostPage`'s full projection, since every still-anonymous view of `/p/slug` — the
+// common case — pays for this query and then `AnonymousPostPage` loads the post again
+// to render it.
+export async function loadPostClaimStatus(
+  db: DbClient,
+  slug: string,
+): Promise<{ readonly slug: string; readonly authorHandle: string } | undefined> {
+  const { data, error } = await db
+    .from("posts")
+    .select("slug, author:profiles!posts_author_id_fkey(handle)")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`post claim status ${slug}: ${error.message}`);
   }
-  return data;
+  return data?.author == null
+    ? undefined
+    : { slug: data.slug, authorHandle: data.author.handle };
 }

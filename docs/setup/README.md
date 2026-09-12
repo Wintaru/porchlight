@@ -8,7 +8,7 @@ The admin duty checklist links the same guides.
 | ----------------------------------- | ---------------------------------------- | ------------------------------------- |
 | [`supabase.md`](supabase.md)        | Postgres, Auth, Storage, Realtime        | `*_SUPABASE_*`, `DATABASE_URL`        |
 | [`google-oauth.md`](google-oauth.md) | Sign-in through Supabase Auth            | `SUPABASE_AUTH_GOOGLE_*`, `AUTH_DEV_SIGN_IN`, `PORCHLIGHT_ADMIN_EMAIL` |
-| `turnstile.md` (issue #18)          | Bot check on anonymous submits           | `*_TURNSTILE_*`                       |
+| [`turnstile.md`](turnstile.md)      | Bot check on anonymous submits           | `*_TURNSTILE_*`, `EVIDENCE_IP_HASH_SALT`, `ANONYMOUS_*` |
 | `storage.md` (issue #18)            | Upload buckets                           | `STORAGE_BUCKET_*`                    |
 | `hash-matching.md` (issue #18)      | Known-illegal image fingerprints         | `HASH_MATCH_*`                        |
 | `classifiers.md` (issue #18)        | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
