@@ -10,6 +10,7 @@ import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraft
 import { DeletePostRequest } from "../Managers/PostManager/Requests/DeletePostRequest";
 import { GetPostRequest } from "../Managers/PostManager/Requests/GetPostRequest";
 import { ListPostsForAuthorRequest } from "../Managers/PostManager/Requests/ListPostsForAuthorRequest";
+import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPostRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
@@ -18,6 +19,7 @@ import { CanPostResponse } from "../Managers/PostManager/Responses/CanPostRespon
 import { NoSuchPostResponse } from "../Managers/PostManager/Responses/NoSuchPostResponse";
 import { PostDeletedResponse } from "../Managers/PostManager/Responses/PostDeletedResponse";
 import { PostForbiddenResponse } from "../Managers/PostManager/Responses/PostForbiddenResponse";
+import { PostPreviewResponse } from "../Managers/PostManager/Responses/PostPreviewResponse";
 import { PostRejectedResponse } from "../Managers/PostManager/Responses/PostRejectedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { PostsResponse } from "../Managers/PostManager/Responses/PostsResponse";
@@ -392,6 +394,20 @@ describe("DependencyContainer: PostManager", () => {
     });
     expect(theirs).toMatchObject({ reason: "not-allowed" });
     expect(asAdmin).toBeInstanceOf(PostsResponse);
+  });
+
+  test("PreviewPost renders the same sanitized HTML a save would cache, for anyone", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+
+    const preview = await container.postManager.query(
+      new PreviewPostRequest(DRAFT.bodyMd),
+    );
+    const saved = await draft(container, THEO);
+
+    expect(preview).toBeInstanceOf(PostPreviewResponse);
+    if (preview instanceof PostPreviewResponse) {
+      expect(preview.bodyHtml).toBe(saved.bodyHtml);
+    }
   });
 
   test("POST_FAKE_RESULT=fail and SITE_CONFIG_FAKE_RESULT=fail are PostUnavailable", async () => {

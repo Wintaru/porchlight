@@ -56,6 +56,7 @@ export { CreateDraftRequest } from "./Managers/PostManager/Requests/CreateDraftR
 export { DeletePostRequest } from "./Managers/PostManager/Requests/DeletePostRequest";
 export { GetPostRequest } from "./Managers/PostManager/Requests/GetPostRequest";
 export { ListPostsForAuthorRequest } from "./Managers/PostManager/Requests/ListPostsForAuthorRequest";
+export { PreviewPostRequest } from "./Managers/PostManager/Requests/PreviewPostRequest";
 export { PublishPostRequest } from "./Managers/PostManager/Requests/PublishPostRequest";
 export { UnpublishPostRequest } from "./Managers/PostManager/Requests/UnpublishPostRequest";
 export { UpdateDraftRequest } from "./Managers/PostManager/Requests/UpdateDraftRequest";
@@ -65,6 +66,7 @@ export { NoSuchPostResponse } from "./Managers/PostManager/Responses/NoSuchPostR
 export { PostDeletedResponse } from "./Managers/PostManager/Responses/PostDeletedResponse";
 export { PostForbiddenResponse } from "./Managers/PostManager/Responses/PostForbiddenResponse";
 export { PostNotPublishableResponse } from "./Managers/PostManager/Responses/PostNotPublishableResponse";
+export { PostPreviewResponse } from "./Managers/PostManager/Responses/PostPreviewResponse";
 export { PostRejectedResponse } from "./Managers/PostManager/Responses/PostRejectedResponse";
 export { PostResponse } from "./Managers/PostManager/Responses/PostResponse";
 export { PostsResponse } from "./Managers/PostManager/Responses/PostsResponse";

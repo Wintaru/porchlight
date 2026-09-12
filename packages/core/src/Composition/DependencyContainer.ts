@@ -20,6 +20,7 @@ import { CreateDraftHandler } from "../Managers/PostManager/Handlers/CreateDraft
 import { DeletePostHandler } from "../Managers/PostManager/Handlers/DeletePostHandler";
 import { GetPostHandler } from "../Managers/PostManager/Handlers/GetPostHandler";
 import { ListPostsForAuthorHandler } from "../Managers/PostManager/Handlers/ListPostsForAuthorHandler";
+import { PreviewPostHandler } from "../Managers/PostManager/Handlers/PreviewPostHandler";
 import { PublishPostHandler } from "../Managers/PostManager/Handlers/PublishPostHandler";
 import { UnpublishPostHandler } from "../Managers/PostManager/Handlers/UnpublishPostHandler";
 import { UpdateDraftHandler } from "../Managers/PostManager/Handlers/UpdateDraftHandler";
@@ -30,6 +31,7 @@ import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraft
 import { DeletePostRequest } from "../Managers/PostManager/Requests/DeletePostRequest";
 import { GetPostRequest } from "../Managers/PostManager/Requests/GetPostRequest";
 import { ListPostsForAuthorRequest } from "../Managers/PostManager/Requests/ListPostsForAuthorRequest";
+import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPostRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
@@ -103,6 +105,7 @@ export class DependencyContainer {
           new ListPostsForAuthorHandler(posts, permissions),
         )
         .register(CheckCanPostRequest, new CheckCanPostHandler(permissions))
+        .register(PreviewPostRequest, new PreviewPostHandler(content))
         .build(),
     );
   }
