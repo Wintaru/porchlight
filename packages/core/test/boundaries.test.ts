@@ -54,6 +54,10 @@ const cases = {
     ["apps/web/src/app/page.tsx", "../read-model/feed"],
     ["apps/web/src/app/page.tsx", "react"],
     ["apps/web/src/read-model/feed.ts", "@porchlight/db"],
+    ["apps/web/src/app/page.tsx", "../auth/current-user"],
+    ["apps/web/src/auth/current-user.ts", "@porchlight/db"],
+    ["apps/web/src/auth/current-user.ts", "./session-client"],
+    ["apps/web/src/auth/current-user.ts", "next/headers"],
     ["packages/core/src/index.ts", "./Composition/CompositionRoot"],
     ["packages/core/src/index.ts", "./Managers/PostManager/PostManager"],
     ["packages/core/src/index.ts", "./Common/RequestBase"],
@@ -61,6 +65,7 @@ const cases = {
       "packages/core/src/Composition/CompositionRoot.ts",
       "../Accessors/PostAccessor/PostAccessor",
     ],
+    ["packages/core/src/Composition/CompositionRoot.ts", "@porchlight/db"],
     [
       "packages/core/src/Managers/PostManager/PostManager.ts",
       "../../Engines/ContentRenderEngine/ContentRenderEngine",
@@ -100,6 +105,9 @@ const cases = {
       "../../../../packages/core/src/Accessors/PostAccessor/PostAccessor",
     ],
     ["apps/web/src/read-model/feed.ts", "@porchlight/core"],
+    ["apps/web/src/auth/current-user.ts", "@porchlight/core"],
+    ["apps/web/src/auth/current-user.ts", "@supabase/ssr"],
+    ["apps/web/src/auth/current-user.ts", "../lib/site"],
     // The core entry reaches past the Managers.
     ["packages/core/src/index.ts", "./Accessors/PostAccessor/PostAccessor"],
     ["packages/core/src/index.ts", "react"],

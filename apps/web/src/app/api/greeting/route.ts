@@ -7,7 +7,7 @@ import {
   SetGreetingRequest,
 } from "@porchlight/core";
 
-import { dependencyContainer } from "@/lib/dependency-container";
+import { getDependencyContainer } from "@/lib/dependency-container";
 
 // The example route from issue #2 and the template for every Client call into the core:
 // validate the body at the edge, build a typed request, hand it to a Manager, narrow the
@@ -89,7 +89,7 @@ function toHttp(response: ResponseBase): Response {
 }
 
 export function GET(): Promise<Response> {
-  const { greetingManager } = dependencyContainer;
+  const { greetingManager } = getDependencyContainer();
   return dispatch(new GetGreetingRequest(), (request) => greetingManager.query(request));
 }
 
@@ -103,7 +103,7 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  const { greetingManager } = dependencyContainer;
+  const { greetingManager } = getDependencyContainer();
   return dispatch(new SetGreetingRequest(body.greeting), (request) =>
     greetingManager.execute(request),
   );

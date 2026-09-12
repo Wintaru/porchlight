@@ -6,6 +6,7 @@
 //   Client → core entry → Manager → {Engine, Accessor} → Utility
 //   Engine → Accessor
 //   read-model is the only browser path to Supabase (D2).
+//   auth is the only Client path to the session cookies (SPEC.md §4).
 //
 // Each Manager, Engine, Accessor and Utility folder is its own element, so a sideways
 // import (Manager → Manager, Engine → Engine, Accessor → Accessor) is a different element
@@ -18,6 +19,7 @@ import boundaries from "eslint-plugin-boundaries";
 export const LAYER = Object.freeze({
   client: "client",
   readModel: "read-model",
+  auth: "auth",
   composition: "composition",
   common: "common",
   manager: "manager",
@@ -61,6 +63,7 @@ export const boundariesSettings = {
   ],
   "boundaries/elements": [
     { type: LAYER.readModel, pattern: "apps/web/src/read-model" },
+    { type: LAYER.auth, pattern: "apps/web/src/auth" },
     { type: LAYER.client, pattern: "apps/web" },
     { type: LAYER.composition, pattern: "packages/core/src/Composition" },
     { type: LAYER.common, pattern: "packages/core/src/Common" },
@@ -102,22 +105,31 @@ export const boundariesRules = {
         {
           from: { element: { type: LAYER.client } },
           allow: {
-            to: [{ element: { type: [LAYER.client, LAYER.readModel] } }, CORE_ENTRY_FILE],
+            to: [
+              { element: { type: [LAYER.client, LAYER.readModel, LAYER.auth] } },
+              CORE_ENTRY_FILE,
+            ],
           },
         },
         allow(LAYER.readModel, [LAYER.readModel, LAYER.db, LAYER.common]),
+        // The session client over @supabase/ssr lives in packages/db; auth adapts the
+        // Next.js cookie jar to it and knows nothing of the core.
+        allow(LAYER.auth, [LAYER.auth, LAYER.db]),
         {
           from: CORE_ENTRY_FILE,
           allow: {
             to: { element: { type: [LAYER.composition, LAYER.manager, LAYER.common] } },
           },
         },
+        // The composition root builds the clients the accessors are handed (D2), so it
+        // is the one place in the core besides the accessors that may see packages/db.
         allow(LAYER.composition, [
           LAYER.manager,
           LAYER.engine,
           LAYER.accessor,
           LAYER.utility,
           LAYER.common,
+          LAYER.db,
         ]),
         allow(LAYER.manager, [LAYER.engine, LAYER.accessor, LAYER.utility, LAYER.common]),
         allow(LAYER.engine, [LAYER.accessor, LAYER.utility, LAYER.common]),

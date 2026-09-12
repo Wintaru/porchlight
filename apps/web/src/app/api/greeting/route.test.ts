@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 // The route reads the container at import, so each test that needs a different
-// environment stubs it first and imports a fresh module graph.
+// environment stubs it first and imports a fresh module graph. The container also wires
+// the profile store, which must not touch the stack from a unit test.
 async function loadRoute(env: Record<string, string> = {}) {
   vi.resetModules();
+  vi.stubEnv("PROFILE_PROVIDER", "fake");
   for (const [key, value] of Object.entries(env)) {
     vi.stubEnv(key, value);
   }
@@ -72,8 +74,8 @@ describe("POST /api/greeting", () => {
   test("answers 500 with the correlation id when a handler throws", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const route = await loadRoute();
-    const { dependencyContainer } = await import("@/lib/dependency-container");
-    vi.spyOn(dependencyContainer.greetingManager, "query").mockRejectedValue(
+    const { getDependencyContainer } = await import("@/lib/dependency-container");
+    vi.spyOn(getDependencyContainer().greetingManager, "query").mockRejectedValue(
       new Error("boom"),
     );
 

@@ -7,12 +7,13 @@ import { SetGreetingRequest } from "../Managers/GreetingManager/Requests/SetGree
 import { GreetingResponse } from "../Managers/GreetingManager/Responses/GreetingResponse";
 import { GreetingUnavailableResponse } from "../Managers/GreetingManager/Responses/GreetingUnavailableResponse";
 import { DependencyContainer } from "./DependencyContainer";
+import { FAKE_ENV } from "./FakeEnvironment.test-helper";
 
 // These tests go through the real wiring, so they cover the Manager, its handlers, the
 // fake accessor and the env parsing together. A real Manager gets the same treatment.
 describe("DependencyContainer", () => {
   test("an empty environment selects the healthy fake", async () => {
-    const { greetingManager } = new DependencyContainer({});
+    const { greetingManager } = new DependencyContainer(FAKE_ENV);
 
     const response = await greetingManager.query(new GetGreetingRequest());
 
@@ -21,7 +22,7 @@ describe("DependencyContainer", () => {
   });
 
   test("a set greeting comes back from the next get", async () => {
-    const { greetingManager } = new DependencyContainer({});
+    const { greetingManager } = new DependencyContainer(FAKE_ENV);
 
     const set = await greetingManager.execute(
       new SetGreetingRequest("Evening, neighbor"),
@@ -33,7 +34,7 @@ describe("DependencyContainer", () => {
   });
 
   test("the response carries the request's correlation id", async () => {
-    const { greetingManager } = new DependencyContainer({});
+    const { greetingManager } = new DependencyContainer(FAKE_ENV);
     const request = new GetGreetingRequest({ correlationId: "fixed-id" });
 
     await expect(greetingManager.query(request)).resolves.toMatchObject({
@@ -42,7 +43,10 @@ describe("DependencyContainer", () => {
   });
 
   test("GREETING_FAKE_RESULT=fail turns both paths into GreetingUnavailableResponse", async () => {
-    const { greetingManager } = new DependencyContainer({ GREETING_FAKE_RESULT: "fail" });
+    const { greetingManager } = new DependencyContainer({
+      ...FAKE_ENV,
+      GREETING_FAKE_RESULT: "fail",
+    });
 
     const set = await greetingManager.execute(new SetGreetingRequest("x"));
     const get = await greetingManager.query(new GetGreetingRequest());
@@ -53,7 +57,7 @@ describe("DependencyContainer", () => {
   });
 
   test("a query request sent to execute is unhandled, and the reverse", async () => {
-    const { greetingManager } = new DependencyContainer({});
+    const { greetingManager } = new DependencyContainer(FAKE_ENV);
 
     await expect(
       greetingManager.execute(new GetGreetingRequest()),
@@ -64,20 +68,20 @@ describe("DependencyContainer", () => {
   });
 
   test("an unknown provider fails at construction", () => {
-    expect(() => new DependencyContainer({ GREETING_PROVIDER: "supabase" })).toThrow(
-      "GREETING_PROVIDER=supabase is not a known provider",
-    );
+    expect(
+      () => new DependencyContainer({ ...FAKE_ENV, GREETING_PROVIDER: "supabase" }),
+    ).toThrow("GREETING_PROVIDER=supabase is not a known provider");
   });
 
   test("an unknown fake result fails at construction", () => {
-    expect(() => new DependencyContainer({ GREETING_FAKE_RESULT: "flaky" })).toThrow(
-      "GREETING_FAKE_RESULT=flaky is not a known result",
-    );
+    expect(
+      () => new DependencyContainer({ ...FAKE_ENV, GREETING_FAKE_RESULT: "flaky" }),
+    ).toThrow("GREETING_FAKE_RESULT=flaky is not a known result");
   });
 
   test("two containers do not share fake state", async () => {
-    const first = new DependencyContainer({});
-    const second = new DependencyContainer({});
+    const first = new DependencyContainer(FAKE_ENV);
+    const second = new DependencyContainer(FAKE_ENV);
 
     await first.greetingManager.execute(new SetGreetingRequest("only in first"));
 
