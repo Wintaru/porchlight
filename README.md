@@ -21,7 +21,8 @@ The MIT license covers the code only.
 | ---------------- | ------------------------------------------------------------------ |
 | `apps/web`       | Next.js App Router. The Client layer. `src/read-model/` is the only browser path to Supabase. |
 | `packages/core`  | iDesign layers: Managers, Engines, Accessors, Utilities, and the composition root. |
-| `packages/db`    | Supabase clients and generated database types.                      |
+| `packages/db`    | The typed Supabase client, generated database types, and the RLS tests. |
+| `supabase`       | The local stack config, the migrations, and the seed.               |
 | `docs/setup`     | Setup guides for Supabase, Google OAuth, Turnstile, storage, hash matching, classifiers, email. |
 | `design`         | Approved screen boards.                                            |
 
@@ -49,16 +50,24 @@ stack. No vendor keys: every external service has a fake mode.
 ```sh
 pnpm install
 cp .env.example apps/web/.env.local
+supabase start        # Postgres, Auth, Storage, Realtime in Docker (docs/setup/supabase.md)
+supabase db reset     # applies supabase/migrations/ and loads the seed
 pnpm dev
 ```
+
+The stack runs on the `583xx` ports (API `58321`, Postgres `58322`, Studio `58323`).
+The seed signs in four members with password `porchlight`: `lamplighter` (admin),
+`mira` (moderator), `theo` (trusted) and `june` (probation).
 
 | Command          | What it does                                            |
 | ---------------- | ------------------------------------------------------- |
 | `pnpm dev`       | Next.js dev server on port 3000.                        |
+| `supabase db reset` | Rebuilds the local database from the migrations and the seed. |
+| `pnpm --filter @porchlight/db gen:types` | Regenerates `packages/db/src/database.types.ts` after a schema change. |
 | `pnpm typecheck` | `tsc --noEmit` in every package.                        |
 | `pnpm lint`      | ESLint (with the boundary policy) and a Prettier check. |
 | `pnpm format`    | Prettier, writing.                                      |
-| `pnpm test`      | Vitest in every package.                                |
+| `pnpm test`      | Vitest in every package. `packages/db` needs the Supabase stack up. |
 | `pnpm test:e2e`  | Playwright. Starts its own dev server. Set `PORT` to move it. |
 | `pnpm build`     | Production build of `apps/web`.                         |
 

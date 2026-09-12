@@ -6,7 +6,7 @@ The admin duty checklist links the same guides.
 
 | Guide                               | Service                                  | Variables                             |
 | ----------------------------------- | ---------------------------------------- | ------------------------------------- |
-| `supabase.md` (issue #18)           | Postgres, Auth, Storage, Realtime        | `*_SUPABASE_*`, `DATABASE_URL`        |
+| [`supabase.md`](supabase.md)        | Postgres, Auth, Storage, Realtime        | `*_SUPABASE_*`, `DATABASE_URL`        |
 | `google-oauth.md` (issue #18)       | Sign-in through Supabase Auth            | `SUPABASE_AUTH_GOOGLE_*`              |
 | `turnstile.md` (issue #18)          | Bot check on anonymous submits           | `*_TURNSTILE_*`                       |
 | `storage.md` (issue #18)            | Upload buckets                           | `STORAGE_BUCKET_*`                    |
