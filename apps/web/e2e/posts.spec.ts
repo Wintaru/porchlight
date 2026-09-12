@@ -78,11 +78,16 @@ test("an erased author is 410 Gone; an unknown handle and a bare word are 404", 
   expect(draft?.status()).toBe(404);
 });
 
-test("a visitor has no Write link and is sent to sign in from /write", async ({
+test("a visitor's Write link goes to the anonymous form, not the member editor (#8)", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Write" })).toHaveCount(0);
+  // The seed's `posting` key is `anyone` (D20), so a visitor gets a Write link too —
+  // to the anonymous form, never the member editor, which still requires sign-in.
+  await expect(page.getByRole("link", { name: "Write" })).toHaveAttribute(
+    "href",
+    "/p/new",
+  );
   await page.goto("/write");
   await expect(page).toHaveURL(/\/auth\/dev-sign-in\?next=%2Fwrite$/);
 });

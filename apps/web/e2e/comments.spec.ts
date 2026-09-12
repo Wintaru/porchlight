@@ -56,14 +56,17 @@ async function reply(page: Page, parent: Locator, body: string): Promise<Locator
   return row;
 }
 
-test("a visitor reads the seeded thread, the tombstone and the counts, with no form", async ({
+test("a visitor reads the seeded thread, the tombstone and the counts, with the anonymous form (#8)", async ({
   page,
 }) => {
   await page.goto(SEED_POST);
   // Three visible comments; the tombstone and the pending one do not count.
   await expect(page.getByTestId("comment-count")).toHaveText("3 comments");
   await expect(page.getByTestId("comment-form")).toHaveCount(0);
-  await expect(page.getByTestId("comment-sign-in")).toContainText("Sign in");
+  // The seed's `comments` key is `anyone` (D20), so a visitor gets the anonymous form,
+  // not a sign-in prompt.
+  await expect(page.getByTestId("anonymous-comment-form")).toBeVisible();
+  await expect(page.getByTestId("comment-sign-in")).toHaveCount(0);
   await expect(page.getByText("Can I see it sometime?")).toHaveCount(0);
 
   const tombstone = page.getByTestId("comment-tombstone");
