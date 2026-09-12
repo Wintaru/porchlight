@@ -320,6 +320,19 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Google is the one production sign-in (SPEC.md §4, docs/setup/google-oauth.md). The
+# client id and secret come from the environment so nothing secret lands in git. With
+# both unset the local stack still starts; the button then fails at Google, and the dev
+# sign-in page (AUTH_DEV_SIGN_IN=on in .env.example) covers local work without it.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
+
 [auth.external.apple]
 enabled = false
 client_id = ""

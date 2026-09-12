@@ -53,7 +53,8 @@ values, so nothing else needs an edit.
 
 The seed also holds published, unlisted, draft and pending posts, a comment thread with
 a tombstone, one anonymous author with a pending post, and the default site config.
-Google sign-in is not needed locally. See `google-oauth.md` for production.
+Google sign-in is not needed locally: open `/auth/dev-sign-in` in the running app and
+sign in as one of these members. See `google-oauth.md` for production.
 
 ## Schema and migrations
 

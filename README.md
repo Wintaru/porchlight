@@ -56,8 +56,10 @@ pnpm dev
 ```
 
 The stack runs on the `583xx` ports (API `58321`, Postgres `58322`, Studio `58323`).
-The seed signs in four members with password `porchlight`: `lamplighter` (admin),
-`mira` (moderator), `theo` (trusted) and `june` (probation).
+The seed holds four members with password `porchlight`: `lamplighter` (admin), `mira`
+(moderator), `theo` (trusted) and `june` (probation). Sign in as one of them at
+http://localhost:3000/auth/dev-sign-in with `<handle>@porchlight.local`. Google sign-in
+needs keys and is for production (docs/setup/google-oauth.md).
 
 | Command          | What it does                                            |
 | ---------------- | ------------------------------------------------------- |
