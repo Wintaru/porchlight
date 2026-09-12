@@ -11,6 +11,8 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
   "api",
   "auth",
   "settings",
+  // Tag pages: /t/slug. Too short to ever be a handle, listed so the guard test holds.
+  "t",
   "tags",
   "about",
   "write",
