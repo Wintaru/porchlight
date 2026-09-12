@@ -886,6 +886,55 @@ export type Database = {
         Args: { p_anonymous_author_id: string; p_profile_id: string }
         Returns: string
       }
+      finalize_media_scan: {
+        Args: {
+          p_anonymous_author_id?: string
+          p_audit_details?: Json
+          p_audit_event?: string
+          p_bytes: number
+          p_frozen: boolean
+          p_id: string
+          p_ip_hash: string
+          p_kind: Database["public"]["Enums"]["media_kind"]
+          p_mime_type: string
+          p_original_filename: string
+          p_owner_id?: string
+          p_perceptual_hash?: string
+          p_raw_ip_expires_at: string
+          p_request_id: string
+          p_retain_until?: string
+          p_scan_status: Database["public"]["Enums"]["scan_status"]
+          p_sha256: string
+          p_source_ip?: unknown
+          p_source_port?: number
+          p_storage_path: string
+          p_turnstile_result: Database["public"]["Enums"]["turnstile_result"]
+          p_user_agent?: string
+        }
+        Returns: {
+          anonymous_author_id: string | null
+          bytes: number
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["media_kind"]
+          mime_type: string
+          original_filename: string
+          owner_id: string | null
+          perceptual_hash: string | null
+          published_path: string | null
+          retain_until: string | null
+          scan_status: Database["public"]["Enums"]["scan_status"]
+          sha256: string
+          storage_path: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "media_assets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
