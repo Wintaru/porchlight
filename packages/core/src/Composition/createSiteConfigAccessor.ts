@@ -5,18 +5,24 @@ import { FakeLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccess
 import { FakeLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentAllowlistHandler";
 import { FakeLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentQuotaByTrustHandler";
 import { FakeLoadCommentPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadCommentPolicyHandler";
+import { FakeLoadModerationThresholdsHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadModerationThresholdsHandler";
 import { FakeLoadPostingPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadPostingPolicyHandler";
+import { FakeLoadRawIpRetentionDaysHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadRawIpRetentionDaysHandler";
 import { SupabaseLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAnonymousUploadCapHandler";
 import { SupabaseLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentAllowlistHandler";
 import { SupabaseLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentQuotaByTrustHandler";
 import { SupabaseLoadCommentPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadCommentPolicyHandler";
+import { SupabaseLoadModerationThresholdsHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadModerationThresholdsHandler";
 import { SupabaseLoadPostingPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadPostingPolicyHandler";
+import { SupabaseLoadRawIpRetentionDaysHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadRawIpRetentionDaysHandler";
 import type { ISiteConfigAccessor } from "../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadAnonymousUploadCapRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
 import { LoadCommentPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadCommentPolicyRequest";
+import { LoadModerationThresholdsRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadModerationThresholdsRequest";
 import { LoadPostingPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
+import { LoadRawIpRetentionDaysRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadRawIpRetentionDaysRequest";
 import { SiteConfigAccessor } from "../Accessors/SiteConfigAccessor/SiteConfigAccessor";
 import {
   COMMENT_POLICIES,
@@ -72,6 +78,14 @@ export function createSiteConfigAccessor(
             LoadAttachmentQuotaByTrustRequest,
             new SupabaseLoadAttachmentQuotaByTrustHandler(client),
           )
+          .register(
+            LoadModerationThresholdsRequest,
+            new SupabaseLoadModerationThresholdsHandler(client),
+          )
+          .register(
+            LoadRawIpRetentionDaysRequest,
+            new SupabaseLoadRawIpRetentionDaysHandler(client),
+          )
           .build(),
       );
     }
@@ -111,6 +125,14 @@ export function createSiteConfigAccessor(
           .register(
             LoadAttachmentQuotaByTrustRequest,
             new FakeLoadAttachmentQuotaByTrustHandler(state),
+          )
+          .register(
+            LoadModerationThresholdsRequest,
+            new FakeLoadModerationThresholdsHandler(state),
+          )
+          .register(
+            LoadRawIpRetentionDaysRequest,
+            new FakeLoadRawIpRetentionDaysHandler(state),
           )
           .build(),
       );

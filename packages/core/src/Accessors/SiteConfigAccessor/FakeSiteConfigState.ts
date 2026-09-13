@@ -8,7 +8,12 @@ import {
   type AttachmentQuotaByTrust,
 } from "../../Common/AttachmentQuota";
 import type { CommentPolicy } from "../../Common/CommentPolicy";
+import {
+  DEFAULT_MODERATION_THRESHOLDS,
+  type ModerationThresholds,
+} from "../../Common/ModerationThresholds";
 import type { PostingPolicy } from "../../Common/PostingPolicy";
+import { DEFAULT_RAW_IP_RETENTION_DAYS } from "../../Common/Retention";
 
 // The fake's rows: every D20-adjacent key read today. The three attachment keys default
 // to the same values the Supabase handlers fall back to for a missing row, so a test
@@ -22,5 +27,7 @@ export class FakeSiteConfigState {
     public anonymousUploadCap: AnonymousUploadCap = DEFAULT_ANONYMOUS_UPLOAD_CAP,
     public attachmentQuotaByTrust: AttachmentQuotaByTrust = DEFAULT_ATTACHMENT_QUOTA_BY_TRUST,
     readonly failing = false,
+    public moderationThresholds: ModerationThresholds = DEFAULT_MODERATION_THRESHOLDS,
+    public rawIpRetentionDays: number = DEFAULT_RAW_IP_RETENTION_DAYS,
   ) {}
 }

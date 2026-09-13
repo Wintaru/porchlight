@@ -37,6 +37,11 @@ export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility"
 export type { PostingPolicy } from "./Common/PostingPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
+export {
+  DEFAULT_RAW_IP_RETENTION_DAYS,
+  LOCKED_RETENTION_DAYS,
+  UNTRUSTED_CLIENT_IP,
+} from "./Common/Retention";
 export { REACTION_KINDS, type ReactionKind } from "./Common/ReactionKind";
 export type { ReactionTarget } from "./Common/ReactionTarget";
 export type { Tag } from "./Common/Tag";
