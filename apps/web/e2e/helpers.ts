@@ -10,6 +10,7 @@ export interface SeedMember {
 
 export const THEO: SeedMember = { email: "theo@porchlight.local", handle: "theo" };
 export const JUNE: SeedMember = { email: "june@porchlight.local", handle: "june" };
+export const MIRA: SeedMember = { email: "mira@porchlight.local", handle: "mira" };
 export const LAMPLIGHTER: SeedMember = {
   email: "lamplighter@porchlight.local",
   handle: "lamplighter",

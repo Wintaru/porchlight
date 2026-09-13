@@ -64,6 +64,9 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   const notices = (
     <>
       <p data-testid="post-status">{STATUS_TEXT[post.status]}</p>
+      {post.status === "rejected" && post.rejectionReason !== null && (
+        <p data-testid="post-rejection-reason">Reason: {post.rejectionReason}</p>
+      )}
       {authorHandle !== undefined && (
         <p>
           <Link href={`/@${authorHandle}/${post.slug}`}>View</Link>

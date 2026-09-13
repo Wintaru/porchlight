@@ -89,6 +89,9 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
             {note}
           </p>
         )}
+        {post.status === "rejected" && post.rejection_reason !== null && (
+          <p data-testid="post-rejection-reason">Reason: {post.rejection_reason}</p>
+        )}
         <h1>{post.title}</h1>
         <p>
           <Link href={`/@${post.author.handle}`}>@{post.author.handle}</Link>
