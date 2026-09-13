@@ -7,12 +7,14 @@ import { createSessionClient } from "@/auth/session-client";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { ReactionBar } from "@/components/comments/ReactionBar";
 import { TagChips } from "@/components/PostCardList";
+import { ShareButton } from "@/components/ShareButton";
 import { commentFormStateFor } from "@/lib/can-comment";
 import { getCurrentActor } from "@/lib/current-actor";
 import { formatDate } from "@/lib/format-date";
 import { parseHandleParam } from "@/lib/handle-param";
+import { publicMediaUrl } from "@/lib/media-url";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadPostPage, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
@@ -33,17 +35,27 @@ const getPost = cache(async (segment: string, slug: string) => {
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { handle, slug } = await params;
   const post = await getPost(handle, slug);
-  if (post === undefined) {
+  if (post?.author == null) {
     return {};
   }
+  const url = `${SITE_URL}/@${post.author.handle}/${post.slug}`;
+  const description = post.summary ?? undefined;
+  // Unlisted posts and anything not yet published carry noindex (SPEC.md §5, §9).
+  const noindex = post.visibility === "unlisted" || post.status !== "published";
   return {
     title: `${post.title} · ${SITE_NAME}`,
-    description: post.summary ?? undefined,
-    // Unlisted posts and anything not yet published carry noindex (SPEC.md §5).
-    robots:
-      post.visibility === "unlisted" || post.status !== "published"
-        ? "noindex"
-        : undefined,
+    description,
+    robots: noindex ? "noindex" : undefined,
+    alternates: noindex ? undefined : { canonical: url },
+    openGraph: {
+      title: post.title,
+      description,
+      url,
+      siteName: SITE_NAME,
+      type: "article",
+      publishedTime: post.published_at ?? undefined,
+    },
+    twitter: { card: "summary_large_image", title: post.title, description },
   };
 }
 
@@ -81,8 +93,19 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
     loadReactionsForPost(db, post.id, viewerId),
   ]);
 
+  const url = `${SITE_URL}${returnTo}`;
+
   return (
     <main>
+      {post.status === "published" && post.visibility === "public" && (
+        // JSON-LD Article (SPEC.md §9): only for what a crawler is meant to index.
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(articleJsonLd(post, url)),
+          }}
+        />
+      )}
       <article>
         {note !== undefined && (
           <p role="status" data-testid="post-status-note">
@@ -98,6 +121,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
           {post.published_at !== null && <> · {formatDate(post.published_at)}</>}
         </p>
         <TagChips tags={post.post_tags} />
+        <ShareButton url={url} title={post.title} />
         <div
           data-testid="post-body"
           dangerouslySetInnerHTML={{ __html: post.body_html }}
@@ -130,4 +154,26 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
       />
     </main>
   );
+}
+
+// SPEC.md §9's JSON-LD `Article`, one flavor for every post. `image` is the post's own
+// cover (SPEC.md §7) once one is publicly servable (#36) — never the branded card
+// `opengraph-image.tsx` falls back to, which is not this post's own artwork, and never
+// a mature cover, which D18 always keeps out of an unfurl.
+function articleJsonLd(post: PostPage, url: string): Record<string, unknown> {
+  const cover = post.cover;
+  const coverPath = cover != null && !cover.mature ? cover.published_path : null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    url,
+    ...(post.summary !== null && { description: post.summary }),
+    ...(post.published_at !== null && { datePublished: post.published_at }),
+    ...(coverPath != null && { image: publicMediaUrl(coverPath) }),
+    ...(post.author !== null && {
+      author: { "@type": "Person", name: post.author.display_name ?? post.author.handle },
+    }),
+    publisher: { "@type": "Organization", name: SITE_NAME },
+  };
 }
