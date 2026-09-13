@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@porchlight/db": "workspace:*",
+    "jszip": "catalog:",
     "rehype-sanitize": "catalog:",
     "rehype-stringify": "catalog:",
     "remark-parse": "catalog:",

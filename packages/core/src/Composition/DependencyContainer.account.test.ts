@@ -1,11 +1,18 @@
+import JSZip from "jszip";
 import { describe, expect, test } from "vitest";
 
 import { UnhandledRequestResponse } from "../Common/UnhandledRequestResponse";
+import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
+import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
+import { EraseAccountRequest } from "../Managers/AccountManager/Requests/EraseAccountRequest";
+import { ExportAccountRequest } from "../Managers/AccountManager/Requests/ExportAccountRequest";
 import { GetProfileRequest } from "../Managers/AccountManager/Requests/GetProfileRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
+import { AccountErasedResponse } from "../Managers/AccountManager/Responses/AccountErasedResponse";
 import { AccountUnavailableResponse } from "../Managers/AccountManager/Responses/AccountUnavailableResponse";
 import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/ActionForbiddenResponse";
+import { ExportBundleResponse } from "../Managers/AccountManager/Responses/ExportBundleResponse";
 import { HandleRejectedResponse } from "../Managers/AccountManager/Responses/HandleRejectedResponse";
 import { NoSuchProfileResponse } from "../Managers/AccountManager/Responses/NoSuchProfileResponse";
 import { ProfileResponse } from "../Managers/AccountManager/Responses/ProfileResponse";
@@ -281,6 +288,99 @@ describe("DependencyContainer: AccountManager", () => {
     const found = await container.accountManager.execute(new EnsureProfileRequest(FIRST));
 
     expect(found).toMatchObject({ profile: first });
+  });
+
+  test("a member exports their own posts as a zip with a data.json bundle (#14)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const me = await signIn(container, FIRST);
+    const actor = { kind: "member" as const, profile: me };
+    const created = await container.postManager.execute(
+      new CreateDraftRequest(actor, {
+        title: "A porch post",
+        bodyMd: "Hello from the porch.",
+        summary: null,
+        tags: [],
+        visibility: "public",
+        commentsEnabled: true,
+      }),
+    );
+    if (!(created instanceof PostResponse)) {
+      throw new Error(`expected PostResponse, got ${created.constructor.name}`);
+    }
+
+    const response = await container.accountManager.query(
+      new ExportAccountRequest(actor, me.id),
+    );
+
+    expect(response).toBeInstanceOf(ExportBundleResponse);
+    if (!(response instanceof ExportBundleResponse)) {
+      throw new Error("unreachable");
+    }
+    expect(response.filename).toBe(`porchlight-export-${me.id}.zip`);
+    const zip = await JSZip.loadAsync(response.bytes);
+    const dataFile = zip.file("data.json");
+    const postFile = zip.file(`posts/${created.post.slug}.md`);
+    if (dataFile === null || postFile === null) {
+      throw new Error("expected data.json and the post's markdown file in the export");
+    }
+    const bundle = JSON.parse(await dataFile.async("string")) as {
+      posts: readonly { slug: string }[];
+    };
+    expect(bundle.posts).toMatchObject([{ slug: created.post.slug }]);
+    expect(await postFile.async("string")).toContain("Hello from the porch.");
+  });
+
+  test("exporting or erasing someone else's account is forbidden (#14)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const me = await signIn(container, FIRST);
+    const other = await signIn(container, SECOND);
+    const actor = { kind: "member" as const, profile: other };
+
+    const exported = await container.accountManager.query(
+      new ExportAccountRequest(actor, me.id),
+    );
+    const erased = await container.accountManager.execute(
+      new EraseAccountRequest(actor, me.id),
+    );
+
+    expect(exported).toBeInstanceOf(ActionForbiddenResponse);
+    expect(exported).toMatchObject({ reason: "not-allowed" });
+    expect(erased).toBeInstanceOf(ActionForbiddenResponse);
+    expect(erased).toMatchObject({ reason: "not-allowed" });
+  });
+
+  // The fake profile store is the only table EraseAccountHandler's fake path touches
+  // (mirrors the anonymous claim's own fake, which does not move fake posts/comments
+  // either): the cross-table half of `erase_account` only runs for real, against
+  // Postgres, and is covered by the Playwright erasure flow instead.
+  test("a member erases their own account (#14)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const me = await signIn(container, FIRST);
+    const actor = { kind: "member" as const, profile: me };
+
+    const response = await container.accountManager.execute(
+      new EraseAccountRequest(actor, me.id),
+    );
+
+    expect(response).toBeInstanceOf(AccountErasedResponse);
+    const found = await container.accountManager.query(
+      new GetProfileRequest({ by: "id", id: me.id }),
+    );
+    expect(found).toMatchObject({
+      profile: { status: "erased", displayName: null, avatarUrl: null, bio: null },
+    });
+  });
+
+  test("erasing an unknown profile is NoSuchProfile", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const me = await signIn(container, FIRST);
+    const actor = { kind: "member" as const, profile: { ...me, id: SECOND.userId } };
+
+    const response = await container.accountManager.execute(
+      new EraseAccountRequest(actor, SECOND.userId),
+    );
+
+    expect(response).toBeInstanceOf(NoSuchProfileResponse);
   });
 
   test("the supabase provider needs both keys", () => {

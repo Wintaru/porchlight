@@ -4,12 +4,16 @@ import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import { AccountManager } from "../Managers/AccountManager/AccountManager";
 import { ClaimAnonymousPostsHandler } from "../Managers/AccountManager/Handlers/ClaimAnonymousPostsHandler";
 import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/EnsureProfileHandler";
+import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
+import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
 import { GetProfileHandler } from "../Managers/AccountManager/Handlers/GetProfileHandler";
 import { UpdateProfileHandler } from "../Managers/AccountManager/Handlers/UpdateProfileHandler";
 import type { IAccountManager } from "../Managers/AccountManager/IAccountManager";
 import { ClaimAnonymousPostsRequest } from "../Managers/AccountManager/Requests/ClaimAnonymousPostsRequest";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
+import { EraseAccountRequest } from "../Managers/AccountManager/Requests/EraseAccountRequest";
+import { ExportAccountRequest } from "../Managers/AccountManager/Requests/ExportAccountRequest";
 import { GetAnonymousStatusRequest } from "../Managers/AccountManager/Requests/GetAnonymousStatusRequest";
 import { GetProfileRequest } from "../Managers/AccountManager/Requests/GetProfileRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
@@ -226,12 +230,26 @@ export class DependencyContainer {
           ClaimAnonymousPostsRequest,
           new ClaimAnonymousPostsHandler(anonymousAuthors),
         )
+        .register(
+          EraseAccountRequest,
+          new EraseAccountHandler(
+            profiles,
+            mediaAssets,
+            mediaStorage,
+            permissions,
+            mediaOptions.quarantineBucket,
+          ),
+        )
         .build(),
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
         .register(
           GetAnonymousStatusRequest,
           new GetAnonymousStatusHandler(anonymousAuthors),
+        )
+        .register(
+          ExportAccountRequest,
+          new ExportAccountHandler(posts, comments, reactions, mediaAssets, permissions),
         )
         .build(),
     );

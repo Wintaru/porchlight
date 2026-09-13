@@ -6,15 +6,13 @@ import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Resp
 import { ProfileStoredResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileStoredResponse";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
-import { EvaluatePermissionRequest } from "../../../Engines/PermissionEngine/Requests/EvaluatePermissionRequest";
 import { ValidateHandleRequest } from "../../../Engines/PermissionEngine/Requests/ValidateHandleRequest";
 import { HandleInvalidResponse } from "../../../Engines/PermissionEngine/Responses/HandleInvalidResponse";
 import { HandleValidResponse } from "../../../Engines/PermissionEngine/Responses/HandleValidResponse";
-import { PermissionDeniedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionDeniedResponse";
-import { PermissionGrantedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionGrantedResponse";
+import { permit } from "../permit";
 import type { UpdateProfileRequest } from "../Requests/UpdateProfileRequest";
 import { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
-import { ActionForbiddenResponse } from "../Responses/ActionForbiddenResponse";
+import type { ActionForbiddenResponse } from "../Responses/ActionForbiddenResponse";
 import { HandleRejectedResponse } from "../Responses/HandleRejectedResponse";
 import { NoSuchProfileResponse } from "../Responses/NoSuchProfileResponse";
 import { ProfileResponse } from "../Responses/ProfileResponse";
@@ -42,22 +40,15 @@ export class UpdateProfileHandler implements IHandler<
     const { correlationId, actor, profileId, changes } = request;
     const context = { correlationId };
 
-    const verdict = await this.permissions.evaluate(
-      new EvaluatePermissionRequest(
-        actor,
-        "profile.edit",
-        { kind: "profile", id: profileId },
-        context,
-      ),
+    const refused = await permit(
+      this.permissions,
+      actor,
+      "profile.edit",
+      { kind: "profile", id: profileId },
+      context,
     );
-    if (verdict instanceof PermissionDeniedResponse) {
-      return new ActionForbiddenResponse(correlationId, verdict.reason);
-    }
-    if (!(verdict instanceof PermissionGrantedResponse)) {
-      return new AccountUnavailableResponse(
-        correlationId,
-        `unexpected ${verdict.constructor.name} from evaluate`,
-      );
+    if (refused !== undefined) {
+      return refused;
     }
 
     if (changes.handle !== undefined) {
