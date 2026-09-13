@@ -3,6 +3,8 @@
 // rule is a type error, not a silent deny.
 export const PERMISSION_ACTIONS = [
   "profile.edit",
+  "account.export",
+  "account.erase",
   "post.create",
   "post.create.anonymous",
   "post.view",

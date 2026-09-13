@@ -96,6 +96,8 @@ type Rule = (
 // action compiles only once it has a rule here.
 const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "profile.edit": mayEditProfile,
+  "account.export": mayManageOwnAccount,
+  "account.erase": mayManageOwnAccount,
   "post.create": mayCreatePost,
   "post.create.anonymous": mayCreatePostAnonymously,
   "post.view": mayViewPost,
@@ -168,6 +170,17 @@ function mayEditProfile(actor: Actor, subject: PermissionSubject): Promise<Denia
       subject.kind === "profile" && (gate.id === subject.id || gate.role === "admin"),
     ),
   );
+}
+
+// Export and erasure are a member's own data, nobody else's — not even an admin's
+// (SPEC.md §10), the same self-only shape as `mayManageNotifications`. Erasing another
+// member's account is a different, unbuilt feature, not this rule with a bypass.
+function mayManageOwnAccount(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(subject.kind === "profile" && gate.id === subject.id));
 }
 
 // `staff` closes posting to plain members; `members` and `anyone` open it to every
