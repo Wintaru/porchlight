@@ -141,6 +141,7 @@ export type Database = {
           id: string
           parent_id: string | null
           post_id: string
+          rejection_reason: string | null
           status: Database["public"]["Enums"]["comment_status"]
           updated_at: string
         }
@@ -154,6 +155,7 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id: string
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["comment_status"]
           updated_at?: string
         }
@@ -167,6 +169,7 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id?: string
+          rejection_reason?: string | null
           status?: Database["public"]["Enums"]["comment_status"]
           updated_at?: string
         }
@@ -208,6 +211,7 @@ export type Database = {
           created_at: string
           id: string
           kind: Database["public"]["Enums"]["media_kind"]
+          mature: boolean
           mime_type: string
           original_filename: string
           owner_id: string | null
@@ -225,6 +229,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind: Database["public"]["Enums"]["media_kind"]
+          mature?: boolean
           mime_type: string
           original_filename: string
           owner_id?: string | null
@@ -242,6 +247,7 @@ export type Database = {
           created_at?: string
           id?: string
           kind?: Database["public"]["Enums"]["media_kind"]
+          mature?: boolean
           mime_type?: string
           original_filename?: string
           owner_id?: string | null
@@ -458,6 +464,7 @@ export type Database = {
           created_at: string
           id: string
           published_at: string | null
+          rejection_reason: string | null
           slug: string
           status: Database["public"]["Enums"]["post_status"]
           summary: string | null
@@ -475,6 +482,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          rejection_reason?: string | null
           slug: string
           status?: Database["public"]["Enums"]["post_status"]
           summary?: string | null
@@ -492,6 +500,7 @@ export type Database = {
           created_at?: string
           id?: string
           published_at?: string | null
+          rejection_reason?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["post_status"]
           summary?: string | null
@@ -917,6 +926,7 @@ export type Database = {
           created_at: string
           id: string
           kind: Database["public"]["Enums"]["media_kind"]
+          mature: boolean
           mime_type: string
           original_filename: string
           owner_id: string | null
