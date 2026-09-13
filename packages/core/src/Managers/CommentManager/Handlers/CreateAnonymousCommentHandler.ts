@@ -2,6 +2,7 @@ import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/IComme
 import type { NewComment } from "../../../Accessors/CommentAccessor/NewComment";
 import { StoreNewCommentRequest } from "../../../Accessors/CommentAccessor/Requests/StoreNewCommentRequest";
 import { CommentStoredResponse } from "../../../Accessors/CommentAccessor/Responses/CommentStoredResponse";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IHandler } from "../../../Common/IHandler";
@@ -12,6 +13,7 @@ import { AnonymousGuardDeniedResponse } from "../../../Engines/AnonymousGuardEng
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { loadPost, postSubjectOf } from "../loadPost";
+import { notifyStaffOfPendingComment } from "../notifyStaff";
 import { permit } from "../permit";
 import { isPlacement, place } from "../placeComment";
 import { renderBody } from "../renderBody";
@@ -42,6 +44,7 @@ export class CreateAnonymousCommentHandler implements IHandler<
     private readonly posts: IPostAccessor,
     private readonly profiles: IProfileAccessor,
     private readonly content: IContentRenderEngine,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly guard: IAnonymousGuardEngine,
   ) {}
@@ -113,6 +116,16 @@ export class CreateAnonymousCommentHandler implements IHandler<
     );
     if (!(stored instanceof CommentStoredResponse)) {
       return unavailable(correlationId, stored, "store");
+    }
+    const notified = await notifyStaffOfPendingComment(
+      this.profiles,
+      this.notifications,
+      post.id,
+      stored.comment.id,
+      context,
+    );
+    if (notified !== undefined) {
+      return notified;
     }
     return new AnonymousCommentCreatedResponse(
       correlationId,

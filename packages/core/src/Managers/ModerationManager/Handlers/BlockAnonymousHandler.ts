@@ -3,6 +3,7 @@ import type { IBlockAccessor } from "../../../Accessors/BlockAccessor/IBlockAcce
 import { CreateBlockRequest } from "../../../Accessors/BlockAccessor/Requests/CreateBlockRequest";
 import { BlockCreatedResponse } from "../../../Accessors/BlockAccessor/Responses/BlockCreatedResponse";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
@@ -29,6 +30,7 @@ export class BlockAnonymousHandler implements IHandler<BlockAnonymousRequest, Re
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -58,6 +60,7 @@ export class BlockAnonymousHandler implements IHandler<BlockAnonymousRequest, Re
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "block_anonymous",

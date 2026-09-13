@@ -1,11 +1,13 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { moderateProfile } from "../moderateProfile";
+import { memberNotice } from "../notificationsForItem";
 import { recordModeration } from "../recordModeration";
 import type { BanMemberRequest } from "../Requests/BanMemberRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
@@ -25,6 +27,7 @@ export class BanMemberHandler implements IHandler<BanMemberRequest, Result> {
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -49,6 +52,7 @@ export class BanMemberHandler implements IHandler<BanMemberRequest, Result> {
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "ban",
@@ -56,6 +60,7 @@ export class BanMemberHandler implements IHandler<BanMemberRequest, Result> {
         reason,
         event: "mod.action",
         auditDetails: { action: "ban", targetProfileId: profileId, reason },
+        notify: memberNotice(profileId, "ban", reason),
       },
       context,
     );

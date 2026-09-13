@@ -13,6 +13,7 @@ export type {
   TablesUpdate,
 } from "./database.types";
 export { Constants } from "./database.types";
+export { createBrowserDbClient } from "./createBrowserDbClient";
 export { createDbClient, type DbClient } from "./createDbClient";
 export {
   createSessionDbClient,

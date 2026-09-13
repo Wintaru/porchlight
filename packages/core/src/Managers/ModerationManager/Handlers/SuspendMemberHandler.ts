@@ -1,11 +1,13 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { moderateProfile } from "../moderateProfile";
+import { memberNotice } from "../notificationsForItem";
 import { recordModeration } from "../recordModeration";
 import type { SuspendMemberRequest } from "../Requests/SuspendMemberRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
@@ -25,6 +27,7 @@ export class SuspendMemberHandler implements IHandler<SuspendMemberRequest, Resu
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -49,6 +52,7 @@ export class SuspendMemberHandler implements IHandler<SuspendMemberRequest, Resu
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "suspend",
@@ -58,6 +62,7 @@ export class SuspendMemberHandler implements IHandler<SuspendMemberRequest, Resu
         // `subject_kind` has no "profile" member (SPEC.md §7): the target profile id
         // travels in `details` instead of the typed subject.
         auditDetails: { action: "suspend", targetProfileId: profileId, reason },
+        notify: memberNotice(profileId, "suspend", reason),
       },
       context,
     );

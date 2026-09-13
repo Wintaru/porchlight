@@ -4,6 +4,7 @@ import { LoadProfileByIdRequest } from "../../Accessors/ProfileAccessor/Requests
 import { ProfileLoadedResponse } from "../../Accessors/ProfileAccessor/Responses/ProfileLoadedResponse";
 import { ProfileNotFoundResponse } from "../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
 import { MAX_COMMENT_DEPTH } from "../../Common/Comment";
+import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { LiveComment } from "../../Common/LiveComment";
 import type { RequestContext } from "../../Common/RequestContext";
 import { loadComment } from "./loadComment";
@@ -16,10 +17,13 @@ import { unavailable } from "./unavailable";
 // CreateComment: the depth rule (D10) does not care who is replying.
 const ANONYMOUS_MENTION = "anon";
 
-// Where a reply lands and what it says.
+// Where a reply lands and what it says. `parentAuthor` is the author of the comment
+// actually being replied to (SPEC.md §8's `reply.created` recipient) — the caller's
+// `parentId`, before the depth cap may move the row itself up a level.
 export interface Placement {
   readonly parentId: string | null;
   readonly bodyMd: string;
+  readonly parentAuthor: ContentAuthor | null;
 }
 
 export function isPlacement(
@@ -42,7 +46,7 @@ export async function place(
   context: Required<Pick<RequestContext, "correlationId">>,
 ): Promise<Placement | CommentRejectedResponse | CommentUnavailableResponse> {
   if (parentId === null) {
-    return { parentId: null, bodyMd };
+    return { parentId: null, bodyMd, parentAuthor: null };
   }
   const parent = await loadComment(comments, parentId, context);
   if (parent instanceof CommentUnavailableResponse) {
@@ -52,13 +56,17 @@ export async function place(
     return new CommentRejectedResponse(context.correlationId, "no-such-parent");
   }
   if (parent.depth < MAX_COMMENT_DEPTH) {
-    return { parentId: parent.id, bodyMd };
+    return { parentId: parent.id, bodyMd, parentAuthor: parent.author };
   }
   const mention = await mentionFor(profiles, parent, context);
   if (mention instanceof CommentUnavailableResponse) {
     return mention;
   }
-  return { parentId: parent.parentId, bodyMd: `@${mention} ${bodyMd}` };
+  return {
+    parentId: parent.parentId,
+    bodyMd: `@${mention} ${bodyMd}`,
+    parentAuthor: parent.author,
+  };
 }
 
 async function mentionFor(

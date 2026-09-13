@@ -2,11 +2,13 @@ import type { DbClient } from "@porchlight/db";
 
 import { FakeProfileState } from "../Accessors/ProfileAccessor/FakeProfileState";
 import { FakeCountProfilesHandler } from "../Accessors/ProfileAccessor/Handlers/FakeCountProfilesHandler";
+import { FakeListStaffProfilesHandler } from "../Accessors/ProfileAccessor/Handlers/FakeListStaffProfilesHandler";
 import { FakeLoadProfileByHandleHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadProfileByHandleHandler";
 import { FakeLoadProfileByIdHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadProfileByIdHandler";
 import { FakeStoreNewProfileHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStoreNewProfileHandler";
 import { FakeStoreProfileChangesHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStoreProfileChangesHandler";
 import { SupabaseCountProfilesHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseCountProfilesHandler";
+import { SupabaseListStaffProfilesHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseListStaffProfilesHandler";
 import { SupabaseLoadProfileByHandleHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadProfileByHandleHandler";
 import { SupabaseLoadProfileByIdHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadProfileByIdHandler";
 import { SupabaseStoreNewProfileHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseStoreNewProfileHandler";
@@ -14,6 +16,7 @@ import { SupabaseStoreProfileChangesHandler } from "../Accessors/ProfileAccessor
 import type { IProfileAccessor } from "../Accessors/ProfileAccessor/IProfileAccessor";
 import { ProfileAccessor } from "../Accessors/ProfileAccessor/ProfileAccessor";
 import { CountProfilesRequest } from "../Accessors/ProfileAccessor/Requests/CountProfilesRequest";
+import { ListStaffProfilesRequest } from "../Accessors/ProfileAccessor/Requests/ListStaffProfilesRequest";
 import { LoadProfileByHandleRequest } from "../Accessors/ProfileAccessor/Requests/LoadProfileByHandleRequest";
 import { LoadProfileByIdRequest } from "../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
 import { StoreNewProfileRequest } from "../Accessors/ProfileAccessor/Requests/StoreNewProfileRequest";
@@ -48,6 +51,7 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(LoadProfileByIdRequest, new SupabaseLoadProfileByIdHandler(db))
       .register(LoadProfileByHandleRequest, new SupabaseLoadProfileByHandleHandler(db))
       .register(CountProfilesRequest, new SupabaseCountProfilesHandler(db))
+      .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
       .build(),
   );
 }
@@ -62,6 +66,7 @@ function createFakeProfileAccessor(state: FakeProfileState): IProfileAccessor {
       .register(LoadProfileByIdRequest, new FakeLoadProfileByIdHandler(state))
       .register(LoadProfileByHandleRequest, new FakeLoadProfileByHandleHandler(state))
       .register(CountProfilesRequest, new FakeCountProfilesHandler(state))
+      .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))
       .build(),
   );
 }

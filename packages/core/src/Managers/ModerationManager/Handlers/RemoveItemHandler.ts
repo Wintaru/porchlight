@@ -1,12 +1,14 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
+import { authorNotice } from "../notificationsForItem";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
 import type { RemoveItemRequest } from "../Requests/RemoveItemRequest";
@@ -32,6 +34,7 @@ export class RemoveItemHandler implements IHandler<RemoveItemRequest, Result> {
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -70,6 +73,7 @@ export class RemoveItemHandler implements IHandler<RemoveItemRequest, Result> {
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "remove",
@@ -79,6 +83,7 @@ export class RemoveItemHandler implements IHandler<RemoveItemRequest, Result> {
         auditSubject: { kind: target.kind, id: target.id },
         auditDetails: { action: "remove", reason },
         resolveReportsFor: { target, status: "resolved" },
+        notify: authorNotice(item, "mod.action", { action: "remove", reason }),
       },
       context,
     );

@@ -37,6 +37,12 @@ import { SetGreetingHandler } from "../Managers/GreetingManager/Handlers/SetGree
 import type { IGreetingManager } from "../Managers/GreetingManager/IGreetingManager";
 import { GetGreetingRequest } from "../Managers/GreetingManager/Requests/GetGreetingRequest";
 import { SetGreetingRequest } from "../Managers/GreetingManager/Requests/SetGreetingRequest";
+import { ListNotificationsHandler } from "../Managers/NotificationManager/Handlers/ListNotificationsHandler";
+import { MarkReadHandler } from "../Managers/NotificationManager/Handlers/MarkReadHandler";
+import type { INotificationManager } from "../Managers/NotificationManager/INotificationManager";
+import { NotificationManager } from "../Managers/NotificationManager/NotificationManager";
+import { ListNotificationsRequest as ManagerListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
+import { MarkReadRequest } from "../Managers/NotificationManager/Requests/MarkReadRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -131,6 +137,7 @@ import { createMediaManagerOptions } from "./createMediaManagerOptions";
 import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
 import { createModActionAccessor } from "./createModActionAccessor";
 import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
+import { createNotificationAccessor } from "./createNotificationAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
@@ -156,6 +163,7 @@ export class DependencyContainer {
   readonly mediaManager: IMediaManager;
   readonly moderationManager: IModerationManager;
   readonly siteConfigManager: ISiteConfigManager;
+  readonly notificationManager: INotificationManager;
 
   constructor(env: Environment) {
     // One service-role client for every Supabase accessor, built on the first that
@@ -194,6 +202,7 @@ export class DependencyContainer {
     const reports = createReportAccessor(env, db);
     const modActions = createModActionAccessor(env, db);
     const auditLog = createAuditAccessor(env, db);
+    const notifications = createNotificationAccessor(env, db);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -231,12 +240,22 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(CreateDraftRequest, new CreateDraftHandler(posts, content, permissions))
         .register(UpdateDraftRequest, new UpdateDraftHandler(posts, content, permissions))
-        .register(PublishPostRequest, new PublishPostHandler(posts, permissions))
+        .register(
+          PublishPostRequest,
+          new PublishPostHandler(posts, profiles, notifications, permissions),
+        )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))
         .register(DeletePostRequest, new DeletePostHandler(posts, permissions))
         .register(
           CreateAnonymousPostRequest,
-          new CreateAnonymousPostHandler(posts, content, permissions, anonymousGuard),
+          new CreateAnonymousPostHandler(
+            posts,
+            content,
+            profiles,
+            notifications,
+            permissions,
+            anonymousGuard,
+          ),
         )
         .build(),
       new HandlerResolverBuilder()
@@ -258,7 +277,14 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           CreateCommentRequest,
-          new CreateCommentHandler(comments, posts, profiles, content, permissions),
+          new CreateCommentHandler(
+            comments,
+            posts,
+            profiles,
+            content,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           EditCommentRequest,
@@ -279,6 +305,7 @@ export class DependencyContainer {
             posts,
             profiles,
             content,
+            notifications,
             permissions,
             anonymousGuard,
           ),
@@ -382,6 +409,7 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
@@ -392,6 +420,7 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
@@ -403,6 +432,7 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
@@ -414,6 +444,7 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
@@ -425,24 +456,53 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
         .register(
           LockThreadRequest,
-          new LockThreadHandler(posts, modActions, auditLog, reports, permissions),
+          new LockThreadHandler(
+            posts,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           SuspendMemberRequest,
-          new SuspendMemberHandler(profiles, modActions, auditLog, reports, permissions),
+          new SuspendMemberHandler(
+            profiles,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           BanMemberRequest,
-          new BanMemberHandler(profiles, modActions, auditLog, reports, permissions),
+          new BanMemberHandler(
+            profiles,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           BlockAnonymousRequest,
-          new BlockAnonymousHandler(blocks, modActions, auditLog, reports, permissions),
+          new BlockAnonymousHandler(
+            blocks,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           EscalateRequest,
@@ -452,16 +512,32 @@ export class DependencyContainer {
             modActions,
             auditLog,
             reports,
+            notifications,
             permissions,
           ),
         )
         .register(
           PromoteMemberRequest,
-          new PromoteMemberHandler(profiles, modActions, auditLog, reports, permissions),
+          new PromoteMemberHandler(
+            profiles,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
         )
         .register(
           ModerateFileReportRequest,
-          new FileReportHandler(posts, comments, reports, auditLog, permissions),
+          new FileReportHandler(
+            posts,
+            comments,
+            reports,
+            auditLog,
+            profiles,
+            notifications,
+            permissions,
+          ),
         )
         .build(),
       new HandlerResolverBuilder()
@@ -493,6 +569,18 @@ export class DependencyContainer {
         .register(
           GetSiteConfigRequest,
           new GetSiteConfigHandler(siteConfig, permissions, dutyChecklist),
+        )
+        .build(),
+    );
+
+    this.notificationManager = new NotificationManager(
+      new HandlerResolverBuilder()
+        .register(MarkReadRequest, new MarkReadHandler(notifications, permissions))
+        .build(),
+      new HandlerResolverBuilder()
+        .register(
+          ManagerListNotificationsRequest,
+          new ListNotificationsHandler(notifications, permissions),
         )
         .build(),
     );

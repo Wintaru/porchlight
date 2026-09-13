@@ -120,6 +120,7 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "report.file": mayFileReport,
   "report.view": mayModerate,
   "site_config.manage": mayManageSiteConfig,
+  "notification.manage": mayManageNotifications,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -435,6 +436,20 @@ function mayManageSiteConfig(actor: Actor): Promise<Denial> {
     return Promise.resolve(gate);
   }
   return Promise.resolve(verdict(gate.role === "admin"));
+}
+
+// A member's own notifications, nobody else's — not even an admin's (SPEC.md §8): this
+// is a personal inbox, unlike `profile.edit` or `mayListPosts` where staff oversight
+// makes sense.
+function mayManageNotifications(
+  actor: Actor,
+  subject: PermissionSubject,
+): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(subject.kind === "profile" && gate.id === subject.id));
 }
 
 // Anyone may use the report button (SPEC.md §7), signed in or not, on a post or a

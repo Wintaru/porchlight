@@ -1,12 +1,14 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
+import { authorNotice, replyNotice } from "../notificationsForItem";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
 import type { ApproveItemRequest } from "../Requests/ApproveItemRequest";
@@ -31,6 +33,7 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -65,10 +68,15 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
       return approved;
     }
 
+    const notify = [
+      ...authorNotice(item, "item.approved"),
+      ...(await replyNotice(this.comments, item, context)),
+    ];
     const recorded = await recordModeration(
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "approve",
@@ -78,6 +86,7 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
         auditSubject: { kind: target.kind, id: target.id },
         auditDetails: {},
         resolveReportsFor: { target, status: "resolved" },
+        notify,
       },
       context,
     );

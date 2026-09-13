@@ -1,5 +1,6 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { LoadPostByIdRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
@@ -11,7 +12,7 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { permit } from "../permit";
-import { recordModeration } from "../recordModeration";
+import { recordModeration, type NotificationToSend } from "../recordModeration";
 import type { LockThreadRequest } from "../Requests/LockThreadRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
 import type { ModerationUnavailableResponse } from "../Responses/ModerationUnavailableResponse";
@@ -33,6 +34,7 @@ export class LockThreadHandler implements IHandler<LockThreadRequest, Result> {
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -72,10 +74,22 @@ export class LockThreadHandler implements IHandler<LockThreadRequest, Result> {
       return unavailable(correlationId, stored, "posts.store");
     }
 
+    const notify: NotificationToSend[] =
+      loaded.post.author.kind === "member"
+        ? [
+            {
+              recipientId: loaded.post.author.profileId,
+              kind: "mod.action",
+              postId,
+              payload: { action: "lock_thread" },
+            },
+          ]
+        : [];
     const recorded = await recordModeration(
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "lock_thread",
@@ -84,6 +98,7 @@ export class LockThreadHandler implements IHandler<LockThreadRequest, Result> {
         event: "mod.action",
         auditSubject: { kind: "post", id: postId },
         auditDetails: { action: "lock_thread" },
+        notify,
       },
       context,
     );

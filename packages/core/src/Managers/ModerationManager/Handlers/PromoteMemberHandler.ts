@@ -1,11 +1,13 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { moderateProfile } from "../moderateProfile";
+import { memberNotice } from "../notificationsForItem";
 import { recordModeration } from "../recordModeration";
 import type { PromoteMemberRequest } from "../Requests/PromoteMemberRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
@@ -27,6 +29,7 @@ export class PromoteMemberHandler implements IHandler<PromoteMemberRequest, Resu
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -51,6 +54,7 @@ export class PromoteMemberHandler implements IHandler<PromoteMemberRequest, Resu
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "mark_trusted",
@@ -58,6 +62,7 @@ export class PromoteMemberHandler implements IHandler<PromoteMemberRequest, Resu
         reason: null,
         event: "mod.action",
         auditDetails: { action: "mark_trusted", targetProfileId: profileId },
+        notify: memberNotice(profileId, "mark_trusted"),
       },
       context,
     );

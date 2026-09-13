@@ -1,8 +1,10 @@
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { StoreNewPostRequest } from "../../../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
 import { PostSlugTakenResponse } from "../../../Accessors/PostAccessor/Responses/PostSlugTakenResponse";
 import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/PostStoredResponse";
+import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IAnonymousGuardEngine } from "../../../Engines/AnonymousGuardEngine/IAnonymousGuardEngine";
 import { AdmitAnonymousSubmissionRequest } from "../../../Engines/AnonymousGuardEngine/Requests/AdmitAnonymousSubmissionRequest";
 import { AnonymousAdmittedResponse } from "../../../Engines/AnonymousGuardEngine/Responses/AnonymousAdmittedResponse";
@@ -13,6 +15,7 @@ import { SlugDerivedResponse } from "../../../Engines/ContentRenderEngine/Respon
 import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugUnusableResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { IHandler } from "../../../Common/IHandler";
+import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { permit } from "../permit";
 import type { CreateAnonymousPostRequest } from "../Requests/CreateAnonymousPostRequest";
 import { AnonymousPostCreatedResponse } from "../Responses/AnonymousPostCreatedResponse";
@@ -46,6 +49,8 @@ export class CreateAnonymousPostHandler implements IHandler<
   constructor(
     private readonly posts: IPostAccessor,
     private readonly content: IContentRenderEngine,
+    private readonly profiles: IProfileAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly guard: IAnonymousGuardEngine,
   ) {}
@@ -101,6 +106,15 @@ export class CreateAnonymousPostHandler implements IHandler<
     );
     if (!(moved instanceof PostStoredResponse)) {
       return unavailable(correlationId, moved, "store");
+    }
+    const notified = await notifyStaffOfPendingPost(
+      this.profiles,
+      this.notifications,
+      stored.post.id,
+      context,
+    );
+    if (notified !== undefined) {
+      return notified;
     }
     return new AnonymousPostCreatedResponse(
       correlationId,

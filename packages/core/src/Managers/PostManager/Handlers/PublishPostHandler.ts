@@ -1,12 +1,15 @@
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { PostChanges } from "../../../Accessors/PostAccessor/PostChanges";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
 import { PostNotFoundResponse } from "../../../Accessors/PostAccessor/Responses/PostNotFoundResponse";
 import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/PostStoredResponse";
+import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
+import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { permit } from "../permit";
 import type { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
@@ -32,6 +35,8 @@ export class PublishPostHandler implements IHandler<
 > {
   constructor(
     private readonly posts: IPostAccessor,
+    private readonly profiles: IProfileAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -67,13 +72,24 @@ export class PublishPostHandler implements IHandler<
     const stored = await this.posts.store(
       new StorePostChangesRequest(postId, changes, context),
     );
-    if (stored instanceof PostStoredResponse) {
-      return new PostResponse(correlationId, stored.post);
-    }
     if (stored instanceof PostNotFoundResponse) {
       return new NoSuchPostResponse(correlationId);
     }
-    return unavailable(correlationId, stored, "store");
+    if (!(stored instanceof PostStoredResponse)) {
+      return unavailable(correlationId, stored, "store");
+    }
+    if (changes.status === "pending") {
+      const notified = await notifyStaffOfPendingPost(
+        this.profiles,
+        this.notifications,
+        postId,
+        context,
+      );
+      if (notified !== undefined) {
+        return notified;
+      }
+    }
+    return new PostResponse(correlationId, stored.post);
   }
 }
 

@@ -1,6 +1,8 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
+import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import { FileReportRequest as StoreFileReportRequest } from "../../../Accessors/ReportAccessor/Requests/FileReportRequest";
 import { ReportStoredResponse } from "../../../Accessors/ReportAccessor/Responses/ReportStoredResponse";
@@ -10,6 +12,7 @@ import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
+import { notifyStaff } from "../notifyStaff";
 import { permit } from "../permit";
 import type { FileReportRequest } from "../Requests/FileReportRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
@@ -32,6 +35,8 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
     private readonly comments: ICommentAccessor,
     private readonly reports: IReportAccessor,
     private readonly auditLog: IAuditAccessor,
+    private readonly profiles: IProfileAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -82,6 +87,21 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
     );
     if (!(audited instanceof AuditEventRecordedResponse)) {
       return unavailable(correlationId, audited, "auditLog.store");
+    }
+
+    const notified = await notifyStaff(
+      this.profiles,
+      this.notifications,
+      "report.filed",
+      {
+        ...(target.kind === "post" ? { postId: target.id } : { commentId: target.id }),
+        reportId: stored.report.id,
+      },
+      { reason },
+      context,
+    );
+    if (notified !== undefined) {
+      return notified;
     }
 
     return new ReportFiledResponse(correlationId, stored.report);

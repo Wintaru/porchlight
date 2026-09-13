@@ -1,11 +1,13 @@
 import { describe, expect, test } from "vitest";
 
+import { NotificationAccessor } from "../../../Accessors/NotificationAccessor/NotificationAccessor";
 import { FakePostState } from "../../../Accessors/PostAccessor/FakePostState";
 import { FakeLoadPostByIdHandler } from "../../../Accessors/PostAccessor/Handlers/FakeLoadPostByIdHandler";
 import { FakeStorePostChangesHandler } from "../../../Accessors/PostAccessor/Handlers/FakeStorePostChangesHandler";
 import { PostAccessor } from "../../../Accessors/PostAccessor/PostAccessor";
 import { LoadPostByIdRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
+import { ProfileAccessor } from "../../../Accessors/ProfileAccessor/ProfileAccessor";
 import { FakeSiteConfigState } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigState";
 import { FakeLoadPostingPolicyHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadPostingPolicyHandler";
 import { LoadPostingPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
@@ -85,8 +87,18 @@ function wire(state: FakePostState) {
         .build(),
     ),
   );
+  // Neither test below reaches a draft-to-pending transition, the only path that reads
+  // these, so both stay empty.
+  const profiles = new ProfileAccessor(
+    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder().build(),
+  );
+  const notifications = new NotificationAccessor(
+    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder().build(),
+  );
   return {
-    publish: new PublishPostHandler(posts, permissions),
+    publish: new PublishPostHandler(posts, profiles, notifications, permissions),
     unpublish: new UnpublishPostHandler(posts, permissions),
   };
 }

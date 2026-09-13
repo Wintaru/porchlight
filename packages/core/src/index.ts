@@ -54,6 +54,8 @@ export {
 } from "./Common/ModerationThresholds";
 export { MOD_ACTION_KINDS, type ModActionKind } from "./Common/ModActionKind";
 export type { ModerationTarget } from "./Common/ModerationTarget";
+export type { Notification } from "./Common/Notification";
+export { NOTIFICATION_KINDS, type NotificationKind } from "./Common/NotificationKind";
 export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
@@ -227,6 +229,15 @@ export { ReasonRequiredResponse } from "./Managers/ModerationManager/Responses/R
 export { ReportFiledResponse } from "./Managers/ModerationManager/Responses/ReportFiledResponse";
 export { ReportListResponse } from "./Managers/ModerationManager/Responses/ReportListResponse";
 export { ThreadLockedResponse } from "./Managers/ModerationManager/Responses/ThreadLockedResponse";
+
+// NotificationManager: a member's own inbox for the realtime bell (SPEC.md §8, issue #13).
+export type { INotificationManager } from "./Managers/NotificationManager/INotificationManager";
+export { ListNotificationsRequest } from "./Managers/NotificationManager/Requests/ListNotificationsRequest";
+export { MarkReadRequest } from "./Managers/NotificationManager/Requests/MarkReadRequest";
+export { NotificationForbiddenResponse } from "./Managers/NotificationManager/Responses/NotificationForbiddenResponse";
+export { NotificationsMarkedResponse } from "./Managers/NotificationManager/Responses/NotificationsMarkedResponse";
+export { NotificationsResponse } from "./Managers/NotificationManager/Responses/NotificationsResponse";
+export { NotificationUnavailableResponse } from "./Managers/NotificationManager/Responses/NotificationUnavailableResponse";
 
 // SiteConfigManager: the admin settings page, presets, and the duty checklist
 // (SPEC.md §4, §7, issue #12).

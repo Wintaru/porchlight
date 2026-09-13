@@ -1,12 +1,14 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
+import { authorNotice } from "../notificationsForItem";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
 import type { RejectItemRequest } from "../Requests/RejectItemRequest";
@@ -33,6 +35,7 @@ export class RejectItemHandler implements IHandler<RejectItemRequest, Result> {
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
+    private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -75,6 +78,7 @@ export class RejectItemHandler implements IHandler<RejectItemRequest, Result> {
       this.modActions,
       this.auditLog,
       this.reports,
+      this.notifications,
       {
         actorId: actorId(actor),
         action: "reject",
@@ -84,6 +88,7 @@ export class RejectItemHandler implements IHandler<RejectItemRequest, Result> {
         auditSubject: { kind: target.kind, id: target.id },
         auditDetails: { reason },
         resolveReportsFor: { target, status: "resolved" },
+        notify: authorNotice(item, "item.rejected", { reason }),
       },
       context,
     );
