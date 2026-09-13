@@ -15,6 +15,9 @@ export const LAMPLIGHTER: SeedMember = {
   email: "lamplighter@porchlight.local",
   handle: "lamplighter",
 };
+// Trusted, and otherwise empty (SPEC.md §10): the export/erasure flow deletes her own
+// posts and comments for real, so nothing else's fixture data may live on her.
+export const IVY: SeedMember = { email: "ivy@porchlight.local", handle: "ivy" };
 const SEED_PASSWORD = "porchlight";
 
 export async function devSignIn(page: Page, member: SeedMember): Promise<void> {
