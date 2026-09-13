@@ -13,8 +13,8 @@ guide says what the service is for and how to get credentials; this file says th
 
 Guide: [`setup/supabase.md`](setup/supabase.md).
 
-1. Create a project at https://supabase.com/dashboard. Pick the region that matches the
-   `PORCHLIGHT_REGION` you will set below.
+1. Create a project at https://supabase.com/dashboard. Pick the region you plan to
+   operate in — you set the same region from `/admin` after first sign-in, step 8.
 2. Open Project Settings, API. Copy the project URL, the anon key and the service-role
    key. They become `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
    `SUPABASE_SERVICE_ROLE_KEY` in the deployment's environment.
@@ -47,7 +47,6 @@ Copy `.env.example` as the starting point and set these on the host:
 | Variable                        | Production value                                          |
 | ------------------------------- | --------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`          | The public origin, for example `https://porch.example`. Required: a production build refuses to start without it. |
-| `PORCHLIGHT_REGION`             | `US`, `EU`, `UK`, `CA`, `AU` or `other` (SPEC.md §7). A placeholder today: nothing reads it until issue #12, which moves the region into site config. |
 | `NEXT_PUBLIC_SUPABASE_URL`      | From step 1.                                              |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | From step 1. Public by design.                            |
 | `SUPABASE_SERVICE_ROLE_KEY`     | From step 1. Server only. Never `NEXT_PUBLIC_`.           |
@@ -60,9 +59,11 @@ Copy `.env.example` as the starting point and set these on the host:
 | `ANONYMOUS_LIMIT_PER_IP_PER_HOUR`, `ANONYMOUS_LIMIT_PER_TOKEN_PER_HOUR` | Optional. Defaults: 30 and 15. |
 | `TRUST_FORWARDED_FOR`           | `true` only behind a reverse proxy that owns `X-Forwarded-For` (see `setup/turnstile.md`). Leave unset otherwise — every anonymous visitor then shares one IP bucket instead of the block list and rate limit being spoofable. |
 | `GREETING_PROVIDER`             | Leave unset. The greeting example has no production provider. |
+| `ALLOW_FAKE_PROVIDERS`          | Leave unset. Setting it to `1` lifts the production refusal on a `*_PROVIDER=fake` (hash matching, the image classifier, Turnstile, media storage) for a deliberate degraded launch — the admin checklist (`/admin`) then shows that provider red, "not yet active" (issue #12). |
 
 Every other variable in `.env.example` belongs to a service whose production setup is a
-later step below.
+later step below. Region and every other D20 setting are not environment variables —
+step 8 sets them from the admin settings page after first sign-in.
 
 ## 4. First sign-in
 
@@ -81,15 +82,23 @@ the rest of the anonymous-guard variables).
 Guide: [`setup/storage.md`](setup/storage.md). The quarantine and public buckets
 behind `MediaStorageAccessor` (D4) are created by a migration; no dashboard step.
 
-## 7. Hash matching and classifiers — issue #10
+## 7. Hash matching and classifiers
 
 Guides: `setup/hash-matching.md`, `setup/classifiers.md`. Until Shield access is
-approved (D17b) the fake hash provider runs and the admin checklist shows "hash
-matching: not yet active".
+approved (D17b) the fake hash provider runs and the admin checklist (step 8) shows
+"hash matching: not yet active".
 
-## 8. Region and the duty checklist — issue #12
+## 8. Site settings: region, identity, and the duty checklist
 
-The admin picks the region in site config; the checklist links these guides.
+Open `/admin` (admin only). Set `site_name`, `site_tagline` and `about_md`; pick the
+region, which fills the reporting target, deadline text and the raw-IP retention
+window `EvidenceAccessor` uses (issue #10) — review and adjust the retention value,
+since the filled-in number is a starting point, not legal advice. Pick a setup preset
+("Just me", "Friends" or "Open porch") or set `posting`, `comments` and `sign_up`
+individually. The duty checklist on the same page shows red, "not yet active", for
+any of hash matching, the image classifier, Turnstile or media storage still running
+its fake — each row links its setup guide. Every value here can change again later
+from the same page.
 
 ## 9. Email — phase 2, issue #22
 

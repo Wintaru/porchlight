@@ -30,9 +30,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     await client.auth.signOut();
     return NextResponse.redirect(new URL(SIGN_IN_FAILED_PATH, SITE_URL));
   }
-  if ((await ensureProfileFor(user)) === undefined) {
+  const outcome = await ensureProfileFor(user);
+  if (outcome === undefined || outcome === "sign-up-closed") {
     await client.auth.signOut();
-    return NextResponse.redirect(new URL(SIGN_IN_FAILED_PATH, SITE_URL));
+    const failed = new URL(SIGN_IN_FAILED_PATH, SITE_URL);
+    if (outcome === "sign-up-closed") {
+      failed.searchParams.set("reason", "sign-up-closed");
+    }
+    return NextResponse.redirect(failed);
   }
   return NextResponse.redirect(new URL(next, SITE_URL));
 }
