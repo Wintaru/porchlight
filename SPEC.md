@@ -209,7 +209,9 @@ summary. No per-post off switch. Share button copies the link and calls
 `navigator.share` where available.
 
 **Three RSS feeds (D21):** `/feed.xml` (everything public), `/@handle/feed.xml` (one
-author), `/t/tag/feed.xml` (one tag). Each carries `site_name` as the channel title,
+author), `/t/tag/feed.xml` (one tag). The site feed's channel title is `site_name`
+alone; the author and tag feeds lead with their own name and carry `site_name` after it,
+so three feeds in one reader are not indistinguishable. Each also carries
 `<link rel="alternate">` on the matching page, and the same exclusions as the feed
 (unlisted, pending, hidden never appear). Syndication to Discord or any other service
 is pull: the author tags the post, and a bot subscribes to that tag's feed. Phase 3

@@ -5,7 +5,7 @@ import { cache } from "react";
 import { createSessionClient } from "@/auth/session-client";
 import { PostCardList } from "@/components/PostCardList";
 import { parseHandleParam } from "@/lib/handle-param";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { loadAuthor, loadAuthorPosts } from "@/read-model/author";
 
 interface AuthorPageProps {
@@ -26,9 +26,18 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
   if (author === undefined) {
     return {};
   }
+  const title = `@${author.handle} · ${SITE_NAME}`;
+  const description = author.bio ?? undefined;
+  const url = `${SITE_URL}/@${author.handle}`;
   return {
-    title: `@${author.handle} · ${SITE_NAME}`,
-    description: author.bio ?? undefined,
+    title,
+    description,
+    alternates: {
+      canonical: url,
+      types: { "application/rss+xml": `${url}/feed.xml` },
+    },
+    openGraph: { title, description, url, siteName: SITE_NAME },
+    twitter: { card: "summary", title, description },
   };
 }
 

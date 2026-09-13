@@ -4,7 +4,7 @@ import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
 import { PostCardList } from "@/components/PostCardList";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
 interface TagPageProps {
@@ -15,7 +15,20 @@ const getTag = cache(async (slug: string) => loadTag(await createSessionClient()
 
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
   const tag = await getTag((await params).tag);
-  return tag === undefined ? {} : { title: `${tag.name} · ${SITE_NAME}` };
+  if (tag === undefined) {
+    return {};
+  }
+  const title = `${tag.name} · ${SITE_NAME}`;
+  const url = `${SITE_URL}/t/${tag.slug}`;
+  return {
+    title,
+    alternates: {
+      canonical: url,
+      types: { "application/rss+xml": `${url}/feed.xml` },
+    },
+    openGraph: { title, url, siteName: SITE_NAME },
+    twitter: { card: "summary", title },
+  };
 }
 
 // The tag page, /t/slug: the public posts under one tag, newest first. Unlisted posts
