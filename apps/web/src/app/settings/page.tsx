@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
@@ -78,6 +79,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </p>
         <button type="submit">Save</button>
       </form>
+      <h2>Your data</h2>
+      <p>Everything you have written is yours. Take a copy any time.</p>
+      <Link href="/settings/export">Export as markdown + JSON</Link>
+      <p>
+        Includes your posts, comments, reactions and uploads. Ready in a minute. No
+        waiting period, no support ticket.
+      </p>
+      <h2>Erase everything</h2>
+      <p>
+        Deletes every post, comment, reaction and upload you made, and your profile. It is
+        gone from the database and from storage, not hidden.
+      </p>
+      <Link href="/settings/erase">Erase everything I contributed</Link>
     </main>
   );
 }
