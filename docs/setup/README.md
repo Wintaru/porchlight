@@ -10,8 +10,8 @@ The admin duty checklist links the same guides.
 | [`google-oauth.md`](google-oauth.md) | Sign-in through Supabase Auth            | `SUPABASE_AUTH_GOOGLE_*`, `AUTH_DEV_SIGN_IN`, `PORCHLIGHT_ADMIN_EMAIL` |
 | [`turnstile.md`](turnstile.md)      | Bot check on anonymous submits           | `*_TURNSTILE_*`, `EVIDENCE_IP_HASH_SALT`, `ANONYMOUS_*` |
 | [`storage.md`](storage.md)          | Upload buckets, allowlist and quotas     | `STORAGE_BUCKET_*`, `MEDIA_*`, `QUOTA_*` |
-| `hash-matching.md` (issue #18)      | Known-illegal image fingerprints         | `HASH_MATCH_*`                        |
-| `classifiers.md` (issue #18)        | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
+| [`hash-matching.md`](hash-matching.md) | Known-illegal image fingerprints      | `HASH_MATCH_*`                        |
+| [`classifiers.md`](classifiers.md)  | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
 | `email.md` (issue #18, phase 2)     | Digest email                             | `EMAIL_*`                             |
 
 The order to do these in for a hosted instance is [../deploy.md](../deploy.md).
