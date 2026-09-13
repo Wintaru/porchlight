@@ -34,9 +34,17 @@ test("the seeded feed lists public published posts newest first and no unlisted 
   page,
 }) => {
   await page.goto("/");
-  const cards = page.getByTestId("post-card");
-  await expect(cards.first().getByRole("heading")).toHaveText("Hello from the porch");
-  await expect(cards.nth(1).getByRole("heading")).toHaveText("Welcome to Porchlight");
+  // Relative order among the two seeded posts, not an absolute position: another test
+  // running in parallel can transiently publish (and clean up) a post of its own, which
+  // would otherwise race an assertion on exactly the first card.
+  const titles = await page
+    .getByTestId("post-card")
+    .getByRole("heading")
+    .allTextContents();
+  const seededFirst = titles.indexOf("Hello from the porch");
+  const seededSecond = titles.indexOf("Welcome to Porchlight");
+  expect(seededFirst).toBeGreaterThanOrEqual(0);
+  expect(seededSecond).toBeGreaterThan(seededFirst);
   await expect(page.getByText("An unlisted note")).toHaveCount(0);
   await expect(page.getByText("Half a thought")).toHaveCount(0);
 });

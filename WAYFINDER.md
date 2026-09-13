@@ -63,7 +63,7 @@ Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[resea
 ## Out of scope
 
 - Video transcoding. Uploads are size-capped MP4 or WebM, served as-is.
-- ActivityPub federation. Revisit only if the community asks.
+- ActivityPub federation. Revisit only if the community asks. Idea logged 2026-09-13: the cheap path rides on D21's RSS feeds through a bridge service (for example Bridgy Fed) — no protocol work, no stored secret, but one-way only (posts appear on Mastodon, replies and follows do not flow back). Full native federation (actor, inbox, outbox, signed delivery) stays the large option, worth it only if two-way interaction is ever wanted.
 - Karma, downvotes, and leaderboards. Ruled out on purpose. (Anonymous posting is allowed, but gated by admin approval — see D7.)
 - A separate backend service. The iDesign layers live in `packages/core`, called from Next.js.
 - Realtime and presence features in phase 1. The door stays open (see D2), but nothing is designed for them yet.

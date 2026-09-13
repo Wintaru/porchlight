@@ -1,6 +1,9 @@
 # Assembled design canvas (regenerated from the .dc.html boards and canvas.json)
 design/**/porchlight-screens.html
 
+# macOS
+.DS_Store
+
 # Node
 node_modules/
 .env
