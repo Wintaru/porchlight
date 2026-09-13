@@ -4,25 +4,40 @@ import { FakeSiteConfigState } from "../Accessors/SiteConfigAccessor/FakeSiteCon
 import { FakeLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAnonymousUploadCapHandler";
 import { FakeLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentAllowlistHandler";
 import { FakeLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentQuotaByTrustHandler";
+import { FakeLoadAutoPromoteAfterApprovedPostsHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAutoPromoteAfterApprovedPostsHandler";
 import { FakeLoadCommentPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadCommentPolicyHandler";
 import { FakeLoadModerationThresholdsHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadModerationThresholdsHandler";
 import { FakeLoadPostingPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadPostingPolicyHandler";
 import { FakeLoadRawIpRetentionDaysHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadRawIpRetentionDaysHandler";
+import { FakeLoadRegionHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadRegionHandler";
+import { FakeLoadSignUpPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadSignUpPolicyHandler";
+import { FakeLoadSiteIdentityHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadSiteIdentityHandler";
+import { FakeStoreSiteConfigEntriesHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeStoreSiteConfigEntriesHandler";
 import { SupabaseLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAnonymousUploadCapHandler";
 import { SupabaseLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentAllowlistHandler";
 import { SupabaseLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentQuotaByTrustHandler";
+import { SupabaseLoadAutoPromoteAfterApprovedPostsHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAutoPromoteAfterApprovedPostsHandler";
 import { SupabaseLoadCommentPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadCommentPolicyHandler";
 import { SupabaseLoadModerationThresholdsHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadModerationThresholdsHandler";
 import { SupabaseLoadPostingPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadPostingPolicyHandler";
 import { SupabaseLoadRawIpRetentionDaysHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadRawIpRetentionDaysHandler";
+import { SupabaseLoadRegionHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadRegionHandler";
+import { SupabaseLoadSignUpPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadSignUpPolicyHandler";
+import { SupabaseLoadSiteIdentityHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadSiteIdentityHandler";
+import { SupabaseStoreSiteConfigEntriesHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseStoreSiteConfigEntriesHandler";
 import type { ISiteConfigAccessor } from "../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadAnonymousUploadCapRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
+import { LoadAutoPromoteAfterApprovedPostsRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAutoPromoteAfterApprovedPostsRequest";
 import { LoadCommentPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadCommentPolicyRequest";
 import { LoadModerationThresholdsRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadModerationThresholdsRequest";
 import { LoadPostingPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
 import { LoadRawIpRetentionDaysRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadRawIpRetentionDaysRequest";
+import { LoadRegionRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadRegionRequest";
+import { LoadSignUpPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
+import { LoadSiteIdentityRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSiteIdentityRequest";
+import { StoreSiteConfigEntriesRequest } from "../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigAccessor } from "../Accessors/SiteConfigAccessor/SiteConfigAccessor";
 import {
   COMMENT_POLICIES,
@@ -35,6 +50,11 @@ import {
   POSTING_POLICIES,
   type PostingPolicy,
 } from "../Common/PostingPolicy";
+import {
+  DEFAULT_SIGN_UP_POLICY,
+  SIGN_UP_POLICIES,
+  type SignUpPolicy,
+} from "../Common/SignUpPolicy";
 import type { Environment } from "./Environment";
 import { readFakeResult, readStoreProvider } from "./readStoreProvider";
 
@@ -46,9 +66,14 @@ function isCommentPolicy(value: string): value is CommentPolicy {
   return COMMENT_POLICIES.some((policy) => policy === value);
 }
 
-// The store behind the D20 site settings. The fake reads its keys from
-// SITE_CONFIG_FAKE_POSTING and SITE_CONFIG_FAKE_COMMENTS, so a test or a local run can
-// close posting or comments without a row.
+function isSignUpPolicy(value: string): value is SignUpPolicy {
+  return SIGN_UP_POLICIES.some((policy) => policy === value);
+}
+
+// The store behind the D20 site settings and the #12 admin page. The fake reads its
+// keys from SITE_CONFIG_FAKE_POSTING, SITE_CONFIG_FAKE_COMMENTS and
+// SITE_CONFIG_FAKE_SIGN_UP, so a test or a local run can close posting, comments or
+// sign-up without a row.
 export function createSiteConfigAccessor(
   env: Environment,
   db: () => DbClient,
@@ -57,6 +82,12 @@ export function createSiteConfigAccessor(
     case "supabase": {
       const client = db();
       return new SiteConfigAccessor(
+        new HandlerResolverBuilder()
+          .register(
+            StoreSiteConfigEntriesRequest,
+            new SupabaseStoreSiteConfigEntriesHandler(client),
+          )
+          .build(),
         new HandlerResolverBuilder()
           .register(
             LoadPostingPolicyRequest,
@@ -86,6 +117,13 @@ export function createSiteConfigAccessor(
             LoadRawIpRetentionDaysRequest,
             new SupabaseLoadRawIpRetentionDaysHandler(client),
           )
+          .register(LoadRegionRequest, new SupabaseLoadRegionHandler(client))
+          .register(LoadSignUpPolicyRequest, new SupabaseLoadSignUpPolicyHandler(client))
+          .register(LoadSiteIdentityRequest, new SupabaseLoadSiteIdentityHandler(client))
+          .register(
+            LoadAutoPromoteAfterApprovedPostsRequest,
+            new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(client),
+          )
           .build(),
       );
     }
@@ -102,6 +140,12 @@ export function createSiteConfigAccessor(
           `SITE_CONFIG_FAKE_COMMENTS=${comments} is not a comment policy. Known: ${COMMENT_POLICIES.join(", ")}.`,
         );
       }
+      const signUp = env.SITE_CONFIG_FAKE_SIGN_UP ?? DEFAULT_SIGN_UP_POLICY;
+      if (!isSignUpPolicy(signUp)) {
+        throw new Error(
+          `SITE_CONFIG_FAKE_SIGN_UP=${signUp} is not a sign-up policy. Known: ${SIGN_UP_POLICIES.join(", ")}.`,
+        );
+      }
       const state = new FakeSiteConfigState(
         posting,
         comments,
@@ -109,8 +153,18 @@ export function createSiteConfigAccessor(
         undefined,
         undefined,
         readFakeResult(env, "SITE_CONFIG_FAKE_RESULT") === "fail",
+        undefined,
+        undefined,
+        undefined,
+        signUp,
       );
       return new SiteConfigAccessor(
+        new HandlerResolverBuilder()
+          .register(
+            StoreSiteConfigEntriesRequest,
+            new FakeStoreSiteConfigEntriesHandler(state),
+          )
+          .build(),
         new HandlerResolverBuilder()
           .register(LoadPostingPolicyRequest, new FakeLoadPostingPolicyHandler(state))
           .register(LoadCommentPolicyRequest, new FakeLoadCommentPolicyHandler(state))
@@ -133,6 +187,13 @@ export function createSiteConfigAccessor(
           .register(
             LoadRawIpRetentionDaysRequest,
             new FakeLoadRawIpRetentionDaysHandler(state),
+          )
+          .register(LoadRegionRequest, new FakeLoadRegionHandler(state))
+          .register(LoadSignUpPolicyRequest, new FakeLoadSignUpPolicyHandler(state))
+          .register(LoadSiteIdentityRequest, new FakeLoadSiteIdentityHandler(state))
+          .register(
+            LoadAutoPromoteAfterApprovedPostsRequest,
+            new FakeLoadAutoPromoteAfterApprovedPostsHandler(state),
           )
           .build(),
       );

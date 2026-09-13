@@ -15,6 +15,7 @@ import { CreateSignedDownloadUrlRequest } from "../Accessors/MediaStorageAccesso
 import { CreateSignedUploadUrlRequest } from "../Accessors/MediaStorageAccessor/Requests/CreateSignedUploadUrlRequest";
 import { DownloadStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
 import { RemoveStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
+import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
 import { readFakeResult, readStoreProvider } from "./readStoreProvider";
@@ -78,4 +79,21 @@ function createFakeMediaStorageAccessor(
       .register(RemoveStorageObjectRequest, new FakeRemoveStorageObjectHandler(state))
       .build(),
   );
+}
+
+// The duty checklist's row for this provider (SPEC.md §7, #12): reads the same
+// MEDIA_STORAGE_PROVIDER switch the factory above does, so the two cannot drift.
+export function mediaStorageDutyStatus(env: Environment): DutyChecklistItem {
+  const provider = env.MEDIA_STORAGE_PROVIDER ?? "supabase";
+  return {
+    id: "media-storage",
+    label: "Media storage (uploads and quarantine)",
+    status:
+      provider !== "fake"
+        ? "configured"
+        : env.NODE_ENV === "production"
+          ? "fakeInProduction"
+          : "fake",
+    setupGuidePath: "docs/setup/storage.md",
+  };
 }

@@ -1,3 +1,7 @@
+import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { LoadSignUpPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
+import { SignUpPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SignUpPolicyLoadedResponse";
+import { SiteConfigAccessFailedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigAccessFailedResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { NewProfile } from "../../../Accessors/ProfileAccessor/NewProfile";
 import { CountProfilesRequest } from "../../../Accessors/ProfileAccessor/Requests/CountProfilesRequest";
@@ -19,6 +23,7 @@ import type { EnsureProfileOptions } from "../EnsureProfileOptions";
 import type { EnsureProfileRequest } from "../Requests/EnsureProfileRequest";
 import { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
 import { ProfileResponse } from "../Responses/ProfileResponse";
+import { SignUpClosedResponse } from "../Responses/SignUpClosedResponse";
 
 // How many handle candidates to try before giving up. Every candidate after the first
 // carries a numeric suffix, so this many collisions means something else is wrong.
@@ -32,19 +37,23 @@ const NEW_MEMBER: Standing = { role: "member", trustLevel: "probation" };
 // First sign-in creates the profile; every later one finds it. The first profile ever,
 // or the configured admin email, becomes admin (SPEC.md §4). The handle comes from the
 // Engine and is retried with the next candidate while the store says it is taken.
+// `site_config.sign_up` (D20, #12) only gates an ordinary new member: the site's own
+// bootstrap admin and its configured admin email always get in, or the settings page
+// that closes sign-up could never be reopened.
 export class EnsureProfileHandler implements IHandler<
   EnsureProfileRequest,
-  ProfileResponse | AccountUnavailableResponse
+  ProfileResponse | SignUpClosedResponse | AccountUnavailableResponse
 > {
   constructor(
     private readonly profiles: IProfileAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly siteConfig: ISiteConfigAccessor,
     private readonly options: EnsureProfileOptions,
   ) {}
 
   async handle(
     request: EnsureProfileRequest,
-  ): Promise<ProfileResponse | AccountUnavailableResponse> {
+  ): Promise<ProfileResponse | SignUpClosedResponse | AccountUnavailableResponse> {
     const { correlationId, identity } = request;
     const context: RequestContext = { correlationId };
 
@@ -63,6 +72,16 @@ export class EnsureProfileHandler implements IHandler<
       return unavailable(correlationId, counted, "load");
     }
     const standing = this.standingFor(counted.count, identity.email);
+
+    if (standing === NEW_MEMBER) {
+      const signUp = await this.siteConfig.load(new LoadSignUpPolicyRequest(context));
+      if (!(signUp instanceof SignUpPolicyLoadedResponse)) {
+        return unavailable(correlationId, signUp, "load");
+      }
+      if (signUp.policy !== "open") {
+        return new SignUpClosedResponse(correlationId);
+      }
+    }
 
     for (let attempt = 1; attempt <= MAX_HANDLE_ATTEMPTS; attempt += 1) {
       const derived = await this.permissions.transform(
@@ -118,7 +137,8 @@ function unavailable(
   method: string,
 ): AccountUnavailableResponse {
   const reason =
-    response instanceof ProfileAccessFailedResponse
+    response instanceof ProfileAccessFailedResponse ||
+    response instanceof SiteConfigAccessFailedResponse
       ? response.reason
       : `unexpected ${response.constructor.name} from ${method}`;
   return new AccountUnavailableResponse(correlationId, reason);

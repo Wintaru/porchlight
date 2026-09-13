@@ -76,6 +76,7 @@ function wire(state: FakePostState) {
   );
   const permissions = createPermissionEngine(
     new SiteConfigAccessor(
+      new HandlerResolverBuilder().build(),
       new HandlerResolverBuilder()
         .register(
           LoadPostingPolicyRequest,

@@ -8,8 +8,10 @@ import { SightengineClassifyImageHandler } from "../Accessors/ImageClassifierAcc
 import type { IImageClassifierAccessor } from "../Accessors/ImageClassifierAccessor/IImageClassifierAccessor";
 import { ImageClassifierAccessor } from "../Accessors/ImageClassifierAccessor/ImageClassifierAccessor";
 import { ClassifyImageRequest } from "../Accessors/ImageClassifierAccessor/Requests/ClassifyImageRequest";
+import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
+import { assertFakeAllowedHere } from "./readStoreProvider";
 
 const IMAGE_CLASSIFIER_PROVIDERS = ["fake", "hive", "sightengine"] as const;
 type ImageClassifierProvider = (typeof IMAGE_CLASSIFIER_PROVIDERS)[number];
@@ -35,11 +37,10 @@ export function createImageClassifierAccessor(
     );
   }
   if (provider === "fake") {
-    if (env.NODE_ENV === "production") {
-      throw new Error(
-        "IMAGE_CLASSIFIER_PROVIDER=fake is not allowed in a production build.",
-      );
-    }
+    assertFakeAllowedHere(
+      env,
+      "IMAGE_CLASSIFIER_PROVIDER=fake is not allowed in a production build.",
+    );
     const result = env.IMAGE_CLASSIFIER_FAKE_RESULT ?? "clear";
     if (!isFakeImageClassifierResult(result)) {
       throw new Error(
@@ -79,4 +80,21 @@ export function createImageClassifierAccessor(
       )
       .build(),
   );
+}
+
+// The duty checklist's row for this provider (SPEC.md §7, #12): reads the same
+// IMAGE_CLASSIFIER_PROVIDER switch the factory above does, so the two cannot drift.
+export function imageClassifierDutyStatus(env: Environment): DutyChecklistItem {
+  const provider = env.IMAGE_CLASSIFIER_PROVIDER ?? "fake";
+  return {
+    id: "image-classifier",
+    label: "Image classifier (violence, gore, sexual content, self-harm, minors)",
+    status:
+      provider !== "fake"
+        ? "configured"
+        : env.NODE_ENV === "production"
+          ? "fakeInProduction"
+          : "fake",
+    setupGuidePath: "docs/setup/classifiers.md",
+  };
 }

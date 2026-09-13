@@ -23,26 +23,60 @@ export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 export { type Actor, VISITOR } from "./Common/Actor";
 export type { AnonymousStatusItem } from "./Common/AnonymousStatusItem";
 export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
+export type { AnonymousUploadCap } from "./Common/AnonymousUploadCap";
+export {
+  attachmentTypeForExtension,
+  KNOWN_ATTACHMENT_TYPES,
+} from "./Common/AttachmentTypeCatalog";
+export type { AttachmentQuota, AttachmentQuotaByTrust } from "./Common/AttachmentQuota";
+export {
+  DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
+  MIN_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
+  type AutoPromoteAfterApprovedPosts,
+} from "./Common/AutoPromoteRule";
 export type { AuditLogEntry } from "./Common/AuditLogEntry";
 export { type Comment, MAX_COMMENT_DEPTH } from "./Common/Comment";
 export { COMMENT_STATUSES, type CommentStatus } from "./Common/CommentStatus";
-export type { CommentPolicy } from "./Common/CommentPolicy";
+export { COMMENT_POLICIES, type CommentPolicy } from "./Common/CommentPolicy";
 export type { ContentAuthor } from "./Common/ContentAuthor";
+export {
+  DUTY_CHECKLIST_STATUSES,
+  type DutyChecklistItem,
+  type DutyChecklistStatus,
+} from "./Common/DutyChecklistItem";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export type { LiveComment } from "./Common/LiveComment";
 export type { MediaAsset } from "./Common/MediaAsset";
 export { MEDIA_KINDS, type MediaKind } from "./Common/MediaKind";
+export {
+  DEFAULT_MODERATION_THRESHOLDS,
+  type ModerationThresholds,
+} from "./Common/ModerationThresholds";
 export { MOD_ACTION_KINDS, type ModActionKind } from "./Common/ModActionKind";
 export type { ModerationTarget } from "./Common/ModerationTarget";
 export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
-export type { PostingPolicy } from "./Common/PostingPolicy";
+export { POSTING_POLICIES, type PostingPolicy } from "./Common/PostingPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
+export { REGIONS, DEFAULT_REGION, type Region } from "./Common/Region";
 export type { Report } from "./Common/Report";
 export { REPORT_REASONS, type ReportReason } from "./Common/ReportReason";
 export { REPORT_STATUSES, type ReportStatus } from "./Common/ReportStatus";
+export { SIGN_UP_POLICIES, type SignUpPolicy } from "./Common/SignUpPolicy";
+export {
+  SITE_CONFIG_PRESETS,
+  SITE_CONFIG_PRESET_VALUES,
+  type SiteConfigPreset,
+  type SiteConfigPresetValues,
+} from "./Common/SiteConfigPreset";
+export {
+  ABOUT_MD_MAX_LENGTH,
+  SITE_NAME_MAX_LENGTH,
+  SITE_TAGLINE_MAX_LENGTH,
+  type SiteIdentity,
+} from "./Common/SiteIdentity";
 export { SUBJECT_KINDS, type SubjectKind } from "./Common/SubjectKind";
 export {
   DEFAULT_RAW_IP_RETENTION_DAYS,
@@ -53,7 +87,7 @@ export { REACTION_KINDS, type ReactionKind } from "./Common/ReactionKind";
 export type { ReactionTarget } from "./Common/ReactionTarget";
 export type { Tag } from "./Common/Tag";
 export type { TombstoneComment } from "./Common/TombstoneComment";
-export type { TrustLevel } from "./Common/TrustLevel";
+export { TRUST_LEVELS, type TrustLevel } from "./Common/TrustLevel";
 export type { UserRole } from "./Common/UserRole";
 
 // AccountManager: sign-in, profiles, handles (SPEC.md §4, issue #4).
@@ -74,6 +108,7 @@ export { AnonymousStatusResponse } from "./Managers/AccountManager/Responses/Ano
 export { HandleRejectedResponse } from "./Managers/AccountManager/Responses/HandleRejectedResponse";
 export { NoSuchProfileResponse } from "./Managers/AccountManager/Responses/NoSuchProfileResponse";
 export { ProfileResponse } from "./Managers/AccountManager/Responses/ProfileResponse";
+export { SignUpClosedResponse } from "./Managers/AccountManager/Responses/SignUpClosedResponse";
 
 // PostManager: drafts, publishing, the author's list (SPEC.md §5, issue #5).
 export type { IPostManager } from "./Managers/PostManager/IPostManager";
@@ -192,6 +227,20 @@ export { ReasonRequiredResponse } from "./Managers/ModerationManager/Responses/R
 export { ReportFiledResponse } from "./Managers/ModerationManager/Responses/ReportFiledResponse";
 export { ReportListResponse } from "./Managers/ModerationManager/Responses/ReportListResponse";
 export { ThreadLockedResponse } from "./Managers/ModerationManager/Responses/ThreadLockedResponse";
+
+// SiteConfigManager: the admin settings page, presets, and the duty checklist
+// (SPEC.md §4, §7, issue #12).
+export type { ISiteConfigManager } from "./Managers/SiteConfigManager/ISiteConfigManager";
+export type { RegionProfile } from "./Managers/SiteConfigManager/RegionProfiles";
+export type { SiteConfigSnapshot } from "./Managers/SiteConfigManager/SiteConfigSnapshot";
+export { ApplyPresetRequest } from "./Managers/SiteConfigManager/Requests/ApplyPresetRequest";
+export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
+export { SiteConfigForbiddenResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigForbiddenResponse";
+export { SiteConfigInvalidResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigInvalidResponse";
+export { SiteConfigResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigResponse";
+export { SiteConfigSavedResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigSavedResponse";
+export { SiteConfigUnavailableResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigUnavailableResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.

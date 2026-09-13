@@ -119,6 +119,7 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "anonymous.moderate": mayModerate,
   "report.file": mayFileReport,
   "report.view": mayModerate,
+  "site_config.manage": mayManageSiteConfig,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -418,6 +419,17 @@ function mayModerate(actor: Actor): Promise<Denial> {
 // Trust-level promotion is an admin's call, not a moderator's (SPEC.md §4: "Admins
 // promote by hand").
 function mayPromoteProfile(actor: Actor): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(gate.role === "admin"));
+}
+
+// The site settings page is an admin's alone, never a moderator's (SPEC.md §4, §7):
+// region, the D20 access keys, and every other `site_config` value are an ownership
+// decision, not a moderation one.
+function mayManageSiteConfig(actor: Actor): Promise<Denial> {
   const gate = activeMember(actor);
   if (isDenial(gate)) {
     return Promise.resolve(gate);

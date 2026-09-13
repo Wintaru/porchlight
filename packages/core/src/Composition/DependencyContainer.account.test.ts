@@ -9,6 +9,7 @@ import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/Ac
 import { HandleRejectedResponse } from "../Managers/AccountManager/Responses/HandleRejectedResponse";
 import { NoSuchProfileResponse } from "../Managers/AccountManager/Responses/NoSuchProfileResponse";
 import { ProfileResponse } from "../Managers/AccountManager/Responses/ProfileResponse";
+import { SignUpClosedResponse } from "../Managers/AccountManager/Responses/SignUpClosedResponse";
 import type { SignInIdentity } from "../Managers/AccountManager/SignInIdentity";
 import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV } from "./FakeEnvironment.test-helper";
@@ -243,6 +244,45 @@ describe("DependencyContainer: AccountManager", () => {
     ).resolves.toBeInstanceOf(UnhandledRequestResponse);
   });
 
+  test("a closed sign-up refuses a new member's first sign-in", async () => {
+    const container = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "closed",
+    });
+    await signIn(container, FIRST);
+
+    const response = await container.accountManager.execute(
+      new EnsureProfileRequest(SECOND),
+    );
+
+    expect(response).toBeInstanceOf(SignUpClosedResponse);
+  });
+
+  test("a closed sign-up still admits the configured admin email", async () => {
+    const container = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "closed",
+      PORCHLIGHT_ADMIN_EMAIL: SECOND.email,
+    });
+    await signIn(container, FIRST);
+
+    const profile = await signIn(container, SECOND);
+
+    expect(profile).toMatchObject({ role: "admin", trustLevel: "trusted" });
+  });
+
+  test("a closed sign-up never refuses a returning member", async () => {
+    const container = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "closed",
+    });
+    const first = await signIn(container, FIRST);
+
+    const found = await container.accountManager.execute(new EnsureProfileRequest(FIRST));
+
+    expect(found).toMatchObject({ profile: first });
+  });
+
   test("the supabase provider needs both keys", () => {
     expect(() => new DependencyContainer({})).toThrow(
       "NEXT_PUBLIC_SUPABASE_URL is not set",
@@ -263,5 +303,16 @@ describe("DependencyContainer: AccountManager", () => {
     expect(() => new DependencyContainer({ PROFILE_PROVIDER: "postgres" })).toThrow(
       "PROFILE_PROVIDER=postgres is not a known provider",
     );
+  });
+
+  test("ALLOW_FAKE_PROVIDERS=1 overrides the production refusal (#12)", () => {
+    expect(
+      () =>
+        new DependencyContainer({
+          ...FAKE_ENV,
+          NODE_ENV: "production",
+          ALLOW_FAKE_PROVIDERS: "1",
+        }),
+    ).not.toThrow();
   });
 });

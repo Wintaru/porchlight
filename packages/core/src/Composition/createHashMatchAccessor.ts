@@ -8,8 +8,10 @@ import {
 import { HashMatchAccessor } from "../Accessors/HashMatchAccessor/HashMatchAccessor";
 import type { IHashMatchAccessor } from "../Accessors/HashMatchAccessor/IHashMatchAccessor";
 import { MatchImageHashRequest } from "../Accessors/HashMatchAccessor/Requests/MatchImageHashRequest";
+import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
+import { assertFakeAllowedHere } from "./readStoreProvider";
 
 const HASH_MATCH_PROVIDERS = ["fake", "arachnid-shield", "photodna"] as const;
 type HashMatchProvider = (typeof HASH_MATCH_PROVIDERS)[number];
@@ -33,9 +35,10 @@ export function createHashMatchAccessor(env: Environment): IHashMatchAccessor {
     );
   }
   if (provider === "fake") {
-    if (env.NODE_ENV === "production") {
-      throw new Error("HASH_MATCH_PROVIDER=fake is not allowed in a production build.");
-    }
+    assertFakeAllowedHere(
+      env,
+      "HASH_MATCH_PROVIDER=fake is not allowed in a production build.",
+    );
     const result = env.HASH_MATCH_FAKE_RESULT ?? "clear";
     if (!isFakeHashMatchResult(result)) {
       throw new Error(
@@ -63,4 +66,21 @@ export function createHashMatchAccessor(env: Environment): IHashMatchAccessor {
       .register(MatchImageHashRequest, new ArachnidShieldMatchImageHashHandler(apiKey))
       .build(),
   );
+}
+
+// The duty checklist's row for this provider (SPEC.md §7, #12): reads the same
+// HASH_MATCH_PROVIDER switch the factory above does, so the two cannot drift.
+export function hashMatchDutyStatus(env: Environment): DutyChecklistItem {
+  const provider = env.HASH_MATCH_PROVIDER ?? "fake";
+  return {
+    id: "hash-match",
+    label: "Hash matching (known-illegal image fingerprints)",
+    status:
+      provider !== "fake"
+        ? "configured"
+        : env.NODE_ENV === "production"
+          ? "fakeInProduction"
+          : "fake",
+    setupGuidePath: "docs/setup/hash-matching.md",
+  };
 }

@@ -26,6 +26,7 @@ export const PERMISSION_ACTIONS = [
   "anonymous.moderate",
   "report.file",
   "report.view",
+  "site_config.manage",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

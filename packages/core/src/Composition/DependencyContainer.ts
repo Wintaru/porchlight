@@ -107,6 +107,15 @@ import { PromoteMemberRequest } from "../Managers/ModerationManager/Requests/Pro
 import { RejectItemRequest } from "../Managers/ModerationManager/Requests/RejectItemRequest";
 import { RemoveItemRequest } from "../Managers/ModerationManager/Requests/RemoveItemRequest";
 import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
+import { ApplyPresetHandler } from "../Managers/SiteConfigManager/Handlers/ApplyPresetHandler";
+import { GetSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteConfigHandler";
+import { SaveSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/SaveSiteConfigHandler";
+import type { ISiteConfigManager } from "../Managers/SiteConfigManager/ISiteConfigManager";
+import { ApplyPresetRequest } from "../Managers/SiteConfigManager/Requests/ApplyPresetRequest";
+import { GetSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+import { SaveSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
+import { SiteConfigManager } from "../Managers/SiteConfigManager/SiteConfigManager";
+import { computeDutyChecklist } from "./computeDutyChecklist";
 import { createAnonymousAuthorAccessor } from "./createAnonymousAuthorAccessor";
 import { createAuditAccessor } from "./createAuditAccessor";
 import { createAnonymousGuardEngine } from "./createAnonymousGuardEngine";
@@ -146,6 +155,7 @@ export class DependencyContainer {
   readonly commentManager: ICommentManager;
   readonly mediaManager: IMediaManager;
   readonly moderationManager: IModerationManager;
+  readonly siteConfigManager: ISiteConfigManager;
 
   constructor(env: Environment) {
     // One service-role client for every Supabase accessor, built on the first that
@@ -198,7 +208,7 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           EnsureProfileRequest,
-          new EnsureProfileHandler(profiles, permissions, {
+          new EnsureProfileHandler(profiles, permissions, siteConfig, {
             adminEmail: env.PORCHLIGHT_ADMIN_EMAIL,
           }),
         )
@@ -466,6 +476,23 @@ export class DependencyContainer {
         .register(
           ModerationListAuditLogRequest,
           new ListAuditLogHandler(auditLog, permissions),
+        )
+        .build(),
+    );
+
+    const dutyChecklist = computeDutyChecklist(env);
+    this.siteConfigManager = new SiteConfigManager(
+      new HandlerResolverBuilder()
+        .register(
+          SaveSiteConfigRequest,
+          new SaveSiteConfigHandler(siteConfig, permissions),
+        )
+        .register(ApplyPresetRequest, new ApplyPresetHandler(siteConfig, permissions))
+        .build(),
+      new HandlerResolverBuilder()
+        .register(
+          GetSiteConfigRequest,
+          new GetSiteConfigHandler(siteConfig, permissions, dutyChecklist),
         )
         .build(),
     );

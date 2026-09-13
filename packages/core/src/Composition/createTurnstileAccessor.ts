@@ -4,8 +4,10 @@ import { FakeTurnstileState } from "../Accessors/TurnstileAccessor/FakeTurnstile
 import type { ITurnstileAccessor } from "../Accessors/TurnstileAccessor/ITurnstileAccessor";
 import { TurnstileAccessor } from "../Accessors/TurnstileAccessor/TurnstileAccessor";
 import { VerifyTurnstileRequest } from "../Accessors/TurnstileAccessor/Requests/VerifyTurnstileRequest";
+import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
+import { assertFakeAllowedHere } from "./readStoreProvider";
 
 // pass | fail (.env.example), not the ok | fail vocabulary readStoreProvider's
 // readFakeResult reads for every store: this fake predates that helper and its two
@@ -27,11 +29,10 @@ function turnstilePasses(env: Environment): boolean {
 export function createTurnstileAccessor(env: Environment): ITurnstileAccessor {
   const secretKey = env.TURNSTILE_SECRET_KEY?.trim() ?? "";
   if (secretKey === "") {
-    if (env.NODE_ENV === "production") {
-      throw new Error(
-        "TURNSTILE_SECRET_KEY is empty, which selects the fake provider. Not allowed in a production build.",
-      );
-    }
+    assertFakeAllowedHere(
+      env,
+      "TURNSTILE_SECRET_KEY is empty, which selects the fake provider.",
+    );
     const state = new FakeTurnstileState(turnstilePasses(env));
     return new TurnstileAccessor(
       new HandlerResolverBuilder()
@@ -44,4 +45,20 @@ export function createTurnstileAccessor(env: Environment): ITurnstileAccessor {
       .register(VerifyTurnstileRequest, new CloudflareVerifyTurnstileHandler(secretKey))
       .build(),
   );
+}
+
+// The duty checklist's row for this provider (SPEC.md §7, #12): reads the same empty-key
+// rule the factory above does, so the two cannot drift.
+export function turnstileDutyStatus(env: Environment): DutyChecklistItem {
+  const configured = (env.TURNSTILE_SECRET_KEY?.trim() ?? "") !== "";
+  return {
+    id: "turnstile",
+    label: "Turnstile (anonymous submission verification)",
+    status: configured
+      ? "configured"
+      : env.NODE_ENV === "production"
+        ? "fakeInProduction"
+        : "fake",
+    setupGuidePath: "docs/setup/turnstile.md",
+  };
 }

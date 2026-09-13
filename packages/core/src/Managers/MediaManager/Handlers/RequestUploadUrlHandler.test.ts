@@ -73,6 +73,7 @@ function harness(quotaState: FakeQuotaState) {
     QUOTA_BY_TRUST,
   );
   const siteConfig = new SiteConfigAccessor(
+    new HandlerResolverBuilder().build(),
     new HandlerResolverBuilder()
       .register(
         LoadAttachmentAllowlistRequest,
