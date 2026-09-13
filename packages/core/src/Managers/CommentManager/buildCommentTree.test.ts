@@ -13,6 +13,7 @@ function comment(id: string, parentId: string | null, depth: number): Comment {
     author: { kind: "member", profileId: "u1" },
     bodyMd: id,
     bodyHtml: `<p>${id}</p>`,
+    rejectionReason: null,
     createdAt: new Date("2026-09-12T10:00:00.000Z"),
     updatedAt: new Date("2026-09-12T10:00:00.000Z"),
   };

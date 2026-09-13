@@ -9,4 +9,7 @@ export interface LiveComment extends CommentBase {
   readonly author: ContentAuthor;
   readonly bodyMd: string;
   readonly bodyHtml: string;
+  // The current reason for the current `rejected` status (#11). Null once a later
+  // action moves the comment off `rejected`.
+  readonly rejectionReason: string | null;
 }

@@ -23,6 +23,7 @@ export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 export { type Actor, VISITOR } from "./Common/Actor";
 export type { AnonymousStatusItem } from "./Common/AnonymousStatusItem";
 export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
+export type { AuditLogEntry } from "./Common/AuditLogEntry";
 export { type Comment, MAX_COMMENT_DEPTH } from "./Common/Comment";
 export { COMMENT_STATUSES, type CommentStatus } from "./Common/CommentStatus";
 export type { CommentPolicy } from "./Common/CommentPolicy";
@@ -31,12 +32,18 @@ export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export type { LiveComment } from "./Common/LiveComment";
 export type { MediaAsset } from "./Common/MediaAsset";
 export { MEDIA_KINDS, type MediaKind } from "./Common/MediaKind";
+export { MOD_ACTION_KINDS, type ModActionKind } from "./Common/ModActionKind";
+export type { ModerationTarget } from "./Common/ModerationTarget";
 export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export type { PostingPolicy } from "./Common/PostingPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
+export type { Report } from "./Common/Report";
+export { REPORT_REASONS, type ReportReason } from "./Common/ReportReason";
+export { REPORT_STATUSES, type ReportStatus } from "./Common/ReportStatus";
+export { SUBJECT_KINDS, type SubjectKind } from "./Common/SubjectKind";
 export {
   DEFAULT_RAW_IP_RETENTION_DAYS,
   LOCKED_RETENTION_DAYS,
@@ -148,6 +155,43 @@ export { MediaResponse } from "./Managers/MediaManager/Responses/MediaResponse";
 export { MediaUnavailableResponse } from "./Managers/MediaManager/Responses/MediaUnavailableResponse";
 export { NoSuchMediaResponse } from "./Managers/MediaManager/Responses/NoSuchMediaResponse";
 export { UploadUrlIssuedResponse } from "./Managers/MediaManager/Responses/UploadUrlIssuedResponse";
+
+// ModerationManager: the queue, reports, and the audit log (SPEC.md §7, issue #11).
+export type { IModerationManager } from "./Managers/ModerationManager/IModerationManager";
+export {
+  QUEUE_FILTERS,
+  type QueueFilter,
+} from "./Managers/ModerationManager/QueueFilter";
+export type { QueueItem } from "./Managers/ModerationManager/QueueItem";
+export { ApproveAsMatureRequest } from "./Managers/ModerationManager/Requests/ApproveAsMatureRequest";
+export { ApproveItemRequest } from "./Managers/ModerationManager/Requests/ApproveItemRequest";
+export { BanMemberRequest } from "./Managers/ModerationManager/Requests/BanMemberRequest";
+export { BlockAnonymousRequest } from "./Managers/ModerationManager/Requests/BlockAnonymousRequest";
+export { EscalateRequest } from "./Managers/ModerationManager/Requests/EscalateRequest";
+export { FileReportRequest } from "./Managers/ModerationManager/Requests/FileReportRequest";
+export { HideItemRequest } from "./Managers/ModerationManager/Requests/HideItemRequest";
+export { ListAuditLogRequest } from "./Managers/ModerationManager/Requests/ListAuditLogRequest";
+export { ListQueueRequest } from "./Managers/ModerationManager/Requests/ListQueueRequest";
+export { ListReportsRequest } from "./Managers/ModerationManager/Requests/ListReportsRequest";
+export { LockThreadRequest } from "./Managers/ModerationManager/Requests/LockThreadRequest";
+export { PromoteMemberRequest } from "./Managers/ModerationManager/Requests/PromoteMemberRequest";
+export { RejectItemRequest } from "./Managers/ModerationManager/Requests/RejectItemRequest";
+export { RemoveItemRequest } from "./Managers/ModerationManager/Requests/RemoveItemRequest";
+export { SuspendMemberRequest } from "./Managers/ModerationManager/Requests/SuspendMemberRequest";
+export { AnonymousAuthorBlockedResponse } from "./Managers/ModerationManager/Responses/AnonymousAuthorBlockedResponse";
+export { AuditLogListResponse } from "./Managers/ModerationManager/Responses/AuditLogListResponse";
+export { MatureApprovedResponse } from "./Managers/ModerationManager/Responses/MatureApprovedResponse";
+export { ModerationForbiddenResponse } from "./Managers/ModerationManager/Responses/ModerationForbiddenResponse";
+export { ModerationItemResponse } from "./Managers/ModerationManager/Responses/ModerationItemResponse";
+export { ModerationUnavailableResponse } from "./Managers/ModerationManager/Responses/ModerationUnavailableResponse";
+export { NoSuchItemResponse } from "./Managers/ModerationManager/Responses/NoSuchItemResponse";
+export { NoSuchProfileResponse as ModerationNoSuchProfileResponse } from "./Managers/ModerationManager/Responses/NoSuchProfileResponse";
+export { ProfileModeratedResponse } from "./Managers/ModerationManager/Responses/ProfileModeratedResponse";
+export { QueueResponse } from "./Managers/ModerationManager/Responses/QueueResponse";
+export { ReasonRequiredResponse } from "./Managers/ModerationManager/Responses/ReasonRequiredResponse";
+export { ReportFiledResponse } from "./Managers/ModerationManager/Responses/ReportFiledResponse";
+export { ReportListResponse } from "./Managers/ModerationManager/Responses/ReportListResponse";
+export { ThreadLockedResponse } from "./Managers/ModerationManager/Responses/ThreadLockedResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.

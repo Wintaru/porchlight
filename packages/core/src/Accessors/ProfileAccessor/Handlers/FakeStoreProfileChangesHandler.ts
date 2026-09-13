@@ -46,6 +46,8 @@ export class FakeStoreProfileChangesHandler implements IHandler<
         changes.displayName === undefined ? current.displayName : changes.displayName,
       bio: changes.bio === undefined ? current.bio : changes.bio,
       avatarUrl: changes.avatarUrl === undefined ? current.avatarUrl : changes.avatarUrl,
+      trustLevel: changes.trustLevel ?? current.trustLevel,
+      status: changes.status ?? current.status,
     };
     this.state.profiles.set(id, stored);
     return Promise.resolve(new ProfileStoredResponse(correlationId, stored));

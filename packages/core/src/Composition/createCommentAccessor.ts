@@ -3,22 +3,28 @@ import type { DbClient } from "@porchlight/db";
 import { CommentAccessor } from "../Accessors/CommentAccessor/CommentAccessor";
 import { FakeCommentState } from "../Accessors/CommentAccessor/FakeCommentState";
 import { FakeLoadCommentByIdHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentByIdHandler";
+import { FakeLoadCommentsByStatusHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsByStatusHandler";
 import { FakeLoadCommentsForPostHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsForPostHandler";
 import { FakeRemoveCommentHandler } from "../Accessors/CommentAccessor/Handlers/FakeRemoveCommentHandler";
 import { FakeStoreCommentChangesHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreCommentChangesHandler";
+import { FakeStoreCommentStatusHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreCommentStatusHandler";
 import { FakeStoreCommentTombstoneHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreCommentTombstoneHandler";
 import { FakeStoreNewCommentHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreNewCommentHandler";
 import { SupabaseLoadCommentByIdHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentByIdHandler";
+import { SupabaseLoadCommentsByStatusHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsByStatusHandler";
 import { SupabaseLoadCommentsForPostHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsForPostHandler";
 import { SupabaseRemoveCommentHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseRemoveCommentHandler";
 import { SupabaseStoreCommentChangesHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreCommentChangesHandler";
+import { SupabaseStoreCommentStatusHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreCommentStatusHandler";
 import { SupabaseStoreCommentTombstoneHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreCommentTombstoneHandler";
 import { SupabaseStoreNewCommentHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreNewCommentHandler";
 import type { ICommentAccessor } from "../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentByIdRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
 import { LoadCommentsForPostRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsForPostRequest";
+import { LoadCommentsByStatusRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByStatusRequest";
 import { RemoveCommentRequest } from "../Accessors/CommentAccessor/Requests/RemoveCommentRequest";
 import { StoreCommentChangesRequest } from "../Accessors/CommentAccessor/Requests/StoreCommentChangesRequest";
+import { StoreCommentStatusRequest } from "../Accessors/CommentAccessor/Requests/StoreCommentStatusRequest";
 import { StoreCommentTombstoneRequest } from "../Accessors/CommentAccessor/Requests/StoreCommentTombstoneRequest";
 import { StoreNewCommentRequest } from "../Accessors/CommentAccessor/Requests/StoreNewCommentRequest";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
@@ -49,10 +55,12 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
         StoreCommentTombstoneRequest,
         new SupabaseStoreCommentTombstoneHandler(db),
       )
+      .register(StoreCommentStatusRequest, new SupabaseStoreCommentStatusHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new SupabaseLoadCommentByIdHandler(db))
       .register(LoadCommentsForPostRequest, new SupabaseLoadCommentsForPostHandler(db))
+      .register(LoadCommentsByStatusRequest, new SupabaseLoadCommentsByStatusHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveCommentRequest, new SupabaseRemoveCommentHandler(db))
@@ -66,10 +74,12 @@ function createFakeCommentAccessor(state: FakeCommentState): ICommentAccessor {
       .register(StoreNewCommentRequest, new FakeStoreNewCommentHandler(state))
       .register(StoreCommentChangesRequest, new FakeStoreCommentChangesHandler(state))
       .register(StoreCommentTombstoneRequest, new FakeStoreCommentTombstoneHandler(state))
+      .register(StoreCommentStatusRequest, new FakeStoreCommentStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new FakeLoadCommentByIdHandler(state))
       .register(LoadCommentsForPostRequest, new FakeLoadCommentsForPostHandler(state))
+      .register(LoadCommentsByStatusRequest, new FakeLoadCommentsByStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveCommentRequest, new FakeRemoveCommentHandler(state))

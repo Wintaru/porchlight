@@ -4,12 +4,14 @@ import { FakePostState } from "../Accessors/PostAccessor/FakePostState";
 import { FakeLoadPostByIdHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostByIdHandler";
 import { FakeLoadPostBySlugHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostBySlugHandler";
 import { FakeLoadPostsByAuthorHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostsByAuthorHandler";
+import { FakeLoadPostsByStatusHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostsByStatusHandler";
 import { FakeRemovePostHandler } from "../Accessors/PostAccessor/Handlers/FakeRemovePostHandler";
 import { FakeStoreNewPostHandler } from "../Accessors/PostAccessor/Handlers/FakeStoreNewPostHandler";
 import { FakeStorePostChangesHandler } from "../Accessors/PostAccessor/Handlers/FakeStorePostChangesHandler";
 import { SupabaseLoadPostByIdHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostByIdHandler";
 import { SupabaseLoadPostBySlugHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostBySlugHandler";
 import { SupabaseLoadPostsByAuthorHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostsByAuthorHandler";
+import { SupabaseLoadPostsByStatusHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostsByStatusHandler";
 import { SupabaseRemovePostHandler } from "../Accessors/PostAccessor/Handlers/SupabaseRemovePostHandler";
 import { SupabaseStoreNewPostHandler } from "../Accessors/PostAccessor/Handlers/SupabaseStoreNewPostHandler";
 import { SupabaseStorePostChangesHandler } from "../Accessors/PostAccessor/Handlers/SupabaseStorePostChangesHandler";
@@ -18,6 +20,7 @@ import { PostAccessor } from "../Accessors/PostAccessor/PostAccessor";
 import { LoadPostByIdRequest } from "../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
 import { LoadPostBySlugRequest } from "../Accessors/PostAccessor/Requests/LoadPostBySlugRequest";
 import { LoadPostsByAuthorRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
+import { LoadPostsByStatusRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
 import { RemovePostRequest } from "../Accessors/PostAccessor/Requests/RemovePostRequest";
 import { StoreNewPostRequest } from "../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { StorePostChangesRequest } from "../Accessors/PostAccessor/Requests/StorePostChangesRequest";
@@ -47,6 +50,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
       .register(LoadPostBySlugRequest, new SupabaseLoadPostBySlugHandler(db))
       .register(LoadPostsByAuthorRequest, new SupabaseLoadPostsByAuthorHandler(db))
+      .register(LoadPostsByStatusRequest, new SupabaseLoadPostsByStatusHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(RemovePostRequest, new SupabaseRemovePostHandler(db))
@@ -64,6 +68,7 @@ function createFakePostAccessor(state: FakePostState): IPostAccessor {
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))
       .register(LoadPostBySlugRequest, new FakeLoadPostBySlugHandler(state))
       .register(LoadPostsByAuthorRequest, new FakeLoadPostsByAuthorHandler(state))
+      .register(LoadPostsByStatusRequest, new FakeLoadPostsByStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(RemovePostRequest, new FakeRemovePostHandler(state))

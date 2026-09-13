@@ -43,6 +43,7 @@ export class FakeStoreNewCommentHandler implements IHandler<
       bodyHtml: comment.bodyHtml,
       depth,
       status: comment.status,
+      rejectionReason: null,
       createdAt: timestamp,
       updatedAt: timestamp,
     };

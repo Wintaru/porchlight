@@ -15,4 +15,5 @@ export interface PostChanges {
   readonly tags?: readonly Tag[];
   readonly status?: PostStatus;
   readonly publishedAt?: Date | null;
+  readonly rejectionReason?: string | null;
 }

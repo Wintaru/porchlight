@@ -75,7 +75,40 @@ import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPost
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
+import { ApproveAsMatureHandler } from "../Managers/ModerationManager/Handlers/ApproveAsMatureHandler";
+import { ApproveItemHandler } from "../Managers/ModerationManager/Handlers/ApproveItemHandler";
+import { BanMemberHandler } from "../Managers/ModerationManager/Handlers/BanMemberHandler";
+import { BlockAnonymousHandler } from "../Managers/ModerationManager/Handlers/BlockAnonymousHandler";
+import { EscalateHandler } from "../Managers/ModerationManager/Handlers/EscalateHandler";
+import { FileReportHandler } from "../Managers/ModerationManager/Handlers/FileReportHandler";
+import { HideItemHandler } from "../Managers/ModerationManager/Handlers/HideItemHandler";
+import { ListAuditLogHandler } from "../Managers/ModerationManager/Handlers/ListAuditLogHandler";
+import { ListQueueHandler } from "../Managers/ModerationManager/Handlers/ListQueueHandler";
+import { ListReportsHandler } from "../Managers/ModerationManager/Handlers/ListReportsHandler";
+import { LockThreadHandler } from "../Managers/ModerationManager/Handlers/LockThreadHandler";
+import { PromoteMemberHandler } from "../Managers/ModerationManager/Handlers/PromoteMemberHandler";
+import { RejectItemHandler } from "../Managers/ModerationManager/Handlers/RejectItemHandler";
+import { RemoveItemHandler } from "../Managers/ModerationManager/Handlers/RemoveItemHandler";
+import { SuspendMemberHandler } from "../Managers/ModerationManager/Handlers/SuspendMemberHandler";
+import type { IModerationManager } from "../Managers/ModerationManager/IModerationManager";
+import { ModerationManager } from "../Managers/ModerationManager/ModerationManager";
+import { ApproveAsMatureRequest } from "../Managers/ModerationManager/Requests/ApproveAsMatureRequest";
+import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
+import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
+import { BlockAnonymousRequest } from "../Managers/ModerationManager/Requests/BlockAnonymousRequest";
+import { EscalateRequest } from "../Managers/ModerationManager/Requests/EscalateRequest";
+import { FileReportRequest as ModerateFileReportRequest } from "../Managers/ModerationManager/Requests/FileReportRequest";
+import { HideItemRequest } from "../Managers/ModerationManager/Requests/HideItemRequest";
+import { ListAuditLogRequest as ModerationListAuditLogRequest } from "../Managers/ModerationManager/Requests/ListAuditLogRequest";
+import { ListQueueRequest } from "../Managers/ModerationManager/Requests/ListQueueRequest";
+import { ListReportsRequest as ModerationListReportsRequest } from "../Managers/ModerationManager/Requests/ListReportsRequest";
+import { LockThreadRequest } from "../Managers/ModerationManager/Requests/LockThreadRequest";
+import { PromoteMemberRequest } from "../Managers/ModerationManager/Requests/PromoteMemberRequest";
+import { RejectItemRequest } from "../Managers/ModerationManager/Requests/RejectItemRequest";
+import { RemoveItemRequest } from "../Managers/ModerationManager/Requests/RemoveItemRequest";
+import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
 import { createAnonymousAuthorAccessor } from "./createAnonymousAuthorAccessor";
+import { createAuditAccessor } from "./createAuditAccessor";
 import { createAnonymousGuardEngine } from "./createAnonymousGuardEngine";
 import { createAttachmentEngine } from "./createAttachmentEngine";
 import { createBlockAccessor } from "./createBlockAccessor";
@@ -87,6 +120,7 @@ import { createImageClassifierAccessor } from "./createImageClassifierAccessor";
 import { createMediaAssetAccessor } from "./createMediaAssetAccessor";
 import { createMediaManagerOptions } from "./createMediaManagerOptions";
 import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
+import { createModActionAccessor } from "./createModActionAccessor";
 import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
@@ -95,6 +129,7 @@ import { createQuotaAccessor } from "./createQuotaAccessor";
 import { createQuotaEngine } from "./createQuotaEngine";
 import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
+import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
 import { createTurnstileAccessor } from "./createTurnstileAccessor";
@@ -110,6 +145,7 @@ export class DependencyContainer {
   readonly postManager: IPostManager;
   readonly commentManager: ICommentManager;
   readonly mediaManager: IMediaManager;
+  readonly moderationManager: IModerationManager;
 
   constructor(env: Environment) {
     // One service-role client for every Supabase accessor, built on the first that
@@ -145,6 +181,9 @@ export class DependencyContainer {
     const hashMatch = createHashMatchAccessor(env);
     const imageClassifier = createImageClassifierAccessor(env);
     const moderationPolicy = createModerationPolicyEngine();
+    const reports = createReportAccessor(env, db);
+    const modActions = createModActionAccessor(env, db);
+    const auditLog = createAuditAccessor(env, db);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -319,6 +358,114 @@ export class DependencyContainer {
         .register(
           GetMediaRequest,
           new GetMediaHandler(mediaStorage, mediaAssets, permissions, mediaOptions),
+        )
+        .build(),
+    );
+
+    this.moderationManager = new ModerationManager(
+      new HandlerResolverBuilder()
+        .register(
+          ApproveItemRequest,
+          new ApproveItemHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          ApproveAsMatureRequest,
+          new ApproveAsMatureHandler(
+            mediaAssets,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          RejectItemRequest,
+          new RejectItemHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          HideItemRequest,
+          new HideItemHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          RemoveItemRequest,
+          new RemoveItemHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          LockThreadRequest,
+          new LockThreadHandler(posts, modActions, auditLog, reports, permissions),
+        )
+        .register(
+          SuspendMemberRequest,
+          new SuspendMemberHandler(profiles, modActions, auditLog, reports, permissions),
+        )
+        .register(
+          BanMemberRequest,
+          new BanMemberHandler(profiles, modActions, auditLog, reports, permissions),
+        )
+        .register(
+          BlockAnonymousRequest,
+          new BlockAnonymousHandler(blocks, modActions, auditLog, reports, permissions),
+        )
+        .register(
+          EscalateRequest,
+          new EscalateHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            permissions,
+          ),
+        )
+        .register(
+          PromoteMemberRequest,
+          new PromoteMemberHandler(profiles, modActions, auditLog, reports, permissions),
+        )
+        .register(
+          ModerateFileReportRequest,
+          new FileReportHandler(posts, comments, reports, auditLog, permissions),
+        )
+        .build(),
+      new HandlerResolverBuilder()
+        .register(
+          ListQueueRequest,
+          new ListQueueHandler(posts, comments, profiles, mediaAssets, permissions),
+        )
+        .register(
+          ModerationListReportsRequest,
+          new ListReportsHandler(reports, permissions),
+        )
+        .register(
+          ModerationListAuditLogRequest,
+          new ListAuditLogHandler(auditLog, permissions),
         )
         .build(),
     );

@@ -55,5 +55,7 @@ function toColumns(changes: ProfileChanges): TablesUpdate<"profiles"> {
   if (changes.displayName !== undefined) columns.display_name = changes.displayName;
   if (changes.bio !== undefined) columns.bio = changes.bio;
   if (changes.avatarUrl !== undefined) columns.avatar_url = changes.avatarUrl;
+  if (changes.trustLevel !== undefined) columns.trust_level = changes.trustLevel;
+  if (changes.status !== undefined) columns.status = changes.status;
   return columns;
 }

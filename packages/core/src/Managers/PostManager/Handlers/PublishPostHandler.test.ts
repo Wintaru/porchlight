@@ -54,6 +54,7 @@ function stateWith(status: PostStatus): FakePostState {
     status,
     visibility: "public",
     commentsEnabled: true,
+    rejectionReason: null,
     tags: [],
     publishedAt: status === "published" ? AT : null,
     createdAt: AT,

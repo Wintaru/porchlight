@@ -71,6 +71,9 @@ function toColumns(changes: PostChanges): TablesUpdate<"posts"> {
   if (changes.commentsEnabled !== undefined)
     columns.comments_enabled = changes.commentsEnabled;
   if (changes.status !== undefined) columns.status = changes.status;
+  if (changes.rejectionReason !== undefined) {
+    columns.rejection_reason = changes.rejectionReason;
+  }
   if (changes.publishedAt !== undefined) {
     columns.published_at =
       changes.publishedAt === null ? null : changes.publishedAt.toISOString();

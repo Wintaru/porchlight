@@ -19,6 +19,13 @@ export const PERMISSION_ACTIONS = [
   "media.upload.anonymous",
   "media.view",
   "media.delete",
+  "moderation.act",
+  "moderation.queue.view",
+  "profile.moderate",
+  "profile.promote",
+  "anonymous.moderate",
+  "report.file",
+  "report.view",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

@@ -28,4 +28,5 @@ export type PermissionSubject =
       readonly owner: ContentAuthor;
       readonly publishedPath: string | null;
     }
+  | { readonly kind: "anonymousAuthor"; readonly id: string }
   | { readonly kind: "site" };

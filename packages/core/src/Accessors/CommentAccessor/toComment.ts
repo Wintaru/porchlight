@@ -7,7 +7,7 @@ import type { ContentAuthor } from "../../Common/ContentAuthor";
 // mapper below expects. One literal on purpose: the client parses the select string at
 // the type level, and a concatenation would widen it to `string`.
 export const COMMENT_COLUMNS =
-  "id, post_id, parent_id, author_id, anonymous_author_id, body_md, body_html, depth, status, created_at, updated_at";
+  "id, post_id, parent_id, author_id, anonymous_author_id, body_md, body_html, depth, status, rejection_reason, created_at, updated_at";
 
 export type CommentRow = Pick<
   Tables<"comments">,
@@ -20,6 +20,7 @@ export type CommentRow = Pick<
   | "body_html"
   | "depth"
   | "status"
+  | "rejection_reason"
   | "created_at"
   | "updated_at"
 >;
@@ -44,6 +45,7 @@ export function toComment(row: CommentRow): Comment {
     author: toAuthor(row),
     bodyMd: row.body_md,
     bodyHtml: row.body_html,
+    rejectionReason: row.rejection_reason,
   };
 }
 

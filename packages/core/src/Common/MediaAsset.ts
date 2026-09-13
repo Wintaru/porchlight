@@ -18,6 +18,10 @@ export interface MediaAsset {
   readonly bytes: number;
   readonly sha256: string;
   readonly scanStatus: ScanStatus;
+  // Set by ApproveAsMature (#11). Artistic nudity may be approved only with this tag
+  // (SPEC.md §7); mature items render blurred with click-to-reveal regardless of
+  // publication state.
+  readonly mature: boolean;
   readonly retainUntil: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

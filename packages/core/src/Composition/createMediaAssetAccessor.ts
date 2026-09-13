@@ -4,16 +4,19 @@ import { FakeMediaAssetState } from "../Accessors/MediaAssetAccessor/FakeMediaAs
 import { FakeCountMediaForAnonymousAuthorHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeCountMediaForAnonymousAuthorHandler";
 import { FakeLoadMediaAssetByIdHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadMediaAssetByIdHandler";
 import { FakeRemoveMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeRemoveMediaAssetHandler";
+import { FakeStoreMediaAssetChangesHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeStoreMediaAssetChangesHandler";
 import { FakeStoreNewMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeStoreNewMediaAssetHandler";
 import { SupabaseCountMediaForAnonymousAuthorHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseCountMediaForAnonymousAuthorHandler";
 import { SupabaseLoadMediaAssetByIdHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadMediaAssetByIdHandler";
 import { SupabaseRemoveMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseRemoveMediaAssetHandler";
+import { SupabaseStoreMediaAssetChangesHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseStoreMediaAssetChangesHandler";
 import { SupabaseStoreNewMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseStoreNewMediaAssetHandler";
 import type { IMediaAssetAccessor } from "../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import { MediaAssetAccessor } from "../Accessors/MediaAssetAccessor/MediaAssetAccessor";
 import { CountMediaForAnonymousAuthorRequest } from "../Accessors/MediaAssetAccessor/Requests/CountMediaForAnonymousAuthorRequest";
 import { LoadMediaAssetByIdRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
 import { RemoveMediaAssetRequest } from "../Accessors/MediaAssetAccessor/Requests/RemoveMediaAssetRequest";
+import { StoreMediaAssetChangesRequest } from "../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
 import { StoreNewMediaAssetRequest } from "../Accessors/MediaAssetAccessor/Requests/StoreNewMediaAssetRequest";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
@@ -38,6 +41,10 @@ function createSupabaseMediaAssetAccessor(db: DbClient): IMediaAssetAccessor {
   return new MediaAssetAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewMediaAssetRequest, new SupabaseStoreNewMediaAssetHandler(db))
+      .register(
+        StoreMediaAssetChangesRequest,
+        new SupabaseStoreMediaAssetChangesHandler(db),
+      )
       .build(),
     new HandlerResolverBuilder()
       .register(LoadMediaAssetByIdRequest, new SupabaseLoadMediaAssetByIdHandler(db))
@@ -56,6 +63,10 @@ function createFakeMediaAssetAccessor(state: FakeMediaAssetState): IMediaAssetAc
   return new MediaAssetAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewMediaAssetRequest, new FakeStoreNewMediaAssetHandler(state))
+      .register(
+        StoreMediaAssetChangesRequest,
+        new FakeStoreMediaAssetChangesHandler(state),
+      )
       .build(),
     new HandlerResolverBuilder()
       .register(LoadMediaAssetByIdRequest, new FakeLoadMediaAssetByIdHandler(state))

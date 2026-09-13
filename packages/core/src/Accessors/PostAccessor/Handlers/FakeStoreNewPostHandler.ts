@@ -38,6 +38,7 @@ export class FakeStoreNewPostHandler implements IHandler<
       status: "draft",
       visibility: post.visibility,
       commentsEnabled: post.commentsEnabled,
+      rejectionReason: null,
       tags: post.tags,
       publishedAt: null,
       createdAt: timestamp,

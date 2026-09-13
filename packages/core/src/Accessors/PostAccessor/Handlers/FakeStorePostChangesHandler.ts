@@ -35,6 +35,10 @@ export class FakeStorePostChangesHandler implements IHandler<
       commentsEnabled: changes.commentsEnabled ?? current.commentsEnabled,
       tags: changes.tags ?? current.tags,
       status: changes.status ?? current.status,
+      rejectionReason:
+        changes.rejectionReason === undefined
+          ? current.rejectionReason
+          : changes.rejectionReason,
       publishedAt:
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,

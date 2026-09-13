@@ -23,6 +23,7 @@ test("toComment maps a member's live row with its dates", () => {
     body_html: "<p>Hi</p>",
     depth: 0,
     status: "visible",
+    rejection_reason: null,
     created_at: "2026-09-12T10:00:00.000Z",
     updated_at: "2026-09-12T10:05:00.000Z",
   });
@@ -35,6 +36,7 @@ test("toComment maps a member's live row with its dates", () => {
     author: { kind: "member", profileId: "u1" },
     bodyMd: "Hi",
     bodyHtml: "<p>Hi</p>",
+    rejectionReason: null,
     createdAt: new Date("2026-09-12T10:00:00.000Z"),
     updatedAt: new Date("2026-09-12T10:05:00.000Z"),
   });
@@ -51,6 +53,7 @@ test("toComment maps an anonymous reply", () => {
     body_html: "<p>Hi</p>",
     depth: 1,
     status: "pending",
+    rejection_reason: null,
     created_at: "2026-09-12T10:00:00.000Z",
     updated_at: "2026-09-12T10:00:00.000Z",
   });
@@ -72,6 +75,7 @@ test("toComment maps a tombstone to the shape with no author and no body", () =>
     body_html: "",
     depth: 0,
     status: "tombstone",
+    rejection_reason: null,
     created_at: "2026-09-12T10:00:00.000Z",
     updated_at: "2026-09-12T10:00:00.000Z",
   });
@@ -99,6 +103,7 @@ test("toComment throws on a live row with no author", () => {
       body_html: "<p>x</p>",
       depth: 0,
       status: "visible",
+      rejection_reason: null,
       created_at: "2026-09-12T10:00:00.000Z",
       updated_at: "2026-09-12T10:00:00.000Z",
     }),

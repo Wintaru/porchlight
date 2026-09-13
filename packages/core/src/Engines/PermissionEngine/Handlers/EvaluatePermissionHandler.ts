@@ -112,6 +112,13 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "media.upload.anonymous": mayUploadMediaAnonymously,
   "media.view": mayViewMedia,
   "media.delete": mayDeleteMedia,
+  "moderation.act": mayModerate,
+  "moderation.queue.view": mayModerate,
+  "profile.moderate": mayModerate,
+  "profile.promote": mayPromoteProfile,
+  "anonymous.moderate": mayModerate,
+  "report.file": mayFileReport,
+  "report.view": mayModerate,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -395,4 +402,39 @@ function mayDeleteMedia(actor: Actor, subject: PermissionSubject): Promise<Denia
   }
   const isOwner = subject.owner.kind === "member" && subject.owner.profileId === gate.id;
   return Promise.resolve(verdict(isOwner || gate.role === "admin"));
+}
+
+// A moderator or an admin, for the whole ModerationManager action list except
+// promotion (SPEC.md §7): approve, reject, hide, remove, lock a thread, escalate,
+// suspend, ban, block an anonymous author, and viewing the queue or the reports list.
+function mayModerate(actor: Actor): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(isStaff(gate)));
+}
+
+// Trust-level promotion is an admin's call, not a moderator's (SPEC.md §4: "Admins
+// promote by hand").
+function mayPromoteProfile(actor: Actor): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(verdict(gate.role === "admin"));
+}
+
+// Anyone may use the report button (SPEC.md §7), signed in or not, on a post or a
+// comment.
+function mayFileReport(actor: Actor, subject: PermissionSubject): Promise<Denial> {
+  if (subject.kind !== "post" && subject.kind !== "comment") {
+    return Promise.resolve("not-allowed");
+  }
+  if (actor.kind === "visitor") {
+    return Promise.resolve(undefined);
+  }
+  return Promise.resolve(
+    actor.profile.status === "active" ? undefined : "account-inactive",
+  );
 }

@@ -18,6 +18,9 @@ export interface Post {
   readonly status: PostStatus;
   readonly visibility: PostVisibility;
   readonly commentsEnabled: boolean;
+  // The current reason for the current `rejected` status (#11). Null once a later
+  // action moves the post off `rejected`.
+  readonly rejectionReason: string | null;
   readonly tags: readonly Tag[];
   readonly publishedAt: Date | null;
   readonly createdAt: Date;
