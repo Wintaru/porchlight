@@ -142,6 +142,7 @@ export { MediaFinalizedResponse } from "./Managers/MediaManager/Responses/MediaF
 export { MediaForbiddenResponse } from "./Managers/MediaManager/Responses/MediaForbiddenResponse";
 export { MediaGuardRefusedResponse } from "./Managers/MediaManager/Responses/MediaGuardRefusedResponse";
 export { MediaQuotaExceededResponse } from "./Managers/MediaManager/Responses/MediaQuotaExceededResponse";
+export { MediaRefusedResponse } from "./Managers/MediaManager/Responses/MediaRefusedResponse";
 export { MediaRejectedResponse } from "./Managers/MediaManager/Responses/MediaRejectedResponse";
 export { MediaResponse } from "./Managers/MediaManager/Responses/MediaResponse";
 export { MediaUnavailableResponse } from "./Managers/MediaManager/Responses/MediaUnavailableResponse";

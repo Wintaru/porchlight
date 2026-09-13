@@ -14,7 +14,7 @@ export class FakeStoreNewMediaAssetHandler implements IHandler<
   handle(
     request: StoreNewMediaAssetRequest,
   ): Promise<MediaAssetStoredResponse | MediaAssetAccessFailedResponse> {
-    const { asset, correlationId, timestamp } = request;
+    const { asset, evidence, auditEvent, correlationId, timestamp } = request;
     if (this.state.failing) {
       return Promise.resolve(
         new MediaAssetAccessFailedResponse(correlationId, "MEDIA_FAKE_RESULT=fail"),
@@ -30,12 +30,16 @@ export class FakeStoreNewMediaAssetHandler implements IHandler<
       originalFilename: asset.originalFilename,
       bytes: asset.bytes,
       sha256: asset.sha256,
-      scanStatus: "pending",
-      retainUntil: null,
+      scanStatus: asset.scanStatus,
+      retainUntil: asset.retainUntil,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
     this.state.assets.set(stored.id, stored);
+    this.state.evidence.push(evidence);
+    if (auditEvent !== undefined) {
+      this.state.auditEvents.push(auditEvent);
+    }
     return Promise.resolve(new MediaAssetStoredResponse(correlationId, stored));
   }
 }

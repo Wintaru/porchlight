@@ -94,6 +94,7 @@ function harness(quotaState: FakeQuotaState) {
     quotaEngine,
     {
       quarantineBucket: "quarantine",
+      ipHashSalt: "test-salt",
     },
   );
 }

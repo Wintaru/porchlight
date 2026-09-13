@@ -13,7 +13,8 @@ type MediaErrorCode =
   | MediaForbiddenResponse["reason"]
   | MediaRejectedResponse["reason"]
   | MediaQuotaExceededResponse["reason"]
-  | "unavailable";
+  | "unavailable"
+  | "refused";
 
 export const MEDIA_ERROR_TEXT: Readonly<Record<MediaErrorCode, string>> = {
   "signed-out": "Sign in to attach a file.",
@@ -28,6 +29,9 @@ export const MEDIA_ERROR_TEXT: Readonly<Record<MediaErrorCode, string>> = {
   "account-cap": "This account has reached its total upload limit.",
   "file-count-cap": "The upload limit for this action has been reached.",
   unavailable: "The file could not be uploaded. Try again in a moment.",
+  // A locked scan verdict (SPEC.md §7, issue #31): never named as such, so an uploader
+  // cannot tell a lock from any other refusal. Trying again will not change the answer.
+  refused: "That file was not accepted.",
 };
 
 function isMediaErrorCode(code: string): code is MediaErrorCode {

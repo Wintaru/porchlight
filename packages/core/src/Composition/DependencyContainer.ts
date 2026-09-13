@@ -82,9 +82,12 @@ import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
+import { createHashMatchAccessor } from "./createHashMatchAccessor";
+import { createImageClassifierAccessor } from "./createImageClassifierAccessor";
 import { createMediaAssetAccessor } from "./createMediaAssetAccessor";
 import { createMediaManagerOptions } from "./createMediaManagerOptions";
 import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
+import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
@@ -139,6 +142,9 @@ export class DependencyContainer {
     const attachments = createAttachmentEngine();
     const quotaEngine = createQuotaEngine();
     const mediaOptions = createMediaManagerOptions(env);
+    const hashMatch = createHashMatchAccessor(env);
+    const imageClassifier = createImageClassifierAccessor(env);
+    const moderationPolicy = createModerationPolicyEngine();
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -276,6 +282,9 @@ export class DependencyContainer {
             siteConfig,
             permissions,
             attachments,
+            hashMatch,
+            imageClassifier,
+            moderationPolicy,
             quotaEngine,
             mediaOptions,
           ),
@@ -288,6 +297,9 @@ export class DependencyContainer {
             siteConfig,
             anonymousAuthors,
             attachments,
+            hashMatch,
+            imageClassifier,
+            moderationPolicy,
             quotaEngine,
             mediaOptions,
           ),

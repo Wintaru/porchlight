@@ -6,6 +6,7 @@ import {
   GetMediaRequest,
   MediaDeletedResponse,
   MediaFinalizedResponse,
+  MediaRefusedResponse,
   MediaResponse,
   RequestUploadUrlRequest,
   UploadUrlIssuedResponse,
@@ -14,6 +15,7 @@ import {
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
+import { currentRequestMeta } from "@/lib/request-meta";
 import { mediaErrorTextFor } from "./media-messages";
 import type {
   DeleteUploadResult,
@@ -67,8 +69,15 @@ export async function finalizeUpload(
   }
 
   const container = getDependencyContainer();
+  const meta = await currentRequestMeta();
   const finalized = await container.mediaManager.execute(
-    new FinalizeUploadRequest(actor, mediaId, originalFilename),
+    new FinalizeUploadRequest(
+      actor,
+      mediaId,
+      originalFilename,
+      meta.clientIp,
+      meta.userAgent,
+    ),
   );
   if (!(finalized instanceof MediaFinalizedResponse)) {
     return { ok: false, error: errorTextFor(finalized) };
@@ -101,6 +110,12 @@ export async function deleteUpload(mediaId: string): Promise<DeleteUploadResult>
 }
 
 function errorTextFor(response: object & { readonly correlationId: string }): string {
+  // A locked scan verdict (SPEC.md §7): a plain refusal, not an application error, so
+  // this never reaches console.error — that channel is for genuine failures to
+  // investigate, and a lock is neither a bug nor something retrying will fix.
+  if (response instanceof MediaRefusedResponse) {
+    return mediaErrorTextFor("refused");
+  }
   if ("reason" in response && typeof response.reason === "string") {
     return mediaErrorTextFor(response.reason);
   }
