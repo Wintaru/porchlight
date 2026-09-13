@@ -1,12 +1,15 @@
 import type { DbClient } from "@porchlight/db";
 
 import { FakeReactionState } from "../Accessors/ReactionAccessor/FakeReactionState";
+import { FakeLoadReactionsByProfileHandler } from "../Accessors/ReactionAccessor/Handlers/FakeLoadReactionsByProfileHandler";
 import { FakeRemoveReactionHandler } from "../Accessors/ReactionAccessor/Handlers/FakeRemoveReactionHandler";
 import { FakeStoreReactionHandler } from "../Accessors/ReactionAccessor/Handlers/FakeStoreReactionHandler";
+import { SupabaseLoadReactionsByProfileHandler } from "../Accessors/ReactionAccessor/Handlers/SupabaseLoadReactionsByProfileHandler";
 import { SupabaseRemoveReactionHandler } from "../Accessors/ReactionAccessor/Handlers/SupabaseRemoveReactionHandler";
 import { SupabaseStoreReactionHandler } from "../Accessors/ReactionAccessor/Handlers/SupabaseStoreReactionHandler";
 import type { IReactionAccessor } from "../Accessors/ReactionAccessor/IReactionAccessor";
 import { ReactionAccessor } from "../Accessors/ReactionAccessor/ReactionAccessor";
+import { LoadReactionsByProfileRequest } from "../Accessors/ReactionAccessor/Requests/LoadReactionsByProfileRequest";
 import { RemoveReactionRequest } from "../Accessors/ReactionAccessor/Requests/RemoveReactionRequest";
 import { StoreReactionRequest } from "../Accessors/ReactionAccessor/Requests/StoreReactionRequest";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
@@ -26,6 +29,12 @@ export function createReactionAccessor(
           .register(StoreReactionRequest, new SupabaseStoreReactionHandler(client))
           .build(),
         new HandlerResolverBuilder()
+          .register(
+            LoadReactionsByProfileRequest,
+            new SupabaseLoadReactionsByProfileHandler(client),
+          )
+          .build(),
+        new HandlerResolverBuilder()
           .register(RemoveReactionRequest, new SupabaseRemoveReactionHandler(client))
           .build(),
       );
@@ -37,6 +46,12 @@ export function createReactionAccessor(
       return new ReactionAccessor(
         new HandlerResolverBuilder()
           .register(StoreReactionRequest, new FakeStoreReactionHandler(state))
+          .build(),
+        new HandlerResolverBuilder()
+          .register(
+            LoadReactionsByProfileRequest,
+            new FakeLoadReactionsByProfileHandler(state),
+          )
           .build(),
         new HandlerResolverBuilder()
           .register(RemoveReactionRequest, new FakeRemoveReactionHandler(state))

@@ -27,7 +27,7 @@ export class FakeStoreReactionHandler implements IHandler<
     if (this.state.reactions.has(key)) {
       return Promise.resolve(new ReactionExistsResponse(correlationId));
     }
-    this.state.reactions.add(key);
+    this.state.reactions.set(key, reaction);
     return Promise.resolve(new ReactionStoredResponse(correlationId));
   }
 }

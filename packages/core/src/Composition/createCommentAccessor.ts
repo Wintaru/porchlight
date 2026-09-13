@@ -3,6 +3,7 @@ import type { DbClient } from "@porchlight/db";
 import { CommentAccessor } from "../Accessors/CommentAccessor/CommentAccessor";
 import { FakeCommentState } from "../Accessors/CommentAccessor/FakeCommentState";
 import { FakeLoadCommentByIdHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentByIdHandler";
+import { FakeLoadCommentsByAuthorHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsByAuthorHandler";
 import { FakeLoadCommentsByStatusHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsByStatusHandler";
 import { FakeLoadCommentsForPostHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsForPostHandler";
 import { FakeRemoveCommentHandler } from "../Accessors/CommentAccessor/Handlers/FakeRemoveCommentHandler";
@@ -11,6 +12,7 @@ import { FakeStoreCommentStatusHandler } from "../Accessors/CommentAccessor/Hand
 import { FakeStoreCommentTombstoneHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreCommentTombstoneHandler";
 import { FakeStoreNewCommentHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreNewCommentHandler";
 import { SupabaseLoadCommentByIdHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentByIdHandler";
+import { SupabaseLoadCommentsByAuthorHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsByAuthorHandler";
 import { SupabaseLoadCommentsByStatusHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsByStatusHandler";
 import { SupabaseLoadCommentsForPostHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsForPostHandler";
 import { SupabaseRemoveCommentHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseRemoveCommentHandler";
@@ -20,6 +22,7 @@ import { SupabaseStoreCommentTombstoneHandler } from "../Accessors/CommentAccess
 import { SupabaseStoreNewCommentHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreNewCommentHandler";
 import type { ICommentAccessor } from "../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentByIdRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
+import { LoadCommentsByAuthorRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByAuthorRequest";
 import { LoadCommentsForPostRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsForPostRequest";
 import { LoadCommentsByStatusRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByStatusRequest";
 import { RemoveCommentRequest } from "../Accessors/CommentAccessor/Requests/RemoveCommentRequest";
@@ -61,6 +64,7 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
       .register(LoadCommentByIdRequest, new SupabaseLoadCommentByIdHandler(db))
       .register(LoadCommentsForPostRequest, new SupabaseLoadCommentsForPostHandler(db))
       .register(LoadCommentsByStatusRequest, new SupabaseLoadCommentsByStatusHandler(db))
+      .register(LoadCommentsByAuthorRequest, new SupabaseLoadCommentsByAuthorHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveCommentRequest, new SupabaseRemoveCommentHandler(db))
@@ -80,6 +84,7 @@ function createFakeCommentAccessor(state: FakeCommentState): ICommentAccessor {
       .register(LoadCommentByIdRequest, new FakeLoadCommentByIdHandler(state))
       .register(LoadCommentsForPostRequest, new FakeLoadCommentsForPostHandler(state))
       .register(LoadCommentsByStatusRequest, new FakeLoadCommentsByStatusHandler(state))
+      .register(LoadCommentsByAuthorRequest, new FakeLoadCommentsByAuthorHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveCommentRequest, new FakeRemoveCommentHandler(state))

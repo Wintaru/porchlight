@@ -7,11 +7,16 @@ import type { IReactionAccessor } from "./IReactionAccessor";
 export class ReactionAccessor implements IReactionAccessor {
   constructor(
     private readonly storeResolver: HandlerResolver,
+    private readonly loadResolver: HandlerResolver,
     private readonly removeResolver: HandlerResolver,
   ) {}
 
   store(request: RequestBase): Promise<ResponseBase> {
     return this.storeResolver.resolve(request);
+  }
+
+  load(request: RequestBase): Promise<ResponseBase> {
+    return this.loadResolver.resolve(request);
   }
 
   remove(request: RequestBase): Promise<ResponseBase> {
