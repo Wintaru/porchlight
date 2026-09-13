@@ -172,6 +172,7 @@ describe("anon", () => {
         tx<{ handle: string }[]>`select handle from public.profiles order by handle`,
     );
     expect(handles.map((row) => row.handle)).toEqual([
+      "ivy",
       "june",
       "lamplighter",
       "mira",

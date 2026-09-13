@@ -21,7 +21,8 @@ from (values
   ('00000000-0000-4000-8000-000000000001'::uuid, 'lamplighter@porchlight.local'),
   ('00000000-0000-4000-8000-000000000002'::uuid, 'mira@porchlight.local'),
   ('00000000-0000-4000-8000-000000000003'::uuid, 'theo@porchlight.local'),
-  ('00000000-0000-4000-8000-000000000004'::uuid, 'june@porchlight.local')
+  ('00000000-0000-4000-8000-000000000004'::uuid, 'june@porchlight.local'),
+  ('00000000-0000-4000-8000-000000000006'::uuid, 'ivy@porchlight.local')
 ) as seed_users (id, email);
 
 insert into auth.identities (
@@ -42,7 +43,11 @@ insert into public.profiles (id, handle, display_name, bio, role, trust_level) v
   ('00000000-0000-4000-8000-000000000003', 'theo', 'Theo Lindqvist',
    'Trusted member. Writes about wood and weather.', 'member', 'trusted'),
   ('00000000-0000-4000-8000-000000000004', 'june', 'June Park',
-   'New here. On probation until the first few posts are approved.', 'member', 'probation');
+   'New here. On probation until the first few posts are approved.', 'member', 'probation'),
+  -- Trusted, and otherwise empty (§10): the Playwright export/erasure flow creates and
+  -- deletes her own posts and comments, so no other test's fixture data lives on her.
+  ('00000000-0000-4000-8000-000000000006', 'ivy', 'Ivy Marchetti',
+   'Trusted member.', 'member', 'trusted');
 
 -- One erased member (§10): no auth user, personal fields null, the handle kept so
 -- /@wren answers 410 Gone (D11).
