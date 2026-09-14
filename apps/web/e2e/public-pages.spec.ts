@@ -7,7 +7,7 @@ import { devSignIn, LAMPLIGHTER } from "./helpers";
 // renders at 390px with no horizontal scroll, and changing `site_name` changes the
 // home page's `<title>`. Runs against the seeded local stack (docs/setup/supabase.md).
 
-const PUBLIC_PATHS = ["/", "/about", "/@theo", "/t/making"];
+const PUBLIC_PATHS = ["/", "/about", "/terms", "/code-of-conduct", "/@theo", "/t/making"];
 
 for (const path of PUBLIC_PATHS) {
   test(`${path} has no automatically detectable accessibility violations`, async ({

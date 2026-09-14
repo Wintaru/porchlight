@@ -25,6 +25,7 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
   // The site feed's actual route (SPEC.md §9, D21): apps/web/src/app/feed.xml.
   "feed.xml",
   "terms",
+  "code-of-conduct",
   "conduct",
   "policy",
   "help",
