@@ -26,6 +26,7 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

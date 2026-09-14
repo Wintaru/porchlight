@@ -9,6 +9,7 @@ allowBuilds:
 # One version per dependency for the whole workspace. Packages reference these as
 # `catalog:` so a version bump happens in exactly one place.
 catalog:
+  "@axe-core/playwright": ^4.13.0
   "@next/eslint-plugin-next": ^16.3.4
   "@playwright/test": ^1.63.0
   "@supabase/ssr": ^0.12.7

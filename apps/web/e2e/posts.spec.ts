@@ -91,11 +91,12 @@ test("a visitor's Write link goes to the anonymous form, not the member editor (
 }) => {
   await page.goto("/");
   // The seed's `posting` key is `anyone` (D20), so a visitor gets a Write link too —
-  // to the anonymous form, never the member editor, which still requires sign-in.
-  await expect(page.getByRole("link", { name: "Write" })).toHaveAttribute(
-    "href",
-    "/p/new",
-  );
+  // to the anonymous form, never the member editor, which still requires sign-in. Scoped
+  // to the header: the Main board's sidebar (#16) offers its own "Write anonymously"
+  // link to the same place, so an unscoped locator would match both.
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Write" }),
+  ).toHaveAttribute("href", "/p/new");
   await page.goto("/write");
   await expect(page).toHaveURL(/\/auth\/dev-sign-in\?next=%2Fwrite$/);
 });
