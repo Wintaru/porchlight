@@ -1,7 +1,8 @@
 import { createSessionClient } from "@/auth/session-client";
 import { rssItemFor } from "@/lib/rss-item";
 import { renderRss, rssResponse } from "@/lib/rss";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
 interface RouteParams {
@@ -17,12 +18,15 @@ export async function GET(_request: Request, { params }: RouteParams): Promise<R
   if (tag === undefined) {
     return new Response("Not found.", { status: 404 });
   }
-  const posts = await loadTagPosts(db, tag.id);
+  const [{ siteName }, posts] = await Promise.all([
+    getSiteIdentity(),
+    loadTagPosts(db, tag.id),
+  ]);
   return rssResponse(
     renderRss({
-      title: `${tag.name} · ${SITE_NAME}`,
+      title: `${tag.name} · ${siteName}`,
       link: `${SITE_URL}/t/${tag.slug}`,
-      description: `Posts tagged ${tag.name} on ${SITE_NAME}`,
+      description: `Posts tagged ${tag.name} on ${siteName}`,
       items: posts.map(rssItemFor),
     }),
   );

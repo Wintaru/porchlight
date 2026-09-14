@@ -1,0 +1,32 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 48px;
+  padding: 40px 24px 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 4px 0 32px;
+}
+
+.heading {
+  font-size: 20px;
+  margin: 0 0 4px;
+}
+
+.subheading {
+  color: var(--muted);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 24px 16px 48px;
+  }
+}

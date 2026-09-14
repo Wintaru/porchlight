@@ -1,6 +1,3 @@
-export const SITE_NAME = "Porchlight";
-export const SITE_TAGLINE = "A community blog where members own their words.";
-
 // The public origin of this deployment (.env.example). OAuth redirects go back here, so
 // it is read from configuration, never from the request's Host header. A production
 // build must name it: the localhost default would send Google's callback to the wrong

@@ -11,7 +11,7 @@ import type { PostCardAuthor, PostCardTag } from "./post-card";
 // this embed resolve to nothing rather than an error for a still-quarantined cover.
 // `mature` is what keeps a mature item's own cover out of its JSON-LD `image` (D18).
 const POST_PAGE_COLUMNS =
-  "id, slug, title, summary, body_html, status, visibility, comments_enabled, rejection_reason, published_at, author_id, author:profiles!posts_author_id_fkey(handle, display_name), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "id, slug, title, summary, body_html, status, visibility, comments_enabled, rejection_reason, published_at, author_id, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostPage {
   readonly id: string;

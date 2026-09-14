@@ -8,7 +8,7 @@ import type { PostCardAuthor } from "./post-card";
 // resolves the handle; an anonymous author (#8) has no profile and shows as the
 // raccoon.
 const COMMENT_PAGE_COLUMNS =
-  "id, parent_id, depth, status, body_html, created_at, author_id, anonymous_author_id, author:profiles!comments_author_id_fkey(handle, display_name)";
+  "id, parent_id, depth, status, body_html, created_at, author_id, anonymous_author_id, author:profiles!comments_author_id_fkey(handle, display_name, avatar_url)";
 
 export interface CommentPage {
   readonly id: string;

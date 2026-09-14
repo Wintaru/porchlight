@@ -4,7 +4,8 @@ import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
 import { PostCardList } from "@/components/PostCardList";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
 interface TagPageProps {
@@ -14,11 +15,14 @@ interface TagPageProps {
 const getTag = cache(async (slug: string) => loadTag(await createSessionClient(), slug));
 
 export async function generateMetadata({ params }: TagPageProps): Promise<Metadata> {
-  const tag = await getTag((await params).tag);
+  const [tag, { siteName }] = await Promise.all([
+    getTag((await params).tag),
+    getSiteIdentity(),
+  ]);
   if (tag === undefined) {
     return {};
   }
-  const title = `${tag.name} · ${SITE_NAME}`;
+  const title = `${tag.name} · ${siteName}`;
   const url = `${SITE_URL}/t/${tag.slug}`;
   return {
     title,
@@ -26,7 +30,7 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
       canonical: url,
       types: { "application/rss+xml": `${url}/feed.xml` },
     },
-    openGraph: { title, url, siteName: SITE_NAME },
+    openGraph: { title, url, siteName },
     twitter: { card: "summary", title },
   };
 }
@@ -40,7 +44,10 @@ export default async function TagPage({ params }: TagPageProps) {
   }
   const posts = await loadTagPosts(await createSessionClient(), tag.id);
   return (
-    <main>
+    <main
+      className="container"
+      style={{ maxWidth: 760, paddingTop: 40, paddingBottom: 64 }}
+    >
       <h1>{tag.name}</h1>
       <PostCardList posts={posts} empty="No posts with this tag yet." />
     </main>

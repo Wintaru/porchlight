@@ -10,3 +10,15 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
 export function formatDate(iso: string): string {
   return DATE_FORMAT.format(new Date(iso));
 }
+
+// The Profile board's "On the porch since March 2026" line: month and year only, no
+// day — a join date does not need the same precision as a publish date.
+const MONTH_YEAR_FORMAT = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+export function formatMonthYear(iso: string): string {
+  return MONTH_YEAR_FORMAT.format(new Date(iso));
+}

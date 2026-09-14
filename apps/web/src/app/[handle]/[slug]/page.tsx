@@ -14,7 +14,8 @@ import { formatDate } from "@/lib/format-date";
 import { parseHandleParam } from "@/lib/handle-param";
 import { publicMediaUrl } from "@/lib/media-url";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadPostPage, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
@@ -34,7 +35,10 @@ const getPost = cache(async (segment: string, slug: string) => {
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { handle, slug } = await params;
-  const post = await getPost(handle, slug);
+  const [post, { siteName }] = await Promise.all([
+    getPost(handle, slug),
+    getSiteIdentity(),
+  ]);
   if (post?.author == null) {
     return {};
   }
@@ -43,7 +47,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   // Unlisted posts and anything not yet published carry noindex (SPEC.md §5, §9).
   const noindex = post.visibility === "unlisted" || post.status !== "published";
   return {
-    title: `${post.title} · ${SITE_NAME}`,
+    title: `${post.title} · ${siteName}`,
     description,
     robots: noindex ? "noindex" : undefined,
     alternates: noindex ? undefined : { canonical: url },
@@ -51,7 +55,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       title: post.title,
       description,
       url,
-      siteName: SITE_NAME,
+      siteName,
       type: "article",
       publishedTime: post.published_at ?? undefined,
     },
@@ -81,11 +85,13 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   const note = STATUS_NOTE[post.status];
   const returnTo = `/@${post.author.handle}/${post.slug}`;
 
-  const [actor, db, { comment: noticeCode, error: errorCode }] = await Promise.all([
-    getCurrentActor(),
-    createSessionClient(),
-    searchParams,
-  ]);
+  const [actor, db, { comment: noticeCode, error: errorCode }, { siteName }] =
+    await Promise.all([
+      getCurrentActor(),
+      createSessionClient(),
+      searchParams,
+      getSiteIdentity(),
+    ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   const [formState, comments, reactions] = await Promise.all([
     commentFormStateFor(actor, post.id),
@@ -102,7 +108,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(articleJsonLd(post, url)),
+            __html: JSON.stringify(articleJsonLd(post, url, siteName)),
           }}
         />
       )}
@@ -160,7 +166,11 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
 // cover (SPEC.md §7) once one is publicly servable (#36) — never the branded card
 // `opengraph-image.tsx` falls back to, which is not this post's own artwork, and never
 // a mature cover, which D18 always keeps out of an unfurl.
-function articleJsonLd(post: PostPage, url: string): Record<string, unknown> {
+function articleJsonLd(
+  post: PostPage,
+  url: string,
+  siteName: string,
+): Record<string, unknown> {
   const cover = post.cover;
   const coverPath = cover != null && !cover.mature ? cover.published_path : null;
   return {
@@ -174,6 +184,6 @@ function articleJsonLd(post: PostPage, url: string): Record<string, unknown> {
     ...(post.author !== null && {
       author: { "@type": "Person", name: post.author.display_name ?? post.author.handle },
     }),
-    publisher: { "@type": "Organization", name: SITE_NAME },
+    publisher: { "@type": "Organization", name: siteName },
   };
 }

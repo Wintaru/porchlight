@@ -10,6 +10,11 @@
   --placeholder: #9a8e80;
   --amber: #b4530a;
   --amber-dark: #8f3f05;
+  /* `--amber` itself is SPEC.md §12's exact approved hex, kept for buttons, borders and
+     accents (a 3:1 UI-component bar). Body-sized link text needs 4.5:1, and `--amber`
+     on `--cream` lands at 4.46 — one step short. `--link` is the same color, one step
+     darker, for text only. */
+  --link: #b25209;
   --glow: #f2b441;
   --danger: #a83a2b;
   --line: #e6ddd0;
@@ -30,6 +35,8 @@
     --placeholder: #8a7d6e;
     --amber: #e08a3c;
     --amber-dark: #f2b441;
+    /* Already well past 4.5:1 on the dark tokens, so no adjustment needed here. */
+    --link: #e08a3c;
     --line: #3d3731;
     --line-strong: #5c5147;
     --chip: #3d3731;
@@ -55,9 +62,124 @@ h3 {
 }
 
 a {
-  color: var(--amber);
+  color: var(--link);
 }
 
 a:hover {
   color: var(--amber-dark);
+}
+
+/* Shared primitives from the design boards (SPEC.md §12): every page composes these
+   instead of inventing its own chip, card or pill. */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--label);
+  text-decoration: none;
+}
+
+.chip:hover {
+  color: var(--ink);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.pill-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pill-button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.pill-button--amber {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--surface);
+}
+
+.pill-button--amber:hover {
+  background: var(--amber-dark);
+  border-color: var(--amber-dark);
+  color: var(--surface);
+}
+
+.avatar {
+  border-radius: 999px;
+  object-fit: cover;
+  background: var(--chip);
+  color: var(--label);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  flex-shrink: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  margin: 32px 0 24px;
+}
+
+.tab-link {
+  padding: 0 0 10px;
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover {
+  color: var(--ink);
+}
+
+.tab-link[aria-current="page"] {
+  color: var(--link);
+  border-bottom-color: var(--amber);
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
 }

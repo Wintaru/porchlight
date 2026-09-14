@@ -10,7 +10,7 @@ import { commentFormStateFor } from "@/lib/can-comment";
 import { getCurrentActor } from "@/lib/current-actor";
 import { formatDate } from "@/lib/format-date";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { SITE_NAME } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadPostBySlug, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
@@ -28,12 +28,12 @@ export async function generateMetadata({
   params,
 }: AnonymousPostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const [post, { siteName }] = await Promise.all([getPost(slug), getSiteIdentity()]);
   if (post === undefined) {
     return {};
   }
   return {
-    title: `${post.title} · ${SITE_NAME}`,
+    title: `${post.title} · ${siteName}`,
     description: post.summary ?? undefined,
     robots:
       post.visibility === "unlisted" || post.status !== "published"

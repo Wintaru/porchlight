@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 import { createSessionClient } from "@/auth/session-client";
 import { parseHandleParam } from "@/lib/handle-param";
 import { publicMediaUrl } from "@/lib/media-url";
-import { SITE_NAME } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadPostPreview } from "@/read-model/post-page";
 
 export const alt = "Post preview";
@@ -23,10 +23,12 @@ interface ImageProps {
 export default async function Image({ params }: ImageProps) {
   const { handle: segment, slug } = await params;
   const handle = parseHandleParam(segment);
-  const post =
+  const [post, { siteName }] = await Promise.all([
     handle === undefined
       ? undefined
-      : await loadPostPreview(await createSessionClient(), handle, slug);
+      : loadPostPreview(await createSessionClient(), handle, slug),
+    getSiteIdentity(),
+  ]);
   const cover = post?.cover;
   const coverUrl =
     cover?.published_path == null || cover.mature
@@ -60,7 +62,7 @@ export default async function Image({ params }: ImageProps) {
           }}
         />
       )}
-      <div style={{ display: "flex", fontSize: 32, opacity: 0.75 }}>{SITE_NAME}</div>
+      <div style={{ display: "flex", fontSize: 32, opacity: 0.75 }}>{siteName}</div>
       <div
         style={{
           display: "flex",
@@ -70,7 +72,7 @@ export default async function Image({ params }: ImageProps) {
           lineHeight: 1.15,
         }}
       >
-        {post?.title ?? SITE_NAME}
+        {post?.title ?? siteName}
       </div>
       {post?.author != null && (
         <div style={{ display: "flex", fontSize: 30, marginTop: 36, opacity: 0.75 }}>

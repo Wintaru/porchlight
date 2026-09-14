@@ -5,11 +5,12 @@ import type { DbClient } from "@porchlight/db";
 // two embeds: the author through the posts→profiles key, the tags through post_tags.
 // An anonymous post has no author row until it is claimed (D7): `author` is null.
 export const POST_CARD_COLUMNS =
-  "id, slug, title, summary, published_at, comments_enabled, author:profiles!posts_author_id_fkey(handle, display_name), post_tags(tag:tags(slug, name))";
+  "id, slug, title, summary, published_at, comments_enabled, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name))";
 
 export interface PostCardAuthor {
   readonly handle: string;
   readonly display_name: string | null;
+  readonly avatar_url: string | null;
 }
 
 export interface PostCardTag {

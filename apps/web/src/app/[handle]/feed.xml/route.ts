@@ -2,7 +2,8 @@ import { createSessionClient } from "@/auth/session-client";
 import { parseHandleParam } from "@/lib/handle-param";
 import { rssItemFor } from "@/lib/rss-item";
 import { renderRss, rssResponse } from "@/lib/rss";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
+import { getSiteIdentity } from "@/lib/site-identity";
 import { loadAuthor, loadAuthorPosts } from "@/read-model/author";
 
 interface RouteParams {
@@ -22,12 +23,15 @@ export async function GET(_request: Request, { params }: RouteParams): Promise<R
   if (author?.status !== "active") {
     return notFound();
   }
-  const posts = await loadAuthorPosts(db, author.id);
+  const [{ siteName }, posts] = await Promise.all([
+    getSiteIdentity(),
+    loadAuthorPosts(db, author.id),
+  ]);
   return rssResponse(
     renderRss({
-      title: `${author.display_name ?? `@${author.handle}`} · ${SITE_NAME}`,
+      title: `${author.display_name ?? `@${author.handle}`} · ${siteName}`,
       link: `${SITE_URL}/@${author.handle}`,
-      description: author.bio ?? `@${author.handle} on ${SITE_NAME}`,
+      description: author.bio ?? `@${author.handle} on ${siteName}`,
       items: posts.map(rssItemFor),
     }),
   );

@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
-import { SITE_NAME } from "./site";
+import { SITE_URL } from "./site";
 
-test("the site name is Porchlight", () => {
-  expect(SITE_NAME).toBe("Porchlight");
+test("the local default site URL has no trailing slash", () => {
+  expect(SITE_URL).toBe("http://localhost:3000");
 });

@@ -8,6 +8,22 @@ export interface TagPage {
   readonly name: string;
 }
 
+// The Main board's sidebar tag cloud: every tag, alphabetically, capped at one page —
+// a name and a count, no post rows.
+const TAG_CLOUD_LIMIT = 24;
+
+export async function loadTagCloud(db: DbClient): Promise<readonly TagPage[]> {
+  const { data, error } = await db
+    .from("tags")
+    .select("id, slug, name")
+    .order("name", { ascending: true })
+    .limit(TAG_CLOUD_LIMIT);
+  if (error) {
+    throw new Error(`tag cloud: ${error.message}`);
+  }
+  return data;
+}
+
 export async function loadTag(db: DbClient, slug: string): Promise<TagPage | undefined> {
   const { data, error } = await db
     .from("tags")
