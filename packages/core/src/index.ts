@@ -247,12 +247,17 @@ export { NotificationUnavailableResponse } from "./Managers/NotificationManager/
 // SiteConfigManager: the admin settings page, presets, and the duty checklist
 // (SPEC.md §4, §7, issue #12).
 export type { ISiteConfigManager } from "./Managers/SiteConfigManager/ISiteConfigManager";
-export type { RegionProfile } from "./Managers/SiteConfigManager/RegionProfiles";
+export {
+  REGION_PROFILES,
+  type RegionProfile,
+} from "./Managers/SiteConfigManager/RegionProfiles";
 export type { SiteConfigSnapshot } from "./Managers/SiteConfigManager/SiteConfigSnapshot";
 export { ApplyPresetRequest } from "./Managers/SiteConfigManager/Requests/ApplyPresetRequest";
+export { GetRegionRequest } from "./Managers/SiteConfigManager/Requests/GetRegionRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
+export { RegionResponse } from "./Managers/SiteConfigManager/Responses/RegionResponse";
 export { SiteConfigForbiddenResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigForbiddenResponse";
 export { SiteConfigInvalidResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigInvalidResponse";
 export { SiteConfigResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigResponse";
