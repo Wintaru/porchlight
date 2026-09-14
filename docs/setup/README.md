@@ -12,7 +12,7 @@ The admin duty checklist links the same guides.
 | [`storage.md`](storage.md)          | Upload buckets, allowlist and quotas     | `STORAGE_BUCKET_*`, `MEDIA_*`, `QUOTA_*` |
 | [`hash-matching.md`](hash-matching.md) | Known-illegal image fingerprints      | `HASH_MATCH_*`                        |
 | [`classifiers.md`](classifiers.md)  | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
-| `email.md` (issue #18, phase 2)     | Digest email                             | `EMAIL_*`                             |
+| [`email.md`](email.md) (phase 2)    | Digest email                             | `EMAIL_*`                             |
 
 The order to do these in for a hosted instance is [../deploy.md](../deploy.md).
 Research that fed the decisions lives in [../research/](../research/).

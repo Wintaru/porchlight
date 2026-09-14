@@ -78,6 +78,29 @@ needs keys and is for production (docs/setup/google-oauth.md).
 
 Playwright needs a browser once: `pnpm --filter @porchlight/web exec playwright install chromium`.
 
+## Region and the duty checklist
+
+`/admin` picks a region (`US`, `EU`, `UK`, `CA`, `AU`, or `other`) that wires the illegal-
+content reporting target, the response deadline text, and the raw-IP retention window
+(SPEC.md §7). Retention itself, the audit log, and always-on scanning are global,
+regardless of region. `other` shows the maximum-caution defaults and a plain warning to
+check local law — these are starting defaults, not legal advice.
+
+The same page shows a duty checklist: one row per provider that can run on its fake
+(hash matching, the image classifier, Turnstile, media storage). A row reads red, "not
+yet active," whenever its provider is still the fake — normal for local work, a
+deliberate risk for a production deployment — and links that provider's guide under
+[docs/setup/](docs/setup/README.md).
+
+## Self-hosting
+
+Porchlight runs anywhere Next.js and a Supabase project can: no vendor lock-in, and
+every external service has a fake mode so a first deploy can go live in a degraded but
+working state. [docs/deploy.md](docs/deploy.md) is the ordered, step-by-step sequence —
+a hosted Supabase project, Google sign-in, the application environment, and each
+provider guide in [docs/setup/](docs/setup/README.md) — from an empty account to a
+running instance.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
