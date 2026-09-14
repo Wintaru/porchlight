@@ -75,6 +75,7 @@ export {
 } from "./Common/SiteConfigPreset";
 export {
   ABOUT_MD_MAX_LENGTH,
+  DEFAULT_SITE_IDENTITY,
   SITE_NAME_MAX_LENGTH,
   SITE_TAGLINE_MAX_LENGTH,
   type SiteIdentity,
@@ -250,12 +251,14 @@ export type { RegionProfile } from "./Managers/SiteConfigManager/RegionProfiles"
 export type { SiteConfigSnapshot } from "./Managers/SiteConfigManager/SiteConfigSnapshot";
 export { ApplyPresetRequest } from "./Managers/SiteConfigManager/Requests/ApplyPresetRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 export { SiteConfigForbiddenResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigForbiddenResponse";
 export { SiteConfigInvalidResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigInvalidResponse";
 export { SiteConfigResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigResponse";
 export { SiteConfigSavedResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigSavedResponse";
 export { SiteConfigUnavailableResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigUnavailableResponse";
+export { SiteIdentityResponse } from "./Managers/SiteConfigManager/Responses/SiteIdentityResponse";
 
 // GreetingManager is the worked example from issue #2 and the template for every real
 // Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.

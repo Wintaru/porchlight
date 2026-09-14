@@ -119,10 +119,12 @@ import { RemoveItemRequest } from "../Managers/ModerationManager/Requests/Remove
 import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
 import { ApplyPresetHandler } from "../Managers/SiteConfigManager/Handlers/ApplyPresetHandler";
 import { GetSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteConfigHandler";
+import { GetSiteIdentityHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteIdentityHandler";
 import { SaveSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/SaveSiteConfigHandler";
 import type { ISiteConfigManager } from "../Managers/SiteConfigManager/ISiteConfigManager";
 import { ApplyPresetRequest } from "../Managers/SiteConfigManager/Requests/ApplyPresetRequest";
 import { GetSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+import { GetSiteIdentityRequest } from "../Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 import { SaveSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 import { SiteConfigManager } from "../Managers/SiteConfigManager/SiteConfigManager";
 import { computeDutyChecklist } from "./computeDutyChecklist";
@@ -588,6 +590,7 @@ export class DependencyContainer {
           GetSiteConfigRequest,
           new GetSiteConfigHandler(siteConfig, permissions, dutyChecklist),
         )
+        .register(GetSiteIdentityRequest, new GetSiteIdentityHandler(siteConfig))
         .build(),
     );
 
