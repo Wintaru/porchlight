@@ -91,7 +91,13 @@ test("a link and an image go in by URL and come out as markdown", async ({ page 
   const body = page.getByRole("textbox", { name: "Body", exact: true });
   await body.click();
   await page.keyboard.type("Read the plan");
-  await page.keyboard.press("Shift+Home");
+  // The editor reads typed text back from the DOM a moment later and re-places the
+  // cursor when it does, which wipes a keyboard selection made before that moment. No
+  // person types that fast. The hidden field changes only once the text is in the
+  // editor's own state, so it is the sync point, and a triple-click is a selection
+  // the editor makes itself, at once, rather than one it copies from the browser.
+  await expect(page.locator('input[name="bodyMd"]')).toHaveValue("Read the plan");
+  await body.getByText("Read the plan").click({ clickCount: 3 });
   await tool(page, "Link").click();
   const linkDialog = page.getByRole("dialog", { name: "Add a link" });
   await linkDialog.getByLabel("URL").fill("https://example.com/plan");
