@@ -6,7 +6,8 @@ import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFai
 import { SiteConfigStoredResponse } from "../Responses/SiteConfigStoredResponse";
 
 // One upsert for every row the request carries (SPEC.md §4, §7): a settings-page save
-// touching several keys is one round trip, not one per key.
+// touching several keys is one round trip, not one per key. A null entry value lands as
+// SQL NULL, the column's "unset" state (#38).
 export class SupabaseStoreSiteConfigEntriesHandler implements IHandler<
   StoreSiteConfigEntriesRequest,
   SiteConfigStoredResponse | SiteConfigAccessFailedResponse

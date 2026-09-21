@@ -12,8 +12,9 @@ function isValid(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isInteger(value));
 }
 
-// The value column is jsonb; the key holds a JSON number or JSON null. An absent row is
-// the default (the key is seeded by #12), an unknown value is a failure, never a silent
+// The value column is jsonb; the key holds a JSON number, or NULL for off (#38: PostgREST
+// writes a JSON null as SQL NULL, and reads both back as null). An absent row is the
+// default (the key is seeded by #12), an unknown value is a failure, never a silent
 // default.
 export class SupabaseLoadAutoPromoteAfterApprovedPostsHandler implements IHandler<
   LoadAutoPromoteAfterApprovedPostsRequest,

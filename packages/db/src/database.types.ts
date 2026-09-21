@@ -743,19 +743,19 @@ export type Database = {
           key: string
           updated_at: string
           updated_by: string | null
-          value: Json
+          value: Json | null
         }
         Insert: {
           key: string
           updated_at?: string
           updated_by?: string | null
-          value: Json
+          value?: Json | null
         }
         Update: {
           key?: string
           updated_at?: string
           updated_by?: string | null
-          value?: Json
+          value?: Json | null
         }
         Relationships: [
           {

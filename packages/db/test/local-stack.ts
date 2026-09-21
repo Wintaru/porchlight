@@ -30,6 +30,7 @@ export const LOCAL_STACK = Object.freeze({
   databaseUrl: localValue("DATABASE_URL"),
   apiUrl: localValue("NEXT_PUBLIC_SUPABASE_URL"),
   anonKey: localValue("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  serviceRoleKey: localValue("SUPABASE_SERVICE_ROLE_KEY"),
 });
 
 export const UNREACHABLE_MESSAGE =

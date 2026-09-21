@@ -197,5 +197,5 @@ insert into public.site_config (key, value) values
   ('anonymous_upload_cap', '{"files":3,"bytes_per_file":2097152}'),
   ('attachment_quota_by_trust', '{"probation":{"max_file_bytes":5242880,"max_account_bytes":26214400},"trusted":{"max_file_bytes":20971520,"max_account_bytes":209715200}}'),
   ('moderation_thresholds', '{"flag_at":0.5,"lock_at":0.9}'),
-  ('auto_promote_after_approved_posts', 'null'),
+  ('auto_promote_after_approved_posts', null),
   ('raw_ip_retention_days', '90');
