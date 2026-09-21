@@ -13,7 +13,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test": "pnpm -r test",
-    "test:e2e": "pnpm --filter @porchlight/web test:e2e"
+    "test:e2e": "pnpm --filter @porchlight/web test:e2e",
+    "test:e2e:headed": "pnpm --filter @porchlight/web test:e2e:headed"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "catalog:",

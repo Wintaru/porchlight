@@ -73,10 +73,16 @@ needs keys and is for production (docs/setup/google-oauth.md).
 | `pnpm lint`      | ESLint (with the boundary policy) and a Prettier check. |
 | `pnpm format`    | Prettier, writing.                                      |
 | `pnpm test`      | Vitest in every package. `packages/db` needs the Supabase stack up. |
-| `pnpm test:e2e`  | Playwright. Starts its own dev server. Set `PORT` to move it. |
+| `pnpm test:e2e`  | Playwright, headless. Starts its own dev server. Set `PORT` to move it. |
+| `pnpm test:e2e:headed` | The real Google sign-in in a visible browser, with you at the keyboard (docs/setup/google-oauth.md). |
 | `pnpm build`     | Production build of `apps/web`.                         |
 
 Playwright needs a browser once: `pnpm --filter @porchlight/web exec playwright install chromium`.
+
+The e2e suite runs one test at a time, with no retries, because every test shares the
+one seeded database and puts back what it changed. It takes about a minute. Run
+`supabase db reset` before a full run: the export-and-erase test erases the seeded
+member `ivy` for real, so she is there once per seed.
 
 ## Region and the duty checklist
 

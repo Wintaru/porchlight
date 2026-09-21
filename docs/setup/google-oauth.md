@@ -44,6 +44,12 @@ supabase stop && supabase start
 With the values unset the stack still starts. The Google button then fails at Google's
 side and the dev sign-in page still works.
 
+To check the real flow end to end, run `pnpm test:e2e:headed` with the values set. It
+opens a visible browser at the site, clicks the Google button, and waits up to three
+minutes for you to sign in at Google. Then it checks that the session shows and that
+sign-out ends it. CI never runs this test. Every other part of sign-in has a headless
+test in `apps/web/e2e/auth.spec.ts`.
+
 ## What happens on sign-in
 
 1. The "Sign in with Google" button posts to a Server Function, which asks Supabase Auth
