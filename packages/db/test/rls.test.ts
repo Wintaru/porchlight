@@ -155,7 +155,7 @@ describe("agent_tokens", () => {
         insert into public.agent_tokens (owner_id, name, token_hash, scopes)
         values (${SEED.trustedMember}, 'laptop', ${"a".repeat(64)}, '{posts:draft}')
       `;
-      return tx`select name from public.agent_tokens where owner_id = ${SEED.trustedMember}`;
+      return tx`select name from public.agent_tokens where token_hash = ${"a".repeat(64)}`;
     });
     expect(rows).toEqual([{ name: "laptop" }]);
   });
