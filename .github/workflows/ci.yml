@@ -1,0 +1,72 @@
+# Issue #19: the whole verify gate on every push and pull request, against a real local
+# Supabase stack in the runner. The packages/db tests are the RLS suite, so a broken
+# policy fails this run. Playwright runs with zero retries (apps/web/playwright.config.ts).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # The pnpm version comes from package.json's packageManager field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      # `supabase start` applies supabase/migrations/ and loads the seed on a fresh
+      # stack. Studio is a browser UI nobody opens here; the other stopped services
+      # are already off in supabase/config.toml.
+      - run: supabase start -x studio
+
+      # The one env file, with the fixed local-stack keys and every provider on its
+      # fake (D19). NODE_ENV is development under `next dev`, so the fakes are allowed.
+      - run: cp .env.example apps/web/.env.local
+
+      # Vitest in every package: unit tests in core and web, and the schema, RLS,
+      # read-model and generated-types tests in db against the stack above.
+      - run: pnpm test
+
+      # `next build` runs as NODE_ENV=production, which refuses the fake providers, so
+      # the log shows "site identity load failed" lines from the prerender. The build
+      # still exits 0 and is the compile check; the e2e step is the behavior check.
+      - run: pnpm build
+
+      - run: pnpm --filter @porchlight/web exec playwright install --with-deps chromium
+
+      - run: pnpm test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 14
+          if-no-files-found: ignore

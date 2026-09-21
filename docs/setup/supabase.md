@@ -74,7 +74,10 @@ pnpm --filter @porchlight/db test              # RLS, constraints, and the types
 ```
 
 The types test compares the committed file with a fresh `gen types` run, so a forgotten
-regeneration fails `pnpm test`. `supabase db lint` checks the schema for common problems.
+regeneration fails `pnpm test`. CI pins the CLI to the version in
+`.github/workflows/ci.yml` (`supabase/setup-cli`). Regenerate with that same version, or
+a CLI that formats the output differently fails the test in CI and not on your machine.
+`supabase db lint` checks the schema for common problems.
 
 ## Row level security
 

@@ -1,5 +1,7 @@
 # Porchlight
 
+[![CI](https://github.com/Wintaru/porchlight/actions/workflows/ci.yml/badge.svg)](https://github.com/Wintaru/porchlight/actions/workflows/ci.yml)
+
 A public, open-source community blog. Members and anonymous visitors share posts and
 comments. An admin approves what shows. No karma, no downvotes, no leaderboards.
 
@@ -83,6 +85,15 @@ The e2e suite runs one test at a time, with no retries, because every test share
 one seeded database and puts back what it changed. It takes about a minute. Run
 `supabase db reset` before a full run: the export-and-erase test erases the seeded
 member `ivy` for real, so she is there once per seed.
+
+## CI
+
+`.github/workflows/ci.yml` runs the same gate on every push to `main` and every pull
+request: lint, typecheck, the Vitest suites (the `packages/db` ones are the RLS tests,
+so a broken policy fails the build), the production build, and the Playwright suite.
+The runner starts its own Supabase stack from `supabase/config.toml`, so CI needs no
+secrets. A failed Playwright run uploads its report and traces as the
+`playwright-report` artifact.
 
 ## Region and the duty checklist
 
