@@ -23,6 +23,7 @@ export const MEDIA_ERROR_TEXT: Readonly<Record<MediaErrorCode, string>> = {
   // Never reached from the attachment panel: neither D20 key gates an upload directly.
   "posting-closed": "Posting is closed to members on this site.",
   "comments-closed": "Comments are closed here.",
+  "agents-closed": "Agents are closed to this account on this site.",
   "extension-not-allowed": "That file type is not allowed here.",
   "type-mismatch": "That file's contents do not match its name. It was not accepted.",
   "file-too-large": "That file is larger than this account's per-file limit.",

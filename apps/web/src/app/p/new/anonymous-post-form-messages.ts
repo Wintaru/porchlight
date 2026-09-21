@@ -25,6 +25,7 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "guard-refused": "That could not be posted. Try again in a moment.",
   "posting-closed": "Anonymous posting is closed on this site right now.",
   "comments-closed": "Comments are closed here.",
+  "agents-closed": "Agents are closed to this account on this site.",
   "signed-out": "Sign in to write.",
   "account-inactive": "This account cannot write right now.",
   "not-allowed": "This post is not yours to change.",

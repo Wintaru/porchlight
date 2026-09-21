@@ -35,6 +35,7 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "posting-closed": "Posting is closed to members on this site.",
   // Never reached by a post action; the table is keyed by every denial reason.
   "comments-closed": "Comments are closed here.",
+  "agents-closed": "Agents are closed to this account on this site.",
   "signed-out": "Sign in to write.",
   "account-inactive": "This account cannot write right now.",
   "not-allowed": "This post is not yours to change.",

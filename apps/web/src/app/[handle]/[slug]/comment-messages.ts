@@ -27,6 +27,7 @@ const ERROR_TEXT: Readonly<Record<CommentErrorCode, string>> = {
   "not-allowed": "That is not yours to change.",
   "posting-closed": "Posting is closed on this site.",
   "comments-closed": "Comments are closed here.",
+  "agents-closed": "Agents are closed to this account on this site.",
   "rejected-empty-body": "A comment needs some words.",
   "rejected-no-such-post": "That post is gone.",
   "rejected-no-such-parent": "The comment you answered is gone.",
