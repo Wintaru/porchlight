@@ -237,7 +237,7 @@ The ER diagram in [PROPOSAL.md](PROPOSAL.md) shows the main tables and their col
 The full table list for phase 1: `profiles`, `anonymous_authors`,
 `posts`, `comments`, `tags`, `post_tags`, `reactions`, `media_assets`,
 `submission_evidence`, `reports`, `mod_actions`, `audit_log`, `notifications`, `quotas`,
-`rate_limits`, `blocks`, `site_config`.
+`rate_limits`, `blocks`, `site_config`, `agent_tokens` (section 17).
 
 ## 12. Screens
 

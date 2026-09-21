@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      agent_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          owner_id: string
+          revoked_at: string | null
+          scopes: Database["public"]["Enums"]["agent_scope"][]
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name: string
+          owner_id: string
+          revoked_at?: string | null
+          scopes: Database["public"]["Enums"]["agent_scope"][]
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          owner_id?: string
+          revoked_at?: string | null
+          scopes?: Database["public"]["Enums"]["agent_scope"][]
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_tokens_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anonymous_authors: {
         Row: {
           claimed_at: string | null
@@ -952,6 +996,11 @@ export type Database = {
       }
     }
     Enums: {
+      agent_scope:
+        | "posts:draft"
+        | "posts:publish"
+        | "media:upload"
+        | "voice:write"
       comment_status:
         | "pending"
         | "visible"
@@ -1133,6 +1182,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agent_scope: [
+        "posts:draft",
+        "posts:publish",
+        "media:upload",
+        "voice:write",
+      ],
       comment_status: [
         "pending",
         "visible",

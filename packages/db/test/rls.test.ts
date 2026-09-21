@@ -45,6 +45,7 @@ const PHASE_1_TABLES = [
   "rate_limits",
   "blocks",
   "site_config",
+  "agent_tokens",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or
@@ -126,6 +127,37 @@ describe("every table", () => {
         });
       }
     }
+  });
+});
+
+// Issue #27's own line: the generic test above already closes every unlisted table,
+// but the token table is the one a leak would turn into a stolen session, so it is
+// named here as well, for the owner's own row and for the service-role path.
+describe("agent_tokens", () => {
+  test("is closed to the browser roles, even for the token's owner", async () => {
+    for (const role of BROWSER_ROLES) {
+      const code = await errorCodeOf(() =>
+        asRole(
+          sql,
+          role,
+          (tx) =>
+            tx`select id from public.agent_tokens where owner_id = ${SEED.trustedMember}`,
+          SEED.trustedMember,
+        ),
+      );
+      expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
+    }
+  });
+
+  test("the service role reads and writes it", async () => {
+    const rows = await asRole(sql, "service_role", async (tx) => {
+      await tx`
+        insert into public.agent_tokens (owner_id, name, token_hash, scopes)
+        values (${SEED.trustedMember}, 'laptop', ${"a".repeat(64)}, '{posts:draft}')
+      `;
+      return tx`select name from public.agent_tokens where owner_id = ${SEED.trustedMember}`;
+    });
+    expect(rows).toEqual([{ name: "laptop" }]);
   });
 });
 
