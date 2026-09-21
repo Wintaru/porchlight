@@ -60,7 +60,11 @@ export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export { POSTING_POLICIES, type PostingPolicy } from "./Common/PostingPolicy";
-export { AGENTS_POLICIES, type AgentsPolicy } from "./Common/AgentsPolicy";
+export {
+  AGENTS_POLICIES,
+  DEFAULT_AGENTS_POLICY,
+  type AgentsPolicy,
+} from "./Common/AgentsPolicy";
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
 export type { AgentGrant } from "./Common/AgentGrant";
 export {
@@ -273,10 +277,12 @@ export {
 } from "./Managers/SiteConfigManager/RegionProfiles";
 export type { SiteConfigSnapshot } from "./Managers/SiteConfigManager/SiteConfigSnapshot";
 export { ApplyPresetRequest } from "./Managers/SiteConfigManager/Requests/ApplyPresetRequest";
+export { GetAgentsPolicyRequest } from "./Managers/SiteConfigManager/Requests/GetAgentsPolicyRequest";
 export { GetRegionRequest } from "./Managers/SiteConfigManager/Requests/GetRegionRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
+export { AgentsPolicyResponse } from "./Managers/SiteConfigManager/Responses/AgentsPolicyResponse";
 export { RegionResponse } from "./Managers/SiteConfigManager/Responses/RegionResponse";
 export { SiteConfigForbiddenResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigForbiddenResponse";
 export { SiteConfigInvalidResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigInvalidResponse";

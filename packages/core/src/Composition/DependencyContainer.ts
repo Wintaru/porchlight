@@ -126,12 +126,14 @@ import { RejectItemRequest } from "../Managers/ModerationManager/Requests/Reject
 import { RemoveItemRequest } from "../Managers/ModerationManager/Requests/RemoveItemRequest";
 import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
 import { ApplyPresetHandler } from "../Managers/SiteConfigManager/Handlers/ApplyPresetHandler";
+import { GetAgentsPolicyHandler } from "../Managers/SiteConfigManager/Handlers/GetAgentsPolicyHandler";
 import { GetRegionHandler } from "../Managers/SiteConfigManager/Handlers/GetRegionHandler";
 import { GetSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteConfigHandler";
 import { GetSiteIdentityHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteIdentityHandler";
 import { SaveSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/SaveSiteConfigHandler";
 import type { ISiteConfigManager } from "../Managers/SiteConfigManager/ISiteConfigManager";
 import { ApplyPresetRequest } from "../Managers/SiteConfigManager/Requests/ApplyPresetRequest";
+import { GetAgentsPolicyRequest } from "../Managers/SiteConfigManager/Requests/GetAgentsPolicyRequest";
 import { GetRegionRequest } from "../Managers/SiteConfigManager/Requests/GetRegionRequest";
 import { GetSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 import { GetSiteIdentityRequest } from "../Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
@@ -620,6 +622,7 @@ export class DependencyContainer {
         )
         .register(GetSiteIdentityRequest, new GetSiteIdentityHandler(siteConfig))
         .register(GetRegionRequest, new GetRegionHandler(siteConfig))
+        .register(GetAgentsPolicyRequest, new GetAgentsPolicyHandler(siteConfig))
         .build(),
     );
 
