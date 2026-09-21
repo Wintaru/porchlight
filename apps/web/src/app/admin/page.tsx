@@ -187,8 +187,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
         <section aria-labelledby="region-heading">
           <h2 id="region-heading">Region</h2>
+          {/* Not "Region" again: the section landmark already carries that name from its
+              heading, and two controls named "Region" make the field ambiguous to
+              assistive tech and to getByLabel (#39). */}
           <label>
-            Region
+            Hosting region
             <select name="region" defaultValue={config.region}>
               {REGIONS.map((region) => (
                 <option key={region} value={region}>

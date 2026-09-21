@@ -46,7 +46,7 @@ test("switching region changes the reporting info and the raw IP retention windo
   await devSignIn(page, LAMPLIGHTER);
   await page.goto("/admin");
 
-  await page.getByLabel("Region").selectOption("US");
+  await page.getByLabel("Hosting region").selectOption("US");
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page).toHaveURL(/\/admin\?done=saved$/);
 
@@ -57,12 +57,12 @@ test("switching region changes the reporting info and the raw IP retention windo
   await expect(page.getByTestId("region-ip-window")).toBeVisible();
   await expect(page.getByTestId("region-warning")).toHaveCount(0);
 
-  await page.getByLabel("Region").selectOption("other");
-  await expect(page.getByTestId("region-warning")).toBeVisible();
-
-  // Cleanup: back to the seeded default so the seed reads the same for the next run.
+  // Back to the seeded default, which is also the cleanup for the next run. The page is
+  // server-rendered, so the "check local law" warning shows once the save lands.
+  await page.getByLabel("Hosting region").selectOption("other");
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page).toHaveURL(/\/admin\?done=saved$/);
+  await expect(page.getByTestId("region-warning")).toBeVisible();
 });
 
 test("the Just me preset hides the editor for a plain member, and sets the three keys", async ({
