@@ -3,19 +3,27 @@ import type { DbClient } from "@porchlight/db";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import { AccountManager } from "../Managers/AccountManager/AccountManager";
 import { ClaimAnonymousPostsHandler } from "../Managers/AccountManager/Handlers/ClaimAnonymousPostsHandler";
+import { CreateAgentTokenHandler } from "../Managers/AccountManager/Handlers/CreateAgentTokenHandler";
 import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/EnsureProfileHandler";
 import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
 import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
 import { GetProfileHandler } from "../Managers/AccountManager/Handlers/GetProfileHandler";
+import { ListAgentTokensHandler } from "../Managers/AccountManager/Handlers/ListAgentTokensHandler";
+import { ResolveAgentTokenHandler } from "../Managers/AccountManager/Handlers/ResolveAgentTokenHandler";
+import { RevokeAgentTokenHandler } from "../Managers/AccountManager/Handlers/RevokeAgentTokenHandler";
 import { UpdateProfileHandler } from "../Managers/AccountManager/Handlers/UpdateProfileHandler";
 import type { IAccountManager } from "../Managers/AccountManager/IAccountManager";
 import { ClaimAnonymousPostsRequest } from "../Managers/AccountManager/Requests/ClaimAnonymousPostsRequest";
+import { CreateAgentTokenRequest } from "../Managers/AccountManager/Requests/CreateAgentTokenRequest";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
 import { EraseAccountRequest } from "../Managers/AccountManager/Requests/EraseAccountRequest";
 import { ExportAccountRequest } from "../Managers/AccountManager/Requests/ExportAccountRequest";
 import { GetAnonymousStatusRequest } from "../Managers/AccountManager/Requests/GetAnonymousStatusRequest";
 import { GetProfileRequest } from "../Managers/AccountManager/Requests/GetProfileRequest";
+import { ListAgentTokensRequest } from "../Managers/AccountManager/Requests/ListAgentTokensRequest";
+import { ResolveAgentTokenRequest } from "../Managers/AccountManager/Requests/ResolveAgentTokenRequest";
+import { RevokeAgentTokenRequest } from "../Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
 import { CommentManager } from "../Managers/CommentManager/CommentManager";
 import { CheckCanCommentAnonymouslyHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentAnonymouslyHandler";
@@ -148,6 +156,7 @@ import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
 import { createNotificationAccessor } from "./createNotificationAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
+import { createAgentTokenAccessor } from "./createAgentTokenAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
 import { createQuotaAccessor } from "./createQuotaAccessor";
 import { createQuotaEngine } from "./createQuotaEngine";
@@ -211,6 +220,7 @@ export class DependencyContainer {
     const modActions = createModActionAccessor(env, db);
     const auditLog = createAuditAccessor(env, db);
     const notifications = createNotificationAccessor(env, db);
+    const agentTokens = createAgentTokenAccessor(env, db);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -244,9 +254,25 @@ export class DependencyContainer {
             mediaOptions.quarantineBucket,
           ),
         )
+        .register(
+          CreateAgentTokenRequest,
+          new CreateAgentTokenHandler(agentTokens, permissions),
+        )
+        .register(
+          RevokeAgentTokenRequest,
+          new RevokeAgentTokenHandler(agentTokens, permissions),
+        )
         .build(),
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
+        .register(
+          ListAgentTokensRequest,
+          new ListAgentTokensHandler(agentTokens, permissions),
+        )
+        .register(
+          ResolveAgentTokenRequest,
+          new ResolveAgentTokenHandler(agentTokens, profiles),
+        )
         .register(
           GetAnonymousStatusRequest,
           new GetAnonymousStatusHandler(anonymousAuthors),

@@ -20,7 +20,7 @@ export type { RequestContext } from "./Common/RequestContext";
 export { ResponseBase } from "./Common/ResponseBase";
 export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 
-export { type Actor, VISITOR } from "./Common/Actor";
+export { type Actor, type AgentActor, VISITOR } from "./Common/Actor";
 export type { AnonymousStatusItem } from "./Common/AnonymousStatusItem";
 export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
 export type { AnonymousUploadCap } from "./Common/AnonymousUploadCap";
@@ -61,6 +61,14 @@ export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export { POSTING_POLICIES, type PostingPolicy } from "./Common/PostingPolicy";
 export { AGENTS_POLICIES, type AgentsPolicy } from "./Common/AgentsPolicy";
+export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
+export type { AgentGrant } from "./Common/AgentGrant";
+export {
+  AGENT_TOKEN_NAME_MAX_LENGTH,
+  AGENT_TOKEN_PREFIX,
+  type AgentToken,
+  isAgentTokenLive,
+} from "./Common/AgentToken";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
 export { REGIONS, DEFAULT_REGION, type Region } from "./Common/Region";
@@ -99,6 +107,10 @@ export type { IAccountManager } from "./Managers/AccountManager/IAccountManager"
 export type { ProfileSelector } from "./Managers/AccountManager/ProfileSelector";
 export type { SignInIdentity } from "./Managers/AccountManager/SignInIdentity";
 export { ClaimAnonymousPostsRequest } from "./Managers/AccountManager/Requests/ClaimAnonymousPostsRequest";
+export { CreateAgentTokenRequest } from "./Managers/AccountManager/Requests/CreateAgentTokenRequest";
+export { ListAgentTokensRequest } from "./Managers/AccountManager/Requests/ListAgentTokensRequest";
+export { ResolveAgentTokenRequest } from "./Managers/AccountManager/Requests/ResolveAgentTokenRequest";
+export { RevokeAgentTokenRequest } from "./Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 export { EnsureProfileRequest } from "./Managers/AccountManager/Requests/EnsureProfileRequest";
 export { EraseAccountRequest } from "./Managers/AccountManager/Requests/EraseAccountRequest";
 export { ExportAccountRequest } from "./Managers/AccountManager/Requests/ExportAccountRequest";
@@ -106,6 +118,13 @@ export { GetAnonymousStatusRequest } from "./Managers/AccountManager/Requests/Ge
 export { GetProfileRequest } from "./Managers/AccountManager/Requests/GetProfileRequest";
 export { UpdateProfileRequest } from "./Managers/AccountManager/Requests/UpdateProfileRequest";
 export { AccountErasedResponse } from "./Managers/AccountManager/Responses/AccountErasedResponse";
+export { AgentActorResponse } from "./Managers/AccountManager/Responses/AgentActorResponse";
+export { NoAgentActorResponse } from "./Managers/AccountManager/Responses/NoAgentActorResponse";
+export { NoSuchTokenResponse } from "./Managers/AccountManager/Responses/NoSuchTokenResponse";
+export { TokenMintedResponse } from "./Managers/AccountManager/Responses/TokenMintedResponse";
+export { TokenRejectedResponse } from "./Managers/AccountManager/Responses/TokenRejectedResponse";
+export { TokenRevokedResponse } from "./Managers/AccountManager/Responses/TokenRevokedResponse";
+export { TokensResponse } from "./Managers/AccountManager/Responses/TokensResponse";
 export { AccountUnavailableResponse } from "./Managers/AccountManager/Responses/AccountUnavailableResponse";
 export { ActionForbiddenResponse } from "./Managers/AccountManager/Responses/ActionForbiddenResponse";
 export { AnonymousClaimAlreadyDoneResponse } from "./Managers/AccountManager/Responses/AnonymousClaimAlreadyDoneResponse";

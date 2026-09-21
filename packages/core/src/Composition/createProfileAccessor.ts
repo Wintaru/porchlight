@@ -60,7 +60,8 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
   );
 }
 
-function createFakeProfileAccessor(state: FakeProfileState): IProfileAccessor {
+// Exported for the Manager tests that need a profile store beside another fake.
+export function createFakeProfileAccessor(state: FakeProfileState): IProfileAccessor {
   return new ProfileAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewProfileRequest, new FakeStoreNewProfileHandler(state))
