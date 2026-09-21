@@ -1,4 +1,5 @@
 import {
+  AGENTS_POLICIES,
   COMMENT_POLICIES,
   type DutyChecklistStatus,
   GetSiteConfigRequest,
@@ -183,6 +184,20 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               then.
             </p>
           )}
+          <label>
+            Agents
+            <select name="agents" defaultValue={config.agents}>
+              {AGENTS_POLICIES.map((policy) => (
+                <option key={policy} value={policy}>
+                  {policy}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p>
+            Who may mint a personal token for their own writing agent (D22). Off hides the
+            Agents section of every member&apos;s settings.
+          </p>
         </section>
 
         <section aria-labelledby="region-heading">

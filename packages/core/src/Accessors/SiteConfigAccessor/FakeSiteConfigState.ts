@@ -1,3 +1,4 @@
+import { DEFAULT_AGENTS_POLICY, type AgentsPolicy } from "../../Common/AgentsPolicy";
 import {
   DEFAULT_ANONYMOUS_UPLOAD_CAP,
   type AnonymousUploadCap,
@@ -46,5 +47,6 @@ export class FakeSiteConfigState {
     public signUp: SignUpPolicy = DEFAULT_SIGN_UP_POLICY,
     public siteIdentity: SiteIdentity = DEFAULT_SITE_IDENTITY,
     public autoPromoteAfterApprovedPosts: AutoPromoteAfterApprovedPosts = DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
+    public agents: AgentsPolicy = DEFAULT_AGENTS_POLICY,
   ) {}
 }

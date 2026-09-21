@@ -1,4 +1,5 @@
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { LoadAgentsPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentsPolicyRequest";
 import { LoadAnonymousUploadCapRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
@@ -10,6 +11,7 @@ import { LoadRawIpRetentionDaysRequest } from "../../../Accessors/SiteConfigAcce
 import { LoadRegionRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadRegionRequest";
 import { LoadSignUpPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
 import { LoadSiteIdentityRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadSiteIdentityRequest";
+import { AgentsPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AgentsPolicyLoadedResponse";
 import { AnonymousUploadCapLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AnonymousUploadCapLoadedResponse";
 import { AttachmentAllowlistLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentAllowlistLoadedResponse";
 import { AttachmentQuotaByTrustLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentQuotaByTrustLoadedResponse";
@@ -70,6 +72,7 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       moderationThresholds,
       rawIpRetentionDays,
       autoPromoteAfterApprovedPosts,
+      agents,
     ] = await Promise.all([
       this.siteConfig.load(new LoadPostingPolicyRequest(context)),
       this.siteConfig.load(new LoadCommentPolicyRequest(context)),
@@ -82,6 +85,7 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       this.siteConfig.load(new LoadModerationThresholdsRequest(context)),
       this.siteConfig.load(new LoadRawIpRetentionDaysRequest(context)),
       this.siteConfig.load(new LoadAutoPromoteAfterApprovedPostsRequest(context)),
+      this.siteConfig.load(new LoadAgentsPolicyRequest(context)),
     ]);
 
     if (!(posting instanceof PostingPolicyLoadedResponse)) {
@@ -122,6 +126,9 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
     ) {
       return unavailable(correlationId, autoPromoteAfterApprovedPosts);
     }
+    if (!(agents instanceof AgentsPolicyLoadedResponse)) {
+      return unavailable(correlationId, agents);
+    }
 
     const config: SiteConfigSnapshot = {
       posting: posting.policy,
@@ -135,6 +142,7 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       moderationThresholds: moderationThresholds.thresholds,
       rawIpRetentionDays: rawIpRetentionDays.days,
       autoPromoteAfterApprovedPosts: autoPromoteAfterApprovedPosts.afterApprovedPosts,
+      agents: agents.policy,
     };
     return new SiteConfigResponse(
       correlationId,

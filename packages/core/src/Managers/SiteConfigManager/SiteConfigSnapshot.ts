@@ -1,3 +1,4 @@
+import type { AgentsPolicy } from "../../Common/AgentsPolicy";
 import type { AnonymousUploadCap } from "../../Common/AnonymousUploadCap";
 import type { AttachmentQuotaByTrust } from "../../Common/AttachmentQuota";
 import type { AutoPromoteAfterApprovedPosts } from "../../Common/AutoPromoteRule";
@@ -23,4 +24,5 @@ export interface SiteConfigSnapshot {
   readonly moderationThresholds: ModerationThresholds;
   readonly rawIpRetentionDays: number;
   readonly autoPromoteAfterApprovedPosts: AutoPromoteAfterApprovedPosts;
+  readonly agents: AgentsPolicy;
 }

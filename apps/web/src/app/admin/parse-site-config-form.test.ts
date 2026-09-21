@@ -7,6 +7,7 @@ function validFields(): Readonly<Record<string, string>> {
     posting: "anyone",
     comments: "anyone",
     signUp: "open",
+    agents: "members",
     region: "US",
     siteName: "The Porch",
     siteTagline: "A place to sit a while",
@@ -48,6 +49,7 @@ describe("parseSiteConfigForm", () => {
         posting: "anyone",
         comments: "anyone",
         signUp: "open",
+        agents: "members",
         region: "US",
         siteIdentity: {
           siteName: "The Porch",

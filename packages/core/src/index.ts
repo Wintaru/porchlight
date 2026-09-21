@@ -60,6 +60,7 @@ export type { Post } from "./Common/Post";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export { POSTING_POLICIES, type PostingPolicy } from "./Common/PostingPolicy";
+export { AGENTS_POLICIES, type AgentsPolicy } from "./Common/AgentsPolicy";
 export type { Profile } from "./Common/Profile";
 export type { ProfileStatus } from "./Common/ProfileStatus";
 export { REGIONS, DEFAULT_REGION, type Region } from "./Common/Region";

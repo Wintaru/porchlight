@@ -1,6 +1,7 @@
 import type { DbClient } from "@porchlight/db";
 
 import { FakeSiteConfigState } from "../Accessors/SiteConfigAccessor/FakeSiteConfigState";
+import { FakeLoadAgentsPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAgentsPolicyHandler";
 import { FakeLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAnonymousUploadCapHandler";
 import { FakeLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentAllowlistHandler";
 import { FakeLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentQuotaByTrustHandler";
@@ -13,6 +14,7 @@ import { FakeLoadRegionHandler } from "../Accessors/SiteConfigAccessor/Handlers/
 import { FakeLoadSignUpPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadSignUpPolicyHandler";
 import { FakeLoadSiteIdentityHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeLoadSiteIdentityHandler";
 import { FakeStoreSiteConfigEntriesHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeStoreSiteConfigEntriesHandler";
+import { SupabaseLoadAgentsPolicyHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAgentsPolicyHandler";
 import { SupabaseLoadAnonymousUploadCapHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAnonymousUploadCapHandler";
 import { SupabaseLoadAttachmentAllowlistHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentAllowlistHandler";
 import { SupabaseLoadAttachmentQuotaByTrustHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadAttachmentQuotaByTrustHandler";
@@ -26,6 +28,7 @@ import { SupabaseLoadSignUpPolicyHandler } from "../Accessors/SiteConfigAccessor
 import { SupabaseLoadSiteIdentityHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseLoadSiteIdentityHandler";
 import { SupabaseStoreSiteConfigEntriesHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseStoreSiteConfigEntriesHandler";
 import type { ISiteConfigAccessor } from "../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { LoadAgentsPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAgentsPolicyRequest";
 import { LoadAnonymousUploadCapRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
@@ -124,6 +127,7 @@ export function createSiteConfigAccessor(
             LoadAutoPromoteAfterApprovedPostsRequest,
             new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(client),
           )
+          .register(LoadAgentsPolicyRequest, new SupabaseLoadAgentsPolicyHandler(client))
           .build(),
       );
     }
@@ -195,6 +199,7 @@ export function createSiteConfigAccessor(
             LoadAutoPromoteAfterApprovedPostsRequest,
             new FakeLoadAutoPromoteAfterApprovedPostsHandler(state),
           )
+          .register(LoadAgentsPolicyRequest, new FakeLoadAgentsPolicyHandler(state))
           .build(),
       );
     }

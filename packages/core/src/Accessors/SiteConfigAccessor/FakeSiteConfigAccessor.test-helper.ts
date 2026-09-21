@@ -1,5 +1,6 @@
 import { HandlerResolverBuilder } from "../../Common/HandlerResolverBuilder";
 import { FakeSiteConfigState } from "./FakeSiteConfigState";
+import { FakeLoadAgentsPolicyHandler } from "./Handlers/FakeLoadAgentsPolicyHandler";
 import { FakeLoadAnonymousUploadCapHandler } from "./Handlers/FakeLoadAnonymousUploadCapHandler";
 import { FakeLoadAttachmentAllowlistHandler } from "./Handlers/FakeLoadAttachmentAllowlistHandler";
 import { FakeLoadAttachmentQuotaByTrustHandler } from "./Handlers/FakeLoadAttachmentQuotaByTrustHandler";
@@ -13,6 +14,7 @@ import { FakeLoadSignUpPolicyHandler } from "./Handlers/FakeLoadSignUpPolicyHand
 import { FakeLoadSiteIdentityHandler } from "./Handlers/FakeLoadSiteIdentityHandler";
 import { FakeStoreSiteConfigEntriesHandler } from "./Handlers/FakeStoreSiteConfigEntriesHandler";
 import type { ISiteConfigAccessor } from "./ISiteConfigAccessor";
+import { LoadAgentsPolicyRequest } from "./Requests/LoadAgentsPolicyRequest";
 import { LoadAnonymousUploadCapRequest } from "./Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "./Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "./Requests/LoadAttachmentQuotaByTrustRequest";
@@ -68,6 +70,7 @@ export function fakeSiteConfigAccessor(state: FakeSiteConfigState): ISiteConfigA
         LoadAutoPromoteAfterApprovedPostsRequest,
         new FakeLoadAutoPromoteAfterApprovedPostsHandler(state),
       )
+      .register(LoadAgentsPolicyRequest, new FakeLoadAgentsPolicyHandler(state))
       .build(),
   );
 }

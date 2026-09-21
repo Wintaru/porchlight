@@ -3,6 +3,7 @@ import { StoreSiteConfigEntriesRequest } from "../../../Accessors/SiteConfigAcce
 import { SiteConfigStoredResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigStoredResponse";
 import type { SiteConfigEntry } from "../../../Accessors/SiteConfigAccessor/SiteConfigEntry";
 import type { Actor } from "../../../Common/Actor";
+import { AGENTS_POLICIES } from "../../../Common/AgentsPolicy";
 import { attachmentTypeForExtension } from "../../../Common/AttachmentTypeCatalog";
 import {
   DEFAULT_MODERATION_THRESHOLDS,
@@ -123,6 +124,13 @@ function entriesFor(update: Partial<SiteConfigSnapshot>): SiteConfigEntry[] | Fi
       return { field: "signUp", message: "not a known sign-up policy" };
     }
     entries.push({ key: "sign_up", value: update.signUp });
+  }
+
+  if (update.agents !== undefined) {
+    if (!AGENTS_POLICIES.some((policy) => policy === update.agents)) {
+      return { field: "agents", message: "not a known agents policy" };
+    }
+    entries.push({ key: "agents", value: update.agents });
   }
 
   if (update.region !== undefined) {

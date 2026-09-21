@@ -1,4 +1,5 @@
 import {
+  AGENTS_POLICIES,
   COMMENT_POLICIES,
   MIN_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
   POSTING_POLICIES,
@@ -35,6 +36,10 @@ export function parseSiteConfigForm(
   const signUp = oneOf(formData, "signUp", SIGN_UP_POLICIES);
   if (signUp === undefined) {
     return { ok: false, field: "signUp" };
+  }
+  const agents = oneOf(formData, "agents", AGENTS_POLICIES);
+  if (agents === undefined) {
+    return { ok: false, field: "agents" };
   }
   const region = oneOf(formData, "region", REGIONS);
   if (region === undefined) {
@@ -101,6 +106,7 @@ export function parseSiteConfigForm(
       posting,
       comments,
       signUp,
+      agents,
       region,
       siteIdentity: { siteName, siteTagline, aboutMd },
       attachmentAllowlist,
