@@ -74,6 +74,10 @@ function toColumns(changes: PostChanges): TablesUpdate<"posts"> {
   if (changes.rejectionReason !== undefined) {
     columns.rejection_reason = changes.rejectionReason;
   }
+  if (changes.reviewedAt !== undefined) {
+    columns.reviewed_at =
+      changes.reviewedAt === null ? null : changes.reviewedAt.toISOString();
+  }
   if (changes.publishedAt !== undefined) {
     columns.published_at =
       changes.publishedAt === null ? null : changes.publishedAt.toISOString();

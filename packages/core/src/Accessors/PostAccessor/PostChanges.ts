@@ -16,4 +16,6 @@ export interface PostChanges {
   readonly status?: PostStatus;
   readonly publishedAt?: Date | null;
   readonly rejectionReason?: string | null;
+  // Stamped by the Manager when a signed-in person saves or publishes (D22).
+  readonly reviewedAt?: Date | null;
 }

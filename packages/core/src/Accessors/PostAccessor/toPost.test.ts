@@ -2,6 +2,7 @@ import { Constants } from "@porchlight/db";
 import { expect, test } from "vitest";
 
 import { POST_STATUSES } from "../../Common/PostStatus";
+import { POST_ORIGINS } from "../../Common/PostOrigin";
 import { POST_VISIBILITIES } from "../../Common/PostVisibility";
 import { toPost } from "./toPost";
 
@@ -16,6 +17,12 @@ test("the domain post status union matches the schema enum", () => {
 test("the domain post visibility union matches the schema enum", () => {
   expect([...POST_VISIBILITIES].sort()).toEqual(
     [...Constants.public.Enums.post_visibility].sort(),
+  );
+});
+
+test("the domain post origin union matches the schema enum", () => {
+  expect([...POST_ORIGINS].sort()).toEqual(
+    [...Constants.public.Enums.post_origin].sort(),
   );
 });
 
@@ -34,6 +41,9 @@ test("toPost maps a member's row, its tags and its dates", () => {
     visibility: "public",
     comments_enabled: true,
     rejection_reason: null,
+    origin: "editor",
+    agent_token_id: null,
+    reviewed_at: null,
     published_at: "2026-09-12T10:00:00.000Z",
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-12T10:00:00.000Z",
@@ -60,6 +70,9 @@ test("toPost maps an anonymous row and refuses one with no author", () => {
     visibility: "public",
     comments_enabled: true,
     rejection_reason: null,
+    origin: "editor",
+    agent_token_id: null,
+    reviewed_at: null,
     published_at: null,
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-11T10:00:00.000Z",

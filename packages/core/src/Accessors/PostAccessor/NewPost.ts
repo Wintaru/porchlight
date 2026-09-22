@@ -1,4 +1,5 @@
 import type { ContentAuthor } from "../../Common/ContentAuthor";
+import type { PostOrigin } from "../../Common/PostOrigin";
 import type { PostVisibility } from "../../Common/PostVisibility";
 import type { Tag } from "../../Common/Tag";
 
@@ -14,4 +15,9 @@ export interface NewPost {
   readonly visibility: PostVisibility;
   readonly commentsEnabled: boolean;
   readonly tags: readonly Tag[];
+  // Provenance, decided by the Manager from the actor (D22): an agent's draft names
+  // its token and is unreviewed until a person saves it.
+  readonly origin: PostOrigin;
+  readonly agentTokenId: string | null;
+  readonly reviewedAt: Date | null;
 }

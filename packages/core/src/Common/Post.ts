@@ -1,4 +1,5 @@
 import type { ContentAuthor } from "./ContentAuthor";
+import type { PostOrigin } from "./PostOrigin";
 import type { PostStatus } from "./PostStatus";
 import type { PostVisibility } from "./PostVisibility";
 import type { Tag } from "./Tag";
@@ -22,6 +23,12 @@ export interface Post {
   // action moves the post off `rejected`.
   readonly rejectionReason: string | null;
   readonly tags: readonly Tag[];
+  // Where the post came from and who has looked at it since (D22, SPEC.md §17).
+  // `reviewedAt` is the last save or publish by a signed-in person: null on an agent
+  // draft nobody has opened.
+  readonly origin: PostOrigin;
+  readonly agentTokenId: string | null;
+  readonly reviewedAt: Date | null;
   readonly publishedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

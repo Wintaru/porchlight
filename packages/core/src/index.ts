@@ -57,6 +57,7 @@ export type { ModerationTarget } from "./Common/ModerationTarget";
 export type { Notification } from "./Common/Notification";
 export { NOTIFICATION_KINDS, type NotificationKind } from "./Common/NotificationKind";
 export type { Post } from "./Common/Post";
+export { POST_ORIGINS, DEFAULT_POST_ORIGIN, type PostOrigin } from "./Common/PostOrigin";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export { POSTING_POLICIES, type PostingPolicy } from "./Common/PostingPolicy";

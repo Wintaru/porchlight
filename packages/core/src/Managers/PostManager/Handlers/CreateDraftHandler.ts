@@ -10,6 +10,7 @@ import { SlugDerivedResponse } from "../../../Engines/ContentRenderEngine/Respon
 import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugUnusableResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { permit } from "../permit";
+import { provenanceOf } from "../provenance";
 import type { CreateDraftRequest } from "../Requests/CreateDraftRequest";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
@@ -54,7 +55,7 @@ export class CreateDraftHandler implements IHandler<
     if (refused !== undefined) {
       return refused;
     }
-    if (actor.kind !== "member") {
+    if (actor.kind === "visitor") {
       // The rule above already refused a visitor; this narrows the type for the author.
       return new PostUnavailableResponse(
         correlationId,
@@ -93,6 +94,7 @@ export class CreateDraftHandler implements IHandler<
             visibility: draft.visibility,
             commentsEnabled: draft.commentsEnabled,
             tags,
+            ...provenanceOf(actor, timestamp),
           },
           context,
         ),

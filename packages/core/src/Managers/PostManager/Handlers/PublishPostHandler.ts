@@ -11,6 +11,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { permit } from "../permit";
+import { reviewStamp } from "../provenance";
 import type { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
@@ -66,9 +67,10 @@ export class PublishPostHandler implements IHandler<
       return new PostNotPublishableResponse(correlationId, current.status);
     }
 
+    const review = reviewStamp(actor, timestamp);
     const changes: PostChanges = publishesAtOnce(actor)
-      ? { status: "published", publishedAt: timestamp }
-      : { status: "pending", publishedAt: null };
+      ? { status: "published", publishedAt: timestamp, ...review }
+      : { status: "pending", publishedAt: null, ...review };
     const stored = await this.posts.store(
       new StorePostChangesRequest(postId, changes, context),
     );
@@ -93,10 +95,12 @@ export class PublishPostHandler implements IHandler<
   }
 }
 
-// Trust decides (SPEC.md §4). Staff are trusted by definition.
+// Trust decides (SPEC.md §4). Staff are trusted by definition. An agent carries its
+// member's trust unchanged (SPEC.md §17): a probation member's agent lands in
+// `pending`, exactly as the member would.
 function publishesAtOnce(actor: Actor): boolean {
   return (
-    actor.kind === "member" &&
+    actor.kind !== "visitor" &&
     (actor.profile.trustLevel === "trusted" || actor.profile.role !== "member")
   );
 }

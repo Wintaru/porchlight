@@ -499,6 +499,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          agent_token_id: string | null
           anonymous_author_id: string | null
           author_id: string | null
           body_html: string
@@ -507,8 +508,10 @@ export type Database = {
           cover_media_id: string | null
           created_at: string
           id: string
+          origin: Database["public"]["Enums"]["post_origin"]
           published_at: string | null
           rejection_reason: string | null
+          reviewed_at: string | null
           slug: string
           status: Database["public"]["Enums"]["post_status"]
           summary: string | null
@@ -517,6 +520,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["post_visibility"]
         }
         Insert: {
+          agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           body_html?: string
@@ -525,8 +529,10 @@ export type Database = {
           cover_media_id?: string | null
           created_at?: string
           id?: string
+          origin?: Database["public"]["Enums"]["post_origin"]
           published_at?: string | null
           rejection_reason?: string | null
+          reviewed_at?: string | null
           slug: string
           status?: Database["public"]["Enums"]["post_status"]
           summary?: string | null
@@ -535,6 +541,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Update: {
+          agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           body_html?: string
@@ -543,8 +550,10 @@ export type Database = {
           cover_media_id?: string | null
           created_at?: string
           id?: string
+          origin?: Database["public"]["Enums"]["post_origin"]
           published_at?: string | null
           rejection_reason?: string | null
+          reviewed_at?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["post_status"]
           summary?: string | null
@@ -553,6 +562,13 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_agent_token_id_fkey"
+            columns: ["agent_token_id"]
+            isOneToOne: false
+            referencedRelation: "agent_tokens"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_anonymous_author_id_fkey"
             columns: ["anonymous_author_id"]
@@ -813,6 +829,7 @@ export type Database = {
       }
       submission_evidence: {
         Row: {
+          agent_token_id: string | null
           anonymous_author_id: string | null
           author_id: string | null
           frozen: boolean
@@ -834,6 +851,7 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           frozen?: boolean
@@ -855,6 +873,7 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           frozen?: boolean
@@ -876,6 +895,13 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "submission_evidence_agent_token_id_fkey"
+            columns: ["agent_token_id"]
+            isOneToOne: false
+            referencedRelation: "agent_tokens"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "submission_evidence_anonymous_author_id_fkey"
             columns: ["anonymous_author_id"]
@@ -1028,6 +1054,7 @@ export type Database = {
         | "item.rejected"
         | "report.filed"
         | "mod.action"
+      post_origin: "editor" | "agent"
       post_status:
         | "draft"
         | "pending"
@@ -1218,6 +1245,7 @@ export const Constants = {
         "report.filed",
         "mod.action",
       ],
+      post_origin: ["editor", "agent"],
       post_status: [
         "draft",
         "pending",

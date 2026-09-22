@@ -39,6 +39,8 @@ export class FakeStorePostChangesHandler implements IHandler<
         changes.rejectionReason === undefined
           ? current.rejectionReason
           : changes.rejectionReason,
+      reviewedAt:
+        changes.reviewedAt === undefined ? current.reviewedAt : changes.reviewedAt,
       publishedAt:
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,

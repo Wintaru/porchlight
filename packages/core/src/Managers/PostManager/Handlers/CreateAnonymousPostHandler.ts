@@ -154,6 +154,10 @@ export class CreateAnonymousPostHandler implements IHandler<
             visibility: "public",
             commentsEnabled: true,
             tags: [],
+            // An anonymous visitor is a person at a form, never an agent (D22).
+            origin: "editor",
+            agentTokenId: null,
+            reviewedAt: context.timestamp,
           },
           context,
         ),

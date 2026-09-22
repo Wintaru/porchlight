@@ -10,6 +10,8 @@ allowBuilds:
 # `catalog:` so a version bump happens in exactly one place.
 catalog:
   "@axe-core/playwright": ^4.13.0
+  "@modelcontextprotocol/client": ^2.0.0
+  "@modelcontextprotocol/server": ^2.0.0
   "@next/eslint-plugin-next": ^16.3.4
   "@playwright/test": ^1.63.0
   "@supabase/ssr": ^0.12.7
@@ -45,3 +47,4 @@ catalog:
   unified: ^11.0.5
   vite: ^8.3.0
   vitest: ^5.0.0
+  zod: ^4.2.0

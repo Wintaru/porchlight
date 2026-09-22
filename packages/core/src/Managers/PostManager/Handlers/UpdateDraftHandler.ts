@@ -9,6 +9,7 @@ import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { permit } from "../permit";
+import { reviewStamp } from "../provenance";
 import type { UpdateDraftRequest } from "../Requests/UpdateDraftRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
@@ -57,7 +58,8 @@ export class UpdateDraftHandler implements IHandler<
       return refused;
     }
 
-    const columns: PostChanges = {};
+    // A person's save is a review (D22); an agent's is not.
+    const columns: PostChanges = reviewStamp(actor, timestamp);
     const shaped: { -readonly [K in keyof PostChanges]: PostChanges[K] } = columns;
     if (changes.title !== undefined) {
       const title = changes.title.trim();
