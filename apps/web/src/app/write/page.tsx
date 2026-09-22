@@ -90,9 +90,18 @@ export default async function WritePage({ searchParams }: WritePageProps) {
         ) : (
           <ul data-testid="my-posts">
             {posts.map((post) => (
-              <li key={post.id}>
+              <li key={post.id} data-testid="post-row">
                 <Link href={`/write/${post.id}`}>{post.title}</Link> ·{" "}
                 {STATUS_TEXT[post.status]}
+                {post.origin === "agent" && post.reviewedAt === null && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <span data-testid="agent-draft-badge">
+                      agent draft, not yet reviewed
+                    </span>
+                  </>
+                )}
               </li>
             ))}
           </ul>
