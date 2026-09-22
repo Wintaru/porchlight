@@ -64,6 +64,7 @@ export {
   AGENTS_POLICIES,
   DEFAULT_AGENTS_POLICY,
   type AgentsPolicy,
+  agentsOpenTo,
 } from "./Common/AgentsPolicy";
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
 export type { AgentGrant } from "./Common/AgentGrant";

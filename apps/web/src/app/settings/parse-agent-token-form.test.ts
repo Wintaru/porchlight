@@ -15,9 +15,9 @@ function form(fields: Readonly<Record<string, string | readonly string[]>>): For
 }
 
 describe("parseAgentTokenForm", () => {
-  test("a name, two scopes and a 30-day expiry", () => {
+  test("a name, a publish scope and a 30-day expiry", () => {
     const result = parseAgentTokenForm(
-      form({ name: " Laptop ", scopes: ["posts:draft", "posts:publish"], expiry: "30" }),
+      form({ name: " Laptop ", scopes: ["posts:publish"], expiry: "30" }),
       NOW,
     );
     expect(result).toEqual({
@@ -30,11 +30,23 @@ describe("parseAgentTokenForm", () => {
     });
   });
 
-  test("no box ticked means the draft scope, never means no expiry", () => {
-    const result = parseAgentTokenForm(form({ name: "Laptop", expiry: "never" }), NOW);
-    expect(result).toEqual({
+  test("the draft scope is always there, and never means no expiry", () => {
+    expect(parseAgentTokenForm(form({ name: "Laptop", expiry: "never" }), NOW)).toEqual({
       ok: true,
       values: { name: "Laptop", scopes: ["posts:draft"], expiresAt: null },
+    });
+    expect(
+      parseAgentTokenForm(
+        form({ name: "Laptop", scopes: ["posts:publish"], expiry: "never" }),
+        NOW,
+      ),
+    ).toEqual({
+      ok: true,
+      values: {
+        name: "Laptop",
+        scopes: ["posts:draft", "posts:publish"],
+        expiresAt: null,
+      },
     });
   });
 

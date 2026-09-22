@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { MCP_PATH } from "./agent-mcp";
@@ -79,8 +80,8 @@ export async function revokeAgentToken(formData: FormData): Promise<void> {
     redirect(signInPathFor("/settings"));
   }
   const tokenId = formData.get("tokenId");
-  if (typeof tokenId !== "string" || tokenId === "") {
-    redirect("/settings?agentError=unavailable");
+  if (typeof tokenId !== "string" || !isEntityId(tokenId)) {
+    redirect("/settings?agentError=no-such-token");
   }
   const response = await getDependencyContainer().accountManager.execute(
     new RevokeAgentTokenRequest(actor, tokenId),

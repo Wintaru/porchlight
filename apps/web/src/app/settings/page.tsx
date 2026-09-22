@@ -98,7 +98,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <button type="submit">Save</button>
       </form>
       <AgentsSection
-        profile={profile}
+        actor={actor}
         policy={agentsPolicy}
         revoked={agentRevoked !== undefined}
         errorText={agentErrorText}

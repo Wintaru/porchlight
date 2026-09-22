@@ -63,6 +63,7 @@ export function MintTokenForm() {
               name="scopes"
               value={scope}
               defaultChecked={scope === "posts:draft"}
+              disabled={scope === "posts:draft"}
             />
             {SCOPE_TEXT[scope]}
           </label>

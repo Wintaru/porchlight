@@ -8,7 +8,7 @@ import { PostingPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccess
 import { SiteConfigAccessFailedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigAccessFailedResponse";
 import type { Actor, AgentActor } from "../../../Common/Actor";
 import { hasScope } from "../../../Common/AgentGrant";
-import type { AgentsPolicy } from "../../../Common/AgentsPolicy";
+import { type AgentsPolicy, agentsOpenTo } from "../../../Common/AgentsPolicy";
 import type { CommentPolicy } from "../../../Common/CommentPolicy";
 import type { IHandler } from "../../../Common/IHandler";
 import type { PostingPolicy } from "../../../Common/PostingPolicy";
@@ -517,16 +517,22 @@ function mayFileReport(actor: PersonActor, subject: PermissionSubject): Promise<
 
 // A member's own tokens, nobody else's, and never an agent's (SPEC.md §17): minting,
 // listing and revoking are a person's act at the settings page. Staff included, since
-// they are members too; an admin does not manage another member's tokens.
-function mayManageOwnTokens(
+// they are members too; an admin does not manage another member's tokens. The `agents`
+// key gates this too, so a site that closed agents mints no token that comes alive the
+// day the key reopens.
+async function mayManageOwnTokens(
   actor: PersonActor,
   subject: PermissionSubject,
+  policy: SitePolicy,
 ): Promise<Denial> {
   const gate = activeMember(actor);
   if (isDenial(gate)) {
-    return Promise.resolve(gate);
+    return gate;
   }
-  return Promise.resolve(verdict(subject.kind === "profile" && gate.id === subject.id));
+  if (subject.kind !== "profile" || gate.id !== subject.id) {
+    return "not-allowed";
+  }
+  return agentsOpenTo(gate, await policy.agents()) ? undefined : "agents-closed";
 }
 
 // ---- Agents (D22, SPEC.md §17) -------------------------------------------------------
@@ -591,14 +597,9 @@ async function activeAgent(
   if (agent.profile.status !== "active") {
     return "account-inactive";
   }
-  const agents = await policy.agents();
-  if (agents === "off") {
-    return "agents-closed";
-  }
-  if (agents === "staff" && !isStaff(agent.profile)) {
-    return "agents-closed";
-  }
-  return agent.profile;
+  return agentsOpenTo(agent.profile, await policy.agents())
+    ? agent.profile
+    : "agents-closed";
 }
 
 // The member's own draft, and nothing in any other status: an agent never touches a

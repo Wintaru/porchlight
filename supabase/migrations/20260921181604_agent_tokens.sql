@@ -16,7 +16,8 @@ create table public.agent_tokens (
   name text not null check (char_length(name) between 1 and 60),
   -- sha256 of the raw token, lowercase hex, the same shape as anonymous_authors.
   token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
-  scopes public.agent_scope[] not null check (cardinality(scopes) > 0),
+  scopes public.agent_scope[] not null
+    check (cardinality(scopes) > 0 and array_position(scopes, null) is null),
   expires_at timestamptz,
   revoked_at timestamptz,
   last_used_at timestamptz,

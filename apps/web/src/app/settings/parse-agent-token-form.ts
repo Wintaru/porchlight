@@ -44,8 +44,9 @@ export function parseAgentTokenForm(formData: FormData, now: Date): AgentTokenFo
     ok: true,
     values: {
       name,
-      // A form with no box ticked still gets the draft scope: the floor, not a choice.
-      scopes: scopes.length === 0 ? DEFAULT_AGENT_SCOPES : scopes,
+      // The draft scope is the floor, not a choice: the form shows it ticked and
+      // disabled, and a disabled box does not submit, so it is added here.
+      scopes: [...DEFAULT_AGENT_SCOPES, ...scopes],
       expiresAt:
         expiry === "never" ? null : new Date(now.getTime() + Number(expiry) * DAY_MS),
     },

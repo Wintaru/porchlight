@@ -257,4 +257,20 @@ describe("every other action", () => {
       "signed-out",
     );
   });
+
+  test("token.manage follows the agents setting, so a closed site mints nothing", async () => {
+    const off = new FakeSiteConfigState("anyone", "anyone");
+    off.agents = "off";
+    expect(await verdict(MEMBER, "token.manage", OWN_PROFILE, off)).toBe("agents-closed");
+
+    const staffOnly = new FakeSiteConfigState("anyone", "anyone");
+    staffOnly.agents = "staff";
+    expect(await verdict(MEMBER, "token.manage", OWN_PROFILE, staffOnly)).toBe(
+      "agents-closed",
+    );
+    const moderator: Actor = { kind: "member", profile: profile({ role: "moderator" }) };
+    expect(await verdict(moderator, "token.manage", OWN_PROFILE, staffOnly)).toBe(
+      "granted",
+    );
+  });
 });

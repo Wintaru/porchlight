@@ -264,16 +264,16 @@ export class DependencyContainer {
           RevokeAgentTokenRequest,
           new RevokeAgentTokenHandler(agentTokens, permissions),
         )
+        .register(
+          ResolveAgentTokenRequest,
+          new ResolveAgentTokenHandler(agentTokens, profiles),
+        )
         .build(),
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
         .register(
           ListAgentTokensRequest,
           new ListAgentTokensHandler(agentTokens, permissions),
-        )
-        .register(
-          ResolveAgentTokenRequest,
-          new ResolveAgentTokenHandler(agentTokens, profiles),
         )
         .register(
           GetAnonymousStatusRequest,

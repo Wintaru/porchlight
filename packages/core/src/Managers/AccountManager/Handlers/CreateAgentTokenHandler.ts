@@ -1,7 +1,11 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { StoreNewAgentTokenRequest } from "../../../Accessors/AgentTokenAccessor/Requests/StoreNewAgentTokenRequest";
 import { AgentTokenStoredResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenStoredResponse";
-import { type AgentScope, isAgentScope } from "../../../Common/AgentScope";
+import {
+  type AgentScope,
+  DEFAULT_AGENT_SCOPES,
+  isAgentScope,
+} from "../../../Common/AgentScope";
 import { AGENT_TOKEN_NAME_MAX_LENGTH } from "../../../Common/AgentToken";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
@@ -94,8 +98,8 @@ function validate(request: CreateAgentTokenRequest): FieldError | undefined {
       message: `must be 1 to ${String(AGENT_TOKEN_NAME_MAX_LENGTH)} characters`,
     };
   }
-  if (request.scopes.length === 0 || !request.scopes.every(isAgentScope)) {
-    return { field: "scopes", message: "must name at least one known scope" };
+  if (!request.scopes.every(isAgentScope)) {
+    return { field: "scopes", message: "must name known scopes only" };
   }
   if (
     request.expiresAt !== null &&
@@ -106,6 +110,8 @@ function validate(request: CreateAgentTokenRequest): FieldError | undefined {
   return undefined;
 }
 
+// The draft scope is the floor every token stands on (SPEC.md §17): a token that may
+// publish or upload must be able to see and write the drafts it acts on.
 function uniqueScopes(scopes: readonly AgentScope[]): readonly AgentScope[] {
-  return [...new Set(scopes)];
+  return [...new Set([...DEFAULT_AGENT_SCOPES, ...scopes])];
 }

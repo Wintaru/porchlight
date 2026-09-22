@@ -19,10 +19,16 @@ import { unavailable } from "../unavailable";
 
 type Result = AgentActorResponse | NoAgentActorResponse | AccountUnavailableResponse;
 
+// `last_used_at` is stamped at most this often: the settings page shows the day, not
+// the second, and an agent's session is many tool calls, not one.
+export const LAST_USED_STAMP_INTERVAL_MS = 5 * 60 * 1000;
+
 // Hash, find, check it is live, load its member, check they are active, stamp
 // last_used_at. No permission check: this is how an actor comes to exist, and it takes
 // no actor. Every "no" is the same NoAgentActorResponse, so a caller probing tokens
-// learns nothing from the shape of the refusal.
+// learns nothing from the shape of the refusal. A failed stamp is a failed resolve, on
+// purpose: the store that could not take a write is the store the next tool call
+// needs, and a door that half-works is harder to reason about than one that is shut.
 export class ResolveAgentTokenHandler implements IHandler<
   ResolveAgentTokenRequest,
   Result
@@ -66,11 +72,16 @@ export class ResolveAgentTokenHandler implements IHandler<
       return new NoAgentActorResponse(correlationId);
     }
 
-    const touched = await this.agentTokens.store(
-      new TouchAgentTokenRequest(token.id, context),
-    );
-    if (!(touched instanceof AgentTokenTouchedResponse)) {
-      return unavailable(correlationId, touched, "store");
+    if (
+      token.lastUsedAt === null ||
+      timestamp.getTime() - token.lastUsedAt.getTime() >= LAST_USED_STAMP_INTERVAL_MS
+    ) {
+      const touched = await this.agentTokens.store(
+        new TouchAgentTokenRequest(token.id, context),
+      );
+      if (!(touched instanceof AgentTokenTouchedResponse)) {
+        return unavailable(correlationId, touched, "store");
+      }
     }
     return new AgentActorResponse(correlationId, {
       kind: "agent",

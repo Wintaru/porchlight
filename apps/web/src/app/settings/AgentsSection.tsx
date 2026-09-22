@@ -1,9 +1,10 @@
 import {
+  type Actor,
   type AgentToken,
   type AgentsPolicy,
   ListAgentTokensRequest,
-  type Profile,
   TokensResponse,
+  agentsOpenTo,
   isAgentTokenLive,
 } from "@porchlight/core";
 
@@ -12,7 +13,7 @@ import { revokeAgentToken } from "./agent-actions";
 import { MintTokenForm } from "./MintTokenForm";
 
 interface AgentsSectionProps {
-  readonly profile: Profile;
+  readonly actor: Extract<Actor, { kind: "member" }>;
   readonly policy: AgentsPolicy;
   readonly revoked: boolean;
   readonly errorText: string | undefined;
@@ -21,16 +22,16 @@ interface AgentsSectionProps {
 // The Agents section of the settings page (SPEC.md §17): mint, the list with last
 // used, revoke. Hidden when the site's `agents` key closes agents to this member.
 export async function AgentsSection({
-  profile,
+  actor,
   policy,
   revoked,
   errorText,
 }: AgentsSectionProps) {
-  if (!agentsOpenTo(profile, policy)) {
+  if (!agentsOpenTo(actor.profile, policy)) {
     return null;
   }
   const response = await getDependencyContainer().accountManager.query(
-    new ListAgentTokensRequest({ kind: "member", profile }),
+    new ListAgentTokensRequest(actor),
   );
   const tokens = response instanceof TokensResponse ? response.tokens : undefined;
   const now = new Date();
@@ -80,23 +81,12 @@ export async function AgentsSection({
   );
 }
 
-function agentsOpenTo(profile: Profile, policy: AgentsPolicy): boolean {
-  switch (policy) {
-    case "members":
-      return true;
-    case "staff":
-      return profile.role === "admin" || profile.role === "moderator";
-    case "off":
-      return false;
-  }
-}
-
 function describe(token: AgentToken, now: Date): string {
   if (token.revokedAt !== null) {
     return `revoked ${token.revokedAt.toISOString().slice(0, 10)}`;
   }
-  if (!isAgentTokenLive(token, now)) {
-    return `expired ${token.expiresAt?.toISOString().slice(0, 10) ?? ""}`;
+  if (token.expiresAt !== null && !isAgentTokenLive(token, now)) {
+    return `expired ${token.expiresAt.toISOString().slice(0, 10)}`;
   }
   const lastUsed =
     token.lastUsedAt === null

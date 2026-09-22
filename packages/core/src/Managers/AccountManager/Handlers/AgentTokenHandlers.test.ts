@@ -7,6 +7,7 @@ import {
   fakeSiteConfigAccessor,
 } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigAccessor.test-helper";
 import type { Actor } from "../../../Common/Actor";
+import type { AgentScope } from "../../../Common/AgentScope";
 import { VISITOR } from "../../../Common/Actor";
 import type { Profile } from "../../../Common/Profile";
 import { createFakeAgentTokenAccessor } from "../../../Composition/createAgentTokenAccessor";
@@ -26,7 +27,10 @@ import { TokenRevokedResponse } from "../Responses/TokenRevokedResponse";
 import { TokensResponse } from "../Responses/TokensResponse";
 import { CreateAgentTokenHandler } from "./CreateAgentTokenHandler";
 import { ListAgentTokensHandler } from "./ListAgentTokensHandler";
-import { ResolveAgentTokenHandler } from "./ResolveAgentTokenHandler";
+import {
+  LAST_USED_STAMP_INTERVAL_MS,
+  ResolveAgentTokenHandler,
+} from "./ResolveAgentTokenHandler";
 import { RevokeAgentTokenHandler } from "./RevokeAgentTokenHandler";
 
 // Issue #27's Done-when, end to end through the Manager handlers on the fakes: mint,
@@ -125,16 +129,32 @@ describe("CreateAgentToken", () => {
     }
   });
 
-  test("rejects a blank name, no scopes, and a past expiry", async () => {
+  test("the draft scope is the floor: a publish-only request gets both", async () => {
     const handlers = build();
-    const cases: readonly [string, readonly "posts:draft"[], Date | null, string][] = [
+
+    const minted = await handlers.create.handle(
+      new CreateAgentTokenRequest(THEO, "Publisher", ["posts:publish"], null),
+    );
+
+    expect(minted).toBeInstanceOf(TokenMintedResponse);
+    expect((minted as TokenMintedResponse).token.scopes).toEqual([
+      "posts:draft",
+      "posts:publish",
+    ]);
+  });
+
+  test("rejects a blank name, an unknown scope, and a past expiry", async () => {
+    const handlers = build();
+    const cases: readonly [string, readonly string[], Date | null, string][] = [
       ["  ", ["posts:draft"], null, "name"],
-      ["Laptop", [], null, "scopes"],
+      ["Laptop", ["admin:all"], null, "scopes"],
       ["Laptop", ["posts:draft"], new Date("2026-09-21T09:00:00.000Z"), "expiresAt"],
     ];
     for (const [name, scopes, expiresAt, field] of cases) {
       const response = await handlers.create.handle(
-        new CreateAgentTokenRequest(THEO, name, scopes, expiresAt, { timestamp: AT }),
+        new CreateAgentTokenRequest(THEO, name, scopes as AgentScope[], expiresAt, {
+          timestamp: AT,
+        }),
       );
       expect(response).toBeInstanceOf(TokenRejectedResponse);
       expect((response as TokenRejectedResponse).field).toBe(field);
@@ -157,6 +177,21 @@ describe("ResolveAgentToken", () => {
     expect(actor.profile.id).toBe(THEO_ID);
     expect(actor.grant).toEqual({ tokenId: minted.token.id, scopes: ["posts:draft"] });
     expect(handlers.tokens.tokens.get(minted.token.id)?.lastUsedAt).toEqual(LATER);
+  });
+
+  test("stamps last used at most once per interval", async () => {
+    const handlers = build();
+    const minted = await mint(handlers);
+    const soon = new Date(LATER.getTime() + LAST_USED_STAMP_INTERVAL_MS - 1);
+    const later = new Date(LATER.getTime() + LAST_USED_STAMP_INTERVAL_MS);
+
+    for (const at of [LATER, soon, later]) {
+      await handlers.resolve.handle(
+        new ResolveAgentTokenRequest(minted.rawToken, { timestamp: at }),
+      );
+    }
+
+    expect(handlers.tokens.tokens.get(minted.token.id)?.lastUsedAt).toEqual(later);
   });
 
   test("answers nothing for an unknown, malformed, expired or revoked token", async () => {
