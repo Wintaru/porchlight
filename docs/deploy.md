@@ -100,6 +100,13 @@ any of hash matching, the image classifier, Turnstile or media storage still run
 its fake — each row links its setup guide. Every value here can change again later
 from the same page.
 
-## 9. Email — phase 2, issue #22
+## 9. Agents — no production step
+
+The MCP door at `/api/mcp` needs no key and no external service: a member mints their
+own token on the settings page. Decide whether to leave `agents` on (`/admin`, the
+Access section) and, if you leave it on, read [agents.md](agents.md) so you can answer
+a member who asks what their assistant may do.
+
+## 10. Email — phase 2, issue #22
 
 Guide: `setup/email.md`. Digest email through `EmailAccessor` (D14).

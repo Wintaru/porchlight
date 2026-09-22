@@ -1,0 +1,103 @@
+# Agents: writing on Porchlight with your own assistant
+
+Porchlight has a door your own writing assistant can use. You mint a token, give it to
+your agent, and the agent drafts posts as you. The drafts wait in your editor. You read
+them and publish. That is the normal path, and it is the point of the design: the
+assistant helps you write, and a person still decides what the site says.
+
+Porchlight is the MCP **server** here. Your agent, for example Claude Code, is the
+client and runs on your own subscription. Porchlight never calls a model vendor and
+needs no API key for this.
+
+## What you need
+
+An account on the site, and a site whose admin has left agents on. Nothing else. There
+is no production step for this feature and no key to buy: tokens are minted in the app.
+
+## Mint a token
+
+1. Open **Settings**, section **Agents**.
+2. Give the token a name you will recognise later, such as "Laptop".
+3. Pick the scopes. **Write drafts** is always on and is the floor. **Publish without
+   you** is the one to think about: with it, your agent can put a post on the site
+   without you reading it first. Leave it off unless you want that.
+4. Pick an expiry, or "Never".
+5. Press **Mint token**.
+
+The token appears **once**. Copy it now. Porchlight stores only a hash of it, so nobody,
+including the site's admin, can show it to you again. If you lose it, revoke it and mint
+another.
+
+## Connect Claude Code
+
+The settings page shows the exact line, with your token already in it. It looks like
+this:
+
+```sh
+claude mcp add --transport http porchlight https://your-site.example/api/mcp \
+  --header "Authorization: Bearer plt_your_token_here"
+```
+
+Run it in a terminal. Claude Code then lists Porchlight's tools and can write for you.
+
+## The notes-to-draft workflow
+
+The way this is meant to be used:
+
+1. You keep notes — a paragraph, a list of points, a half-formed argument.
+2. You ask your agent to draft a post from those notes.
+3. The agent calls `create_draft`. The draft lands in your editor at `/write`, marked
+   "agent draft, not yet reviewed".
+4. You open it, read it, change what you want, and publish. Your edit marks the post
+   reviewed.
+
+The server tells every connecting agent the house rules before it writes: draft from
+your notes and your voice guide only, do not pad, do not add a closing summary, do not
+invent facts or opinions, one draft per request.
+
+## The tools
+
+| Tool | What it does |
+| ---- | ------------ |
+| `get_me` | Who the agent is writing as: your handle, your trust level, the token's scopes. |
+| `list_posts` | Your own posts, newest first, filtered by status. Titles and status, not bodies — use `get_post` for one. |
+| `get_post` | One of your own posts, by id or slug. |
+| `create_draft` | Starts a draft. Never publishes. |
+| `update_draft` | Changes a draft of yours. |
+| `delete_draft` | Deletes a draft of yours. |
+| `publish_post` | Publishes one of your drafts. Needs the **Publish without you** scope. |
+
+## What an agent cannot do
+
+An agent carries your profile, but it is not you. It may only touch **your own drafts**.
+It cannot edit or delete a post that is already published, comment, react, report,
+moderate anything, change your profile, export or erase your account, or mint or revoke
+tokens. Those need a person signed in.
+
+Your trust level carries through unchanged. If your posts wait for a moderator, so do
+your agent's.
+
+## Limits
+
+Each token may create **5 drafts** and **publish 2 posts** a day. `get_me` reports the
+site's real numbers. Over the limit, the tool answers with the cap and the time it
+resets, so your agent can tell you instead of retrying.
+
+The caps are the shipped defaults until the site settings page gains a control for them
+(issue #30). Changing them before that means editing `site_config.agent_limits` by hand,
+as `{"drafts_per_day": 5, "publishes_per_day": 2}`.
+
+## Revoke a token
+
+Settings, section Agents, **Revoke** next to the token. It stops working at once: the
+next call from that token is refused at the door. Revoking is final — mint a new token
+rather than trying to undo it.
+
+## Running it locally
+
+Everything above works against a local stack with no keys (`README.md` has the setup).
+Mint a token at http://localhost:3000/settings after signing in at
+`/auth/dev-sign-in`, and point your agent at `http://localhost:3000/api/mcp`.
+
+`AGENT_TOKEN_PROVIDER=fake` in `.env.example` swaps the token store for an in-memory
+one, for tests. A production build refuses it (D19).

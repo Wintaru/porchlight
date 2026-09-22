@@ -86,6 +86,13 @@ one seeded database and puts back what it changed. It takes about a minute. Run
 `supabase db reset` before a full run: the export-and-erase test erases the seeded
 member `ivy` for real, so she is there once per seed.
 
+## Agents
+
+A member can mint a personal token and let their own writing assistant draft posts
+through the MCP door at `/api/mcp` (SPEC.md §17). Drafts wait in the editor for a person
+to read and publish. [docs/agents.md](docs/agents.md) is the guide: minting, the
+`claude mcp add` line, the tools, and what an agent may never do.
+
 ## CI
 
 `.github/workflows/ci.yml` runs the same gate on every push to `main` and every pull

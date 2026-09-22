@@ -14,5 +14,8 @@ The admin duty checklist links the same guides.
 | [`classifiers.md`](classifiers.md)  | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
 | [`email.md`](email.md) (phase 2)    | Digest email                             | `EMAIL_*`                             |
 
+Agents have no setup guide because they need no external service: a member mints a
+token in the app. [../agents.md](../agents.md) explains the door and the workflow.
+
 The order to do these in for a hosted instance is [../deploy.md](../deploy.md).
 Research that fed the decisions lives in [../research/](../research/).
