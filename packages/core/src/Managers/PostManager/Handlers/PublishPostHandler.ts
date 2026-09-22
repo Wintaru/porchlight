@@ -5,7 +5,6 @@ import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Request
 import { PostNotFoundResponse } from "../../../Accessors/PostAccessor/Responses/PostNotFoundResponse";
 import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/PostStoredResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
-import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
@@ -13,6 +12,7 @@ import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { admitAgent } from "../admitAgent";
 import { permit } from "../permit";
+import { publishesAtOnce } from "../publishesAtOnce";
 import { reviewStamp } from "../provenance";
 import type { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
@@ -102,14 +102,4 @@ export class PublishPostHandler implements IHandler<
     }
     return new PostResponse(correlationId, stored.post);
   }
-}
-
-// Trust decides (SPEC.md §4). Staff are trusted by definition. An agent carries its
-// member's trust unchanged (SPEC.md §17): a probation member's agent lands in
-// `pending`, exactly as the member would.
-function publishesAtOnce(actor: Actor): boolean {
-  return (
-    actor.kind !== "visitor" &&
-    (actor.profile.trustLevel === "trusted" || actor.profile.role !== "member")
-  );
 }

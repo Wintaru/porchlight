@@ -14,8 +14,9 @@ export function provenanceOf(
     : { origin: "editor", agentTokenId: null, reviewedAt: now };
 }
 
-// A save or a publish by a signed-in person marks the post reviewed (D22). An agent's
-// own save never does, so the badge stays until a person opens the draft.
+// A save or a publish by a signed-in member marks the post reviewed (D22). An agent's
+// own save never does, so the badge stays until a person opens the draft. An anonymous
+// author never reaches here: their one write sets the stamp directly.
 export function reviewStamp(actor: Actor, now: Date): { reviewedAt?: Date } {
   return actor.kind === "member" ? { reviewedAt: now } : {};
 }

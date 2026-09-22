@@ -1,7 +1,7 @@
 -- Issue #28 (D22, SPEC.md §17): where a post came from. Every post records whether a
 -- person or an agent wrote it, which token if an agent did, and when a signed-in person
--- last saved or published it. #30 turns these into the badge, the publish warning and
--- the disclosure footer.
+-- last saved or published it. The drafts list badges an unreviewed agent post here;
+-- #30 adds the publish warning and the disclosure footer.
 
 create type public.post_origin as enum ('editor', 'agent');
 
@@ -20,7 +20,7 @@ alter table public.posts
     check (agent_token_id is null or origin = 'agent');
 
 comment on column public.posts.origin is 'Who wrote the first draft: the editor (a person) or an agent (D22).';
-comment on column public.posts.reviewed_at is 'When a signed-in person last saved or published it. Null means an agent draft nobody has reviewed.';
+comment on column public.posts.reviewed_at is 'When a person last saved or published it. Null means an agent draft nobody has reviewed.';
 
 -- The drafts list shows the badge, so it filters on these two together.
 create index posts_agent_unreviewed_idx

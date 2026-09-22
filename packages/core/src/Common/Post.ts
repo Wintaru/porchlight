@@ -24,8 +24,8 @@ export interface Post {
   readonly rejectionReason: string | null;
   readonly tags: readonly Tag[];
   // Where the post came from and who has looked at it since (D22, SPEC.md §17).
-  // `reviewedAt` is the last save or publish by a signed-in person: null on an agent
-  // draft nobody has opened.
+  // `reviewedAt` is the last save or publish by a person, signed in or anonymous at a
+  // form: null on an agent draft nobody has opened.
   readonly origin: PostOrigin;
   readonly agentTokenId: string | null;
   readonly reviewedAt: Date | null;

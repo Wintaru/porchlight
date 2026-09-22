@@ -11,12 +11,19 @@ export const DEFAULT_AGENT_LIMITS: AgentLimits = {
   publishesPerDay: 2,
 };
 
-export function isAgentLimits(value: unknown): value is AgentLimits {
+// The stored shape is snake_case (`drafts_per_day`), matching every other jsonb value
+// in `site_config` and the shape SPEC.md §17 documents; the domain type it becomes is
+// camelCase, matching every other Common type.
+export function toAgentLimits(value: unknown): AgentLimits | undefined {
   if (typeof value !== "object" || value === null) {
-    return false;
+    return undefined;
   }
-  const limits = value as Partial<Record<keyof AgentLimits, unknown>>;
-  return isCount(limits.draftsPerDay) && isCount(limits.publishesPerDay);
+  const { drafts_per_day: draftsPerDay, publishes_per_day: publishesPerDay } =
+    value as Record<string, unknown>;
+  if (!isCount(draftsPerDay) || !isCount(publishesPerDay)) {
+    return undefined;
+  }
+  return { draftsPerDay, publishesPerDay };
 }
 
 function isCount(value: unknown): value is number {
