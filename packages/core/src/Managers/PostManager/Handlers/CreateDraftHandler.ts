@@ -8,11 +8,14 @@ import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/
 import { DeriveSlugRequest } from "../../../Engines/ContentRenderEngine/Requests/DeriveSlugRequest";
 import { SlugDerivedResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugDerivedResponse";
 import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugUnusableResponse";
+import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
+import { admitAgent } from "../admitAgent";
 import { permit } from "../permit";
 import { provenanceOf } from "../provenance";
 import type { CreateDraftRequest } from "../Requests/CreateDraftRequest";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
+import type { PostRateLimitedResponse } from "../Responses/PostRateLimitedResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
@@ -24,7 +27,11 @@ import { unavailable } from "../unavailable";
 const MAX_SLUG_ATTEMPTS = 20;
 
 type CreateDraftResult =
-  PostResponse | PostForbiddenResponse | PostRejectedResponse | PostUnavailableResponse;
+  | PostResponse
+  | PostForbiddenResponse
+  | PostRejectedResponse
+  | PostRateLimitedResponse
+  | PostUnavailableResponse;
 
 // Permission, then the shape of the draft (slug, tags, HTML), then the write, retried
 // with the next slug while the store says the slug is taken. The store's unique
@@ -38,6 +45,7 @@ export class CreateDraftHandler implements IHandler<
     private readonly posts: IPostAccessor,
     private readonly content: IContentRenderEngine,
     private readonly permissions: IPermissionEngine,
+    private readonly agentGuard: IAgentGuardEngine,
   ) {}
 
   async handle(request: CreateDraftRequest): Promise<CreateDraftResult> {
@@ -61,6 +69,11 @@ export class CreateDraftHandler implements IHandler<
         correlationId,
         "post.create granted to a visitor",
       );
+    }
+
+    const capped = await admitAgent(this.agentGuard, actor, "agent:draft", context);
+    if (capped !== undefined) {
+      return capped;
     }
 
     const tags = await shapeTags(this.content, draft.tags, context);

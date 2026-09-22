@@ -8,6 +8,7 @@ import { PostAccessor } from "../../../Accessors/PostAccessor/PostAccessor";
 import { LoadPostByIdRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
 import { ProfileAccessor } from "../../../Accessors/ProfileAccessor/ProfileAccessor";
+import { RateLimitAccessor } from "../../../Accessors/RateLimitAccessor/RateLimitAccessor";
 import { FakeSiteConfigState } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigState";
 import { FakeLoadPostingPolicyHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadPostingPolicyHandler";
 import { LoadPostingPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
@@ -16,6 +17,7 @@ import type { Actor } from "../../../Common/Actor";
 import { HandlerResolverBuilder } from "../../../Common/HandlerResolverBuilder";
 import type { Post } from "../../../Common/Post";
 import type { PostStatus } from "../../../Common/PostStatus";
+import { createAgentGuardEngine } from "../../../Composition/createAgentGuardEngine";
 import { createPermissionEngine } from "../../../Composition/createPermissionEngine";
 import { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { UnpublishPostRequest } from "../Requests/UnpublishPostRequest";
@@ -79,16 +81,21 @@ function wire(state: FakePostState) {
       .build(),
     new HandlerResolverBuilder().build(),
   );
-  const permissions = createPermissionEngine(
-    new SiteConfigAccessor(
-      new HandlerResolverBuilder().build(),
-      new HandlerResolverBuilder()
-        .register(
-          LoadPostingPolicyRequest,
-          new FakeLoadPostingPolicyHandler(new FakeSiteConfigState("anyone", "anyone")),
-        )
-        .build(),
-    ),
+  const siteConfig = new SiteConfigAccessor(
+    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder()
+      .register(
+        LoadPostingPolicyRequest,
+        new FakeLoadPostingPolicyHandler(new FakeSiteConfigState("anyone", "anyone")),
+      )
+      .build(),
+  );
+  const permissions = createPermissionEngine(siteConfig);
+  // No test here publishes as an agent, the only actor the guard counts, so its
+  // stores stay empty.
+  const agentGuard = createAgentGuardEngine(
+    siteConfig,
+    new RateLimitAccessor(new HandlerResolverBuilder().build()),
   );
   // Neither test below reaches a draft-to-pending transition, the only path that reads
   // these, so both stay empty.
@@ -101,7 +108,13 @@ function wire(state: FakePostState) {
     new HandlerResolverBuilder().build(),
   );
   return {
-    publish: new PublishPostHandler(posts, profiles, notifications, permissions),
+    publish: new PublishPostHandler(
+      posts,
+      profiles,
+      notifications,
+      permissions,
+      agentGuard,
+    ),
     unpublish: new UnpublishPostHandler(posts, permissions),
   };
 }

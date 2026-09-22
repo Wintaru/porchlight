@@ -1,3 +1,4 @@
+import { type AgentLimits, DEFAULT_AGENT_LIMITS } from "../../Common/AgentLimits";
 import { DEFAULT_AGENTS_POLICY, type AgentsPolicy } from "../../Common/AgentsPolicy";
 import {
   DEFAULT_ANONYMOUS_UPLOAD_CAP,
@@ -48,5 +49,6 @@ export class FakeSiteConfigState {
     public siteIdentity: SiteIdentity = DEFAULT_SITE_IDENTITY,
     public autoPromoteAfterApprovedPosts: AutoPromoteAfterApprovedPosts = DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
     public agents: AgentsPolicy = DEFAULT_AGENTS_POLICY,
+    public agentLimits: AgentLimits = DEFAULT_AGENT_LIMITS,
   ) {}
 }

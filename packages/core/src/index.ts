@@ -68,6 +68,7 @@ export {
   agentsOpenTo,
 } from "./Common/AgentsPolicy";
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
+export { DEFAULT_AGENT_LIMITS, type AgentLimits } from "./Common/AgentLimits";
 export type { AgentGrant } from "./Common/AgentGrant";
 export {
   AGENT_TOKEN_NAME_MAX_LENGTH,
@@ -171,6 +172,7 @@ export { PostGuardRefusedResponse } from "./Managers/PostManager/Responses/PostG
 export { PostNotPublishableResponse } from "./Managers/PostManager/Responses/PostNotPublishableResponse";
 export { PostPreviewResponse } from "./Managers/PostManager/Responses/PostPreviewResponse";
 export { PostRejectedResponse } from "./Managers/PostManager/Responses/PostRejectedResponse";
+export { PostRateLimitedResponse } from "./Managers/PostManager/Responses/PostRateLimitedResponse";
 export { PostResponse } from "./Managers/PostManager/Responses/PostResponse";
 export { PostsResponse } from "./Managers/PostManager/Responses/PostsResponse";
 export { PostUnavailableResponse } from "./Managers/PostManager/Responses/PostUnavailableResponse";

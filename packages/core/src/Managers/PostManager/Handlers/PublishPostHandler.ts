@@ -7,15 +7,18 @@ import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/Po
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
+import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
+import { admitAgent } from "../admitAgent";
 import { permit } from "../permit";
 import { reviewStamp } from "../provenance";
 import type { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostNotPublishableResponse } from "../Responses/PostNotPublishableResponse";
+import type { PostRateLimitedResponse } from "../Responses/PostRateLimitedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import { unavailable } from "../unavailable";
@@ -25,6 +28,7 @@ type PublishPostResult =
   | NoSuchPostResponse
   | PostForbiddenResponse
   | PostNotPublishableResponse
+  | PostRateLimitedResponse
   | PostUnavailableResponse;
 
 // A draft goes to `published` for a trusted member, an admin or a moderator, and to
@@ -39,6 +43,7 @@ export class PublishPostHandler implements IHandler<
     private readonly profiles: IProfileAccessor,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly agentGuard: IAgentGuardEngine,
   ) {}
 
   async handle(request: PublishPostRequest): Promise<PublishPostResult> {
@@ -59,6 +64,10 @@ export class PublishPostHandler implements IHandler<
     );
     if (refused !== undefined) {
       return refused;
+    }
+    const capped = await admitAgent(this.agentGuard, actor, "agent:publish", context);
+    if (capped !== undefined) {
+      return capped;
     }
     if (current.status === "published" || current.status === "pending") {
       return new PostResponse(correlationId, current);

@@ -158,6 +158,7 @@ import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
 import { createNotificationAccessor } from "./createNotificationAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
+import { createAgentGuardEngine } from "./createAgentGuardEngine";
 import { createAgentTokenAccessor } from "./createAgentTokenAccessor";
 import { createProfileAccessor } from "./createProfileAccessor";
 import { createQuotaAccessor } from "./createQuotaAccessor";
@@ -223,6 +224,7 @@ export class DependencyContainer {
     const auditLog = createAuditAccessor(env, db);
     const notifications = createNotificationAccessor(env, db);
     const agentTokens = createAgentTokenAccessor(env, db);
+    const agentGuard = createAgentGuardEngine(siteConfig, rateLimits);
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -288,11 +290,14 @@ export class DependencyContainer {
 
     this.postManager = new PostManager(
       new HandlerResolverBuilder()
-        .register(CreateDraftRequest, new CreateDraftHandler(posts, content, permissions))
+        .register(
+          CreateDraftRequest,
+          new CreateDraftHandler(posts, content, permissions, agentGuard),
+        )
         .register(UpdateDraftRequest, new UpdateDraftHandler(posts, content, permissions))
         .register(
           PublishPostRequest,
-          new PublishPostHandler(posts, profiles, notifications, permissions),
+          new PublishPostHandler(posts, profiles, notifications, permissions, agentGuard),
         )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))
         .register(DeletePostRequest, new DeletePostHandler(posts, permissions))
