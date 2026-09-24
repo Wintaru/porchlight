@@ -53,6 +53,7 @@ const PAGES: readonly PageCase[] = [
     ],
   },
   { path: "/t/making" },
+  { path: "/tags" },
   { path: "/about" },
   { path: "/terms" },
   { path: "/code-of-conduct" },

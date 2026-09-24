@@ -24,6 +24,19 @@ export async function loadTagCloud(db: DbClient): Promise<readonly TagPage[]> {
   return data;
 }
 
+// The /tags page: every tag, alphabetically. Unlike the sidebar cloud it has no cap,
+// since it is the one place a tag past the cloud's 24 can be reached from.
+export async function loadAllTags(db: DbClient): Promise<readonly TagPage[]> {
+  const { data, error } = await db
+    .from("tags")
+    .select("id, slug, name")
+    .order("name", { ascending: true });
+  if (error) {
+    throw new Error(`all tags: ${error.message}`);
+  }
+  return data;
+}
+
 export async function loadTag(db: DbClient, slug: string): Promise<TagPage | undefined> {
   const { data, error } = await db
     .from("tags")
