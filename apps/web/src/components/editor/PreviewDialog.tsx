@@ -47,7 +47,7 @@ export function PreviewDialog({ state, title, onClose }: PreviewDialogProps) {
         )}
         {state.kind === "ready" && (
           <div
-            className={styles.prose}
+            className="prose"
             data-testid="preview-body"
             dangerouslySetInnerHTML={{ __html: state.bodyHtml }}
           />

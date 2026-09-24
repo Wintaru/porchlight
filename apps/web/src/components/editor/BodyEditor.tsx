@@ -37,7 +37,7 @@ export function BodyEditor({ initialMarkdown, onChange }: BodyEditorProps) {
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: styles.prose ?? "",
+        class: "prose",
         role: "textbox",
         "aria-label": "Body",
         "aria-multiline": "true",

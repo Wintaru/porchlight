@@ -241,63 +241,6 @@
   outline-offset: 2px;
 }
 
-/* Rendered bodies: the editor's rich view and the preview share the post page's look. */
-.prose h2 {
-  font-size: 26px;
-  margin: 0.8em 0 0.3em;
-}
-
-.prose h3 {
-  font-size: 21px;
-  margin: 0.8em 0 0.3em;
-}
-
-.prose p {
-  margin: 0 0 1em;
-}
-
-/* The editor wraps each list item's text in a paragraph; the rendered post does not.
-   Without this the rich view spaces a list twice as loose as the post it becomes. */
-.prose li > p {
-  margin: 0;
-}
-
-.prose li > p + p {
-  margin-top: 0.5em;
-}
-
-.prose blockquote {
-  margin: 0 0 1em;
-  padding-left: 16px;
-  border-left: 3px solid var(--line-strong);
-  color: var(--muted);
-}
-
-.prose pre {
-  padding: 12px 16px;
-  overflow-x: auto;
-  border-radius: 8px;
-  background: var(--cream);
-  font-size: 15px;
-}
-
-.prose code {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 0.9em;
-}
-
-.prose img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-.prose hr {
-  border: none;
-  border-top: 1px solid var(--line);
-  margin: 1.5em 0;
-}
-
 .side {
   display: flex;
   flex-direction: column;
