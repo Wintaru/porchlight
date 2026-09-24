@@ -1,0 +1,234 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, type Page, test } from "@playwright/test";
+
+import { devSignIn, LAMPLIGHTER, MIRA, type SeedMember, THEO } from "./helpers";
+
+// The design gate. Every other spec asserts what a page does; none asserts that it
+// looks like a board in design/porchlight/, so a page with no stylesheet at all passed
+// the whole suite. These are cheap structural checks, not a pixel comparison: the page
+// answers with the right status, carries the site header and a main landmark, keeps
+// its content off the window edge, draws no control with the browser's default look,
+// and axe finds nothing. They run at desktop and phone width, as each role that can
+// reach the page.
+//
+// A page with known gaps lists them, and the test asserts that exact list: it stays
+// green while the gaps are there, fails when one is fixed (so the entry comes off with
+// the fix) and fails when a new one appears. A gap list is never a blanket pass.
+
+type Gap =
+  | "no-site-header"
+  | "no-main"
+  | "flush-left"
+  | "browser-control"
+  | "file-input"
+  | "tall-header";
+
+interface PageCase {
+  readonly path: string;
+  readonly as?: SeedMember;
+  readonly status?: number;
+  readonly gaps?: readonly Gap[];
+  readonly axeGaps?: readonly string[];
+}
+
+// Pages with no stylesheet yet: bare HTML, flush against the window edge, with the
+// browser's own buttons and inputs.
+const UNSTYLED: readonly Gap[] = ["flush-left", "browser-control"];
+
+const PAGES: readonly PageCase[] = [
+  { path: "/" },
+  { path: "/@theo/hello-from-the-porch", gaps: UNSTYLED },
+  { path: "/@theo" },
+  // The 410 answer is a bare text body: no header, no document at all.
+  {
+    path: "/@wren",
+    status: 410,
+    gaps: ["no-site-header", "no-main"],
+    axeGaps: [
+      "document-title",
+      "html-has-lang",
+      "landmark-one-main",
+      "page-has-heading-one",
+      "region",
+    ],
+  },
+  { path: "/t/making" },
+  { path: "/about" },
+  { path: "/terms" },
+  { path: "/code-of-conduct" },
+  { path: "/p/new", gaps: UNSTYLED },
+  { path: "/anon", gaps: ["flush-left"] },
+  { path: "/auth/dev-sign-in", gaps: UNSTYLED },
+  { path: "/auth/sign-in-failed", gaps: ["flush-left"] },
+  // No not-found page: Next.js's default renders, with no main landmark.
+  {
+    path: "/no-such-page",
+    status: 404,
+    gaps: ["no-main"],
+    axeGaps: ["landmark-one-main", "region"],
+  },
+  { path: "/", as: THEO },
+  { path: "/@theo/hello-from-the-porch", as: THEO, gaps: UNSTYLED },
+  // Attachments are a bare file input, not the Editor board's drop zone.
+  { path: "/write", as: THEO, gaps: ["file-input"] },
+  { path: "/settings", as: THEO, gaps: UNSTYLED },
+  { path: "/settings/erase", as: THEO, gaps: UNSTYLED },
+  { path: "/mod/queue", as: MIRA, gaps: UNSTYLED },
+  { path: "/admin", as: LAMPLIGHTER, gaps: UNSTYLED },
+];
+
+const VIEWPORTS = [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "phone", width: 390, height: 844 },
+] as const;
+
+// Content closer than this to the window's left edge is a page with no layout.
+const MIN_GUTTER_PX = 16;
+// The board's header is one 64px row; this leaves room for the focus ring and border.
+const MAX_HEADER_HEIGHT_PX = 80;
+
+// Signs that the browser, not our CSS, drew a control. Chrome gives an unstyled button,
+// input, select or textarea 13.33px text and an outset or inset border, and our CSS uses
+// neither. (Font family is not a signal: the title field is serif and the markdown box
+// monospace, on purpose.) Checkboxes and radios are the browser's on purpose, tinted
+// with accent-color. A file input's "Choose File" button cannot be styled at all.
+const BROWSER_CONTROL_FONT_SIZE = "13.3333px";
+const BROWSER_BORDER_STYLES = ["outset", "inset"];
+
+interface ControlScan {
+  readonly browserDrawn: readonly string[];
+  readonly fileInputs: number;
+}
+
+async function scanControls(page: Page, scope: string): Promise<ControlScan> {
+  return page
+    .locator(scope)
+    .first()
+    .evaluate(
+      (root, signs) => {
+        const browserDrawn: string[] = [];
+        let fileInputs = 0;
+        const controls = root.querySelectorAll<HTMLElement>(
+          "button, input, select, textarea",
+        );
+        for (const control of controls) {
+          const type = control.getAttribute("type") ?? "";
+          const box = control.getBoundingClientRect();
+          if (
+            ["hidden", "checkbox", "radio"].includes(type) ||
+            box.width === 0 ||
+            box.height === 0
+          ) {
+            continue;
+          }
+          if (type === "file") {
+            fileInputs += 1;
+            continue;
+          }
+          const style = getComputedStyle(control);
+          if (
+            style.fontSize === signs.fontSize ||
+            signs.borderStyles.includes(style.borderTopStyle)
+          ) {
+            const name = control.getAttribute("aria-label") ?? control.textContent.trim();
+            browserDrawn.push(`${control.tagName.toLowerCase()} "${name.slice(0, 40)}"`);
+          }
+        }
+        return { browserDrawn, fileInputs };
+      },
+      { fontSize: BROWSER_CONTROL_FONT_SIZE, borderStyles: BROWSER_BORDER_STYLES },
+    );
+}
+
+async function layoutGaps(page: Page): Promise<readonly Gap[]> {
+  const gaps: Gap[] = [];
+  if (!(await page.getByRole("navigation", { name: "Site" }).isVisible())) {
+    gaps.push("no-site-header");
+  }
+  if ((await page.locator("main").count()) === 0) {
+    gaps.push("no-main");
+    return gaps;
+  }
+  const heading = await page.locator("main h1").first().boundingBox();
+  const content = heading ?? (await page.locator("main").boundingBox());
+  if (content === null || content.x < MIN_GUTTER_PX) {
+    gaps.push("flush-left");
+  }
+  const scan = await scanControls(page, "main");
+  if (scan.browserDrawn.length > 0) {
+    gaps.push("browser-control");
+  }
+  if (scan.fileInputs > 0) {
+    gaps.push("file-input");
+  }
+  return gaps;
+}
+
+function titleOf(target: PageCase, viewport: string): string {
+  return `${target.path} as ${target.as?.handle ?? "a visitor"} at ${viewport}`;
+}
+
+async function open(
+  page: Page,
+  target: PageCase,
+  width: number,
+  height: number,
+): Promise<void> {
+  if (target.as !== undefined) {
+    await devSignIn(page, target.as);
+  }
+  await page.setViewportSize({ width, height });
+  const response = await page.goto(target.path);
+  expect(response?.status()).toBe(target.status ?? 200);
+}
+
+for (const target of PAGES) {
+  for (const viewport of VIEWPORTS) {
+    test(`${titleOf(target, viewport.name)} is laid out and drawn by our CSS`, async ({
+      page,
+    }) => {
+      await open(page, target, viewport.width, viewport.height);
+      expect(await layoutGaps(page)).toEqual(target.gaps ?? []);
+    });
+  }
+
+  test(`${titleOf(target, "desktop")} has no detectable accessibility violations`, async ({
+    page,
+  }) => {
+    await open(page, target, 1280, 800);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.map((violation) => violation.id)).toEqual(
+      target.axeGaps ?? [],
+    );
+  });
+}
+
+// The header is not the Main board's yet: no Home/Tags/About, a text "Notifications"
+// button with no bell, a taller row than the board's that wraps on a phone.
+const HEADER_GAPS: Readonly<Record<string, readonly Gap[]>> = {
+  "visitor desktop": ["tall-header"],
+  "visitor phone": ["tall-header"],
+  "theo desktop": ["browser-control", "tall-header"],
+  "theo phone": ["browser-control", "tall-header"],
+};
+
+for (const as of [undefined, THEO] as const) {
+  for (const viewport of VIEWPORTS) {
+    const who = as?.handle ?? "visitor";
+    test(`the site header as ${who} at ${viewport.name} is one styled row`, async ({
+      page,
+    }) => {
+      const home: PageCase = as === undefined ? { path: "/" } : { path: "/", as };
+      await open(page, home, viewport.width, viewport.height);
+      const gaps: Gap[] = [];
+      if ((await scanControls(page, "header")).browserDrawn.length > 0) {
+        gaps.push("browser-control");
+      }
+      const box = await page.locator("header").first().boundingBox();
+      if (box === null || box.height > MAX_HEADER_HEIGHT_PX) {
+        gaps.push("tall-header");
+      }
+      expect(gaps).toEqual(HEADER_GAPS[`${who} ${viewport.name}`] ?? []);
+    });
+  }
+}
