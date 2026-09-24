@@ -1,6 +1,6 @@
 /* The palette and type from SPEC.md §12, as tokens every screen reads. Dark mode is
-   warm charcoal. Newsreader and Source Sans 3 are named with local fallbacks and not
-   fetched: a build must not need the network. */
+   warm charcoal. Newsreader and Source Sans 3 are files in the repo (src/fonts/),
+   loaded by next/font/local, so a build never needs the network. */
 :root {
   --cream: #f6f1e8;
   --surface: #fffcf7;
@@ -20,8 +20,8 @@
   --line: #e6ddd0;
   --line-strong: #c9beaf;
   --chip: #efe7da;
-  --font-serif: Newsreader, Georgia, "Times New Roman", serif;
-  --font-sans: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-source-sans), "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
 }
 

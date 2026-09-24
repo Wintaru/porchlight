@@ -232,3 +232,32 @@ for (const as of [undefined, THEO] as const) {
     });
   }
 }
+
+// SPEC.md §12's two faces are files in the repo (#45). next/font renames each family,
+// so the check reads the family the page actually asks for and finds it loaded.
+test("body text and headings are set in the site's own fonts", async ({ page }) => {
+  await page.goto("/");
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    const firstFamily = (element: Element) =>
+      getComputedStyle(element).fontFamily.split(",")[0]?.trim().replace(/['"]/g, "") ??
+      "";
+    const body = firstFamily(document.body);
+    const heading = firstFamily(document.querySelector("h1") ?? document.body);
+    const families = new Set(
+      [...document.fonts]
+        .filter((face) => face.status === "loaded")
+        .map((face) => face.family.replace(/['"]/g, "")),
+    );
+    return {
+      body,
+      heading,
+      bodyLoaded: families.has(body),
+      headingLoaded: families.has(heading),
+    };
+  });
+  expect(loaded.body).toMatch(/source/i);
+  expect(loaded.heading).toMatch(/newsreader/i);
+  expect(loaded.bodyLoaded).toBe(true);
+  expect(loaded.headingLoaded).toBe(true);
+});

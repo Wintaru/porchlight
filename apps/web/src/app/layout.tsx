@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { SessionBar } from "@/components/SessionBar";
+import { newsreader, sourceSans } from "@/fonts/fonts";
 import { getSiteIdentity } from "@/lib/site-identity";
 
 import "./globals.css";
@@ -15,7 +16,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
-    <html lang="en">
+    // The font variables must sit on <html>: globals.css reads them in :root.
+    <html lang="en" className={`${newsreader.variable} ${sourceSans.variable}`}>
       <body>
         <SessionBar />
         {children}
