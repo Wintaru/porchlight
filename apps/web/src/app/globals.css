@@ -43,6 +43,9 @@
     --line: #3d3731;
     --line-strong: #5c5147;
     --chip: #3d3731;
+    /* The light red is 2.4:1 on the dark surface; this one clears 4.5:1 as text and
+       as a button fill under dark text. */
+    --danger: #e0705f;
     --chip-warm: #4a3522;
     --chip-warm-ink: #f2b441;
     color-scheme: dark;
@@ -138,7 +141,7 @@ a:hover {
   cursor: pointer;
 }
 
-.pill-button:hover {
+.pill-button:not(:disabled):hover {
   border-color: var(--amber);
   color: var(--amber);
 }
@@ -153,6 +156,98 @@ a:hover {
   background: var(--amber-dark);
   border-color: var(--amber-dark);
   color: var(--surface);
+}
+
+.pill-button--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+
+.pill-button--danger:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+  filter: brightness(0.92);
+}
+
+.pill-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Form primitives from the Settings and Editor boards, shared by every plain form:
+   a label over its control, one input look, a quiet hint, a status and an alert line. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field-label {
+  color: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.text-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.text-input::placeholder {
+  color: var(--placeholder);
+}
+
+.text-input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+
+textarea.text-input {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.form-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.form-status,
+.form-alert {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 15px;
+}
+
+.form-alert {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.check input {
+  margin: 0;
+  accent-color: var(--amber);
 }
 
 .avatar {
