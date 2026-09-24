@@ -40,6 +40,26 @@ export function EditorToolbar({
       codeBlock: current?.isActive("codeBlock") ?? false,
     }),
   });
+  // Whether each command can run where the cursor is. A button whose command cannot
+  // (Quote inside a list item, Bold inside a code block) is disabled rather than
+  // looking live and doing nothing.
+  const can = useEditorState({
+    editor,
+    selector: ({ editor: current }) => {
+      const check = current?.can();
+      return {
+        bold: check?.toggleBold() ?? false,
+        italic: check?.toggleItalic() ?? false,
+        h2: check?.toggleHeading({ level: 2 }) ?? false,
+        h3: check?.toggleHeading({ level: 3 }) ?? false,
+        blockquote: check?.toggleBlockquote() ?? false,
+        bulletList: check?.toggleBulletList() ?? false,
+        orderedList: check?.toggleOrderedList() ?? false,
+        code: check?.toggleCode() ?? false,
+        codeBlock: check?.toggleCodeBlock() ?? false,
+      };
+    },
+  });
   const rich = mode === "rich" && editor !== null;
   const run = (
     command: (chain: ReturnType<Editor["chain"]>) => { run: () => boolean },
@@ -51,6 +71,7 @@ export function EditorToolbar({
   const tool = (
     label: string,
     pressed: boolean,
+    enabled: boolean,
     onClick: () => void,
     children: ReactNode,
   ) => (
@@ -60,7 +81,7 @@ export function EditorToolbar({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      disabled={!rich}
+      disabled={!rich || !enabled}
       onMouseDown={(event) => {
         // Keep the selection in the editor: a focused button would collapse it.
         event.preventDefault();
@@ -76,6 +97,7 @@ export function EditorToolbar({
         {tool(
           "Bold",
           active?.bold ?? false,
+          can?.bold ?? false,
           () => {
             run((c) => c.toggleBold());
           },
@@ -84,6 +106,7 @@ export function EditorToolbar({
         {tool(
           "Italic",
           active?.italic ?? false,
+          can?.italic ?? false,
           () => {
             run((c) => c.toggleItalic());
           },
@@ -92,6 +115,7 @@ export function EditorToolbar({
         {tool(
           "Heading 2",
           active?.h2 ?? false,
+          can?.h2 ?? false,
           () => {
             run((c) => c.toggleHeading({ level: 2 }));
           },
@@ -100,16 +124,18 @@ export function EditorToolbar({
         {tool(
           "Heading 3",
           active?.h3 ?? false,
+          can?.h3 ?? false,
           () => {
             run((c) => c.toggleHeading({ level: 3 }));
           },
           "H3",
         )}
         <span className={styles.divider} />
-        {tool("Link", active?.link ?? false, onInsertLink, <LinkIcon />)}
+        {tool("Link", active?.link ?? false, true, onInsertLink, <LinkIcon />)}
         {tool(
           "Quote",
           active?.blockquote ?? false,
+          can?.blockquote ?? false,
           () => {
             run((c) => c.toggleBlockquote());
           },
@@ -118,6 +144,7 @@ export function EditorToolbar({
         {tool(
           "Bullet list",
           active?.bulletList ?? false,
+          can?.bulletList ?? false,
           () => {
             run((c) => c.toggleBulletList());
           },
@@ -126,6 +153,7 @@ export function EditorToolbar({
         {tool(
           "Numbered list",
           active?.orderedList ?? false,
+          can?.orderedList ?? false,
           () => {
             run((c) => c.toggleOrderedList());
           },
@@ -135,6 +163,7 @@ export function EditorToolbar({
         {tool(
           "Code",
           active?.code ?? false,
+          can?.code ?? false,
           () => {
             run((c) => c.toggleCode());
           },
@@ -143,12 +172,13 @@ export function EditorToolbar({
         {tool(
           "Code block",
           active?.codeBlock ?? false,
+          can?.codeBlock ?? false,
           () => {
             run((c) => c.toggleCodeBlock());
           },
           <CodeBlockIcon />,
         )}
-        {tool("Image", false, onInsertImage, <ImageIcon />)}
+        {tool("Image", false, true, onInsertImage, <ImageIcon />)}
       </div>
       <div className={styles.modes} role="group" aria-label="Body mode">
         <button
