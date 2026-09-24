@@ -106,3 +106,30 @@ test("a pending reply does not light the bell; approving it does, without a relo
   await deleteCurrentPost(author);
   await author.close();
 });
+
+test("the bell's panel opens, and closes with its button, Escape or a click away", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  const bell = page.getByTestId("notification-bell");
+  const panel = page.getByRole("menu", { name: "Notifications" });
+  await expect(bell).toHaveAttribute("aria-expanded", "false");
+
+  await bell.click();
+  await expect(bell).toHaveAttribute("aria-expanded", "true");
+  // A click inside the panel is not a click away.
+  await panel.click();
+  await expect(panel).toBeVisible();
+  await bell.click();
+  await expect(panel).toBeHidden();
+
+  await bell.click();
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+  await expect(bell).toBeFocused();
+
+  await bell.click();
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(panel).toBeHidden();
+  await expect(bell).toHaveAttribute("aria-expanded", "false");
+});

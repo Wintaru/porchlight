@@ -1,7 +1,7 @@
 "use client";
 
 import type { NotificationKind } from "@porchlight/core";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   markAllNotificationsRead,
@@ -33,6 +33,33 @@ const LABELS: Readonly<Record<NotificationKind, string>> = {
 export function NotificationBell({ recipientId, initial }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<readonly NotificationRow[]>(initial);
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+
+  // An open panel closes the way every dropdown does: Escape, or a click anywhere else.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        // Focus was in the panel, which is about to unmount: hand it back to the bell.
+        bellRef.current?.focus();
+      }
+    };
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Node) || !rootRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+    };
+  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,8 +118,9 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
   }
 
   return (
-    <div>
+    <div ref={rootRef}>
       <button
+        ref={bellRef}
         type="button"
         data-testid="notification-bell"
         aria-expanded={open}
