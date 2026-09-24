@@ -70,7 +70,7 @@
   padding: 0.2rem 0.5rem;
   border: 0;
   background: none;
-  color: var(--amber);
+  color: var(--link);
   font: inherit;
   cursor: pointer;
 }
@@ -187,7 +187,7 @@ button.reaction:hover {
 
 .reply > summary {
   cursor: pointer;
-  color: var(--amber);
+  color: var(--link);
   width: max-content;
 }
 
