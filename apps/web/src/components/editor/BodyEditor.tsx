@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { EDITOR_EXTENSIONS } from "./editor-extensions";
 import styles from "./editor.module.css";
 import { type BodyMode, EditorToolbar } from "./EditorToolbar";
+import { trimBlankEnds } from "./trim-blank-ends";
 import { UrlDialog, type UrlDialogKind, type UrlDialogValue } from "./UrlDialog";
 
 interface BodyEditorProps {
@@ -155,10 +156,4 @@ export function BodyEditor({ initialMarkdown, onChange }: BodyEditorProps) {
       />
     </>
   );
-}
-
-// An empty paragraph at either end of the document is a cursor resting place, not
-// content: it would serialize as blank lines and change `body_md` on every visit.
-function trimBlankEnds(markdown: string): string {
-  return markdown.replace(/^\n+/, "").replace(/\n+$/, "");
 }
