@@ -1,0 +1,226 @@
+/* The Settings board: a side menu of sections beside a column of cards, the Erase card
+   tinted with the danger colour. One column on a phone, where the menu goes. */
+.layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 720px);
+  justify-content: center;
+  gap: 48px;
+  padding: 40px 24px 80px;
+}
+
+.side ul {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.side a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--label);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.side a:hover {
+  background: var(--chip);
+  color: var(--ink);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 36px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  scroll-margin-top: 24px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.card h3 {
+  margin: 8px 0 0;
+  font-size: 17px;
+}
+
+.card p {
+  margin: 0;
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
+
+.danger h2 {
+  color: var(--danger);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.inline {
+  display: flex;
+  gap: 10px;
+}
+
+.inline :global(.text-input) {
+  flex: 1;
+}
+
+/* The board's tinted box: the found-in-this-browser claim. */
+.well {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--cream);
+  font-size: 15px;
+}
+
+.warnings {
+  margin: 0;
+  padding: 14px 16px 14px 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--label);
+  font-size: 14px;
+}
+
+.warnings li + li {
+  margin-top: 6px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.back {
+  align-self: flex-start;
+  color: var(--label);
+  font-size: 15px;
+}
+
+.scopes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.scopes legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.token {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.token strong {
+  font-weight: 600;
+}
+
+.secret {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secret pre {
+  margin: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--cream);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 24px 16px 56px;
+  }
+
+  .side {
+    display: none;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .pair {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: 30px;
+  }
+}

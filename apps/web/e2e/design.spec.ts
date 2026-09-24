@@ -73,8 +73,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/@theo/hello-from-the-porch", as: THEO },
   // Attachments are a bare file input, not the Editor board's drop zone.
   { path: "/write", as: THEO, gaps: ["file-input"] },
-  { path: "/settings", as: THEO, gaps: UNSTYLED },
-  { path: "/settings/erase", as: THEO, gaps: UNSTYLED },
+  { path: "/settings", as: THEO },
+  { path: "/settings/erase", as: THEO },
   { path: "/mod/queue", as: MIRA, gaps: UNSTYLED },
   { path: "/admin", as: LAMPLIGHTER, gaps: UNSTYLED },
 ];

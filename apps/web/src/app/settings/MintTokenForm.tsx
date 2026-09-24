@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { EXPIRY_CHOICES, type ExpiryChoice } from "./parse-agent-token-form";
 import { type MintState, mintAgentToken } from "./agent-actions";
+import styles from "./settings.module.css";
 
 const SCOPE_TEXT: Readonly<Record<AgentScope, string>> = {
   "posts:draft": "Write drafts (you publish from the editor)",
@@ -30,8 +31,10 @@ export function MintTokenForm() {
 
   if (state.kind === "minted") {
     return (
-      <div data-testid="minted-token">
-        <p role="status">Copy this token now. It is shown once and never again.</p>
+      <div className={styles.secret} data-testid="minted-token">
+        <p role="status" className="form-status">
+          Copy this token now. It is shown once and never again.
+        </p>
         <pre>
           <code data-testid="minted-token-value">{state.rawToken}</code>
         </pre>
@@ -44,20 +47,27 @@ export function MintTokenForm() {
   }
 
   return (
-    <form action={formAction} data-testid="mint-token-form">
+    <form action={formAction} className={styles.form} data-testid="mint-token-form">
       {state.kind === "error" && (
-        <p role="alert" data-testid="mint-token-error">
+        <p role="alert" className="form-alert" data-testid="mint-token-error">
           {state.error}
         </p>
       )}
-      <label>
-        Token name
-        <input type="text" name="name" maxLength={60} required placeholder="Laptop" />
+      <label className="field">
+        <span className="field-label">Token name</span>
+        <input
+          className="text-input"
+          type="text"
+          name="name"
+          maxLength={60}
+          required
+          placeholder="Laptop"
+        />
       </label>
-      <fieldset>
-        <legend>Scopes</legend>
+      <fieldset className={styles.scopes}>
+        <legend className="field-label">Scopes</legend>
         {AGENT_SCOPES.map((scope) => (
-          <label key={scope}>
+          <label key={scope} className="check">
             <input
               type="checkbox"
               name="scopes"
@@ -69,9 +79,9 @@ export function MintTokenForm() {
           </label>
         ))}
       </fieldset>
-      <label>
-        Expires
-        <select name="expiry" defaultValue="never">
+      <label className="field">
+        <span className="field-label">Expires</span>
+        <select className="text-input" name="expiry" defaultValue="never">
           {EXPIRY_CHOICES.map((choice) => (
             <option key={choice} value={choice}>
               {EXPIRY_TEXT[choice]}
@@ -79,9 +89,15 @@ export function MintTokenForm() {
           ))}
         </select>
       </label>
-      <button type="submit" disabled={pending}>
-        Mint token
-      </button>
+      <div>
+        <button
+          type="submit"
+          className="pill-button pill-button--amber"
+          disabled={pending}
+        >
+          Mint token
+        </button>
+      </div>
     </form>
   );
 }
