@@ -19,6 +19,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
+import type { QueueErrorCode } from "./queue-messages";
 
 // The queue's Server Functions: approve, reject, hide, remove, escalate. The Manager
 // owns every rule; these parse the form, call it, and send the queue back to itself
@@ -30,7 +31,7 @@ export async function approveItem(formData: FormData): Promise<void> {
   const actor = await requireStaff();
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withCode("error", "unavailable"));
+    redirect(withError("unavailable"));
   }
   const response = await getDependencyContainer().moderationManager.execute(
     new ApproveItemRequest(actor, target),
@@ -43,7 +44,7 @@ export async function rejectItem(formData: FormData): Promise<void> {
   const target = targetOf(formData);
   const reason = formData.get("reason");
   if (target === undefined || typeof reason !== "string") {
-    redirect(withCode("error", "unavailable"));
+    redirect(withError("unavailable"));
   }
   const response = await getDependencyContainer().moderationManager.execute(
     new RejectItemRequest(actor, target, reason),
@@ -55,7 +56,7 @@ export async function hideItem(formData: FormData): Promise<void> {
   const actor = await requireStaff();
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withCode("error", "unavailable"));
+    redirect(withError("unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
@@ -68,7 +69,7 @@ export async function removeItem(formData: FormData): Promise<void> {
   const actor = await requireStaff();
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withCode("error", "unavailable"));
+    redirect(withError("unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
@@ -81,7 +82,7 @@ export async function escalateItem(formData: FormData): Promise<void> {
   const actor = await requireStaff();
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withCode("error", "unavailable"));
+    redirect(withError("unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
@@ -116,6 +117,12 @@ function optionalReasonOf(formData: FormData): string | null {
   return typeof reason === "string" && reason.trim() !== "" ? reason : null;
 }
 
+// Typed by the codes queue-messages.ts has a sentence for, so a new code cannot reach
+// the page without one.
+function withError(code: QueueErrorCode): string {
+  return withCode("error", code);
+}
+
 function withCode(key: string, code: string): string {
   return `${QUEUE_PATH}?${key}=${encodeURIComponent(code)}`;
 }
@@ -129,11 +136,11 @@ function finish(
     redirect(withCode("done", outcome));
   }
   if (response instanceof ReasonRequiredResponse) {
-    redirect(withCode("error", "reason-required"));
+    redirect(withError("reason-required"));
   }
   if (response instanceof ModerationForbiddenResponse) {
-    redirect(withCode("error", response.reason));
+    redirect(withError(response.reason));
   }
   console.error(`moderation action failed [${response.correlationId}]`, response);
-  redirect(withCode("error", "unavailable"));
+  redirect(withError("unavailable"));
 }

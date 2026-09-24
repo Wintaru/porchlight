@@ -13,6 +13,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { approveItem, escalateItem, hideItem, removeItem, rejectItem } from "./actions";
+import { queueErrorTextFor } from "./queue-messages";
 
 interface QueuePageProps {
   readonly searchParams: Promise<{
@@ -86,7 +87,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
       )}
       {error !== undefined && (
         <p role="alert" data-testid="queue-error">
-          {error}
+          {queueErrorTextFor(error)}
         </p>
       )}
       {response.items.length === 0 ? (
