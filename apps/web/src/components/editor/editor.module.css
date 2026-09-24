@@ -256,6 +256,16 @@
   margin: 0 0 1em;
 }
 
+/* The editor wraps each list item's text in a paragraph; the rendered post does not.
+   Without this the rich view spaces a list twice as loose as the post it becomes. */
+.prose li > p {
+  margin: 0;
+}
+
+.prose li > p + p {
+  margin-top: 0.5em;
+}
+
 .prose blockquote {
   margin: 0 0 1em;
   padding-left: 16px;
