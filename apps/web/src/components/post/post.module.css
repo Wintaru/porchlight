@@ -1,0 +1,109 @@
+/* The Post board (PostPhone on a phone): one 760px column, tags over a 44px title, a
+   byline with Share, the body at reading size, reactions between two hairlines. */
+.page {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+  box-sizing: border-box;
+}
+
+.article {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--label);
+  font-size: 15px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.head ul {
+  margin: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+.byline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.author p {
+  margin: 0;
+}
+
+.name {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.name:hover {
+  color: var(--amber);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.body {
+  font-size: 18px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.reactions {
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.reactions:empty {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 24px 16px 56px;
+  }
+
+  .article {
+    gap: 20px;
+  }
+
+  .title {
+    font-size: 30px;
+  }
+
+  .body {
+    font-size: 17px;
+  }
+}

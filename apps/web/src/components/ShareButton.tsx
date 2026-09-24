@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import styles from "./share.module.css";
+
 interface ShareButtonProps {
   readonly url: string;
   readonly title: string;
@@ -30,15 +32,35 @@ export function ShareButton({ url, title }: ShareButtonProps) {
   }
 
   return (
-    <div>
-      <button type="button" data-testid="share-button" onClick={() => void handleShare()}>
-        Share
-      </button>
+    <div className={styles.share}>
       {status !== "idle" && (
-        <span role="status" data-testid="share-status">
+        <span role="status" className={styles.status} data-testid="share-status">
           {status === "copied" ? "Link copied." : "Could not copy the link."}
         </span>
       )}
+      <button
+        type="button"
+        className={styles.button}
+        data-testid="share-button"
+        onClick={() => void handleShare()}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+          <path d="M12 3v13" />
+          <path d="M7 8l5-5 5 5" />
+        </svg>
+        Share
+      </button>
     </div>
   );
 }

@@ -1,0 +1,32 @@
+/* The Post board's Share: an outlined button with the share glyph, and a quiet line
+   saying the link was copied. */
+.share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.status {
+  color: var(--muted);
+  font-size: 14px;
+}

@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
 import { CommentSection } from "@/components/comments/CommentSection";
-import { ReactionBar } from "@/components/comments/ReactionBar";
-import { TagChips } from "@/components/PostCardList";
-import { ShareButton } from "@/components/ShareButton";
+import { PostArticle } from "@/components/post/PostArticle";
+import postStyles from "@/components/post/post.module.css";
 import { commentFormStateFor } from "@/lib/can-comment";
 import { getCurrentActor } from "@/lib/current-actor";
-import { formatDate } from "@/lib/format-date";
 import { parseHandleParam } from "@/lib/handle-param";
 import { publicMediaUrl } from "@/lib/media-url";
 import { signInPathFor } from "@/lib/sign-in-path";
@@ -75,7 +72,7 @@ const STATUS_NOTE: Readonly<Partial<Record<PostPage["status"], string>>> = {
 // ContentRenderEngine cached on save (D3): nothing else writes that column, so the
 // page inserts it as HTML. Comments and reactions read under RLS through the
 // read-model; the form shows only when the CommentManager says this actor may comment
-// (D20). The full Post board is #16.
+// (D20). The article itself is PostArticle, built to the Post board (#47).
 export default async function PostPage({ params, searchParams }: PostPageProps) {
   const { handle, slug } = await params;
   const post = await getPost(handle, slug);
@@ -102,7 +99,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   const url = `${SITE_URL}${returnTo}`;
 
   return (
-    <main>
+    <main className={postStyles.page}>
       {post.status === "published" && post.visibility === "public" && (
         // JSON-LD Article (SPEC.md §9): only for what a crawler is meant to index.
         <script
@@ -112,37 +109,22 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
           }}
         />
       )}
-      <article>
-        {note !== undefined && (
-          <p role="status" data-testid="post-status-note">
-            {note}
-          </p>
-        )}
-        {post.status === "rejected" && post.rejection_reason !== null && (
-          <p data-testid="post-rejection-reason">Reason: {post.rejection_reason}</p>
-        )}
-        <h1>{post.title}</h1>
-        <p>
-          <Link href={`/@${post.author.handle}`}>@{post.author.handle}</Link>
-          {post.published_at !== null && <> · {formatDate(post.published_at)}</>}
-        </p>
-        <TagChips tags={post.post_tags} />
-        <ShareButton url={url} title={post.title} />
-        <div
-          data-testid="post-body"
-          dangerouslySetInnerHTML={{ __html: post.body_html }}
-        />
-        {post.status === "published" && (
-          <div id="reactions" data-testid="post-reactions">
-            <ReactionBar
-              target={{ kind: "post", id: post.id }}
-              reactions={reactions.post}
-              canReact={viewerId !== undefined}
-              returnTo={returnTo}
-            />
-          </div>
-        )}
-      </article>
+      <PostArticle
+        post={post}
+        note={note}
+        notices={
+          post.status === "rejected" &&
+          post.rejection_reason !== null && (
+            <p className={postStyles.note} data-testid="post-rejection-reason">
+              Reason: {post.rejection_reason}
+            </p>
+          )
+        }
+        shareUrl={url}
+        reactions={reactions.post}
+        viewerId={viewerId}
+        returnTo={returnTo}
+      />
       <CommentSection
         postId={post.id}
         postAuthorId={post.author_id}

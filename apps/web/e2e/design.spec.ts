@@ -38,7 +38,7 @@ const UNSTYLED: readonly Gap[] = ["flush-left", "browser-control"];
 
 const PAGES: readonly PageCase[] = [
   { path: "/" },
-  { path: "/@theo/hello-from-the-porch", gaps: UNSTYLED },
+  { path: "/@theo/hello-from-the-porch" },
   { path: "/@theo" },
   // The 410 answer is a bare text body: no header, no document at all.
   {
@@ -70,7 +70,7 @@ const PAGES: readonly PageCase[] = [
     axeGaps: ["landmark-one-main", "region"],
   },
   { path: "/", as: THEO },
-  { path: "/@theo/hello-from-the-porch", as: THEO, gaps: UNSTYLED },
+  { path: "/@theo/hello-from-the-porch", as: THEO },
   // Attachments are a bare file input, not the Editor board's drop zone.
   { path: "/write", as: THEO, gaps: ["file-input"] },
   { path: "/settings", as: THEO, gaps: UNSTYLED },

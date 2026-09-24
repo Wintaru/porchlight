@@ -20,6 +20,9 @@
   --line: #e6ddd0;
   --line-strong: #c9beaf;
   --chip: #efe7da;
+  /* The Post board's warm chip: the "author" and "anonymous" badges. */
+  --chip-warm: #f8e7cf;
+  --chip-warm-ink: #8f3f05;
   --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-source-sans), "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
@@ -40,6 +43,8 @@
     --line: #3d3731;
     --line-strong: #5c5147;
     --chip: #3d3731;
+    --chip-warm: #4a3522;
+    --chip-warm-ink: #f2b441;
     color-scheme: dark;
   }
 }
@@ -102,6 +107,12 @@ a:hover {
 
 .chip:hover {
   color: var(--ink);
+}
+
+.chip--warm,
+.chip--warm:hover {
+  background: var(--chip-warm);
+  color: var(--chip-warm-ink);
 }
 
 .card {

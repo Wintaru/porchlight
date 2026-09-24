@@ -4,12 +4,12 @@ import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
 import { CommentSection } from "@/components/comments/CommentSection";
-import { ReactionBar } from "@/components/comments/ReactionBar";
-import { TagChips } from "@/components/PostCardList";
+import { PostArticle } from "@/components/post/PostArticle";
+import postStyles from "@/components/post/post.module.css";
 import { commentFormStateFor } from "@/lib/can-comment";
 import { getCurrentActor } from "@/lib/current-actor";
-import { formatDate } from "@/lib/format-date";
 import { signInPathFor } from "@/lib/sign-in-path";
+import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadPostBySlug, type PostPage } from "@/read-model/post-page";
@@ -79,34 +79,15 @@ export default async function AnonymousPostPage({
   ]);
 
   return (
-    <main>
-      <article>
-        {note !== undefined && (
-          <p role="status" data-testid="post-status-note">
-            {note}
-          </p>
-        )}
-        <h1>{post.title}</h1>
-        <p>
-          <span data-testid="anonymous-author">Porch raccoon</span> · anonymous
-          {post.published_at !== null && <> · {formatDate(post.published_at)}</>}
-        </p>
-        <TagChips tags={post.post_tags} />
-        <div
-          data-testid="post-body"
-          dangerouslySetInnerHTML={{ __html: post.body_html }}
-        />
-        {post.status === "published" && (
-          <div id="reactions" data-testid="post-reactions">
-            <ReactionBar
-              target={{ kind: "post", id: post.id }}
-              reactions={reactions.post}
-              canReact={viewerId !== undefined}
-              returnTo={returnTo}
-            />
-          </div>
-        )}
-      </article>
+    <main className={postStyles.page}>
+      <PostArticle
+        post={post}
+        note={note}
+        shareUrl={`${SITE_URL}${returnTo}`}
+        reactions={reactions.post}
+        viewerId={viewerId}
+        returnTo={returnTo}
+      />
       <CommentSection
         postId={post.id}
         postAuthorId={post.author_id}

@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { deleteComment } from "@/app/[handle]/[slug]/actions";
+import { Avatar } from "@/components/Avatar";
+import { RaccoonMark } from "@/components/RaccoonMark";
 import { classNames } from "@/lib/class-names";
 import { formatDate } from "@/lib/format-date";
 import type { CommentPage, CommentPageNode } from "@/read-model/comments";
@@ -72,13 +74,16 @@ function CommentRow({
         data-testid="comment-tombstone"
         data-depth={comment.depth}
       >
-        <p className={styles.meta}>
-          <span className={styles.handle}>[deleted]</span>
-          <span>· {formatDate(comment.created_at)}</span>
-        </p>
-        <p className={classNames(styles.body, styles.tombstone)}>
-          This comment was erased by its author.
-        </p>
+        <span className={classNames("avatar", styles.emptyAvatar)} aria-hidden="true" />
+        <div className={styles.main}>
+          <p className={styles.meta}>
+            <span className={classNames(styles.handle, styles.tombstone)}>[deleted]</span>
+            <span>· {formatDate(comment.created_at)}</span>
+          </p>
+          <p className={classNames(styles.body, styles.tombstone)}>
+            This comment was erased by its author.
+          </p>
+        </div>
       </article>
     );
   }
@@ -93,45 +98,48 @@ function CommentRow({
       data-depth={comment.depth}
       data-status={comment.status}
     >
-      <p className={styles.meta}>
-        <CommentAuthor comment={comment} postAuthorId={postAuthorId} />
-        <span>· {formatDate(comment.created_at)}</span>
-      </p>
-      <div
-        className={styles.body}
-        data-testid="comment-body"
-        dangerouslySetInnerHTML={{ __html: comment.body_html }}
-      />
-      {note !== undefined && (
-        <p role="status" className={styles.status} data-testid="comment-status">
-          {note}
+      <CommentFace comment={comment} />
+      <div className={styles.main}>
+        <p className={styles.meta}>
+          <CommentAuthor comment={comment} postAuthorId={postAuthorId} />
+          <span>· {formatDate(comment.created_at)}</span>
         </p>
-      )}
-      <div className={styles.actions}>
-        {comment.status === "visible" && (
-          <ReactionBar
-            target={{ kind: "comment", id: comment.id }}
-            reactions={reactions.get(comment.id) ?? NO_REACTIONS}
-            canReact={viewer.profileId !== undefined}
-            returnTo={returnTo}
-          />
+        <div
+          className={styles.body}
+          data-testid="comment-body"
+          dangerouslySetInnerHTML={{ __html: comment.body_html }}
+        />
+        {note !== undefined && (
+          <p role="status" className={styles.status} data-testid="comment-status">
+            {note}
+          </p>
         )}
-        {mayDelete && (
-          <form action={deleteComment}>
-            <input type="hidden" name="commentId" value={comment.id} />
-            <input type="hidden" name="returnTo" value={returnTo} />
-            <button type="submit" className={styles.quietButton}>
-              Delete
-            </button>
-          </form>
+        <div className={styles.actions}>
+          {comment.status === "visible" && (
+            <ReactionBar
+              target={{ kind: "comment", id: comment.id }}
+              reactions={reactions.get(comment.id) ?? NO_REACTIONS}
+              canReact={viewer.profileId !== undefined}
+              returnTo={returnTo}
+            />
+          )}
+          {mayDelete && (
+            <form action={deleteComment}>
+              <input type="hidden" name="commentId" value={comment.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <button type="submit" className={styles.quietButton}>
+                Delete
+              </button>
+            </form>
+          )}
+        </div>
+        {viewer.canComment && comment.status === "visible" && (
+          <details className={styles.reply}>
+            <summary>Reply</summary>
+            <CommentForm postId={postId} parentId={comment.id} returnTo={returnTo} />
+          </details>
         )}
       </div>
-      {viewer.canComment && comment.status === "visible" && (
-        <details className={styles.reply}>
-          <summary>Reply</summary>
-          <CommentForm postId={postId} parentId={comment.id} returnTo={returnTo} />
-        </details>
-      )}
     </article>
   );
 }
@@ -150,7 +158,7 @@ function CommentAuthor({
     return (
       <>
         <span className={styles.handle}>Porch raccoon</span>
-        <span className={styles.badge}>anonymous</span>
+        <span className="chip chip--warm">anonymous</span>
       </>
     );
   }
@@ -162,7 +170,29 @@ function CommentAuthor({
       <Link href={`/@${comment.author.handle}`} className={styles.handle}>
         @{comment.author.handle}
       </Link>
-      {comment.author_id === postAuthorId && <span className={styles.badge}>author</span>}
+      {comment.author_id === postAuthorId && (
+        <span className="chip chip--warm">author</span>
+      )}
     </>
+  );
+}
+
+// The face beside a comment: the raccoon for an anonymous one, a member's avatar, and
+// an empty circle for a member whose profile the browser cannot read.
+function CommentFace({ comment }: { readonly comment: CommentPage }) {
+  if (comment.anonymous_author_id !== null) {
+    return <RaccoonMark size={32} />;
+  }
+  if (comment.author === null) {
+    return (
+      <span className={classNames("avatar", styles.emptyAvatar)} aria-hidden="true" />
+    );
+  }
+  return (
+    <Avatar
+      src={comment.author.avatar_url}
+      name={comment.author.display_name ?? comment.author.handle}
+      size={32}
+    />
   );
 }
