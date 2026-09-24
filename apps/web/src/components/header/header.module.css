@@ -1,0 +1,335 @@
+/* The site header: the Main board's 64px row on a desktop, the FeedPhone board's 56px
+   row on a phone. One row at every width — what does not fit moves into a menu. */
+.header {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 64px;
+  padding: 0 64px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  box-sizing: border-box;
+}
+
+.site {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  min-width: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand:hover {
+  color: var(--ink);
+}
+
+.lamp {
+  flex-shrink: 0;
+}
+
+/* A long site name gives way before the controls on the right do. */
+.brandName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.siteLinks {
+  display: flex;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.siteLink {
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.siteLink:hover {
+  color: var(--ink);
+}
+
+.siteLink[aria-current="page"] {
+  border-bottom-color: var(--amber);
+  color: var(--ink);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.write {
+  padding: 9px 16px;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.quietLink {
+  color: var(--label);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.quietLink:hover {
+  color: var(--amber);
+}
+
+/* A dropdown: the bell, the account menu, a visitor's menu. */
+.dropdown {
+  position: relative;
+  display: flex;
+}
+
+.menuButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  color: var(--amber);
+}
+
+.menuButton:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(340px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(42 38 34 / 14%);
+  box-sizing: border-box;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.menuWho {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 6px;
+  padding: 8px 12px 10px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.menuWho span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.menuList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuList a,
+.menuItemButton {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.menuList a:hover,
+.menuItemButton:hover {
+  background: var(--chip);
+  color: var(--ink);
+}
+
+.menuList a[aria-current="page"] {
+  color: var(--link);
+}
+
+.menuFooter {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+/* The bell: an icon with an amber dot for unread, and its panel. */
+.unreadDot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--amber);
+  box-sizing: border-box;
+}
+
+.panelTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.markAll {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notice[data-read="false"]::before {
+  content: "";
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--amber);
+}
+
+.empty {
+  margin: 0;
+  padding: 8px 12px 12px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.phoneOnly {
+  display: none;
+}
+
+/* Below 900px the section links and the visitor's activity link no longer fit beside
+   the right-hand controls (a visitor's bar needs about 830px), so the phone layout
+   starts here: links move into the menus, Write and Sign in shrink to their core. */
+@media (max-width: 900px) {
+  .header {
+    padding: 0 24px;
+  }
+
+  .account {
+    gap: 14px;
+  }
+
+  .write {
+    padding: 8px;
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+
+  .phoneOnly {
+    display: flex;
+  }
+
+  ul.phoneOnly {
+    display: block;
+  }
+
+  /* Gone from sight, still read out: the controls keep "Write" and "Sign in with
+     Google" as their names. */
+  .phoneHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    height: 56px;
+    padding: 0 16px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 20px;
+  }
+}
+
+/* The narrowest phones (320px): a visitor's brand, Write, Sign in and Menu fit only
+   with the gaps and the name brought in. */
+@media (max-width: 380px) {
+  .header {
+    gap: 8px;
+  }
+
+  .account {
+    gap: 10px;
+  }
+
+  .brand {
+    font-size: 18px;
+  }
+
+  .signIn {
+    padding: 7px 10px;
+  }
+}

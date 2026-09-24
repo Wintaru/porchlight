@@ -112,7 +112,7 @@ test("the bell's panel opens, and closes with its button, Escape or a click away
 }) => {
   await devSignIn(page, THEO);
   const bell = page.getByTestId("notification-bell");
-  const panel = page.getByRole("menu", { name: "Notifications" });
+  const panel = page.getByRole("region", { name: "Notifications" });
   await expect(bell).toHaveAttribute("aria-expanded", "false");
 
   await bell.click();

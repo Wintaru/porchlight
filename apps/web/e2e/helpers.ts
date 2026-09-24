@@ -42,3 +42,9 @@ export async function deleteCurrentPost(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
   await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
 }
+
+// Sign out lives in the header's account menu (the avatar), not on the bar itself.
+export async function signOut(page: Page): Promise<void> {
+  await page.getByTestId("account-menu").click();
+  await page.getByRole("button", { name: "Sign out" }).click();
+}

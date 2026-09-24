@@ -1,14 +1,18 @@
 "use client";
 
 import type { NotificationKind } from "@porchlight/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/app/notification-actions";
+import { useDropdown } from "@/components/header/use-dropdown";
+import { classNames } from "@/lib/class-names";
 import { getBrowserDbClient } from "@/read-model/browser-client";
 import type { NotificationRow } from "@/read-model/notifications";
+
+import styles from "../header/header.module.css";
 
 interface NotificationBellProps {
   readonly recipientId: string;
@@ -32,34 +36,8 @@ const LABELS: Readonly<Record<NotificationKind, string>> = {
 // `reply.created` row an approval writes, most notably.
 export function NotificationBell({ recipientId, initial }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<readonly NotificationRow[]>(initial);
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const bellRef = useRef<HTMLButtonElement>(null);
-
-  // An open panel closes the way every dropdown does: Escape, or a click anywhere else.
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        // Focus was in the panel, which is about to unmount: hand it back to the bell.
-        bellRef.current?.focus();
-      }
-    };
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!(event.target instanceof Node) || !rootRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [open]);
+  const { open, toggle, rootRef, triggerRef } = useDropdown();
+  const panelId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -118,56 +96,91 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
   }
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} className={styles.dropdown}>
       <button
-        ref={bellRef}
+        ref={triggerRef}
         type="button"
+        className={styles.menuButton}
         data-testid="notification-bell"
         aria-expanded={open}
-        onClick={() => {
-          setOpen((current) => !current);
-        }}
+        aria-controls={panelId}
+        onClick={toggle}
       >
-        Notifications
+        <BellIcon />
+        <span className="visually-hidden">Notifications</span>
         {unreadCount > 0 && (
-          <span data-testid="notification-unread-count"> ({unreadCount})</span>
+          <>
+            <span className={styles.unreadDot} aria-hidden="true" />
+            <span className="visually-hidden" data-testid="notification-unread-count">
+              ({unreadCount})
+            </span>
+          </>
         )}
       </button>
-      {open && (
-        <div role="menu" aria-label="Notifications">
-          {notifications.length === 0 ? (
-            <p data-testid="notification-empty">Nothing yet.</p>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  void markAll();
-                }}
-              >
-                Mark all read
-              </button>
-              <ul>
-                {notifications.map((notification) => (
-                  <li key={notification.id}>
-                    <button
-                      type="button"
-                      data-testid="notification-item"
-                      data-kind={notification.kind}
-                      data-read={notification.read_at !== null}
-                      onClick={() => {
-                        void markOne(notification.id);
-                      }}
-                    >
-                      {LABELS[notification.kind]}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
+      <section
+        id={panelId}
+        className={styles.panel}
+        aria-label="Notifications"
+        hidden={!open}
+      >
+        <p className={styles.panelTitle}>
+          Notifications
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              className={styles.markAll}
+              onClick={() => {
+                void markAll();
+              }}
+            >
+              Mark all read
+            </button>
           )}
-        </div>
-      )}
+        </p>
+        {notifications.length === 0 ? (
+          <p className={styles.empty} data-testid="notification-empty">
+            Nothing yet.
+          </p>
+        ) : (
+          <ul className={styles.menuList}>
+            {notifications.map((notification) => (
+              <li key={notification.id}>
+                <button
+                  type="button"
+                  className={classNames(styles.menuItemButton, styles.notice)}
+                  data-testid="notification-item"
+                  data-kind={notification.kind}
+                  data-read={notification.read_at !== null}
+                  onClick={() => {
+                    void markOne(notification.id);
+                  }}
+                >
+                  {LABELS[notification.kind]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3V9Z" />
+      <path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
   );
 }

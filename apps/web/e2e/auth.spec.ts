@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { signOut } from "./helpers";
+
 // The issue #4 acceptance test: a member signs in through the dev path headless, the
 // session survives navigation, the settings form round-trips through AccountManager,
 // and sign-out ends it. Runs against the seeded local stack (docs/setup/supabase.md).
@@ -95,7 +97,7 @@ test("sign-out ends the session", async ({ page }) => {
   await devSignIn(page, JUNE.email);
   await expect(page.getByTestId("session-handle")).toHaveText(`@${JUNE.handle}`);
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await signOut(page);
 
   await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
   await expect(page.getByTestId("session-handle")).toHaveCount(0);

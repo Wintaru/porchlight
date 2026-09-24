@@ -21,7 +21,8 @@ type Gap =
   | "flush-left"
   | "browser-control"
   | "file-input"
-  | "tall-header";
+  | "tall-header"
+  | "crowded-header";
 
 interface PageCase {
   readonly path: string;
@@ -204,32 +205,49 @@ for (const target of PAGES) {
   });
 }
 
-// The header is not the Main board's yet: no Home/Tags/About, a text "Notifications"
-// button with no bell, a taller row than the board's that wraps on a phone.
-const HEADER_GAPS: Readonly<Record<string, readonly Gap[]>> = {
-  "visitor desktop": ["tall-header"],
-  "visitor phone": ["tall-header"],
-  "theo desktop": ["browser-control", "tall-header"],
-  "theo phone": ["browser-control", "tall-header"],
-};
+// The header is one row at every width, so a height check alone cannot see crowding:
+// the two halves must not overlap and nothing may scroll sideways. It runs at the
+// widths either side of its breakpoints, where a row is most likely to be too full.
+const HEADER_WIDTHS = [1280, 1024, 960, 901, 900, 768, 641, 640, 390, 320] as const;
 
 for (const as of [undefined, THEO] as const) {
-  for (const viewport of VIEWPORTS) {
+  for (const width of HEADER_WIDTHS) {
     const who = as?.handle ?? "visitor";
-    test(`the site header as ${who} at ${viewport.name} is one styled row`, async ({
+    test(`the site header as ${who} at ${String(width)}px is one styled row`, async ({
       page,
     }) => {
       const home: PageCase = as === undefined ? { path: "/" } : { path: "/", as };
-      await open(page, home, viewport.width, viewport.height);
+      await open(page, home, width, 800);
       const gaps: Gap[] = [];
       if ((await scanControls(page, "header")).browserDrawn.length > 0) {
         gaps.push("browser-control");
       }
-      const box = await page.locator("header").first().boundingBox();
+      const header = page.locator("header").first();
+      const box = await header.boundingBox();
       if (box === null || box.height > MAX_HEADER_HEIGHT_PX) {
         gaps.push("tall-header");
       }
-      expect(gaps).toEqual(HEADER_GAPS[`${who} ${viewport.name}`] ?? []);
+      // The left half may shrink, so its box never meets the right half's; what
+      // crowding does is push its content out of that box, or cut the site name short.
+      const crowded = await header.evaluate((el) => {
+        const site = el.querySelector('nav[aria-label="Site"]');
+        if (site === null) {
+          return true;
+        }
+        const name = site.querySelector("a > span");
+        return (
+          site.scrollWidth > site.clientWidth ||
+          (name !== null && name.scrollWidth > name.clientWidth) ||
+          el.scrollWidth > el.clientWidth
+        );
+      });
+      if (
+        crowded ||
+        (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth))
+      ) {
+        gaps.push("crowded-header");
+      }
+      expect(gaps).toEqual([]);
     });
   }
 }

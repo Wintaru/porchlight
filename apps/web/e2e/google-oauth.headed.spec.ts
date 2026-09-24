@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { signOut } from "./helpers";
+
 // The one flow no fake can stand in for: Google's own consent screen. Runs in a visible
 // browser with a person at the keyboard (`pnpm test:e2e:headed`), against a local stack
 // that has the Google keys (docs/setup/google-oauth.md). Everything else about sign-in
@@ -25,6 +27,6 @@ test("a person signs in with Google and gets a session", async ({ page }) => {
     timeout: PERSON_TIMEOUT,
   });
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await signOut(page);
   await expect(page.getByTestId("session-handle")).toHaveCount(0);
 });
