@@ -1,3 +1,7 @@
+import { GetVoiceGuideHandler } from "../Managers/AccountManager/Handlers/GetVoiceGuideHandler";
+import { UpdateVoiceGuideHandler } from "../Managers/AccountManager/Handlers/UpdateVoiceGuideHandler";
+import { GetVoiceGuideRequest } from "../Managers/AccountManager/Requests/GetVoiceGuideRequest";
+import { UpdateVoiceGuideRequest } from "../Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
@@ -264,6 +268,10 @@ export class DependencyContainer {
         )
         .register(UpdateProfileRequest, new UpdateProfileHandler(profiles, permissions))
         .register(
+          UpdateVoiceGuideRequest,
+          new UpdateVoiceGuideHandler(profiles, posts, permissions),
+        )
+        .register(
           ClaimAnonymousPostsRequest,
           new ClaimAnonymousPostsHandler(anonymousAuthors),
         )
@@ -293,6 +301,10 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
         .register(
+          GetVoiceGuideRequest,
+          new GetVoiceGuideHandler(profiles, posts, permissions),
+        )
+        .register(
           ListAgentTokensRequest,
           new ListAgentTokensHandler(agentTokens, permissions),
         )
@@ -302,7 +314,15 @@ export class DependencyContainer {
         )
         .register(
           ExportAccountRequest,
-          new ExportAccountHandler(posts, comments, reactions, mediaAssets, permissions),
+          new ExportAccountHandler(
+            posts,
+            comments,
+            reactions,
+            mediaAssets,
+            profiles,
+            agentTokens,
+            permissions,
+          ),
         )
         .build(),
     );

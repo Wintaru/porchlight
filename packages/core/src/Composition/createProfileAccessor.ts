@@ -1,3 +1,9 @@
+import { FakeLoadVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadVoiceGuideHandler";
+import { FakeStoreVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStoreVoiceGuideHandler";
+import { SupabaseLoadVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadVoiceGuideHandler";
+import { SupabaseStoreVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseStoreVoiceGuideHandler";
+import { LoadVoiceGuideRequest } from "../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRequest";
+import { StoreVoiceGuideRequest } from "../Accessors/ProfileAccessor/Requests/StoreVoiceGuideRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { FakeProfileState } from "../Accessors/ProfileAccessor/FakeProfileState";
@@ -50,12 +56,14 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(StoreNewProfileRequest, new SupabaseStoreNewProfileHandler(db))
       .register(StoreProfileChangesRequest, new SupabaseStoreProfileChangesHandler(db))
       .register(EraseProfileRequest, new SupabaseEraseProfileHandler(db))
+      .register(StoreVoiceGuideRequest, new SupabaseStoreVoiceGuideHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new SupabaseLoadProfileByIdHandler(db))
       .register(LoadProfileByHandleRequest, new SupabaseLoadProfileByHandleHandler(db))
       .register(CountProfilesRequest, new SupabaseCountProfilesHandler(db))
       .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
+      .register(LoadVoiceGuideRequest, new SupabaseLoadVoiceGuideHandler(db))
       .build(),
   );
 }
@@ -67,12 +75,14 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .register(StoreNewProfileRequest, new FakeStoreNewProfileHandler(state))
       .register(StoreProfileChangesRequest, new FakeStoreProfileChangesHandler(state))
       .register(EraseProfileRequest, new FakeEraseProfileHandler(state))
+      .register(StoreVoiceGuideRequest, new FakeStoreVoiceGuideHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new FakeLoadProfileByIdHandler(state))
       .register(LoadProfileByHandleRequest, new FakeLoadProfileByHandleHandler(state))
       .register(CountProfilesRequest, new FakeCountProfilesHandler(state))
       .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))
+      .register(LoadVoiceGuideRequest, new FakeLoadVoiceGuideHandler(state))
       .build(),
   );
 }

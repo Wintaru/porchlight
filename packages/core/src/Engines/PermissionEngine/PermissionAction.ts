@@ -31,6 +31,8 @@ export const PERMISSION_ACTIONS = [
   "site_config.manage",
   "notification.manage",
   "token.manage",
+  "voice.view",
+  "voice.edit",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

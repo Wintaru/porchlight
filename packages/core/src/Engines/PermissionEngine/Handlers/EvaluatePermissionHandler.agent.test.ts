@@ -194,6 +194,35 @@ describe("the agents site setting", () => {
   });
 });
 
+describe("the voice guide (#29)", () => {
+  const OTHER_PROFILE: PermissionSubject = { kind: "profile", id: JUNE_ID };
+
+  test("the draft scope reads the member's own guide, and only theirs", async () => {
+    expect(await verdict(agent(), "voice.view", OWN_PROFILE)).toBe("granted");
+    expect(await verdict(agent(), "voice.view", OTHER_PROFILE)).toBe("not-allowed");
+    expect(await verdict(agent(["voice:write"]), "voice.view", OWN_PROFILE)).toBe(
+      "not-allowed",
+    );
+  });
+
+  test("changing the guide needs voice:write", async () => {
+    expect(await verdict(agent(), "voice.edit", OWN_PROFILE)).toBe("not-allowed");
+    expect(await verdict(agent(["voice:write"]), "voice.edit", OWN_PROFILE)).toBe(
+      "granted",
+    );
+    expect(await verdict(agent(["voice:write"]), "voice.edit", OTHER_PROFILE)).toBe(
+      "not-allowed",
+    );
+  });
+
+  test("a member reads and writes their own guide, not another's", async () => {
+    for (const action of ["voice.view", "voice.edit"] as const) {
+      expect(await verdict(MEMBER, action, OWN_PROFILE)).toBe("granted");
+      expect(await verdict(MEMBER, action, OTHER_PROFILE)).toBe("not-allowed");
+    }
+  });
+});
+
 describe("every other action", () => {
   const OPEN_TO_AGENTS: ReadonlySet<PermissionAction> = new Set([
     "post.create",
@@ -203,6 +232,8 @@ describe("every other action", () => {
     "post.publish",
     "post.delete",
     "media.view",
+    "voice.view",
+    "voice.edit",
   ]);
 
   test("is denied to a fully scoped agent, whatever the subject", async () => {

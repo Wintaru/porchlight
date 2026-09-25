@@ -24,6 +24,13 @@ export { type Actor, type AgentActor, VISITOR } from "./Common/Actor";
 export type { AnonymousStatusItem } from "./Common/AnonymousStatusItem";
 export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
 export type { RequestOrigin } from "./Common/RequestOrigin";
+export type { VoiceGuide } from "./Common/VoiceGuide";
+export type { VoiceSample } from "./Common/VoiceSample";
+export {
+  DEFAULT_BANNED_PHRASES,
+  VOICE_GUIDE_MAX_LENGTH,
+  VOICE_SAMPLE_COUNT,
+} from "./Common/VoiceGuideRules";
 export type { AnonymousUploadCap } from "./Common/AnonymousUploadCap";
 export {
   attachmentTypeForExtension,
@@ -125,6 +132,8 @@ export { ExportAccountRequest } from "./Managers/AccountManager/Requests/ExportA
 export { GetAnonymousStatusRequest } from "./Managers/AccountManager/Requests/GetAnonymousStatusRequest";
 export { GetProfileRequest } from "./Managers/AccountManager/Requests/GetProfileRequest";
 export { UpdateProfileRequest } from "./Managers/AccountManager/Requests/UpdateProfileRequest";
+export { GetVoiceGuideRequest } from "./Managers/AccountManager/Requests/GetVoiceGuideRequest";
+export { UpdateVoiceGuideRequest } from "./Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 export { AccountErasedResponse } from "./Managers/AccountManager/Responses/AccountErasedResponse";
 export { AgentActorResponse } from "./Managers/AccountManager/Responses/AgentActorResponse";
 export { NoAgentActorResponse } from "./Managers/AccountManager/Responses/NoAgentActorResponse";
@@ -143,6 +152,8 @@ export { ExportBundleResponse } from "./Managers/AccountManager/Responses/Export
 export { HandleRejectedResponse } from "./Managers/AccountManager/Responses/HandleRejectedResponse";
 export { NoSuchProfileResponse } from "./Managers/AccountManager/Responses/NoSuchProfileResponse";
 export { ProfileResponse } from "./Managers/AccountManager/Responses/ProfileResponse";
+export { VoiceGuideRejectedResponse } from "./Managers/AccountManager/Responses/VoiceGuideRejectedResponse";
+export { VoiceGuideResponse } from "./Managers/AccountManager/Responses/VoiceGuideResponse";
 export { SignUpClosedResponse } from "./Managers/AccountManager/Responses/SignUpClosedResponse";
 
 // PostManager: drafts, publishing, the author's list (SPEC.md §5, issue #5).

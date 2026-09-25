@@ -1,3 +1,6 @@
+import { FakeLoadVoiceSamplesHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadVoiceSamplesHandler";
+import { SupabaseLoadVoiceSamplesHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadVoiceSamplesHandler";
+import { LoadVoiceSamplesRequest } from "../Accessors/PostAccessor/Requests/LoadVoiceSamplesRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { FakePostState } from "../Accessors/PostAccessor/FakePostState";
@@ -50,6 +53,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
       .register(LoadPostBySlugRequest, new SupabaseLoadPostBySlugHandler(db))
       .register(LoadPostsByAuthorRequest, new SupabaseLoadPostsByAuthorHandler(db))
+      .register(LoadVoiceSamplesRequest, new SupabaseLoadVoiceSamplesHandler(db))
       .register(LoadPostsByStatusRequest, new SupabaseLoadPostsByStatusHandler(db))
       .build(),
     new HandlerResolverBuilder()
@@ -68,6 +72,7 @@ function createFakePostAccessor(state: FakePostState): IPostAccessor {
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))
       .register(LoadPostBySlugRequest, new FakeLoadPostBySlugHandler(state))
       .register(LoadPostsByAuthorRequest, new FakeLoadPostsByAuthorHandler(state))
+      .register(LoadVoiceSamplesRequest, new FakeLoadVoiceSamplesHandler(state))
       .register(LoadPostsByStatusRequest, new FakeLoadPostsByStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()

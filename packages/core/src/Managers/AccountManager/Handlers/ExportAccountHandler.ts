@@ -1,3 +1,10 @@
+import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
+import { ListAgentTokensByOwnerRequest } from "../../../Accessors/AgentTokenAccessor/Requests/ListAgentTokensByOwnerRequest";
+import { AgentTokensLoadedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokensLoadedResponse";
+import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
+import { LoadVoiceGuideRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRequest";
+import { VoiceGuideLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/VoiceGuideLoadedResponse";
+import type { AgentToken } from "../../../Common/AgentToken";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentsByAuthorRequest } from "../../../Accessors/CommentAccessor/Requests/LoadCommentsByAuthorRequest";
 import { CommentsLoadedResponse } from "../../../Accessors/CommentAccessor/Responses/CommentsLoadedResponse";
@@ -36,6 +43,8 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     private readonly comments: ICommentAccessor,
     private readonly reactions: IReactionAccessor,
     private readonly mediaAssets: IMediaAssetAccessor,
+    private readonly profiles: IProfileAccessor,
+    private readonly agentTokens: IAgentTokenAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -79,6 +88,19 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
       return unavailable(correlationId, loadedMedia, "mediaAssets.load");
     }
 
+    const loadedGuide = await this.profiles.load(
+      new LoadVoiceGuideRequest(profileId, context),
+    );
+    if (!(loadedGuide instanceof VoiceGuideLoadedResponse)) {
+      return unavailable(correlationId, loadedGuide, "profiles.load");
+    }
+    const loadedTokens = await this.agentTokens.load(
+      new ListAgentTokensByOwnerRequest(profileId, context),
+    );
+    if (!(loadedTokens instanceof AgentTokensLoadedResponse)) {
+      return unavailable(correlationId, loadedTokens, "agentTokens.load");
+    }
+
     // A tombstone has no words left to export, and cannot be one of this member's own
     // rows anyway: erasure is the only thing that creates one, and this handler always
     // runs before that.
@@ -91,6 +113,9 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     for (const comment of liveComments) {
       files.set(`comments/${comment.id}.md`, commentMarkdown(comment));
     }
+    if (loadedGuide.guideMd !== null) {
+      files.set("voice-guide.md", loadedGuide.guideMd);
+    }
     files.set(
       "data.json",
       JSON.stringify(
@@ -99,6 +124,8 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
           comments: liveComments.map(commentJson),
           reactions: loadedReactions.reactions.map(reactionJson),
           uploads: loadedMedia.assets.map(mediaJson),
+          voiceGuide: loadedGuide.guideMd,
+          agentTokens: loadedTokens.tokens.map(tokenJson),
         },
         null,
         2,
@@ -148,6 +175,9 @@ function postJson(post: Post) {
     status: post.status,
     visibility: post.visibility,
     tags: post.tags.map((tag) => tag.slug),
+    origin: post.origin,
+    // The agent's first text is the member's data too (D22).
+    agentDraftMd: post.agentDraftMd,
     publishedAt: post.publishedAt?.toISOString() ?? null,
     createdAt: post.createdAt.toISOString(),
   };
@@ -165,6 +195,19 @@ function commentJson(comment: LiveComment) {
 
 function reactionJson(reaction: Reaction) {
   return { target: reaction.target, kind: reaction.kind };
+}
+
+// A token's name and scopes, never its hash (SPEC.md §17): the export is the member's
+// record of what they granted, not a credential.
+function tokenJson(token: AgentToken) {
+  return {
+    name: token.name,
+    scopes: token.scopes,
+    createdAt: token.createdAt.toISOString(),
+    expiresAt: token.expiresAt?.toISOString() ?? null,
+    revokedAt: token.revokedAt?.toISOString() ?? null,
+    lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+  };
 }
 
 function mediaJson(asset: MediaAsset) {

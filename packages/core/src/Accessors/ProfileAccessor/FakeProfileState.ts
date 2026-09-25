@@ -5,6 +5,8 @@ import type { Profile } from "../../Common/Profile";
 // ProfileAccessFailedResponse, for the error path.
 export class FakeProfileState {
   readonly profiles = new Map<string, Profile>();
+  // Voice guides by profile id: a column of their own in the real table (D22).
+  readonly voiceGuides = new Map<string, string>();
 
   constructor(readonly failing = false) {}
 

@@ -33,6 +33,7 @@ export class FakeEraseProfileHandler implements IHandler<EraseProfileRequest, Re
       avatarUrl: null,
       bio: null,
     });
+    this.state.voiceGuides.delete(id);
     return Promise.resolve(new ProfileErasedResponse(correlationId));
   }
 }

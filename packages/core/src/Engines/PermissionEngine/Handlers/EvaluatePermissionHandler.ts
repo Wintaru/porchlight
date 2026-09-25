@@ -153,6 +153,9 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "site_config.manage": mayManageSiteConfig,
   "notification.manage": mayManageNotifications,
   "token.manage": mayManageOwnTokens,
+  // A member reads and writes their own voice guide, nobody else's (D22).
+  "voice.view": mayManageOwnAccount,
+  "voice.edit": mayManageOwnAccount,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -563,7 +566,8 @@ async function mayManageOwnTokens(
 // its own member's drafts with the `posts:draft` scope. Publishing needs
 // `posts:publish`. Everything else is `deny`: profile edits, comments, reactions,
 // moderation, erasure, token management, and deleting or editing a published post.
-// The upload scope opens `media.*` in #31, and the voice scope arrives with #29.
+// The upload scope opens `media.*` in #31. Reading the voice guide is part of drafting
+// (`posts:draft`); changing it needs `voice:write` (#29).
 
 type AgentRule = (
   agent: AgentActor,
@@ -601,6 +605,8 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "site_config.manage": deny,
   "notification.manage": deny,
   "token.manage": deny,
+  "voice.view": agentMayReadVoiceGuide,
+  "voice.edit": agentMayWriteVoiceGuide,
 };
 
 function deny(): Promise<Denial> {
@@ -676,6 +682,40 @@ async function agentMayListPosts(
     subject.kind === "profile" &&
       gate.id === subject.id &&
       hasScope(agent.grant, "posts:draft"),
+  );
+}
+
+// The member's own guide, read to draft in their voice.
+async function agentMayReadVoiceGuide(
+  agent: AgentActor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  return verdict(
+    subject.kind === "profile" &&
+      gate.id === subject.id &&
+      hasScope(agent.grant, "posts:draft"),
+  );
+}
+
+// A rule the agent proposes for its member's guide, with the scope the member granted.
+async function agentMayWriteVoiceGuide(
+  agent: AgentActor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  return verdict(
+    subject.kind === "profile" &&
+      gate.id === subject.id &&
+      hasScope(agent.grant, "voice:write"),
   );
 }
 
