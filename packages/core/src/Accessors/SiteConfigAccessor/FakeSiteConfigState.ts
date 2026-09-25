@@ -1,3 +1,7 @@
+import {
+  type AgentDisclosure,
+  DEFAULT_AGENT_DISCLOSURE,
+} from "../../Common/AgentDisclosure";
 import { type AgentLimits, DEFAULT_AGENT_LIMITS } from "../../Common/AgentLimits";
 import { DEFAULT_AGENTS_POLICY, type AgentsPolicy } from "../../Common/AgentsPolicy";
 import {
@@ -50,5 +54,6 @@ export class FakeSiteConfigState {
     public autoPromoteAfterApprovedPosts: AutoPromoteAfterApprovedPosts = DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
     public agents: AgentsPolicy = DEFAULT_AGENTS_POLICY,
     public agentLimits: AgentLimits = DEFAULT_AGENT_LIMITS,
+    public agentDisclosure: AgentDisclosure = DEFAULT_AGENT_DISCLOSURE,
   ) {}
 }

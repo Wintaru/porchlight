@@ -3,6 +3,8 @@ import { StoreSiteConfigEntriesRequest } from "../../../Accessors/SiteConfigAcce
 import { SiteConfigStoredResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigStoredResponse";
 import type { SiteConfigEntry } from "../../../Accessors/SiteConfigAccessor/SiteConfigEntry";
 import type { Actor } from "../../../Common/Actor";
+import { AGENT_DISCLOSURES } from "../../../Common/AgentDisclosure";
+import { MAX_AGENT_DAILY_LIMIT } from "../../../Common/AgentLimits";
 import { AGENTS_POLICIES } from "../../../Common/AgentsPolicy";
 import { attachmentTypeForExtension } from "../../../Common/AttachmentTypeCatalog";
 import {
@@ -131,6 +133,28 @@ function entriesFor(update: Partial<SiteConfigSnapshot>): SiteConfigEntry[] | Fi
       return { field: "agents", message: "not a known agents policy" };
     }
     entries.push({ key: "agents", value: update.agents });
+  }
+
+  if (update.agentDisclosure !== undefined) {
+    if (!AGENT_DISCLOSURES.some((disclosure) => disclosure === update.agentDisclosure)) {
+      return { field: "agentDisclosure", message: "not a known disclosure setting" };
+    }
+    entries.push({ key: "agent_disclosure", value: update.agentDisclosure });
+  }
+
+  if (update.agentLimits !== undefined) {
+    const { draftsPerDay, publishesPerDay } = update.agentLimits;
+    if (!isDailyCount(draftsPerDay) || !isDailyCount(publishesPerDay)) {
+      return {
+        field: "agentLimits",
+        message: `each daily limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}`,
+      };
+    }
+    // Stored snake_case, the shape toAgentLimits reads and SPEC.md §17 documents.
+    entries.push({
+      key: "agent_limits",
+      value: { drafts_per_day: draftsPerDay, publishes_per_day: publishesPerDay },
+    });
   }
 
   if (update.region !== undefined) {
@@ -323,4 +347,8 @@ function thresholdsError(thresholds: ModerationThresholds): FieldError | undefin
     };
   }
   return undefined;
+}
+
+function isDailyCount(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= MAX_AGENT_DAILY_LIMIT;
 }

@@ -61,6 +61,35 @@ describe("SaveSiteConfigHandler", () => {
     expect(state.stored).toEqual([{ key: "posting", value: "staff" }]);
   });
 
+  test("agent limits are stored snake_case, and disclosure as its value (#30)", async () => {
+    const { handler, state } = handlerAndState();
+
+    const response = await handler.handle(
+      new SaveSiteConfigRequest(ADMIN, {
+        agentLimits: { draftsPerDay: 10, publishesPerDay: 0 },
+        agentDisclosure: "off",
+      }),
+    );
+
+    expect(response).toBeInstanceOf(SiteConfigSavedResponse);
+    expect(state.stored).toEqual([
+      { key: "agent_disclosure", value: "off" },
+      { key: "agent_limits", value: { drafts_per_day: 10, publishes_per_day: 0 } },
+    ]);
+  });
+
+  test("a negative or fractional agent limit is invalid", async () => {
+    const { handler } = handlerAndState();
+    for (const draftsPerDay of [-1, 2.5, 1001]) {
+      const response = await handler.handle(
+        new SaveSiteConfigRequest(ADMIN, {
+          agentLimits: { draftsPerDay, publishesPerDay: 2 },
+        }),
+      );
+      expect(response).toMatchObject({ field: "agentLimits" });
+    }
+  });
+
   test("site identity writes three keys", async () => {
     const { handler, state } = handlerAndState();
 

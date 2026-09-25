@@ -201,4 +201,6 @@ insert into public.site_config (key, value) values
   ('moderation_thresholds', '{"flag_at":0.5,"lock_at":0.9}'),
   ('auto_promote_after_approved_posts', null),
   ('agents', '"members"'),
+  ('agent_limits', '{"drafts_per_day":5,"publishes_per_day":2}'),
+  ('agent_disclosure', '"footer"'),
   ('raw_ip_retention_days', '90');

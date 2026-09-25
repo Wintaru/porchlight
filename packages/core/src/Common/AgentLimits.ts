@@ -6,6 +6,10 @@ export interface AgentLimits {
   readonly publishesPerDay: number;
 }
 
+// The highest daily cap the settings page accepts. Zero turns the action off for every
+// token; the ceiling only keeps a typo from opening the door wide.
+export const MAX_AGENT_DAILY_LIMIT = 1000;
+
 export const DEFAULT_AGENT_LIMITS: AgentLimits = {
   draftsPerDay: 5,
   publishesPerDay: 2,

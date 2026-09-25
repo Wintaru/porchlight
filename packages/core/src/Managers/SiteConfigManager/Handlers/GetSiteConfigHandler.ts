@@ -1,3 +1,7 @@
+import { AgentDisclosureLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AgentDisclosureLoadedResponse";
+import { AgentLimitsLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AgentLimitsLoadedResponse";
+import { LoadAgentDisclosureRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentDisclosureRequest";
+import { LoadAgentLimitsRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentLimitsRequest";
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadAgentsPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentsPolicyRequest";
 import { LoadAnonymousUploadCapRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
@@ -73,6 +77,8 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       rawIpRetentionDays,
       autoPromoteAfterApprovedPosts,
       agents,
+      agentLimits,
+      agentDisclosure,
     ] = await Promise.all([
       this.siteConfig.load(new LoadPostingPolicyRequest(context)),
       this.siteConfig.load(new LoadCommentPolicyRequest(context)),
@@ -86,6 +92,8 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       this.siteConfig.load(new LoadRawIpRetentionDaysRequest(context)),
       this.siteConfig.load(new LoadAutoPromoteAfterApprovedPostsRequest(context)),
       this.siteConfig.load(new LoadAgentsPolicyRequest(context)),
+      this.siteConfig.load(new LoadAgentLimitsRequest(context)),
+      this.siteConfig.load(new LoadAgentDisclosureRequest(context)),
     ]);
 
     if (!(posting instanceof PostingPolicyLoadedResponse)) {
@@ -129,6 +137,12 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
     if (!(agents instanceof AgentsPolicyLoadedResponse)) {
       return unavailable(correlationId, agents);
     }
+    if (!(agentLimits instanceof AgentLimitsLoadedResponse)) {
+      return unavailable(correlationId, agentLimits);
+    }
+    if (!(agentDisclosure instanceof AgentDisclosureLoadedResponse)) {
+      return unavailable(correlationId, agentDisclosure);
+    }
 
     const config: SiteConfigSnapshot = {
       posting: posting.policy,
@@ -143,6 +157,8 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
       rawIpRetentionDays: rawIpRetentionDays.days,
       autoPromoteAfterApprovedPosts: autoPromoteAfterApprovedPosts.afterApprovedPosts,
       agents: agents.policy,
+      agentLimits: agentLimits.limits,
+      agentDisclosure: agentDisclosure.disclosure,
     };
     return new SiteConfigResponse(
       correlationId,

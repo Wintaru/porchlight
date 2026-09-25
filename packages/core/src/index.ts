@@ -75,8 +75,17 @@ export {
   type AgentsPolicy,
   agentsOpenTo,
 } from "./Common/AgentsPolicy";
+export {
+  AGENT_DISCLOSURES,
+  type AgentDisclosure,
+  DEFAULT_AGENT_DISCLOSURE,
+} from "./Common/AgentDisclosure";
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
-export { DEFAULT_AGENT_LIMITS, type AgentLimits } from "./Common/AgentLimits";
+export {
+  DEFAULT_AGENT_LIMITS,
+  MAX_AGENT_DAILY_LIMIT,
+  type AgentLimits,
+} from "./Common/AgentLimits";
 export type { AgentGrant } from "./Common/AgentGrant";
 export {
   AGENT_TOKEN_NAME_MAX_LENGTH,
@@ -305,12 +314,14 @@ export {
 export type { SiteConfigSnapshot } from "./Managers/SiteConfigManager/SiteConfigSnapshot";
 export { ApplyPresetRequest } from "./Managers/SiteConfigManager/Requests/ApplyPresetRequest";
 export { GetAgentLimitsRequest } from "./Managers/SiteConfigManager/Requests/GetAgentLimitsRequest";
+export { GetAgentDisclosureRequest } from "./Managers/SiteConfigManager/Requests/GetAgentDisclosureRequest";
 export { GetAgentsPolicyRequest } from "./Managers/SiteConfigManager/Requests/GetAgentsPolicyRequest";
 export { GetRegionRequest } from "./Managers/SiteConfigManager/Requests/GetRegionRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 export { AgentLimitsResponse } from "./Managers/SiteConfigManager/Responses/AgentLimitsResponse";
+export { AgentDisclosureResponse } from "./Managers/SiteConfigManager/Responses/AgentDisclosureResponse";
 export { AgentsPolicyResponse } from "./Managers/SiteConfigManager/Responses/AgentsPolicyResponse";
 export { RegionResponse } from "./Managers/SiteConfigManager/Responses/RegionResponse";
 export { SiteConfigForbiddenResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigForbiddenResponse";
