@@ -7,6 +7,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { PostArticle } from "@/components/post/PostArticle";
 import postStyles from "@/components/post/post.module.css";
 import { commentFormStateFor } from "@/lib/can-comment";
+import { getAgentDisclosure } from "@/lib/agent-disclosure";
 import { getCurrentActor } from "@/lib/current-actor";
 import { parseHandleParam } from "@/lib/handle-param";
 import { publicMediaUrl } from "@/lib/media-url";
@@ -82,12 +83,14 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   const note = STATUS_NOTE[post.status];
   const returnTo = `/@${post.author.handle}/${post.slug}`;
 
-  const [actor, db, { comment: noticeCode, error: errorCode }, { siteName }] =
+  const [actor, db, { comment: noticeCode, error: errorCode }, { siteName }, disclosure] =
     await Promise.all([
       getCurrentActor(),
       createSessionClient(),
       searchParams,
       getSiteIdentity(),
+      // Only an agent's post has a line to show, so only it pays for the read.
+      post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
     ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   const [formState, comments, reactions] = await Promise.all([
@@ -123,6 +126,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         shareUrl={url}
         reactions={reactions.post}
         viewerId={viewerId}
+        disclosure={disclosure}
         returnTo={returnTo}
       />
       <CommentSection

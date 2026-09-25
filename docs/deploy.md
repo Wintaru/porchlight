@@ -112,8 +112,10 @@ from the same page.
 
 The MCP door at `/api/mcp` needs no key and no external service: a member mints their
 own token on the settings page. Decide whether to leave `agents` on (`/admin`, the
-Access section) and, if you leave it on, read [agents.md](agents.md) so you can answer
-a member who asks what their assistant may do.
+Access section), check the two daily limits per token beside it, and pick the agent
+disclosure: `footer` (the default) puts a line under every post an agent drafted, and
+`off` shows nothing. If you leave agents on, read [agents.md](agents.md) so you can
+answer a member who asks what their assistant may do.
 
 ## 10. Email — phase 2, issue #22
 

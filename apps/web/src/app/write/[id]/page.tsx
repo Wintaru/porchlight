@@ -64,6 +64,13 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   const notices = (
     <>
       <p data-testid="post-status">{STATUS_TEXT[post.status]}</p>
+      {/* SPEC.md §17: it warns, it does not block. Any save by a person clears it. */}
+      {post.origin === "agent" && post.reviewedAt === null && post.status === "draft" && (
+        <p role="note" data-testid="agent-review-warning">
+          An agent wrote this draft and nobody has saved it here yet. Read it before you
+          publish.
+        </p>
+      )}
       {post.status === "rejected" && post.rejectionReason !== null && (
         <p data-testid="post-rejection-reason">Reason: {post.rejectionReason}</p>
       )}

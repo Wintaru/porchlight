@@ -86,6 +86,8 @@ export default async function AnonymousPostPage({
         shareUrl={`${SITE_URL}${returnTo}`}
         reactions={reactions.post}
         viewerId={viewerId}
+        // An anonymous post is written at a form, never by an agent (D22).
+        disclosure="off"
         returnTo={returnTo}
       />
       <CommentSection

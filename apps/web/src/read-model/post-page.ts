@@ -1,4 +1,4 @@
-import type { DbClient } from "@porchlight/db";
+import type { DbClient, Enums } from "@porchlight/db";
 
 import type { PostCardAuthor, PostCardTag } from "./post-card";
 
@@ -11,7 +11,7 @@ import type { PostCardAuthor, PostCardTag } from "./post-card";
 // this embed resolve to nothing rather than an error for a still-quarantined cover.
 // `mature` is what keeps a mature item's own cover out of its JSON-LD `image` (D18).
 const POST_PAGE_COLUMNS =
-  "id, slug, title, summary, body_html, status, visibility, comments_enabled, rejection_reason, published_at, author_id, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "id, slug, title, summary, body_html, status, visibility, comments_enabled, rejection_reason, published_at, origin, reviewed_at, author_id, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostPage {
   readonly id: string;
@@ -24,6 +24,10 @@ export interface PostPage {
   readonly comments_enabled: boolean;
   readonly rejection_reason: string | null;
   readonly published_at: string | null;
+  // Who wrote the first draft and whether a person has saved it since (D22), for the
+  // agent disclosure line.
+  readonly origin: Enums<"post_origin">;
+  readonly reviewed_at: string | null;
   // The author's profile id, so the comment tree can badge their own replies.
   readonly author_id: string | null;
   readonly author: PostCardAuthor | null;

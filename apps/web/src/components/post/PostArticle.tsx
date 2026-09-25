@@ -1,3 +1,4 @@
+import type { AgentDisclosure } from "@porchlight/core";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -29,6 +30,8 @@ interface PostArticleProps {
   readonly reactions: ItemReactions;
   readonly viewerId: string | undefined;
   readonly returnTo: string;
+  // `site_config.agent_disclosure` (SPEC.md §17).
+  readonly disclosure: AgentDisclosure;
 }
 
 // The Post board's article, the same for a member's post and an anonymous one: tags
@@ -42,7 +45,9 @@ export function PostArticle({
   reactions,
   viewerId,
   returnTo,
+  disclosure,
 }: PostArticleProps) {
+  const agentLine = disclosure === "footer" ? agentLineFor(post) : undefined;
   return (
     <article className={styles.article}>
       {note !== undefined && (
@@ -80,6 +85,11 @@ export function PostArticle({
         data-testid="post-body"
         dangerouslySetInnerHTML={{ __html: post.body_html }}
       />
+      {agentLine !== undefined && (
+        <p className={styles.disclosure} data-testid="agent-disclosure">
+          {agentLine}
+        </p>
+      )}
       {post.status === "published" && (
         <div id="reactions" className={styles.reactions} data-testid="post-reactions">
           <ReactionBar
@@ -92,6 +102,18 @@ export function PostArticle({
       )}
     </article>
   );
+}
+
+// The disclosure line under a post an agent drafted (SPEC.md §17): edited once a person
+// has saved or published it, posted by the assistant when nobody has.
+function agentLineFor(post: PostPage): string | undefined {
+  if (post.origin !== "agent" || post.author === null) {
+    return undefined;
+  }
+  const handle = `@${post.author.handle}`;
+  return post.reviewed_at === null
+    ? `Posted by an assistant for ${handle}`
+    : `Drafted with an assistant, edited by ${handle}`;
 }
 
 function Cover({ post }: { readonly post: PostPage }) {

@@ -107,9 +107,17 @@ Each token may create **5 drafts** and **publish 2 posts** a day. `get_me` repor
 site's real numbers. Over the limit, the tool answers with the cap and the time it
 resets, so your agent can tell you instead of retrying.
 
-The caps are the shipped defaults until the site settings page gains a control for them
-(issue #30). Changing them before that means editing `site_config.agent_limits` by hand,
-as `{"drafts_per_day": 5, "publishes_per_day": 2}`.
+The site's admin sets both caps on `/admin`, in the Access section. A cap of 0 turns
+that action off for every token.
+
+## What readers see
+
+A post your agent drafted says so under it, unless the site's admin turned that off
+(`/admin`, "Agent disclosure"). The line reads "Drafted with an assistant, edited by
+@you" once you have saved or published the post yourself, and "Posted by an assistant
+for @you" when your agent published it and you never opened it. Until you save it,
+the draft carries an "agent draft, not yet reviewed" badge in your drafts list and in
+the moderation queue, and the editor reminds you to read it before you publish.
 
 ## Revoke a token
 

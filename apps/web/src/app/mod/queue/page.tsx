@@ -7,6 +7,7 @@ import {
   type QueueFilter,
   QUEUE_FILTERS,
   ListQueueRequest,
+  type PostOrigin,
   type QueueItem,
   QueueResponse,
   SiteConfigResponse,
@@ -174,6 +175,12 @@ async function heldImagesFor(
   return new Map(urls.filter((entry) => entry !== undefined));
 }
 
+// Every post in the queue says who wrote its first draft (SPEC.md §17).
+const ORIGIN_TEXT: Readonly<Record<PostOrigin, string>> = {
+  editor: "written in the editor",
+  agent: "drafted by an agent",
+};
+
 const TRUST_CHIP: Readonly<Record<TrustLevel, string>> = {
   probation: "probation",
   trusted: "trusted",
@@ -213,8 +220,15 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
             escalated
           </span>
         )}
+        {item.kind === "post" &&
+          item.post.origin === "agent" &&
+          item.post.reviewedAt === null && (
+            <span className="chip chip--warm" data-testid="queue-agent-badge">
+              agent draft, not yet reviewed
+            </span>
+          )}
         <span>
-          {item.kind === "post" ? "Post" : "Comment"} ·{" "}
+          {item.kind === "post" ? `Post · ${ORIGIN_TEXT[item.post.origin]}` : "Comment"} ·{" "}
           {formatDate(createdAt.toISOString())}
         </span>
       </p>
