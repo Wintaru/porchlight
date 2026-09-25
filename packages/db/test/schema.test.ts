@@ -7,6 +7,7 @@ import {
   connect,
   errorCodeOf,
   FOREIGN_KEY_VIOLATION,
+  INSUFFICIENT_PRIVILEGE,
   SEED,
   UNIQUE_VIOLATION,
 } from "./local-stack";
@@ -260,6 +261,75 @@ describe("retention (§7)", () => {
       }),
     );
     expect(code).toBe(CHECK_VIOLATION);
+  });
+
+  test("expired raw addresses are nulled, current and frozen ones kept (#62)", async () => {
+    const rows = await asService(async (tx) => {
+      const insert = (requestId: string, expiresInDays: number, frozen: boolean) => tx`
+        insert into public.submission_evidence (
+          subject_kind, subject_id, anonymous_author_id, source_ip, source_port,
+          raw_ip_expires_at, ip_hash, turnstile_result, request_id, frozen, retain_until
+        ) values (
+          'post', ${SEED.anonymousPendingPost}, ${SEED.anonymousAuthor}, '203.0.113.9',
+          51234, now() + make_interval(days => ${expiresInDays}), 'hash', 'pass',
+          ${requestId}, ${frozen},
+          case when ${frozen} then now() + interval '1 year' end
+        )
+      `;
+      await insert("expired", -1, false);
+      await insert("current", 1, false);
+      await insert("frozen", -1, true);
+      const [swept] = await tx<{ cleared: number }[]>`
+        select public.null_expired_raw_ips() as cleared
+      `;
+      const kept = await tx<
+        {
+          request_id: string;
+          source_ip: string | null;
+          source_port: number | null;
+          ip_hash: string;
+        }[]
+      >`
+        select request_id, host(source_ip) as source_ip, source_port, ip_hash
+        from public.submission_evidence
+        where request_id in ('expired', 'current', 'frozen')
+        order by request_id
+      `;
+      return { cleared: swept?.cleared, kept };
+    });
+
+    expect(rows.cleared).toBe(1);
+    expect(rows.kept).toEqual([
+      {
+        request_id: "current",
+        source_ip: "203.0.113.9",
+        source_port: 51234,
+        ip_hash: "hash",
+      },
+      { request_id: "expired", source_ip: null, source_port: null, ip_hash: "hash" },
+      {
+        request_id: "frozen",
+        source_ip: "203.0.113.9",
+        source_port: 51234,
+        ip_hash: "hash",
+      },
+    ]);
+  });
+
+  test("the raw-address sweep is scheduled, and browser roles cannot run it", async () => {
+    const [job] = await sql<{ schedule: string; command: string }[]>`
+      select schedule, command from cron.job where jobname = 'null-expired-raw-ips'
+    `;
+    expect(job).toEqual({
+      schedule: "17 3 * * *",
+      command: "select public.null_expired_raw_ips()",
+    });
+    for (const role of ["anon", "authenticated"] as const) {
+      const code = await errorCodeOf(() =>
+        asRole(sql, role, (tx) => tx`select public.null_expired_raw_ips()`),
+      );
+      expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
+    }
   });
 
   test("the audit log is append-only", async () => {

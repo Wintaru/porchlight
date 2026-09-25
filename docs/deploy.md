@@ -27,6 +27,14 @@ Guide: [`setup/supabase.md`](setup/supabase.md).
 
    Do not load `supabase/seed.sql` on a hosted project. It holds local test members.
 
+4. Open Integrations, Cron in the dashboard. Make sure the job `null-expired-raw-ips`
+   is there and active. The schema adds it. Once a day it clears raw addresses whose
+   retention window has closed (SPEC.md §7, issue #62). If the job is not there, the
+   migration `20260925170000_null_expired_raw_ips` did not apply: read the output of
+   `supabase db push`. On a self-hosted stack, pg_cron schedules jobs only in the
+   database that `cron.database_name` names (`postgres` by default), so run the schema
+   there.
+
 ## 2. Google sign-in
 
 Guide: [`setup/google-oauth.md`](setup/google-oauth.md).

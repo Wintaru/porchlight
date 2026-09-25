@@ -1016,6 +1016,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      null_expired_raw_ips: { Args: never; Returns: number }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
