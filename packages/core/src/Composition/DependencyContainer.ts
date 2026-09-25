@@ -600,7 +600,14 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           ListQueueRequest,
-          new ListQueueHandler(posts, comments, profiles, mediaAssets, permissions),
+          new ListQueueHandler(
+            posts,
+            comments,
+            profiles,
+            mediaAssets,
+            modActions,
+            permissions,
+          ),
         )
         .register(
           ModerationListReportsRequest,

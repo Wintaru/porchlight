@@ -347,4 +347,46 @@ describe("DependencyContainer: ModerationManager", () => {
       resolvedAt: null,
     });
   });
+
+  test("the queue marks an escalated item, and only that one", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const created = [];
+    for (const title of ["Escalate me", "Leave me be"]) {
+      const response = await container.postManager.execute(
+        new CreateAnonymousPostRequest(
+          VISITOR,
+          { title, bodyMd: "A pending post.", summary: null },
+          {
+            secret: undefined,
+            turnstileToken: undefined,
+            clientIp: "203.0.113.9",
+            userAgent: "test-agent",
+          },
+        ),
+      );
+      if (!(response instanceof AnonymousPostCreatedResponse)) {
+        throw new Error(
+          `expected AnonymousPostCreatedResponse, got ${response.constructor.name}`,
+        );
+      }
+      created.push(response.post.id);
+    }
+    const [escalatedId, otherId] = created;
+
+    const escalated = await container.moderationManager.execute(
+      new EscalateRequest(MIRA, { kind: "post", id: escalatedId ?? "" }, null),
+    );
+    expect(escalated).toBeInstanceOf(ModerationItemResponse);
+
+    const queued = await container.moderationManager.query(
+      new ListQueueRequest(MIRA, "all"),
+    );
+    if (!(queued instanceof QueueResponse)) {
+      throw new Error(`expected QueueResponse, got ${queued.constructor.name}`);
+    }
+    const escalatedOf = (id: string | undefined) =>
+      queued.items.find((item) => item.kind === "post" && item.post.id === id)?.escalated;
+    expect(escalatedOf(escalatedId)).toBe(true);
+    expect(escalatedOf(otherId)).toBe(false);
+  });
 });

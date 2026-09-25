@@ -2,6 +2,9 @@ import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/IComme
 import { LoadCommentsByStatusRequest } from "../../../Accessors/CommentAccessor/Requests/LoadCommentsByStatusRequest";
 import { CommentsLoadedResponse } from "../../../Accessors/CommentAccessor/Responses/CommentsLoadedResponse";
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
+import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import { LoadEscalatedTargetsRequest } from "../../../Accessors/ModActionAccessor/Requests/LoadEscalatedTargetsRequest";
+import { EscalatedTargetsLoadedResponse } from "../../../Accessors/ModActionAccessor/Responses/EscalatedTargetsLoadedResponse";
 import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
 import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
@@ -39,6 +42,7 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     private readonly comments: ICommentAccessor,
     private readonly profiles: IProfileAccessor,
     private readonly mediaAssets: IMediaAssetAccessor,
+    private readonly modActions: IModActionAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
 
@@ -71,17 +75,29 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
       (comment): comment is LiveComment => comment.status !== "tombstone",
     );
 
-    const trustLevels = await this.loadTrustLevels(
-      loadedPosts.posts,
-      pendingComments,
-      context,
-    );
+    // Three lookups that do not depend on each other, so none waits on another. The
+    // escalation read is one request per hundred items, not one per item.
+    const [trustLevels, flaggedCovers, escalated] = await Promise.all([
+      this.loadTrustLevels(loadedPosts.posts, pendingComments, context),
+      this.loadFlaggedCovers(loadedPosts.posts, context),
+      this.modActions.load(
+        new LoadEscalatedTargetsRequest(
+          [
+            ...loadedPosts.posts.map((post) => ({ kind: "post" as const, id: post.id })),
+            ...pendingComments.map((c) => ({ kind: "comment" as const, id: c.id })),
+          ],
+          context,
+        ),
+      ),
+    ]);
     if (trustLevels instanceof ModerationUnavailableResponse) {
       return trustLevels;
     }
-    const flaggedCovers = await this.loadFlaggedCovers(loadedPosts.posts, context);
     if (flaggedCovers instanceof ModerationUnavailableResponse) {
       return flaggedCovers;
+    }
+    if (!(escalated instanceof EscalatedTargetsLoadedResponse)) {
+      return unavailable(correlationId, escalated, "modActions.load");
     }
 
     const items: QueueItem[] = [
@@ -90,11 +106,13 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
         post,
         authorTrustLevel: trustLevelOf(post.author, trustLevels),
         flagged: post.coverMediaId !== null && flaggedCovers.has(post.coverMediaId),
+        escalated: escalated.postIds.has(post.id),
       })),
       ...pendingComments.map((comment): QueueItem => ({
         kind: "comment",
         comment,
         authorTrustLevel: trustLevelOf(comment.author, trustLevels),
+        escalated: escalated.commentIds.has(comment.id),
       })),
     ]
       .filter((item) => matchesFilter(item, filter))
