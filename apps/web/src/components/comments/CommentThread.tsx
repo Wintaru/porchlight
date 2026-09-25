@@ -5,6 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import { RaccoonMark } from "@/components/RaccoonMark";
 import { classNames } from "@/lib/class-names";
 import { formatDate } from "@/lib/format-date";
+import { reportPathFor } from "@/lib/report-link";
 import type { CommentPage, CommentPageNode } from "@/read-model/comments";
 import { type ItemReactions, NO_REACTIONS } from "@/read-model/reactions";
 import { CommentForm } from "./CommentForm";
@@ -122,6 +123,19 @@ function CommentRow({
               canReact={viewer.profileId !== undefined}
               returnTo={returnTo}
             />
+          )}
+          {/* Anyone may report a visible comment but its author (SPEC.md §7). */}
+          {comment.status === "visible" && !isOwn && (
+            <Link
+              className={styles.quietButton}
+              href={reportPathFor(
+                { kind: "comment", id: comment.id },
+                `${returnTo}#${anchor}`,
+              )}
+              data-testid="comment-report"
+            >
+              Report
+            </Link>
           )}
           {mayDelete && (
             <form action={deleteComment}>

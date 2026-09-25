@@ -21,7 +21,7 @@ import { formatDate } from "@/lib/format-date";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { approveItem, escalateItem, hideItem, removeItem, rejectItem } from "./actions";
 import styles from "./queue.module.css";
-import { queueErrorTextFor } from "./queue-messages";
+import { queueErrorTextFor, type StaffOutcome } from "./queue-messages";
 
 interface QueuePageProps {
   readonly searchParams: Promise<{
@@ -44,7 +44,7 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   hidden: "Hidden.",
   removed: "Removed.",
   escalated: "Escalated.",
-};
+} satisfies Partial<Record<StaffOutcome, string>>;
 
 // The moderation queue (SPEC.md §7): pending posts and comments, newest first,
 // filterable to anonymous, probation or flagged. A member who is not staff never

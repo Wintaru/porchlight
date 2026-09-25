@@ -74,6 +74,23 @@ a.name:hover {
   color: var(--muted);
 }
 
+.bylineActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.reportLink {
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.reportLink:hover {
+  color: var(--link);
+  text-decoration: underline;
+}
+
 .body {
   font-size: 18px;
   line-height: 1.7;

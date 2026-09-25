@@ -8,6 +8,7 @@ import { RaccoonMark } from "@/components/RaccoonMark";
 import { ShareButton } from "@/components/ShareButton";
 import { formatDate } from "@/lib/format-date";
 import { readingMinutes } from "@/lib/reading-time";
+import { reportPathFor } from "@/lib/report-link";
 import type { PostPage } from "@/read-model/post-page";
 import type { ItemReactions } from "@/read-model/reactions";
 
@@ -53,7 +54,19 @@ export function PostArticle({
         <h1 className={styles.title}>{post.title}</h1>
         <div className={styles.byline}>
           <Byline post={post} />
-          <ShareButton url={shareUrl} title={post.title} />
+          <div className={styles.bylineActions}>
+            <ShareButton url={shareUrl} title={post.title} />
+            {/* Anyone may report a published post (SPEC.md §7), except its author. */}
+            {post.status === "published" && viewerId !== post.author_id && (
+              <Link
+                className={styles.reportLink}
+                href={reportPathFor({ kind: "post", id: post.id }, returnTo)}
+                data-testid="post-report"
+              >
+                Report
+              </Link>
+            )}
+          </div>
         </div>
       </header>
       <div

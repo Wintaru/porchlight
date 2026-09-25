@@ -3,6 +3,7 @@
 import {
   type Actor,
   ApproveItemRequest,
+  DismissReportsRequest,
   EscalateRequest,
   HideItemRequest,
   type ModerationTarget,
@@ -19,84 +20,111 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
-import type { QueueErrorCode } from "./queue-messages";
+import type { QueueErrorCode, StaffOutcome } from "./queue-messages";
 
-// The queue's Server Functions: approve, reject, hide, remove, escalate. The Manager
-// owns every rule; these parse the form, call it, and send the queue back to itself
-// with a code the page turns into a sentence.
+// The staff pages' Server Functions: approve, reject, hide, remove, escalate, and
+// dismiss a report. The Manager owns every rule; these parse the form, call it, and
+// send the page the form came from — the queue or the reports page — back to itself
+// with a code it turns into a sentence.
 
-const QUEUE_PATH = "/mod/queue";
+const STAFF_PATHS = ["/mod/queue", "/mod/reports"] as const;
+type StaffPath = (typeof STAFF_PATHS)[number];
 
 export async function approveItem(formData: FormData): Promise<void> {
-  const actor = await requireStaff();
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withError("unavailable"));
+    redirect(withError(path, "unavailable"));
   }
   const response = await getDependencyContainer().moderationManager.execute(
     new ApproveItemRequest(actor, target),
   );
-  finish(response, "approved");
+  finish(response, path, "approved");
 }
 
 export async function rejectItem(formData: FormData): Promise<void> {
-  const actor = await requireStaff();
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
   const target = targetOf(formData);
   const reason = formData.get("reason");
   if (target === undefined || typeof reason !== "string") {
-    redirect(withError("unavailable"));
+    redirect(withError(path, "unavailable"));
   }
   const response = await getDependencyContainer().moderationManager.execute(
     new RejectItemRequest(actor, target, reason),
   );
-  finish(response, "rejected");
+  finish(response, path, "rejected");
 }
 
 export async function hideItem(formData: FormData): Promise<void> {
-  const actor = await requireStaff();
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withError("unavailable"));
+    redirect(withError(path, "unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
     new HideItemRequest(actor, target, reason),
   );
-  finish(response, "hidden");
+  finish(response, path, "hidden");
 }
 
 export async function removeItem(formData: FormData): Promise<void> {
-  const actor = await requireStaff();
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withError("unavailable"));
+    redirect(withError(path, "unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
     new RemoveItemRequest(actor, target, reason),
   );
-  finish(response, "removed");
+  finish(response, path, "removed");
 }
 
 export async function escalateItem(formData: FormData): Promise<void> {
-  const actor = await requireStaff();
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
   const target = targetOf(formData);
   if (target === undefined) {
-    redirect(withError("unavailable"));
+    redirect(withError(path, "unavailable"));
   }
   const reason = optionalReasonOf(formData);
   const response = await getDependencyContainer().moderationManager.execute(
     new EscalateRequest(actor, target, reason),
   );
-  finish(response, "escalated");
+  finish(response, path, "escalated");
 }
 
-async function requireStaff(): Promise<Actor & { kind: "member" }> {
+export async function dismissReports(formData: FormData): Promise<void> {
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
+  const target = targetOf(formData);
+  if (target === undefined) {
+    redirect(withError(path, "unavailable"));
+  }
+  const reason = optionalReasonOf(formData);
+  const response = await getDependencyContainer().moderationManager.execute(
+    new DismissReportsRequest(actor, target, reason),
+  );
+  finish(response, path, "dismissed");
+}
+
+async function requireStaff(path: StaffPath): Promise<Actor & { kind: "member" }> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
-    redirect(signInPathFor(QUEUE_PATH));
+    redirect(signInPathFor(path));
   }
   return actor;
+}
+
+// The page to go back to: one of the staff pages, never an address from the form.
+function staffPathOf(formData: FormData): StaffPath {
+  const from = formData.get("from");
+  return STAFF_PATHS.find((path) => path === from) ?? "/mod/queue";
 }
 
 function targetOf(formData: FormData): ModerationTarget | undefined {
@@ -119,28 +147,29 @@ function optionalReasonOf(formData: FormData): string | null {
 
 // Typed by the codes queue-messages.ts has a sentence for, so a new code cannot reach
 // the page without one.
-function withError(code: QueueErrorCode): string {
-  return withCode("error", code);
+function withError(path: StaffPath, code: QueueErrorCode): string {
+  return withCode(path, "error", code);
 }
 
-function withCode(key: string, code: string): string {
-  return `${QUEUE_PATH}?${key}=${encodeURIComponent(code)}`;
+function withCode(path: StaffPath, key: string, code: string): string {
+  return `${path}?${key}=${encodeURIComponent(code)}`;
 }
 
 function finish(
   response: object & { readonly correlationId: string },
-  outcome: string,
+  path: StaffPath,
+  outcome: StaffOutcome,
 ): void {
   if (response instanceof ModerationItemResponse) {
-    revalidatePath(QUEUE_PATH);
-    redirect(withCode("done", outcome));
+    revalidatePath(path);
+    redirect(withCode(path, "done", outcome));
   }
   if (response instanceof ReasonRequiredResponse) {
-    redirect(withError("reason-required"));
+    redirect(withError(path, "reason-required"));
   }
   if (response instanceof ModerationForbiddenResponse) {
-    redirect(withError(response.reason));
+    redirect(withError(path, response.reason));
   }
   console.error(`moderation action failed [${response.correlationId}]`, response);
-  redirect(withError("unavailable"));
+  redirect(withError(path, "unavailable"));
 }

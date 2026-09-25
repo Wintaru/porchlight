@@ -17,6 +17,11 @@ const ERROR_TEXT: Readonly<Record<QueueErrorCode, string>> = {
   unavailable: "That did not go through. Try again in a moment.",
 };
 
+// Every outcome a staff action reports back as `?done=`. The pages key their sentences
+// by it, so a misspelt outcome is a type error rather than a silent "Done."
+export type StaffOutcome =
+  "approved" | "rejected" | "hidden" | "removed" | "escalated" | "dismissed";
+
 function isErrorCode(code: string): code is QueueErrorCode {
   return Object.hasOwn(ERROR_TEXT, code);
 }

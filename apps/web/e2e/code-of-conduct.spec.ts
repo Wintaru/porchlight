@@ -2,9 +2,8 @@ import { REPORT_REASONS } from "@porchlight/core";
 import { expect, test } from "@playwright/test";
 
 // Issue #17's Done-when: the report-reason list on the code of conduct page matches
-// `REPORT_REASONS`, the single shared constant. There is no report form to compare
-// against yet — building one is issue #40 — so this checks the page against its source
-// of truth directly; once #40 lands, extend this to compare against the form too.
+// `REPORT_REASONS`, the single shared constant — and, since #40, the report form's own
+// reason list, word for word.
 test("the code of conduct page lists exactly the reasons in REPORT_REASONS", async ({
   page,
 }) => {
@@ -16,6 +15,13 @@ test("the code of conduct page lists exactly the reasons in REPORT_REASONS", asy
   for (const reason of REPORT_REASONS) {
     await expect(page.getByTestId(`report-reason-${reason}`)).toBeVisible();
   }
+
+  const listed = await items.allTextContents();
+  await page.goto("/@theo/hello-from-the-porch");
+  await page.getByTestId("post-report").click();
+  await expect(
+    page.getByTestId("report-reason").locator("option:not([disabled])"),
+  ).toHaveText(listed);
 });
 
 test("the code of conduct page shows the configured region's reporting target", async ({

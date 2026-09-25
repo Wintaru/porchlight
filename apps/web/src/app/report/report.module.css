@@ -1,0 +1,26 @@
+/* The item being reported, quoted above the form. */
+.item {
+  margin: 0;
+  padding: 14px 18px;
+  border-left: 3px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.itemLabel {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.details {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}

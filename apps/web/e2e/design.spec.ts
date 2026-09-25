@@ -48,6 +48,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/auth/dev-sign-in" },
   { path: "/auth/sign-in-failed" },
   { path: "/no-such-page", status: 404 },
+  // The report form for the seeded post (#40).
+  { path: "/report?post=00000000-0000-4000-8000-0000000000b2&from=/" },
   { path: "/", as: THEO },
   { path: "/@theo/hello-from-the-porch", as: THEO },
   // A member sees the claim form a visitor does not.
@@ -58,6 +60,7 @@ const PAGES: readonly PageCase[] = [
   { path: "/settings/erase", as: THEO },
   { path: "/mod/queue", as: MIRA },
   { path: "/mod/queue", as: LAMPLIGHTER },
+  { path: "/mod/reports", as: MIRA },
   { path: "/admin", as: LAMPLIGHTER },
 ];
 

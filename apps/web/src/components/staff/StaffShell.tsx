@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import styles from "./staff.module.css";
 
 interface StaffShellProps {
-  readonly current: "queue" | "admin";
+  readonly current: "queue" | "reports" | "admin";
   readonly isAdmin: boolean;
   readonly aside?: ReactNode;
   readonly children: ReactNode;
@@ -25,6 +25,14 @@ export function StaffShell({ current, isAdmin, aside, children }: StaffShellProp
               aria-current={current === "queue" ? "page" : undefined}
             >
               Moderation queue
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/mod/reports"
+              aria-current={current === "reports" ? "page" : undefined}
+            >
+              Reports
             </Link>
           </li>
           {isAdmin && (
