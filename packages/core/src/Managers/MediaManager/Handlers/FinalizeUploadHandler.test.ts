@@ -244,6 +244,7 @@ describe("FinalizeUploadHandler", () => {
     expect(assetState.evidence).toHaveLength(1);
     expect(assetState.evidence[0]).toMatchObject({
       sourceIp: CLIENT_IP,
+      sourcePort: null,
       userAgent: "test-agent",
       turnstileResult: "not_required",
     });
@@ -368,6 +369,27 @@ describe("FinalizeUploadHandler", () => {
     expect(storageState.objects.has(storageState.key(QUARANTINE_BUCKET, path))).toBe(
       false,
     );
+  });
+
+  test("an address with a port behind a proxy splits into its own columns (#64)", async () => {
+    const { handler, assetState, seed } = harness();
+    seed("44444444-4444-4444-8444-444444444444", "porch.png", PNG_BYTES);
+
+    const result = await handler.handle(
+      new FinalizeUploadRequest(
+        THEO,
+        "44444444-4444-4444-8444-444444444444",
+        "porch.png",
+        `${CLIENT_IP}:51234`,
+        "test-agent",
+      ),
+    );
+
+    expect(result).toBeInstanceOf(MediaFinalizedResponse);
+    expect(assetState.evidence[0]).toMatchObject({
+      sourceIp: CLIENT_IP,
+      sourcePort: 51234,
+    });
   });
 
   test("a visitor cannot finalize a member upload", async () => {

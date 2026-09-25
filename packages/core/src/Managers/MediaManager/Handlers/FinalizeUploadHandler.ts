@@ -31,6 +31,7 @@ import type { ImageClassification } from "../../../Common/ImageClassification";
 import { LOCKED_RETENTION_DAYS } from "../../../Common/Retention";
 import type { ScanStatus } from "../../../Common/ScanStatus";
 import { hashIp } from "../../../Utilities/anonymous/hashIp";
+import { parseClientAddress } from "../../../Utilities/anonymous/parseClientAddress";
 import type { IAttachmentEngine } from "../../../Engines/AttachmentEngine/IAttachmentEngine";
 import { ClassifyAttachmentRequest } from "../../../Engines/AttachmentEngine/Requests/ClassifyAttachmentRequest";
 import { AttachmentClassifiedResponse } from "../../../Engines/AttachmentEngine/Responses/AttachmentClassifiedResponse";
@@ -212,7 +213,9 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     if (!(retentionDays instanceof RawIpRetentionDaysLoadedResponse)) {
       return unavailable(correlationId, retentionDays, "siteConfig.load");
     }
-    const ipHash = await hashIp(this.options.ipHashSalt, clientIp);
+    // A proxy may append a port, or send text that is no address at all (#64).
+    const address = parseClientAddress(clientIp);
+    const ipHash = await hashIp(this.options.ipHashSalt, address.ip ?? clientIp);
 
     const stored = await this.mediaAssets.store(
       new StoreNewMediaAssetRequest(
@@ -229,7 +232,8 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
           retainUntil: verdict.retainUntil,
         },
         {
-          sourceIp: clientIp,
+          sourceIp: address.ip,
+          sourcePort: address.port,
           ipHash,
           rawIpExpiresAt: new Date(
             request.timestamp.getTime() + retentionDays.days * MS_PER_DAY,

@@ -1,7 +1,6 @@
 import type { DbClient } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
-import { UNTRUSTED_CLIENT_IP } from "../../../Common/Retention";
 import type { StoreNewMediaAssetRequest } from "../Requests/StoreNewMediaAssetRequest";
 import { MediaAssetAccessFailedResponse } from "../Responses/MediaAssetAccessFailedResponse";
 import { MediaAssetStoredResponse } from "../Responses/MediaAssetStoredResponse";
@@ -24,8 +23,6 @@ export class SupabaseStoreNewMediaAssetHandler implements IHandler<
     request: StoreNewMediaAssetRequest,
   ): Promise<MediaAssetStoredResponse | MediaAssetAccessFailedResponse> {
     const { asset, evidence, auditEvent, correlationId } = request;
-    const sourceIp =
-      evidence.sourceIp === UNTRUSTED_CLIENT_IP ? undefined : evidence.sourceIp;
     const { data, error } = await this.db.rpc("finalize_media_scan", {
       p_id: asset.id,
       p_storage_path: asset.storagePath,
@@ -47,7 +44,8 @@ export class SupabaseStoreNewMediaAssetHandler implements IHandler<
       ...(asset.retainUntil !== null
         ? { p_retain_until: asset.retainUntil.toISOString() }
         : {}),
-      ...(sourceIp !== undefined ? { p_source_ip: sourceIp } : {}),
+      ...(evidence.sourceIp !== null ? { p_source_ip: evidence.sourceIp } : {}),
+      ...(evidence.sourcePort !== null ? { p_source_port: evidence.sourcePort } : {}),
       ...(evidence.userAgent !== undefined ? { p_user_agent: evidence.userAgent } : {}),
       ...(evidence.perceptualHash !== null
         ? { p_perceptual_hash: evidence.perceptualHash }

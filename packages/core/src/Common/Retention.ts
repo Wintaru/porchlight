@@ -9,7 +9,7 @@ export const LOCKED_RETENTION_DAYS = 365;
 export const DEFAULT_RAW_IP_RETENTION_DAYS = 90;
 
 // "No trustworthy address was available" (docs/setup/turnstile.md's
-// `TRUST_FORWARDED_FOR`), never a made-up address. Shared between apps/web's
-// request-meta helper and the media accessor that turns this sentinel into a null
-// `inet` column, so the two sides cannot drift on the literal.
+// `TRUST_FORWARDED_FOR`), never a made-up address. apps/web's request-meta helper sends
+// it; parseClientAddress reads it as no address, so the evidence row stores a null
+// `inet` rather than the placeholder.
 export const UNTRUSTED_CLIENT_IP = "unknown";
