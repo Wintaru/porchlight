@@ -77,17 +77,19 @@ insert into public.tags (id, slug, name) values
 
 -- Media --------------------------------------------------------------------------------
 
--- One approved image (cover of the first post) and one still in quarantine.
+-- One approved image (cover of the first post) and one still in quarantine. Storage
+-- paths are keys inside their bucket; the cover's files are seeded into local storage
+-- from supabase/seed-storage (config.toml).
 insert into public.media_assets (
   id, owner_id, storage_path, published_path, kind, mime_type, original_filename, bytes,
   sha256, scan_status
 ) values
   ('00000000-0000-4000-8000-0000000000d1', '00000000-0000-4000-8000-000000000003',
-   'quarantine/theo/porch-at-dusk.jpg', 'public-media/theo/porch-at-dusk.jpg', 'image',
-   'image/jpeg', 'porch-at-dusk.jpg', 184320,
+   'theo/porch-at-dusk.jpg', 'public-media/theo/porch-at-dusk.jpg', 'image',
+   'image/jpeg', 'porch-at-dusk.jpg', 15996,
    encode(extensions.digest('seed-media-1', 'sha256'), 'hex'), 'clear'),
   ('00000000-0000-4000-8000-0000000000d2', '00000000-0000-4000-8000-000000000004',
-   'quarantine/june/first-trail.jpg', null, 'image', 'image/jpeg', 'first-trail.jpg',
+   'june/first-trail.jpg', null, 'image', 'image/jpeg', 'first-trail.jpg',
    90112, encode(extensions.digest('seed-media-2', 'sha256'), 'hex'), 'pending');
 
 -- Posts --------------------------------------------------------------------------------

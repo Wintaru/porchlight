@@ -1,3 +1,9 @@
+import { FakeStoreMediaAssetChangesHandler } from "../../../Accessors/MediaAssetAccessor/Handlers/FakeStoreMediaAssetChangesHandler";
+import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
+import { FakeUploadStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeUploadStorageObjectHandler";
+import { UploadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
+import { createMediaPublishEngine } from "../../../Composition/createMediaPublishEngine";
+import sharp from "sharp";
 import { describe, expect, test } from "vitest";
 
 import { FakeHashMatchState } from "../../../Accessors/HashMatchAccessor/FakeHashMatchState";
@@ -67,6 +73,7 @@ const THEO: Actor & { kind: "member" } = {
   },
 };
 const QUARANTINE_BUCKET = "quarantine";
+const PUBLIC_BUCKET = "public-media";
 const IP_HASH_SALT = "test-salt";
 const CLIENT_IP = "203.0.113.5";
 
@@ -88,7 +95,12 @@ function harness(
 ) {
   const storageState = new FakeMediaStorageState();
   const storage = new MediaStorageAccessor(
-    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder()
+      .register(
+        UploadStorageObjectRequest,
+        new FakeUploadStorageObjectHandler(storageState),
+      )
+      .build(),
     new HandlerResolverBuilder()
       .register(
         DownloadStorageObjectRequest,
@@ -107,6 +119,10 @@ function harness(
   const mediaAssets = new MediaAssetAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewMediaAssetRequest, new FakeStoreNewMediaAssetHandler(assetState))
+      .register(
+        StoreMediaAssetChangesRequest,
+        new FakeStoreMediaAssetChangesHandler(assetState),
+      )
       .build(),
     new HandlerResolverBuilder()
       .register(LoadMediaAssetByIdRequest, new FakeLoadMediaAssetByIdHandler(assetState))
@@ -184,6 +200,14 @@ function harness(
     imageClassifier,
     moderationPolicy,
     quotaEngine,
+    createMediaPublishEngine(
+      {
+        STORAGE_BUCKET_QUARANTINE: QUARANTINE_BUCKET,
+        STORAGE_BUCKET_PUBLIC: PUBLIC_BUCKET,
+      },
+      storage,
+      mediaAssets,
+    ),
     { quarantineBucket: QUARANTINE_BUCKET, ipHashSalt: IP_HASH_SALT },
   );
 
@@ -254,6 +278,51 @@ describe("FinalizeUploadHandler", () => {
     expect(assetState.assets.get("66666666-6666-4666-8666-666666666666")).toMatchObject({
       scanStatus: "locked",
     });
+  });
+
+  test("a clear image gets a re-encoded public copy with its metadata stripped (#36)", async () => {
+    const { assetState, storageState, seed, finalize } = harness();
+    const id = "88888888-8888-4888-8888-888888888888";
+    const original = await sharp({
+      create: { width: 8, height: 6, channels: 3, background: "#c9803c" },
+    })
+      .jpeg()
+      .withExif({ IFD0: { Artist: "Theo", Copyright: "GPS-bearing original" } })
+      .toBuffer();
+    expect((await sharp(original).metadata()).exif).toBeDefined();
+    seed(id, "porch.jpg", new Uint8Array(original));
+
+    const result = await finalize(id, "porch.jpg");
+
+    expect(result).toMatchObject({
+      asset: { scanStatus: "clear", publishedPath: `${PUBLIC_BUCKET}/${id}.jpg` },
+    });
+    expect(assetState.assets.get(id)?.publishedPath).toBe(`${PUBLIC_BUCKET}/${id}.jpg`);
+    const copy = storageState.objects.get(storageState.key(PUBLIC_BUCKET, `${id}.jpg`));
+    if (copy === undefined) {
+      throw new Error("no public copy was written");
+    }
+    const metadata = await sharp(copy).metadata();
+    expect(metadata).toMatchObject({ format: "jpeg", width: 8, height: 6 });
+    expect(metadata.exif).toBeUndefined();
+  });
+
+  test("a flagged image gets no public copy until a moderator approves it", async () => {
+    const { assetState, storageState, seed, finalize } = harness("clear", "flagged");
+    const id = "99999999-9999-4999-8999-999999999999";
+    const original = await sharp({
+      create: { width: 4, height: 4, channels: 3, background: "#333333" },
+    })
+      .png()
+      .toBuffer();
+    seed(id, "study.png", new Uint8Array(original));
+
+    await finalize(id, "study.png");
+
+    expect(assetState.assets.get(id)?.publishedPath).toBeNull();
+    expect(storageState.objects.has(storageState.key(PUBLIC_BUCKET, `${id}.png`))).toBe(
+      false,
+    );
   });
 
   test("a flagged classification finalizes but is held for review", async () => {

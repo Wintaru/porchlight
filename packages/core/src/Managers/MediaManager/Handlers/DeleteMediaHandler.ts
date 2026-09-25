@@ -11,6 +11,7 @@ import { StorageObjectRemovedResponse } from "../../../Accessors/MediaStorageAcc
 import type { IQuotaAccessor } from "../../../Accessors/QuotaAccessor/IQuotaAccessor";
 import { AdjustQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/AdjustQuotaUsageRequest";
 import { QuotaUsageStoredResponse } from "../../../Accessors/QuotaAccessor/Responses/QuotaUsageStoredResponse";
+import { publishedObjectOf } from "../../../Utilities/media/publishedObjectOf";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
@@ -65,6 +66,7 @@ export class DeleteMediaHandler implements IHandler<DeleteMediaRequest, Result> 
         id: mediaId,
         owner: asset.owner,
         publishedPath: asset.publishedPath,
+        scanStatus: asset.scanStatus,
       },
       context,
     );
@@ -87,6 +89,17 @@ export class DeleteMediaHandler implements IHandler<DeleteMediaRequest, Result> 
     );
     if (!(removedObject instanceof StorageObjectRemovedResponse)) {
       return unavailable(correlationId, removedObject, "storage.remove");
+    }
+    // The public copy goes too (#36): a deleted upload must not stay reachable by URL.
+    const published =
+      asset.publishedPath === null ? undefined : publishedObjectOf(asset.publishedPath);
+    if (published !== undefined) {
+      const removedCopy = await this.storage.remove(
+        new RemoveStorageObjectRequest(published.bucket, published.path, context),
+      );
+      if (!(removedCopy instanceof StorageObjectRemovedResponse)) {
+        return unavailable(correlationId, removedCopy, "storage.remove");
+      }
     }
 
     const removedRow = await this.mediaAssets.remove(

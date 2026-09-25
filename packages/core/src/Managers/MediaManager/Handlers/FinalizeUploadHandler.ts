@@ -41,6 +41,7 @@ import { ContentClearResponse } from "../../../Engines/ModerationPolicyEngine/Re
 import { ContentFlaggedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentFlaggedResponse";
 import { ContentLockedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentLockedResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
+import type { IMediaPublishEngine } from "../../../Engines/MediaPublishEngine/IMediaPublishEngine";
 import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
 import { EvaluateQuotaRequest } from "../../../Engines/QuotaEngine/Requests/EvaluateQuotaRequest";
 import { QuotaAllowedResponse } from "../../../Engines/QuotaEngine/Responses/QuotaAllowedResponse";
@@ -48,6 +49,7 @@ import { QuotaExceededResponse } from "../../../Engines/QuotaEngine/Responses/Qu
 import { sha256HexOfBytes } from "../../../Utilities/media/sha256HexOfBytes";
 import { mediaStoragePath } from "../mediaStoragePath";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
+import { publishIfClear } from "../publishIfClear";
 import { permit } from "../permit";
 import type { FinalizeUploadRequest } from "../Requests/FinalizeUploadRequest";
 import { MediaFinalizedResponse } from "../Responses/MediaFinalizedResponse";
@@ -87,6 +89,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     private readonly imageClassifier: IImageClassifierAccessor,
     private readonly moderationPolicy: IModerationPolicyEngine,
     private readonly quotaEngine: IQuotaEngine,
+    private readonly publisher: IMediaPublishEngine,
     private readonly options: MediaManagerOptions,
   ) {}
 
@@ -257,7 +260,11 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     if (verdict.scanStatus === "locked") {
       return new MediaRefusedResponse(correlationId);
     }
-    return new MediaFinalizedResponse(correlationId, stored.asset);
+    const asset = await publishIfClear(this.publisher, stored.asset, downloaded.bytes, {
+      correlationId,
+      timestamp: request.timestamp,
+    });
+    return new MediaFinalizedResponse(correlationId, asset);
   }
 
   // The fixed order (SPEC.md §7, WAYFINDER D17): hash match, then the purpose-built

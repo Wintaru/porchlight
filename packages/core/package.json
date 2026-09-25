@@ -17,6 +17,7 @@
     "rehype-stringify": "catalog:",
     "remark-parse": "catalog:",
     "remark-rehype": "catalog:",
+    "sharp": "catalog:",
     "unified": "catalog:"
   },
   "devDependencies": {

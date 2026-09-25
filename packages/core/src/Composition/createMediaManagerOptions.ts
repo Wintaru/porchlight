@@ -1,7 +1,6 @@
 import type { Environment } from "./Environment";
+import { quarantineBucketOf } from "./mediaBuckets";
 import type { MediaManagerOptions } from "../Managers/MediaManager/MediaManagerOptions";
-
-const DEFAULT_QUARANTINE_BUCKET = "quarantine";
 
 export function createMediaManagerOptions(env: Environment): MediaManagerOptions {
   const ipHashSalt = env.EVIDENCE_IP_HASH_SALT;
@@ -9,7 +8,7 @@ export function createMediaManagerOptions(env: Environment): MediaManagerOptions
     throw new Error("EVIDENCE_IP_HASH_SALT must be set to finalize an upload.");
   }
   return {
-    quarantineBucket: env.STORAGE_BUCKET_QUARANTINE ?? DEFAULT_QUARANTINE_BUCKET,
+    quarantineBucket: quarantineBucketOf(env),
     ipHashSalt,
   };
 }

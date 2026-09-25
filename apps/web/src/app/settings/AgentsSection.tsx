@@ -1,5 +1,6 @@
 import {
   type Actor,
+  AGENT_SCOPES,
   type AgentToken,
   ListAgentTokensRequest,
   TokensResponse,
@@ -49,7 +50,7 @@ export async function AgentsSection({ actor, revoked, errorText }: AgentsSection
           {errorText}
         </p>
       )}
-      <MintTokenForm />
+      <MintTokenForm scopes={AGENT_SCOPES} />
       <h3>Your tokens</h3>
       {tokens === undefined ? (
         <p role="alert" className="form-alert">

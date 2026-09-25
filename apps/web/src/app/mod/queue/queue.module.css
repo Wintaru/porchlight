@@ -123,3 +123,8 @@
   color: var(--muted);
   text-align: center;
 }
+
+/* A held cover, blurred and grey until the moderator chooses to look (SPEC.md §7). */
+.heldImage {
+  max-width: 420px;
+}

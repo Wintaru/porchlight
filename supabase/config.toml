@@ -117,12 +117,18 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-# Uncomment to configure local storage buckets
-# [storage.buckets.images]
-# public = false
-# file_size_limit = "50MiB"
-# allowed_mime_types = ["image/png", "image/jpeg"]
-# objects_path = "./images"
+# The two buckets are created by supabase/migrations/20260912215700_storage_buckets.sql,
+# which production runs too. These entries only seed local objects: the seeded cover in
+# supabase/seed.sql points at real files, so the local post page shows a real image.
+[storage.buckets.quarantine]
+public = false
+file_size_limit = "50MiB"
+objects_path = "./seed-storage/quarantine"
+
+[storage.buckets.public-media]
+public = true
+file_size_limit = "50MiB"
+objects_path = "./seed-storage/public-media"
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]

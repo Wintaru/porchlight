@@ -2,12 +2,14 @@
 
 import {
   type Actor,
+  ApproveAsMatureRequest,
   ApproveItemRequest,
   DismissReportsRequest,
   EscalateRequest,
   HideItemRequest,
   type ModerationTarget,
   ModerationForbiddenResponse,
+  MatureApprovedResponse,
   ModerationItemResponse,
   ReasonRequiredResponse,
   RejectItemRequest,
@@ -38,6 +40,29 @@ export async function approveItem(formData: FormData): Promise<void> {
     redirect(withError(path, "unavailable"));
   }
   const response = await getDependencyContainer().moderationManager.execute(
+    new ApproveItemRequest(actor, target),
+  );
+  finish(response, path, "approved");
+}
+
+// A post held for a flagged cover (#36): the image is approved with the mature tag —
+// which publishes its blurred-by-default copy — and then the post itself.
+export async function approveAsMature(formData: FormData): Promise<void> {
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
+  const target = targetOf(formData);
+  const mediaId = formData.get("mediaId");
+  if (target === undefined || typeof mediaId !== "string" || !isEntityId(mediaId)) {
+    redirect(withError(path, "unavailable"));
+  }
+  const container = getDependencyContainer();
+  const tagged = await container.moderationManager.execute(
+    new ApproveAsMatureRequest(actor, mediaId),
+  );
+  if (!(tagged instanceof MatureApprovedResponse)) {
+    finish(tagged, path, "approved");
+  }
+  const response = await container.moderationManager.execute(
     new ApproveItemRequest(actor, target),
   );
   finish(response, path, "approved");
@@ -159,7 +184,7 @@ function finish(
   response: object & { readonly correlationId: string },
   path: StaffPath,
   outcome: StaffOutcome,
-): void {
+): never {
   if (response instanceof ModerationItemResponse) {
     revalidatePath(path);
     redirect(withCode(path, "done", outcome));

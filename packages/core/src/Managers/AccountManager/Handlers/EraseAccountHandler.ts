@@ -8,6 +8,7 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import { EraseProfileRequest } from "../../../Accessors/ProfileAccessor/Requests/EraseProfileRequest";
 import { ProfileErasedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileErasedResponse";
 import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
+import { publishedObjectOf } from "../../../Utilities/media/publishedObjectOf";
 import type { IHandler } from "../../../Common/IHandler";
 import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
@@ -62,11 +63,20 @@ export class EraseAccountHandler implements IHandler<EraseAccountRequest, Result
       return unavailable(correlationId, loadedMedia, "mediaAssets.load");
     }
     for (const asset of loadedMedia.assets.filter(isNotRetained)) {
-      const removed = await this.mediaStorage.remove(
-        new RemoveStorageObjectRequest(this.quarantineBucket, asset.storagePath, context),
-      );
-      if (!(removed instanceof StorageObjectRemovedResponse)) {
-        return unavailable(correlationId, removed, "mediaStorage.remove");
+      // The quarantine original and, once there is one, the public copy (#36).
+      const published =
+        asset.publishedPath === null ? undefined : publishedObjectOf(asset.publishedPath);
+      const objects = [
+        { bucket: this.quarantineBucket, path: asset.storagePath },
+        ...(published === undefined ? [] : [published]),
+      ];
+      for (const { bucket, path } of objects) {
+        const removed = await this.mediaStorage.remove(
+          new RemoveStorageObjectRequest(bucket, path, context),
+        );
+        if (!(removed instanceof StorageObjectRemovedResponse)) {
+          return unavailable(correlationId, removed, "mediaStorage.remove");
+        }
       }
     }
 

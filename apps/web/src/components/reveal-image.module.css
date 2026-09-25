@@ -1,0 +1,55 @@
+/* See RevealImage.tsx: the blur lifts when its checkbox is checked. */
+.wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: blur(28px);
+  transform: scale(1.08);
+  transition: filter 0.2s ease;
+}
+
+.wrap[data-mode="review"] .image {
+  filter: blur(24px) grayscale(1);
+}
+
+/* Present for the keyboard and screen readers, drawn by its label. */
+.toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.label {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 60%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.toggle:focus-visible + .image + .label {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.toggle:checked + .image {
+  filter: none;
+  transform: none;
+}
+
+.toggle:checked + .image + .label {
+  display: none;
+}

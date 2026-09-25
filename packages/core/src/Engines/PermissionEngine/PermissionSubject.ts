@@ -1,6 +1,7 @@
 import type { CommentStatus } from "../../Common/CommentStatus";
 import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { PostStatus } from "../../Common/PostStatus";
+import type { ScanStatus } from "../../Common/ScanStatus";
 
 // What an action is aimed at. A rule narrows on `kind` before it reads anything else,
 // so a rule handed the wrong subject is a type error. `site` is for actions with no
@@ -27,6 +28,7 @@ export type PermissionSubject =
       readonly id: string;
       readonly owner: ContentAuthor;
       readonly publishedPath: string | null;
+      readonly scanStatus: ScanStatus;
     }
   | { readonly kind: "anonymousAuthor"; readonly id: string }
   | { readonly kind: "site" };

@@ -426,18 +426,22 @@ async function mayUploadMediaAnonymously(
   return posting === "anyone" ? undefined : "posting-closed";
 }
 
-// A published copy is everyone's to read, visitors included, the same wall
-// `mayViewPost` draws. Nothing this issue builds ever sets `publishedPath` (#10/#11's
-// job), so in practice this branch is future-facing and every upload today falls to the
-// owner-or-admin check below.
+// `media.view` opens the quarantine original — the upload as it arrived, metadata and
+// all. A published copy needs no permission: it is a public URL (#36). The original is
+// its owner's, an admin's, or a moderator's, who has to look at a flagged image to
+// decide it — published or not, since the public copy is not the original. Nobody views
+// a locked item, not its owner and not staff (SPEC.md §7).
 function mayViewMedia(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
-  if (subject.kind !== "media") {
+  if (subject.kind !== "media" || subject.scanStatus === "locked") {
     return Promise.resolve("not-allowed");
   }
-  if (subject.publishedPath !== null) {
-    return Promise.resolve(undefined);
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
   }
-  return mayDeleteMedia(actor, subject);
+  const isOwner = subject.owner.kind === "member" && subject.owner.profileId === gate.id;
+  const isStaff = gate.role === "admin" || gate.role === "moderator";
+  return Promise.resolve(verdict(isOwner || isStaff));
 }
 
 // The owner, or an admin. An anonymous author's upload has no member to authorize a

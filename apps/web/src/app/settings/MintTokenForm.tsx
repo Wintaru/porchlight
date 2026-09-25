@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_SCOPES, type AgentScope } from "@porchlight/core";
+import type { AgentScope } from "@porchlight/core";
 import { useActionState } from "react";
 
 import { EXPIRY_CHOICES, type ExpiryChoice } from "./parse-agent-token-form";
@@ -26,7 +26,13 @@ const IDLE: MintState = { kind: "idle" };
 // The mint form and, once, the token it produced (SPEC.md §17). `useActionState` keeps
 // the raw token in this component's memory only: a reload clears it, and nothing on the
 // server can show it again.
-export function MintTokenForm() {
+interface MintTokenFormProps {
+  // Handed down by the server parent: a client component takes only types from the
+  // core, never values, so the core's server-only modules stay out of the browser.
+  readonly scopes: readonly AgentScope[];
+}
+
+export function MintTokenForm({ scopes }: MintTokenFormProps) {
   const [state, formAction, pending] = useActionState(mintAgentToken, IDLE);
 
   if (state.kind === "minted") {
@@ -66,7 +72,7 @@ export function MintTokenForm() {
       </label>
       <fieldset className={styles.scopes}>
         <legend className="field-label">Scopes</legend>
-        {AGENT_SCOPES.map((scope) => (
+        {scopes.map((scope) => (
           <label key={scope} className="check">
             <input
               type="checkbox"

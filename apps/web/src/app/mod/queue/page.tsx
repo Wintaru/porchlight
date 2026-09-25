@@ -1,6 +1,8 @@
 import {
   type Actor,
+  GetMediaRequest,
   GetSiteConfigRequest,
+  MediaResponse,
   ModerationForbiddenResponse,
   type QueueFilter,
   QUEUE_FILTERS,
@@ -13,13 +15,21 @@ import {
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { RevealImage } from "@/components/RevealImage";
 import { DutyCard } from "@/components/staff/DutyCard";
 import { StaffShell } from "@/components/staff/StaffShell";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { formatDate } from "@/lib/format-date";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { approveItem, escalateItem, hideItem, removeItem, rejectItem } from "./actions";
+import {
+  approveAsMature,
+  approveItem,
+  escalateItem,
+  hideItem,
+  removeItem,
+  rejectItem,
+} from "./actions";
 import styles from "./queue.module.css";
 import { queueErrorTextFor, type StaffOutcome } from "./queue-messages";
 
@@ -71,6 +81,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
   }
 
   const doneText = done !== undefined ? (DONE_TEXT[done] ?? "Done.") : undefined;
+  const heldImages = await heldImagesFor(actor, response.items);
 
   return (
     <StaffShell
@@ -114,7 +125,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
         <ul className={styles.items} data-testid="queue-items">
           {response.items.map((item) => (
             <li key={`${item.kind}-${itemId(item)}`} data-testid="queue-item">
-              <QueueItemCard item={item} />
+              <QueueItemCard item={item} heldImageUrl={heldImages.get(itemId(item))} />
             </li>
           ))}
         </ul>
@@ -136,13 +147,46 @@ async function dutiesFor(actor: Actor) {
   return { region: response.config.region, items: response.dutyChecklist };
 }
 
+// A flagged cover's original, for the moderator deciding it (SPEC.md §7): a short-lived
+// signed link to the quarantine copy, shown blurred and grey until they choose to look.
+// One lookup per flagged item — a held image is rare, and the queue a working set.
+async function heldImagesFor(
+  actor: Actor,
+  items: readonly QueueItem[],
+): Promise<ReadonlyMap<string, string>> {
+  const held = items.flatMap((item) =>
+    item.kind === "post" && item.flagged && item.post.coverMediaId !== null
+      ? [{ postId: item.post.id, mediaId: item.post.coverMediaId }]
+      : [],
+  );
+  const urls = await Promise.all(
+    held.map(async ({ postId, mediaId }) => {
+      const response = await getDependencyContainer().mediaManager.query(
+        new GetMediaRequest(actor, mediaId),
+      );
+      return response instanceof MediaResponse
+        ? ([postId, response.downloadUrl] as const)
+        : undefined;
+    }),
+  );
+  return new Map(urls.filter((entry) => entry !== undefined));
+}
+
 const TRUST_CHIP: Readonly<Record<TrustLevel, string>> = {
   probation: "probation",
   trusted: "trusted",
 };
 
-function QueueItemCard({ item }: { readonly item: QueueItem }) {
+interface QueueItemCardProps {
+  readonly item: QueueItem;
+  readonly heldImageUrl: string | undefined;
+}
+
+function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
   const target = { kind: item.kind, id: itemId(item) };
+  // A flagged cover may only be approved with the mature tag (SPEC.md §7).
+  const heldCoverId =
+    item.kind === "post" && item.flagged ? item.post.coverMediaId : null;
   const createdAt = item.kind === "post" ? item.post.createdAt : item.comment.createdAt;
   return (
     <article className={styles.item} data-escalated={item.escalated}>
@@ -175,6 +219,15 @@ function QueueItemCard({ item }: { readonly item: QueueItem }) {
           {item.post.title}
         </h2>
       )}
+      {heldImageUrl !== undefined && (
+        <RevealImage
+          id={`held-${target.id}`}
+          src={heldImageUrl}
+          alt="The cover image the classifier held"
+          mode="review"
+          className={styles.heldImage}
+        />
+      )}
       {/* Moderators see full content through the same sanitizer as published pages
           (WAYFINDER D15): the cached, sanitized render, never raw markdown. */}
       <div
@@ -187,6 +240,9 @@ function QueueItemCard({ item }: { readonly item: QueueItem }) {
       <form action={approveItem} className={styles.decide}>
         <input type="hidden" name="targetKind" value={target.kind} />
         <input type="hidden" name="targetId" value={target.id} />
+        {heldCoverId !== null && (
+          <input type="hidden" name="mediaId" value={heldCoverId} />
+        )}
         <label className="field">
           <span className="field-label">
             Reason (required to reject, optional to hide, remove or escalate)
@@ -194,14 +250,25 @@ function QueueItemCard({ item }: { readonly item: QueueItem }) {
           <input className="text-input" type="text" name="reason" />
         </label>
         <div className={styles.actions}>
-          <button
-            type="submit"
-            formAction={approveItem}
-            className="pill-button pill-button--amber"
-            data-testid="queue-approve"
-          >
-            Approve
-          </button>
+          {heldCoverId === null ? (
+            <button
+              type="submit"
+              formAction={approveItem}
+              className="pill-button pill-button--amber"
+              data-testid="queue-approve"
+            >
+              Approve
+            </button>
+          ) : (
+            <button
+              type="submit"
+              formAction={approveAsMature}
+              className="pill-button pill-button--amber"
+              data-testid="queue-approve-mature"
+            >
+              Approve as mature
+            </button>
+          )}
           <button
             type="submit"
             formAction={rejectItem}

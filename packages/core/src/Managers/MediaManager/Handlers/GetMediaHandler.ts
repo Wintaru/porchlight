@@ -19,9 +19,8 @@ import { unavailable } from "../unavailable";
 type Result =
   MediaResponse | NoSuchMediaResponse | MediaForbiddenResponse | MediaUnavailableResponse;
 
-// `publishedPath` stays null for everything this issue creates (#10/#11 are the only
-// things that ever set it), so every read today comes from quarantine, under the owner
-// gate `mayViewMedia` falls back to for an unpublished item.
+// A signed link to the quarantine original, for its owner and for staff (`media.view`).
+// Nobody else needs one: a published copy is read from its public URL (#36).
 export class GetMediaHandler implements IHandler<GetMediaRequest, Result> {
   constructor(
     private readonly storage: IMediaStorageAccessor,
@@ -54,6 +53,7 @@ export class GetMediaHandler implements IHandler<GetMediaRequest, Result> {
         id: mediaId,
         owner: asset.owner,
         publishedPath: asset.publishedPath,
+        scanStatus: asset.scanStatus,
       },
       context,
     );

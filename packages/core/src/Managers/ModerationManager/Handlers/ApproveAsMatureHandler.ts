@@ -9,6 +9,10 @@ import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccesso
 import { MediaAssetStoredResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetStoredResponse";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
+import type { IMediaPublishEngine } from "../../../Engines/MediaPublishEngine/IMediaPublishEngine";
+import { PublishMediaRequest } from "../../../Engines/MediaPublishEngine/Requests/PublishMediaRequest";
+import { MediaPublishedResponse } from "../../../Engines/MediaPublishEngine/Responses/MediaPublishedResponse";
+import { MediaUnpublishableResponse } from "../../../Engines/MediaPublishEngine/Responses/MediaUnpublishableResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { permit } from "../permit";
@@ -26,9 +30,9 @@ type Result =
   | ModerationForbiddenResponse
   | ModerationUnavailableResponse;
 
-// Artistic nudity is approved only with this mandatory tag (SPEC.md §7). Tags the
-// decision only — no re-encoded, public copy is produced by this action (see
-// DECISIONS.md: the media publish pipeline is a follow-up, not part of #11).
+// Artistic nudity is approved only with this mandatory tag (SPEC.md §7). The tag goes on
+// first, then the image gets its re-encoded public copy (#36) — so the copy never
+// exists without the tag that makes every page blur it.
 export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, Result> {
   constructor(
     private readonly mediaAssets: IMediaAssetAccessor,
@@ -37,6 +41,7 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     private readonly reports: IReportAccessor,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly publisher: IMediaPublishEngine,
   ) {}
 
   async handle(request: ApproveAsMatureRequest): Promise<Result> {
@@ -62,6 +67,7 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
         id: loaded.asset.id,
         owner: loaded.asset.owner,
         publishedPath: loaded.asset.publishedPath,
+        scanStatus: loaded.asset.scanStatus,
       },
       context,
     );
@@ -75,6 +81,18 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     if (!(stored instanceof MediaAssetStoredResponse)) {
       return unavailable(correlationId, stored, "mediaAssets.store");
     }
+    // An image that will not decode stays tagged and unpublished; nothing to retry.
+    const published = await this.publisher.transform(
+      new PublishMediaRequest(stored.asset, undefined, context),
+    );
+    if (
+      !(published instanceof MediaPublishedResponse) &&
+      !(published instanceof MediaUnpublishableResponse)
+    ) {
+      return unavailable(correlationId, published, "publisher.transform");
+    }
+    const asset =
+      published instanceof MediaPublishedResponse ? published.asset : stored.asset;
 
     const recorded = await recordModeration(
       this.modActions,
@@ -95,6 +113,6 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     if (recorded !== undefined) {
       return recorded;
     }
-    return new MatureApprovedResponse(correlationId, stored.asset);
+    return new MatureApprovedResponse(correlationId, asset);
   }
 }

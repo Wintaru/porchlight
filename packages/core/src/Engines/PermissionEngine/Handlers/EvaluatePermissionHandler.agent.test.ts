@@ -229,6 +229,7 @@ describe("every other action", () => {
         id: "00000000-0000-4000-8000-0000000000d2",
         owner: { kind: "member", profileId: THEO_ID },
         publishedPath: null,
+        scanStatus: "clear",
       },
       { kind: "anonymousAuthor", id: "00000000-0000-4000-8000-0000000000a1" },
     ];

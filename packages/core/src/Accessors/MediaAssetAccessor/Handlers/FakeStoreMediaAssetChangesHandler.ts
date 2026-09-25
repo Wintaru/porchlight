@@ -26,7 +26,11 @@ export class FakeStoreMediaAssetChangesHandler implements IHandler<
     if (current === undefined) {
       return Promise.resolve(new MediaAssetNotFoundResponse(correlationId, id));
     }
-    const stored = { ...current, mature: changes.mature ?? current.mature };
+    const stored = {
+      ...current,
+      mature: changes.mature ?? current.mature,
+      publishedPath: changes.publishedPath ?? current.publishedPath,
+    };
     this.state.assets.set(id, stored);
     return Promise.resolve(new MediaAssetStoredResponse(correlationId, stored));
   }

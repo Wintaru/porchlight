@@ -58,6 +58,7 @@ import { MarkReadRequest } from "../Managers/NotificationManager/Requests/MarkRe
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
+import { RepublishMediaHandler } from "../Managers/MediaManager/Handlers/RepublishMediaHandler";
 import { GetMediaHandler } from "../Managers/MediaManager/Handlers/GetMediaHandler";
 import { RequestUploadUrlAnonymouslyHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlAnonymouslyHandler";
 import { RequestUploadUrlHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlHandler";
@@ -66,6 +67,7 @@ import { MediaManager } from "../Managers/MediaManager/MediaManager";
 import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMediaRequest";
 import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
+import { RepublishMediaRequest } from "../Managers/MediaManager/Requests/RepublishMediaRequest";
 import { GetMediaRequest } from "../Managers/MediaManager/Requests/GetMediaRequest";
 import { RequestUploadUrlAnonymouslyRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlAnonymouslyRequest";
 import { RequestUploadUrlRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlRequest";
@@ -158,6 +160,7 @@ import { createHashMatchAccessor } from "./createHashMatchAccessor";
 import { createImageClassifierAccessor } from "./createImageClassifierAccessor";
 import { createMediaAssetAccessor } from "./createMediaAssetAccessor";
 import { createMediaManagerOptions } from "./createMediaManagerOptions";
+import { createMediaPublishEngine } from "./createMediaPublishEngine";
 import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
 import { createModActionAccessor } from "./createModActionAccessor";
 import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
@@ -222,6 +225,7 @@ export class DependencyContainer {
     const attachments = createAttachmentEngine();
     const quotaEngine = createQuotaEngine();
     const mediaOptions = createMediaManagerOptions(env);
+    const mediaPublisher = createMediaPublishEngine(env, mediaStorage, mediaAssets);
     const hashMatch = createHashMatchAccessor(env);
     const imageClassifier = createImageClassifierAccessor(env);
     const moderationPolicy = createModerationPolicyEngine();
@@ -423,6 +427,7 @@ export class DependencyContainer {
             imageClassifier,
             moderationPolicy,
             quotaEngine,
+            mediaPublisher,
             mediaOptions,
           ),
         )
@@ -438,8 +443,13 @@ export class DependencyContainer {
             imageClassifier,
             moderationPolicy,
             quotaEngine,
+            mediaPublisher,
             mediaOptions,
           ),
+        )
+        .register(
+          RepublishMediaRequest,
+          new RepublishMediaHandler(mediaAssets, permissions, mediaPublisher),
         )
         .register(
           DeleteMediaRequest,
@@ -483,6 +493,7 @@ export class DependencyContainer {
             reports,
             notifications,
             permissions,
+            mediaPublisher,
           ),
         )
         .register(

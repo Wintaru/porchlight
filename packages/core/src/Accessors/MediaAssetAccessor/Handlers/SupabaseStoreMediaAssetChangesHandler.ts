@@ -39,5 +39,6 @@ export class SupabaseStoreMediaAssetChangesHandler implements IHandler<
 function toColumns(changes: MediaAssetChanges): TablesUpdate<"media_assets"> {
   const columns: TablesUpdate<"media_assets"> = {};
   if (changes.mature !== undefined) columns.mature = changes.mature;
+  if (changes.publishedPath !== undefined) columns.published_path = changes.publishedPath;
   return columns;
 }

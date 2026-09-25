@@ -5,14 +5,19 @@ import { Avatar } from "@/components/Avatar";
 import { ReactionBar } from "@/components/comments/ReactionBar";
 import { TagChips } from "@/components/PostCardList";
 import { RaccoonMark } from "@/components/RaccoonMark";
+import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
 import { formatDate } from "@/lib/format-date";
+import { publicMediaUrl } from "@/lib/media-url";
 import { readingMinutes } from "@/lib/reading-time";
 import { reportPathFor } from "@/lib/report-link";
 import type { PostPage } from "@/read-model/post-page";
 import type { ItemReactions } from "@/read-model/reactions";
 
 import styles from "./post.module.css";
+
+// The seeded content-note tag (SPEC.md §7): a post that carries it blurs its cover too.
+const MATURE_TAG = "mature";
 
 interface PostArticleProps {
   readonly post: PostPage;
@@ -27,8 +32,8 @@ interface PostArticleProps {
 }
 
 // The Post board's article, the same for a member's post and an anonymous one: tags
-// over the title, the byline with Share, the body, the reaction row. The board's cover
-// image arrives with #36, which is what first publishes one (and blurs a mature one).
+// over the title, the byline with Share, the cover, the body, the reaction row. A cover
+// shows only once it has a published copy (#36), blurred behind a click when mature.
 export function PostArticle({
   post,
   note,
@@ -69,6 +74,7 @@ export function PostArticle({
           </div>
         </div>
       </header>
+      <Cover post={post} />
       <div
         className={`prose ${styles.body ?? ""}`}
         data-testid="post-body"
@@ -85,6 +91,26 @@ export function PostArticle({
         </div>
       )}
     </article>
+  );
+}
+
+function Cover({ post }: { readonly post: PostPage }) {
+  const path = post.cover?.published_path;
+  if (post.cover === null || path === null || path === undefined) {
+    return null;
+  }
+  const src = publicMediaUrl(path);
+  const mature =
+    post.cover.mature || post.post_tags.some((link) => link.tag?.slug === MATURE_TAG);
+  return (
+    <figure className={styles.cover} data-testid="post-cover">
+      {mature ? (
+        <RevealImage id={post.id} src={src} alt="" mode="mature" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image
+        <img src={src} alt="" />
+      )}
+    </figure>
   );
 }
 

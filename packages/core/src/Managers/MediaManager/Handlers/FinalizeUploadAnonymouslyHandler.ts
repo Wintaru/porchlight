@@ -39,6 +39,7 @@ import { EvaluateModerationRequest } from "../../../Engines/ModerationPolicyEngi
 import { ContentClearResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentClearResponse";
 import { ContentFlaggedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentFlaggedResponse";
 import { ContentLockedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentLockedResponse";
+import type { IMediaPublishEngine } from "../../../Engines/MediaPublishEngine/IMediaPublishEngine";
 import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
 import { EvaluateQuotaRequest } from "../../../Engines/QuotaEngine/Requests/EvaluateQuotaRequest";
 import { QuotaAllowedResponse } from "../../../Engines/QuotaEngine/Responses/QuotaAllowedResponse";
@@ -47,6 +48,7 @@ import { sha256HexOfBytes } from "../../../Utilities/media/sha256HexOfBytes";
 import { findAnonymousAuthor } from "../findAnonymousAuthor";
 import { mediaStoragePath } from "../mediaStoragePath";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
+import { publishIfClear } from "../publishIfClear";
 import type { FinalizeUploadAnonymouslyRequest } from "../Requests/FinalizeUploadAnonymouslyRequest";
 import { MediaFinalizedResponse } from "../Responses/MediaFinalizedResponse";
 import { MediaQuotaExceededResponse } from "../Responses/MediaQuotaExceededResponse";
@@ -83,6 +85,7 @@ export class FinalizeUploadAnonymouslyHandler implements IHandler<
     private readonly imageClassifier: IImageClassifierAccessor,
     private readonly moderationPolicy: IModerationPolicyEngine,
     private readonly quotaEngine: IQuotaEngine,
+    private readonly publisher: IMediaPublishEngine,
     private readonly options: MediaManagerOptions,
   ) {}
 
@@ -230,7 +233,11 @@ export class FinalizeUploadAnonymouslyHandler implements IHandler<
     if (verdict.scanStatus === "locked") {
       return new MediaRefusedResponse(correlationId);
     }
-    return new MediaFinalizedResponse(correlationId, stored.asset);
+    const asset = await publishIfClear(this.publisher, stored.asset, downloaded.bytes, {
+      correlationId,
+      timestamp: request.timestamp,
+    });
+    return new MediaFinalizedResponse(correlationId, asset);
   }
 
   private async scan(
