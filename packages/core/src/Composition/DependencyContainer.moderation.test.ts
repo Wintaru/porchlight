@@ -5,9 +5,12 @@ import { VISITOR } from "../Common/Actor";
 import type { Profile } from "../Common/Profile";
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
+import { DismissReportsRequest } from "../Managers/ModerationManager/Requests/DismissReportsRequest";
 import { EscalateRequest } from "../Managers/ModerationManager/Requests/EscalateRequest";
+import { HideItemRequest } from "../Managers/ModerationManager/Requests/HideItemRequest";
 import { FileReportRequest } from "../Managers/ModerationManager/Requests/FileReportRequest";
 import { ListQueueRequest } from "../Managers/ModerationManager/Requests/ListQueueRequest";
+import { ListReportedItemsRequest } from "../Managers/ModerationManager/Requests/ListReportedItemsRequest";
 import { ListReportsRequest } from "../Managers/ModerationManager/Requests/ListReportsRequest";
 import { PromoteMemberRequest } from "../Managers/ModerationManager/Requests/PromoteMemberRequest";
 import { RejectItemRequest } from "../Managers/ModerationManager/Requests/RejectItemRequest";
@@ -18,10 +21,14 @@ import { ProfileModeratedResponse } from "../Managers/ModerationManager/Response
 import { QueueResponse } from "../Managers/ModerationManager/Responses/QueueResponse";
 import { ReasonRequiredResponse } from "../Managers/ModerationManager/Responses/ReasonRequiredResponse";
 import { ReportFiledResponse } from "../Managers/ModerationManager/Responses/ReportFiledResponse";
+import { ReportedItemsResponse } from "../Managers/ModerationManager/Responses/ReportedItemsResponse";
+import { ReportGuardRefusedResponse } from "../Managers/ModerationManager/Responses/ReportGuardRefusedResponse";
 import { ReportListResponse } from "../Managers/ModerationManager/Responses/ReportListResponse";
+import type { ReportedItem } from "../Managers/ModerationManager/ReportedItem";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
 import { CreateAnonymousPostRequest } from "../Managers/PostManager/Requests/CreateAnonymousPostRequest";
 import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
+import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { GetPostRequest } from "../Managers/PostManager/Requests/GetPostRequest";
 import { AnonymousPostCreatedResponse } from "../Managers/PostManager/Responses/AnonymousPostCreatedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
@@ -29,6 +36,14 @@ import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV } from "./FakeEnvironment.test-helper";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
+
+// What the report form sends for a visitor: the fake Turnstile passes any token.
+const VISITOR_SUBMISSION = {
+  secret: undefined,
+  turnstileToken: undefined,
+  clientIp: "203.0.113.9",
+  userAgent: "test-agent",
+} as const;
 
 function profile(overrides: Partial<Profile>): Profile {
   return {
@@ -88,6 +103,48 @@ async function ensureProfile(
       avatarUrl: actor.profile.avatarUrl,
     }),
   );
+}
+
+const THEO: Actor = { kind: "member", profile: profile({}) };
+
+// A published post by Theo, who is trusted: only what the public can see is
+// reportable (#40), and June is the one who reports it.
+async function publishedPost(
+  container: DependencyContainer,
+  title: string,
+): Promise<{ readonly id: string }> {
+  const drafted = await container.postManager.execute(
+    new CreateDraftRequest(THEO, {
+      title,
+      bodyMd: "A post to report.",
+      summary: null,
+      tags: [],
+      visibility: "public",
+      commentsEnabled: true,
+    }),
+  );
+  if (!(drafted instanceof PostResponse)) {
+    throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
+  }
+  const published = await container.postManager.execute(
+    new PublishPostRequest(THEO, drafted.post.id),
+  );
+  if (!(published instanceof PostResponse)) {
+    throw new Error(`expected PostResponse, got ${published.constructor.name}`);
+  }
+  return published.post;
+}
+
+async function reportedItems(
+  container: DependencyContainer,
+): Promise<readonly ReportedItem[]> {
+  const listed = await container.moderationManager.query(
+    new ListReportedItemsRequest(MIRA),
+  );
+  if (!(listed instanceof ReportedItemsResponse)) {
+    throw new Error(`expected ReportedItemsResponse, got ${listed.constructor.name}`);
+  }
+  return listed.items;
 }
 
 // The post flows through the real wiring with the fake stores, the real
@@ -276,19 +333,7 @@ describe("DependencyContainer: ModerationManager", () => {
 
   test("a visitor may file a report, and illegal_content escalates at once", async () => {
     const container = new DependencyContainer(FAKE_ENV);
-    const drafted = await container.postManager.execute(
-      new CreateDraftRequest(JUNE, {
-        title: "A reportable post",
-        bodyMd: "Hello once more.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
-    );
-    if (!(drafted instanceof PostResponse)) {
-      throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
-    }
+    const drafted = { post: await publishedPost(container, "A reportable post") };
 
     const filed = await container.moderationManager.execute(
       new FileReportRequest(
@@ -296,20 +341,39 @@ describe("DependencyContainer: ModerationManager", () => {
         { kind: "post", id: drafted.post.id },
         "illegal_content",
         null,
+        VISITOR_SUBMISSION,
       ),
     );
     if (!(filed instanceof ReportFiledResponse)) {
       throw new Error(`expected ReportFiledResponse, got ${filed.constructor.name}`);
     }
     expect(filed.report).toMatchObject({ reporterId: null, status: "escalated" });
+    // The visitor passed the anonymous guard, so the browser gets a cookie to keep.
+    expect(filed.anonymousSecret).toEqual(expect.any(String));
   });
 
-  test("Escalate moves an item's own open report to escalated, leaving no resolver", async () => {
+  test("a visitor's report with no submission is refused before it is stored", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await publishedPost(container, "Guarded");
+    const filed = await container.moderationManager.execute(
+      new FileReportRequest(
+        VISITOR,
+        { kind: "post", id: post.id },
+        "spam",
+        null,
+        undefined,
+      ),
+    );
+    expect(filed).toBeInstanceOf(ReportGuardRefusedResponse);
+    expect(await reportedItems(container)).toEqual([]);
+  });
+
+  test("only what the public can see is reportable, and never by its own author (#40)", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(JUNE, {
-        title: "An escalatable post",
-        bodyMd: "Hello a fourth time.",
+      new CreateDraftRequest(THEO, {
+        title: "Still a draft",
+        bodyMd: "Not out yet.",
         summary: null,
         tags: [],
         visibility: "public",
@@ -319,10 +383,126 @@ describe("DependencyContainer: ModerationManager", () => {
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
     }
+    const onDraft = await container.moderationManager.execute(
+      new FileReportRequest(
+        JUNE,
+        { kind: "post", id: drafted.post.id },
+        "spam",
+        null,
+        undefined,
+      ),
+    );
+    expect(onDraft).toBeInstanceOf(ModerationForbiddenResponse);
+
+    const post = await publishedPost(container, "Theo's own");
+    const onOwn = await container.moderationManager.execute(
+      new FileReportRequest(THEO, { kind: "post", id: post.id }, "spam", null, undefined),
+    );
+    expect(onOwn).toBeInstanceOf(ModerationForbiddenResponse);
+    expect(await reportedItems(container)).toEqual([]);
+  });
+
+  test("the reports page groups reports by item, escalated first (#40)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const calm = await publishedPost(container, "Calm");
+    const urgent = await publishedPost(container, "Urgent");
+    for (const reason of ["spam", "harassment"] as const) {
+      await container.moderationManager.execute(
+        new FileReportRequest(
+          JUNE,
+          { kind: "post", id: calm.id },
+          reason,
+          null,
+          undefined,
+        ),
+      );
+    }
+    await container.moderationManager.execute(
+      new FileReportRequest(
+        JUNE,
+        { kind: "post", id: urgent.id },
+        "illegal_content",
+        "Please look.",
+        undefined,
+      ),
+    );
+
+    const items = await reportedItems(container);
+    expect(items.map((item) => (item.kind === "post" ? item.post.title : ""))).toEqual([
+      "Urgent",
+      "Calm",
+    ]);
+    // Both reports on one card; filed in the same instant, so no fixed order.
+    expect(items[1]?.reports.map((report) => report.reason).sort()).toEqual([
+      "harassment",
+      "spam",
+    ]);
+  });
+
+  test("a moderator's Dismiss closes open reports, and only an admin's closes escalated ones (#40)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await publishedPost(container, "Fine really");
+    const target = { kind: "post" as const, id: post.id };
+    for (const reason of ["spam", "illegal_content"] as const) {
+      await container.moderationManager.execute(
+        new FileReportRequest(JUNE, target, reason, null, undefined),
+      );
+    }
+
+    const refused = await container.moderationManager.execute(
+      new DismissReportsRequest(JUNE, target, null),
+    );
+    expect(refused).toBeInstanceOf(ModerationForbiddenResponse);
+
+    const byModerator = await container.moderationManager.execute(
+      new DismissReportsRequest(MIRA, target, "Not spam."),
+    );
+    expect(byModerator).toBeInstanceOf(ModerationItemResponse);
+    // The illegal-content report started escalated: it waits for an admin.
+    const left = await reportedItems(container);
+    expect(left.flatMap((item) => item.reports.map((r) => r.status))).toEqual([
+      "escalated",
+    ]);
+
+    const byAdmin = await container.moderationManager.execute(
+      new DismissReportsRequest(ADMIN, target, "Checked; nothing illegal."),
+    );
+    expect(byAdmin).toBeInstanceOf(ModerationItemResponse);
+    expect(await reportedItems(container)).toEqual([]);
+
+    const dismissed = await container.moderationManager.query(
+      new ListReportsRequest(MIRA, "dismissed"),
+    );
+    if (!(dismissed instanceof ReportListResponse)) {
+      throw new Error(`expected ReportListResponse, got ${dismissed.constructor.name}`);
+    }
+    expect(dismissed.reports.map((r) => [r.reason, r.resolvedBy]).sort()).toEqual([
+      ["illegal_content", ADMIN.profile.id],
+      ["spam", MIRA.profile.id],
+    ]);
+  });
+
+  test("hiding an item also closes a report that was escalated about it", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await publishedPost(container, "Escalated then hidden");
+    const target = { kind: "post" as const, id: post.id };
+    await container.moderationManager.execute(
+      new FileReportRequest(JUNE, target, "illegal_content", null, undefined),
+    );
+    const hidden = await container.moderationManager.execute(
+      new HideItemRequest(MIRA, target, "Hidden while we look."),
+    );
+    expect(hidden).toBeInstanceOf(ModerationItemResponse);
+    expect(await reportedItems(container)).toEqual([]);
+  });
+
+  test("Escalate moves an item's own open report to escalated, leaving no resolver", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const drafted = { post: await publishedPost(container, "An escalatable post") };
     const target = { kind: "post" as const, id: drafted.post.id };
 
     const filed = await container.moderationManager.execute(
-      new FileReportRequest(VISITOR, target, "spam", null),
+      new FileReportRequest(VISITOR, target, "spam", null, VISITOR_SUBMISSION),
     );
     if (!(filed instanceof ReportFiledResponse)) {
       throw new Error(`expected ReportFiledResponse, got ${filed.constructor.name}`);

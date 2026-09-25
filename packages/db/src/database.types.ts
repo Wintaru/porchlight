@@ -1047,6 +1047,7 @@ export type Database = {
         | "block_anonymous"
         | "escalate"
         | "mark_trusted"
+        | "dismiss_reports"
       notification_kind:
         | "queue.pending"
         | "reply.created"
@@ -1236,6 +1237,7 @@ export const Constants = {
         "block_anonymous",
         "escalate",
         "mark_trusted",
+        "dismiss_reports",
       ],
       notification_kind: [
         "queue.pending",

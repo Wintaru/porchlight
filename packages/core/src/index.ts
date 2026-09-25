@@ -234,15 +234,18 @@ export {
   type QueueFilter,
 } from "./Managers/ModerationManager/QueueFilter";
 export type { QueueItem } from "./Managers/ModerationManager/QueueItem";
+export type { ReportedItem } from "./Managers/ModerationManager/ReportedItem";
 export { ApproveAsMatureRequest } from "./Managers/ModerationManager/Requests/ApproveAsMatureRequest";
 export { ApproveItemRequest } from "./Managers/ModerationManager/Requests/ApproveItemRequest";
 export { BanMemberRequest } from "./Managers/ModerationManager/Requests/BanMemberRequest";
 export { BlockAnonymousRequest } from "./Managers/ModerationManager/Requests/BlockAnonymousRequest";
+export { DismissReportsRequest } from "./Managers/ModerationManager/Requests/DismissReportsRequest";
 export { EscalateRequest } from "./Managers/ModerationManager/Requests/EscalateRequest";
 export { FileReportRequest } from "./Managers/ModerationManager/Requests/FileReportRequest";
 export { HideItemRequest } from "./Managers/ModerationManager/Requests/HideItemRequest";
 export { ListAuditLogRequest } from "./Managers/ModerationManager/Requests/ListAuditLogRequest";
 export { ListQueueRequest } from "./Managers/ModerationManager/Requests/ListQueueRequest";
+export { ListReportedItemsRequest } from "./Managers/ModerationManager/Requests/ListReportedItemsRequest";
 export { ListReportsRequest } from "./Managers/ModerationManager/Requests/ListReportsRequest";
 export { LockThreadRequest } from "./Managers/ModerationManager/Requests/LockThreadRequest";
 export { PromoteMemberRequest } from "./Managers/ModerationManager/Requests/PromoteMemberRequest";
@@ -262,6 +265,8 @@ export { QueueResponse } from "./Managers/ModerationManager/Responses/QueueRespo
 export { ReasonRequiredResponse } from "./Managers/ModerationManager/Responses/ReasonRequiredResponse";
 export { ReportFiledResponse } from "./Managers/ModerationManager/Responses/ReportFiledResponse";
 export { ReportListResponse } from "./Managers/ModerationManager/Responses/ReportListResponse";
+export { ReportedItemsResponse } from "./Managers/ModerationManager/Responses/ReportedItemsResponse";
+export { ReportGuardRefusedResponse } from "./Managers/ModerationManager/Responses/ReportGuardRefusedResponse";
 export { ThreadLockedResponse } from "./Managers/ModerationManager/Responses/ThreadLockedResponse";
 
 // NotificationManager: a member's own inbox for the realtime bell (SPEC.md §8, issue #13).

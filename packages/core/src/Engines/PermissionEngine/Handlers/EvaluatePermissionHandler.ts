@@ -504,14 +504,31 @@ function mayManageNotifications(
 // Anyone may use the report button (SPEC.md §7), signed in or not, on a post or a
 // comment.
 function mayFileReport(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
+  // Only what the public can see (SPEC.md §7, #40): a published post, or a visible
+  // comment on one. A report puts the item's words on the moderators' reports page, so
+  // a draft or a held item must never get there through a guessed id.
   if (subject.kind !== "post" && subject.kind !== "comment") {
+    return Promise.resolve("not-allowed");
+  }
+  const publiclyVisible =
+    subject.kind === "post"
+      ? subject.status === "published"
+      : subject.status === "visible" && subject.postStatus === "published";
+  if (!publiclyVisible) {
     return Promise.resolve("not-allowed");
   }
   if (actor.kind === "visitor") {
     return Promise.resolve(undefined);
   }
+  if (actor.profile.status !== "active") {
+    return Promise.resolve("account-inactive");
+  }
+  // Nobody reports their own item; they can edit or delete it.
+  const { author } = subject;
   return Promise.resolve(
-    actor.profile.status === "active" ? undefined : "account-inactive",
+    author?.kind === "member" && author.profileId === actor.profile.id
+      ? "not-allowed"
+      : undefined,
   );
 }
 

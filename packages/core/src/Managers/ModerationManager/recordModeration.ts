@@ -14,6 +14,8 @@ import type { ModActionKind } from "../../Common/ModActionKind";
 import type { ModActionTarget } from "../../Common/ModActionTarget";
 import type { ModerationTarget } from "../../Common/ModerationTarget";
 import type { NotificationKind } from "../../Common/NotificationKind";
+import type { ReportOutcome } from "../../Common/ReportOutcome";
+import type { ReportStatus } from "../../Common/ReportStatus";
 import type { RequestContext } from "../../Common/RequestContext";
 import type { SubjectKind } from "../../Common/SubjectKind";
 import type { ModerationUnavailableResponse } from "./Responses/ModerationUnavailableResponse";
@@ -40,9 +42,14 @@ export interface ModerationRecord {
   readonly auditDetails: Record<string, unknown>;
   // Closes the loop on any open report about the same item (#11): set once a moderator
   // decides it, so a report never stays open forever with no path back to `resolved`.
+  // A decision closes the item's open and escalated reports alike — the senior look an
+  // escalation asked for is this decision. Escalating moves only the open ones. A
+  // caller may narrow `closing` (a moderator's Dismiss leaves escalated reports to an
+  // admin).
   readonly resolveReportsFor?: {
     readonly target: ModerationTarget;
-    readonly status: "resolved" | "escalated";
+    readonly status: ReportOutcome;
+    readonly closing?: readonly ReportStatus[];
   };
   // Who to tell, once the decision is on record (SPEC.md §8). Empty for an action with
   // no member on the receiving end (block an anonymous author, approve mature media).
@@ -93,6 +100,10 @@ export async function recordModeration(
       new ResolveReportsForTargetRequest(
         record.resolveReportsFor.target,
         record.resolveReportsFor.status,
+        record.resolveReportsFor.closing ??
+          (record.resolveReportsFor.status === "escalated"
+            ? ["open"]
+            : ["open", "escalated"]),
         record.actorId,
         context,
       ),

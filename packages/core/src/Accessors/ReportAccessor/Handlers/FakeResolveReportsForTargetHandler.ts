@@ -18,19 +18,19 @@ export class FakeResolveReportsForTargetHandler implements IHandler<
         new ReportAccessFailedResponse(request.correlationId, "REPORT_FAKE_RESULT=fail"),
       );
     }
-    const { target, status, resolvedBy, timestamp } = request;
+    const { target, status, closing, resolvedBy, timestamp } = request;
     let count = 0;
     for (const report of this.state.forTarget(target.kind, target.id)) {
-      if (report.status !== "open") {
+      if (!closing.includes(report.status)) {
         continue;
       }
       this.state.reports.set(report.id, {
         ...report,
         status,
         // Mirrors the `reports_resolved_states` CHECK the Supabase handler respects:
-        // only `resolved` carries a resolver and an instant.
-        resolvedBy: status === "resolved" ? resolvedBy : null,
-        resolvedAt: status === "resolved" ? timestamp : null,
+        // `resolved` and `dismissed` carry a resolver and an instant, `escalated` not.
+        resolvedBy: status === "escalated" ? null : resolvedBy,
+        resolvedAt: status === "escalated" ? null : timestamp,
       });
       count += 1;
     }

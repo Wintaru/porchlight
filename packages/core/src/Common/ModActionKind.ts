@@ -14,6 +14,7 @@ export const MOD_ACTION_KINDS = [
   "block_anonymous",
   "escalate",
   "mark_trusted",
+  "dismiss_reports",
 ] as const;
 
 export type ModActionKind = (typeof MOD_ACTION_KINDS)[number];

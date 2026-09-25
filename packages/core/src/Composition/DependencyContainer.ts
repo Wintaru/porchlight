@@ -97,11 +97,13 @@ import { ApproveAsMatureHandler } from "../Managers/ModerationManager/Handlers/A
 import { ApproveItemHandler } from "../Managers/ModerationManager/Handlers/ApproveItemHandler";
 import { BanMemberHandler } from "../Managers/ModerationManager/Handlers/BanMemberHandler";
 import { BlockAnonymousHandler } from "../Managers/ModerationManager/Handlers/BlockAnonymousHandler";
+import { DismissReportsHandler } from "../Managers/ModerationManager/Handlers/DismissReportsHandler";
 import { EscalateHandler } from "../Managers/ModerationManager/Handlers/EscalateHandler";
 import { FileReportHandler } from "../Managers/ModerationManager/Handlers/FileReportHandler";
 import { HideItemHandler } from "../Managers/ModerationManager/Handlers/HideItemHandler";
 import { ListAuditLogHandler } from "../Managers/ModerationManager/Handlers/ListAuditLogHandler";
 import { ListQueueHandler } from "../Managers/ModerationManager/Handlers/ListQueueHandler";
+import { ListReportedItemsHandler } from "../Managers/ModerationManager/Handlers/ListReportedItemsHandler";
 import { ListReportsHandler } from "../Managers/ModerationManager/Handlers/ListReportsHandler";
 import { LockThreadHandler } from "../Managers/ModerationManager/Handlers/LockThreadHandler";
 import { PromoteMemberHandler } from "../Managers/ModerationManager/Handlers/PromoteMemberHandler";
@@ -114,11 +116,13 @@ import { ApproveAsMatureRequest } from "../Managers/ModerationManager/Requests/A
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
 import { BlockAnonymousRequest } from "../Managers/ModerationManager/Requests/BlockAnonymousRequest";
+import { DismissReportsRequest } from "../Managers/ModerationManager/Requests/DismissReportsRequest";
 import { EscalateRequest } from "../Managers/ModerationManager/Requests/EscalateRequest";
 import { FileReportRequest as ModerateFileReportRequest } from "../Managers/ModerationManager/Requests/FileReportRequest";
 import { HideItemRequest } from "../Managers/ModerationManager/Requests/HideItemRequest";
 import { ListAuditLogRequest as ModerationListAuditLogRequest } from "../Managers/ModerationManager/Requests/ListAuditLogRequest";
 import { ListQueueRequest } from "../Managers/ModerationManager/Requests/ListQueueRequest";
+import { ListReportedItemsRequest } from "../Managers/ModerationManager/Requests/ListReportedItemsRequest";
 import { ListReportsRequest as ModerationListReportsRequest } from "../Managers/ModerationManager/Requests/ListReportsRequest";
 import { LockThreadRequest } from "../Managers/ModerationManager/Requests/LockThreadRequest";
 import { PromoteMemberRequest } from "../Managers/ModerationManager/Requests/PromoteMemberRequest";
@@ -574,6 +578,18 @@ export class DependencyContainer {
           ),
         )
         .register(
+          DismissReportsRequest,
+          new DismissReportsHandler(
+            posts,
+            comments,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
+          ),
+        )
+        .register(
           PromoteMemberRequest,
           new PromoteMemberHandler(
             profiles,
@@ -594,6 +610,7 @@ export class DependencyContainer {
             profiles,
             notifications,
             permissions,
+            anonymousGuard,
           ),
         )
         .build(),
@@ -612,6 +629,10 @@ export class DependencyContainer {
         .register(
           ModerationListReportsRequest,
           new ListReportsHandler(reports, permissions),
+        )
+        .register(
+          ListReportedItemsRequest,
+          new ListReportedItemsHandler(posts, comments, reports, permissions),
         )
         .register(
           ModerationListAuditLogRequest,

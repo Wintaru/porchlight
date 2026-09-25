@@ -14,13 +14,13 @@ export class SupabaseResolveReportsForTargetHandler implements IHandler<
   async handle(
     request: ResolveReportsForTargetRequest,
   ): Promise<ReportsResolvedResponse | ReportAccessFailedResponse> {
-    const { target, status, resolvedBy, timestamp, correlationId } = request;
+    const { target, status, closing, resolvedBy, timestamp, correlationId } = request;
     const column = target.kind === "post" ? "post_id" : "comment_id";
     const { data, error } = await this.db
       .from("reports")
       .update(toColumns(status, resolvedBy, timestamp))
       .eq(column, target.id)
-      .eq("status", "open")
+      .in("status", [...closing])
       .select("id");
     if (error) {
       return new ReportAccessFailedResponse(correlationId, error.message);
@@ -37,7 +37,7 @@ function toColumns(
   resolvedBy: string,
   timestamp: Date,
 ): TablesUpdate<"reports"> {
-  return status === "resolved"
-    ? { status, resolved_by: resolvedBy, resolved_at: timestamp.toISOString() }
-    : { status };
+  return status === "escalated"
+    ? { status }
+    : { status, resolved_by: resolvedBy, resolved_at: timestamp.toISOString() };
 }

@@ -10,6 +10,10 @@ import { RecordAuditEventRequest } from "../../../Accessors/AuditAccessor/Reques
 import { AuditEventRecordedResponse } from "../../../Accessors/AuditAccessor/Responses/AuditEventRecordedResponse";
 import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
+import { AnonymousAdmittedResponse } from "../../../Engines/AnonymousGuardEngine/Responses/AnonymousAdmittedResponse";
+import { AnonymousGuardDeniedResponse } from "../../../Engines/AnonymousGuardEngine/Responses/AnonymousGuardDeniedResponse";
+import type { IAnonymousGuardEngine } from "../../../Engines/AnonymousGuardEngine/IAnonymousGuardEngine";
+import { AdmitAnonymousSubmissionRequest } from "../../../Engines/AnonymousGuardEngine/Requests/AdmitAnonymousSubmissionRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
 import { notifyStaff } from "../notifyStaff";
@@ -19,10 +23,12 @@ import type { ModerationForbiddenResponse } from "../Responses/ModerationForbidd
 import type { ModerationUnavailableResponse } from "../Responses/ModerationUnavailableResponse";
 import type { NoSuchItemResponse } from "../Responses/NoSuchItemResponse";
 import { ReportFiledResponse } from "../Responses/ReportFiledResponse";
+import { ReportGuardRefusedResponse } from "../Responses/ReportGuardRefusedResponse";
 import { unavailable } from "../unavailable";
 
 type Result =
   | ReportFiledResponse
+  | ReportGuardRefusedResponse
   | NoSuchItemResponse
   | ModerationForbiddenResponse
   | ModerationUnavailableResponse;
@@ -38,10 +44,12 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
     private readonly profiles: IProfileAccessor,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly guard: IAnonymousGuardEngine,
   ) {}
 
   async handle(request: FileReportRequest): Promise<Result> {
-    const { correlationId, actor, target, reason, details, timestamp } = request;
+    const { correlationId, actor, target, reason, details, submission, timestamp } =
+      request;
     const context = { correlationId, timestamp };
 
     const item = await loadItem(this.posts, this.comments, target, context);
@@ -57,6 +65,26 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
     );
     if (refused !== undefined) {
       return refused;
+    }
+
+    // A visitor passes the anonymous guard first, so a failed challenge or a blocked
+    // address never writes a report. With no submission at all, there is no challenge
+    // to pass.
+    let anonymousSecret: string | null = null;
+    if (actor.kind === "visitor") {
+      if (submission === undefined) {
+        return new ReportGuardRefusedResponse(correlationId, "turnstile-failed");
+      }
+      const admitted = await this.guard.evaluate(
+        new AdmitAnonymousSubmissionRequest("report", submission, context),
+      );
+      if (admitted instanceof AnonymousGuardDeniedResponse) {
+        return new ReportGuardRefusedResponse(correlationId, admitted.reason);
+      }
+      if (!(admitted instanceof AnonymousAdmittedResponse)) {
+        return unavailable(correlationId, admitted, "guard.evaluate");
+      }
+      anonymousSecret = admitted.secret;
     }
 
     const startsEscalated = reason === "illegal_content";
@@ -104,7 +132,7 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
       return notified;
     }
 
-    return new ReportFiledResponse(correlationId, stored.report);
+    return new ReportFiledResponse(correlationId, stored.report, anonymousSecret);
   }
 }
 

@@ -243,7 +243,13 @@ describe("DependencyContainer: NotificationManager", () => {
     const root = await comment(container, THEO, post.id, "Cedar holds up well.");
 
     const filed = await container.moderationManager.execute(
-      new FileReportRequest(JUNE, { kind: "comment", id: root.id }, "spam", null),
+      new FileReportRequest(
+        JUNE,
+        { kind: "comment", id: root.id },
+        "spam",
+        null,
+        undefined,
+      ),
     );
     expect(filed).toBeInstanceOf(ReportFiledResponse);
 
