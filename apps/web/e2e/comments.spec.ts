@@ -190,20 +190,80 @@ test("a post with comments off shows its comments but no form (D20)", async ({
 test("a reaction toggles on and off for a member (D9)", async ({ page }) => {
   const stamp = Date.now().toString(36);
   const post = await publishPost(page, THEO, `React to this ${stamp}`);
-  const heart = page.getByTestId("post-reactions").getByRole("button", { name: "Heart" });
-  await expect(heart).toHaveAttribute("aria-pressed", "false");
-  await expect(heart.getByTestId("reaction-count-heart")).toHaveText("0");
+  const bar = page.getByTestId("post-reactions");
+  // The bar's own buttons, not the ones inside the + (a closed <details> still holds them).
+  const barButtons = bar.locator(":scope > ul > li > form button");
+  // A new post has no counts, so the bar is only the + (#55).
+  await expect(barButtons).toHaveCount(0);
+  const add = bar.getByLabel("Add a reaction");
+  await add.click();
+  const picker = bar.getByTestId("reaction-picker");
+  // Every kind is unused, so the + offers them all.
+  for (const name of ["Heart", "Laugh", "Wow", "Sad", "Clap"]) {
+    await expect(picker.getByRole("button", { name })).toBeVisible();
+  }
+  await picker.getByRole("button", { name: "Heart" }).click();
 
-  await heart.click();
+  const heart = bar.getByRole("button", { name: "Heart" });
   await expect(heart).toHaveAttribute("aria-pressed", "true");
   await expect(heart.getByTestId("reaction-count-heart")).toHaveText("1");
+  // The pick closed the +, and Heart is no longer in it. A plain locator: getByRole
+  // skips a closed <details>, so it would pass either way.
+  await expect(bar.locator("details")).not.toHaveAttribute("open");
+  await expect(picker.locator('button[aria-label="Heart"]')).toHaveCount(0);
 
   await heart.click();
-  await expect(heart).toHaveAttribute("aria-pressed", "false");
-  await expect(heart.getByTestId("reaction-count-heart")).toHaveText("0");
+  // Back to no counts: Heart leaves the bar and is under the + again.
+  await expect(barButtons).toHaveCount(0);
+  await add.click();
+  await expect(picker.getByRole("button", { name: "Heart" })).toBeVisible();
 
   await page.goto(`/write/${post.id}`);
   await deleteCurrentPost(page);
+});
+
+test("the + and a reaction work with no JavaScript (#55)", async ({ page, browser }) => {
+  const stamp = Date.now().toString(36);
+  const post = await publishPost(page, THEO, `No script ${stamp}`);
+  // A second browser for the same member, with scripts off: the session cookies carry
+  // over, and every control is a plain <details> or a form post.
+  const noScript = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState(),
+  });
+  const plain = await noScript.newPage();
+  await plain.goto(post.url);
+  const bar = plain.getByTestId("post-reactions");
+  await bar.getByLabel("Add a reaction").click();
+  await bar.getByTestId("reaction-picker").getByRole("button", { name: "Clap" }).click();
+  const clap = bar.locator(":scope > ul > li > form button", { hasText: "👏" });
+  await expect(clap).toHaveAttribute("aria-pressed", "true");
+  await expect(clap.getByTestId("reaction-count-clap")).toHaveText("1");
+  await clap.click();
+  await expect(bar.getByTestId("reaction-count-clap")).toHaveText("0");
+  await expect(bar.locator(":scope > ul > li > form button")).toHaveCount(0);
+  await noScript.close();
+
+  await page.goto(`/write/${post.id}`);
+  await deleteCurrentPost(page);
+});
+
+test("the + opens inside the row on a 320px phone, even on a reply (#55)", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto(SEED_POST);
+  const replyRow = page
+    .getByTestId("comment")
+    .filter({ hasText: "This reply stays readable" });
+  await replyRow.getByLabel("Add a reaction").click();
+  await expect(
+    replyRow.getByTestId("reaction-picker").getByRole("button"),
+  ).not.toHaveCount(0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+  ).toBe(true);
 });
 
 test("a probation member's comment waits in the queue and is theirs alone to see", async ({

@@ -226,6 +226,47 @@ button.reaction:hover {
   background: var(--chip);
 }
 
+/* The dashed + and the kinds it opens. They open in the row itself, not a floating
+   panel, so they wrap on a narrow phone and never cover the text below. */
+.addReaction[open] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.addReaction > summary {
+  border-style: dashed;
+  color: var(--muted);
+  list-style: none;
+  cursor: pointer;
+}
+
+.addReaction > summary::-webkit-details-marker {
+  display: none;
+}
+
+.addReaction > summary:hover,
+.addReaction[open] > summary {
+  border-color: var(--amber);
+  color: var(--ink);
+}
+
+.addReaction > summary:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* The summary keeps the pill's height with only an icon in it. */
+.addReaction > summary svg {
+  margin: 0.2rem 0;
+}
+
+.reactionPicker {
+  display: contents;
+  list-style: none;
+}
+
 .reply > summary {
   width: max-content;
   color: var(--link);
