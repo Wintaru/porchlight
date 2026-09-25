@@ -8,28 +8,41 @@ import {
   CreateDraftRequest,
   DEFAULT_AGENT_LIMITS,
   DeletePostRequest,
+  FinalizeUploadRequest,
   GetAgentLimitsRequest,
+  GetMediaRequest,
   GetPostRequest,
   GetVoiceGuideRequest,
   ListPostsForAuthorRequest,
   POST_STATUSES,
   POST_VISIBILITIES,
   publishesAtOnce,
+  MediaFinalizedResponse,
+  MediaResponse,
   PublishPostRequest,
   type RequestOrigin,
+  RequestUploadUrlRequest,
   ResolveAgentTokenRequest,
   UpdateDraftRequest,
   UpdateVoiceGuideRequest,
+  UploadUrlIssuedResponse,
   VOICE_GUIDE_MAX_LENGTH,
   VoiceGuideResponse,
 } from "@porchlight/core";
 import * as z from "zod/v4";
 
 import { getAgentsPolicy } from "@/lib/agents-policy";
+import { readSupabasePublicEnv } from "@/auth/supabase-env";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
 import { MCP_INSTRUCTIONS } from "./instructions";
+import {
+  curlLineFor,
+  mediaLookupRefusalFor,
+  mediaRefusalFor,
+  uploadStatusOf,
+} from "./media-tools";
 import { toPostDetailView, toPostIndexView, toPostView } from "./post-view";
 import { toVoiceGuideView, voiceGuideText } from "./voice-guide-view";
 import {
@@ -112,7 +125,8 @@ function registerTools(
   actor: AgentActor,
   origin: RequestOrigin,
 ): void {
-  const { accountManager, postManager, siteConfigManager } = getDependencyContainer();
+  const { accountManager, mediaManager, postManager, siteConfigManager } =
+    getDependencyContainer();
   const { handle } = actor.profile;
   const view = (post: Parameters<typeof toPostView>[0]) =>
     toPostView(post, handle, SITE_URL);
@@ -183,6 +197,82 @@ function registerTools(
         return voiceRefusalFor(response, "update_voice_guide");
       }
       return ok({ ...toVoiceGuideView(response.guide) }, "Voice guide saved.");
+    },
+  );
+
+  server.registerTool(
+    "request_upload",
+    {
+      description:
+        "Get a one-time address to upload a file for the member's posts. Needs the media:upload scope. Send the bytes with the curl line from your own shell, never through this conversation, then call finalize_upload.",
+      inputSchema: z.object({
+        filename: z.string().min(1),
+        bytes: z.number().int().positive(),
+      }),
+    },
+    async ({ filename, bytes }) => {
+      const response = await mediaManager.execute(
+        new RequestUploadUrlRequest(actor, filename, bytes),
+      );
+      if (!(response instanceof UploadUrlIssuedResponse)) {
+        return mediaRefusalFor(response, "request_upload");
+      }
+      const curl = curlLineFor(response.uploadUrl, readSupabasePublicEnv().anonKey);
+      return ok(
+        { mediaId: response.mediaId, uploadUrl: response.uploadUrl, curl },
+        `Upload the file with:\n${curl}\nThen call finalize_upload with media_id ${response.mediaId} and the same filename.`,
+      );
+    },
+  );
+
+  server.registerTool(
+    "finalize_upload",
+    {
+      description:
+        "Check and scan a file you uploaded with request_upload's curl line. Use the same filename. A clear image comes back with a URL and the markdown to put in a draft.",
+      inputSchema: z.object({
+        media_id: z.uuid(),
+        filename: z.string().min(1),
+      }),
+    },
+    async ({ media_id, filename }) => {
+      const response = await mediaManager.execute(
+        new FinalizeUploadRequest(
+          actor,
+          media_id,
+          filename,
+          origin.clientIp,
+          origin.userAgent,
+        ),
+      );
+      if (!(response instanceof MediaFinalizedResponse)) {
+        return mediaRefusalFor(response, "finalize_upload");
+      }
+      const upload = uploadStatusOf(response.asset);
+      return ok(
+        { upload },
+        upload.status === "held for review"
+          ? "Held for review: a moderator looks at it first. Do not put it in a draft yet."
+          : upload.markdown === null
+            ? "Uploaded, but its public copy could not be made. Ask your member to press Try again beside it in the editor."
+            : `Ready. Put this in the draft: ${upload.markdown}`,
+      );
+    },
+  );
+
+  server.registerTool(
+    "get_media",
+    {
+      description:
+        "Where one of the member's uploads stands: ready (with its URL), held for review, or not published yet.",
+      inputSchema: z.object({ id: z.uuid() }),
+    },
+    async ({ id }) => {
+      const response = await mediaManager.query(new GetMediaRequest(actor, id));
+      if (!(response instanceof MediaResponse)) {
+        return mediaLookupRefusalFor(response);
+      }
+      return ok({ upload: uploadStatusOf(response.asset) });
     },
   );
 

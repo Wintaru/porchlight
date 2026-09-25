@@ -10,7 +10,7 @@ import styles from "./settings.module.css";
 const SCOPE_TEXT: Readonly<Record<AgentScope, string>> = {
   "posts:draft": "Write drafts (you publish from the editor)",
   "posts:publish": "Publish without you",
-  "media:upload": "Upload images (arrives with issue #31)",
+  "media:upload": "Upload images and files",
   "voice:write": "Change your voice guide",
 };
 

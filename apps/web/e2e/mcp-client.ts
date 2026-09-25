@@ -8,6 +8,7 @@ import type { Page } from "@playwright/test";
 const SCOPE_LABELS: Readonly<Record<string, string>> = {
   "posts:publish": "Publish without you",
   "voice:write": "Change your voice guide",
+  "media:upload": "Upload images and files",
 };
 
 export interface MintedToken {

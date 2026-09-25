@@ -90,6 +90,27 @@ invent facts or opinions, one draft per request, and read the voice guide first.
 | `update_draft` | Changes a draft of yours. |
 | `delete_draft` | Deletes a draft of yours. |
 | `publish_post` | Publishes one of your drafts. Needs the **Publish without you** scope. |
+| `request_upload` | Gets a one-time address to upload a file, and the `curl` line that sends it. Needs the **Upload images and files** scope. |
+| `finalize_upload` | Checks and scans the uploaded file. A clear image comes back with its URL and the markdown for a draft. |
+| `get_media` | Where one of your uploads stands: ready, held for review, or not published yet. |
+
+## Uploading images and files
+
+With the **Upload images and files** scope, your agent can add a picture or a file to
+a draft:
+
+1. The agent calls `request_upload` with the file name and size. It gets a one-time
+   address and a `curl` line.
+2. The agent runs the `curl` line from its own shell. The file goes straight to
+   storage. It never passes through the conversation or the model.
+3. The agent calls `finalize_upload`. Porchlight checks that the file is what its name
+   says, and scans it the same way as a file you upload in the editor.
+4. A clear image comes back with a URL and the markdown to put in the draft.
+
+The upload is yours: it counts against your storage quota and shows in the editor's
+file list. A file the scan holds comes back as "held for review" until a moderator
+looks at it. A file the scan refuses comes back as "Refused." with no reason, and it
+never appears anywhere.
 
 ## What an agent cannot do
 
@@ -133,3 +154,11 @@ Mint a token at http://localhost:3000/settings after signing in at
 
 `AGENT_TOKEN_PROVIDER=fake` in `.env.example` swaps the token store for an in-memory
 one, for tests. A production build refuses it (D19).
+
+To see the other upload answers locally, set the fake scanners in `.env.local` and
+restart the dev server:
+
+- `IMAGE_CLASSIFIER_FAKE_RESULT=flagged`: every image comes back "held for review".
+- `HASH_MATCH_FAKE_RESULT=match`: every image comes back "Refused.". The file is locked,
+  and a locked file cannot be deleted before its retention date, so run
+  `supabase db reset` afterwards.
