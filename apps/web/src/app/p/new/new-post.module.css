@@ -1,0 +1,12 @@
+/* The anonymous write form: a title set like the editor's, a tall markdown box. */
+.title {
+  font-family: var(--font-serif);
+  font-size: 24px;
+}
+
+.body {
+  min-height: 280px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 15px;
+  line-height: 1.6;
+}

@@ -58,8 +58,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/about" },
   { path: "/terms" },
   { path: "/code-of-conduct" },
-  { path: "/p/new", gaps: UNSTYLED },
-  { path: "/anon", gaps: ["flush-left"] },
+  { path: "/p/new" },
+  { path: "/anon" },
   { path: "/auth/dev-sign-in", gaps: UNSTYLED },
   { path: "/auth/sign-in-failed", gaps: ["flush-left"] },
   // No not-found page: Next.js's default renders, with no main landmark.
@@ -71,6 +71,8 @@ const PAGES: readonly PageCase[] = [
   },
   { path: "/", as: THEO },
   { path: "/@theo/hello-from-the-porch", as: THEO },
+  // A member sees the claim form a visitor does not.
+  { path: "/anon", as: THEO },
   // Attachments are a bare file input, not the Editor board's drop zone.
   { path: "/write", as: THEO, gaps: ["file-input"] },
   { path: "/settings", as: THEO },

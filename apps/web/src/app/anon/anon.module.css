@@ -1,0 +1,71 @@
+/* The anonymous status page: the claim code as a warm callout, then one row per item
+   with its status. */
+.code {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--chip-warm);
+  color: var(--chip-warm-ink);
+}
+
+.code p {
+  margin: 0;
+}
+
+.code code {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.itemMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-grow: 1;
+  /* Room for a title; below it the status chip and "view" drop to their own line. */
+  flex-basis: 180px;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.itemMeta {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty {
+  margin: 0;
+  padding: 28px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+}

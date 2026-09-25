@@ -7,11 +7,13 @@ import {
 } from "@porchlight/core";
 import Link from "next/link";
 
+import { SimplePage } from "@/components/SimplePage";
 import { readAnonymousSecret, readFlashedClaimCode } from "@/lib/anonymous-cookie";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { claimAnonymousPosts } from "./actions";
+import styles from "./anon.module.css";
 
 interface AnonymousStatusPageProps {
   readonly searchParams: Promise<{ readonly code?: string; readonly claim?: string }>;
@@ -65,56 +67,88 @@ export default async function AnonymousStatusPage({
     claim === undefined ? undefined : (CLAIM_TEXT[claim] ?? CLAIM_TEXT.unavailable);
 
   return (
-    <main>
-      <h1>Your anonymous activity</h1>
+    <SimplePage
+      title="Your anonymous activity"
+      lead="What you wrote without an account, where it stands, and a way to keep it."
+    >
       {flashedCode !== undefined && (
-        <p data-testid="claim-code">
-          Save this claim code somewhere safe. It is the only way to get these back if
-          this cookie is lost: <code>{flashedCode}</code>
-        </p>
+        <div className={styles.code} data-testid="claim-code">
+          <p>
+            Save this claim code somewhere safe. It is the only way to get these back if
+            this cookie is lost:
+          </p>
+          <code>{flashedCode}</code>
+        </div>
       )}
       {claimText !== undefined && (
-        <p role="status" data-testid="claim-status">
+        <p role="status" className="form-status" data-testid="claim-status">
           {claimText}
         </p>
       )}
       {actor.kind === "member" ? (
-        <form action={claimAnonymousPosts}>
-          <label>
-            Claim code from a different browser (leave blank to use this one&apos;s
-            cookie)
-            <input type="text" name="code" placeholder="ABCD-EFGH-…" />
+        <form action={claimAnonymousPosts} className="card form-stack">
+          <label className="field">
+            <span className="field-label">
+              Claim code from a different browser (leave blank to use this one&apos;s
+              cookie)
+            </span>
+            <input
+              className="text-input"
+              type="text"
+              name="code"
+              placeholder="ABCD-EFGH-…"
+            />
           </label>
-          <button type="submit" data-testid="claim-button">
-            Claim these as @{actor.profile.handle}
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="pill-button pill-button--amber"
+              data-testid="claim-button"
+            >
+              Claim these as @{actor.profile.handle}
+            </button>
+          </div>
         </form>
       ) : (
-        <p>
+        <p className="form-status">
           <Link href={signInPathFor("/anon")}>Sign in</Link> to claim these as your
           account.
         </p>
       )}
       {items.length === 0 ? (
-        <p data-testid="anonymous-empty">
+        <p className={styles.empty} data-testid="anonymous-empty">
           Nothing yet. Post or comment anonymously and it shows up here.
         </p>
       ) : (
-        <ul data-testid="anonymous-items">
+        <ul className={styles.items} data-testid="anonymous-items">
           {items.map((item) => (
-            <li key={`${item.kind}-${item.id}`} data-testid="anonymous-item">
-              <span data-testid="anonymous-item-title">{item.title}</span> ·{" "}
-              <span data-testid="anonymous-item-status">{STATUS_TEXT[item.status]}</span>{" "}
-              ·{" "}
+            <li
+              key={`${item.kind}-${item.id}`}
+              className={styles.item}
+              data-testid="anonymous-item"
+            >
+              <div className={styles.itemMain}>
+                <span className={styles.itemTitle} data-testid="anonymous-item-title">
+                  {item.title}
+                </span>
+                <span className={styles.itemMeta}>
+                  {item.kind === "post" ? "Post" : "Comment"} ·{" "}
+                  {item.replyCount === 1
+                    ? "1 reply"
+                    : `${String(item.replyCount)} replies`}
+                </span>
+              </div>
+              <span className="chip" data-testid="anonymous-item-status">
+                {STATUS_TEXT[item.status]}
+              </span>
               <Link href={itemHref(item)} data-testid="anonymous-item-link">
                 view
-              </Link>{" "}
-              · {item.replyCount === 1 ? "1 reply" : `${String(item.replyCount)} replies`}
+              </Link>
             </li>
           ))}
         </ul>
       )}
-    </main>
+    </SimplePage>
   );
 }
 
