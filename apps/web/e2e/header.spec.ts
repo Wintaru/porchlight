@@ -153,9 +153,7 @@ test("on a phone a visitor finds the section links and their activity in the Men
 }) => {
   await page.setViewportSize(PHONE);
   await page.goto("/");
-  await expect(
-    banner(page).getByRole("button", { name: "Sign in with Google" }),
-  ).toBeVisible();
+  await expect(banner(page).getByRole("link", { name: "Sign in" })).toBeVisible();
   const menuButton = page.getByTestId("visitor-menu");
   await menuButton.click();
   const menu = banner(page).getByRole("navigation", { name: "Account" });

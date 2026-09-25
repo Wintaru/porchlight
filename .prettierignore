@@ -12,3 +12,5 @@ packages/db/src/database.types.ts
 design/
 # Prose and decision records keep their own wrapping.
 *.md
+# Supabase Auth email templates are Go templates; rewrapping breaks the links.
+supabase/templates/

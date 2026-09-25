@@ -46,6 +46,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/p/new" },
   { path: "/anon" },
   { path: "/auth/dev-sign-in" },
+  { path: "/auth/sign-in" },
+  { path: "/auth/confirm?token_hash=unused&type=email" },
   { path: "/auth/sign-in-failed" },
   { path: "/no-such-page", status: 404 },
   // The report form for the seeded post (#40).

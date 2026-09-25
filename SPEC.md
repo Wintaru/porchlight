@@ -27,7 +27,7 @@ has a setup guide.
 | Concern | Choice |
 | --- | --- |
 | Framework | Next.js App Router on React, TypeScript strict |
-| Database, auth, storage, realtime | Supabase (Postgres, Auth with Google OAuth, Storage, Realtime) |
+| Database, auth, storage, realtime | Supabase (Postgres, Auth with Google OAuth and email links, Storage, Realtime) |
 | Editor | Tiptap. Markdown in, markdown out. |
 | Stored content | Markdown (`body_md`) is canonical. Sanitized HTML (`body_html`) cached on save. |
 | Monorepo | pnpm workspaces: `apps/web`, `packages/core`, `packages/db` |
@@ -71,7 +71,8 @@ Roles: `admin`, `moderator`, `member`. Signed-out visitors read everything publi
 - Members carry `trust_level`: `probation` (every post and comment waits for approval)
   or `trusted` (publishes at once). Admins promote by hand. An optional policy
   auto-promotes after N approved posts, default off.
-- Sign-in is Google OAuth through Supabase Auth. No passwords.
+- Sign-in is Google OAuth or a one-time email link, both through Supabase Auth (D23).
+  No passwords.
 
 **Who can write is a setting, not a mode (D20).** Three `site_config` keys:
 
@@ -251,7 +252,7 @@ charcoal.
 ## 13. Documentation
 
 README plus one guide per external service under `docs/setup/`: Supabase, Google OAuth,
-Turnstile, storage, hash matching, classifiers, email, and (phase 3) Discord webhooks.
+email sign-in, Turnstile, storage, hash matching, classifiers, email, and (phase 3) Discord webhooks.
 Each says what the service is for, how to get credentials, where they go, and what the
 fake mode does without it. The Discord guide also shows how to point a Discord RSS bot
 at a tag feed, the phase 1 route. The admin duty checklist links the same guides. Terms,

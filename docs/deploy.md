@@ -35,9 +35,10 @@ Guide: [`setup/supabase.md`](setup/supabase.md).
    database that `cron.database_name` names (`postgres` by default), so run the schema
    there.
 
-## 2. Google sign-in
+## 2. Sign-in: Google and email links
 
-Guide: [`setup/google-oauth.md`](setup/google-oauth.md).
+Guides: [`setup/google-oauth.md`](setup/google-oauth.md),
+[`setup/email-sign-in.md`](setup/email-sign-in.md).
 
 1. Create the OAuth client in Google Cloud with the redirect URI
    `https://<project-ref>.supabase.co/auth/v1/callback`.
@@ -45,8 +46,12 @@ Guide: [`setup/google-oauth.md`](setup/google-oauth.md).
    secret.
 3. Authentication, URL Configuration: set the site URL to the deployment's origin and add
    `<origin>/auth/callback` to the redirect allow list.
-4. Authentication, Providers, Email: disable email and password sign-in. Google is the
-   only production path (SPEC.md §4).
+4. Authentication, Providers, Email: keep the provider on for the email sign-in links
+   (SPEC.md §4, D23). Keep **Confirm email** on. Without it, a stranger can make an
+   account for any address with a password and sign in at once.
+5. Connect a mail sender, paste the two sign-in email templates, and set the email rate
+   limit. Follow [`setup/email-sign-in.md`](setup/email-sign-in.md), Production. Until
+   you do, Supabase's built-in sender sends only a few emails each hour.
 
 ## 3. Application environment
 
@@ -58,7 +63,7 @@ Copy `.env.example` as the starting point and set these on the host:
 | `NEXT_PUBLIC_SUPABASE_URL`      | From step 1.                                              |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | From step 1. Public by design.                            |
 | `SUPABASE_SERVICE_ROLE_KEY`     | From step 1. Server only. Never `NEXT_PUBLIC_`.           |
-| `PORCHLIGHT_ADMIN_EMAIL`        | Your Google account's email. It becomes admin on its first sign-in, and no other account does. Without it, the first profile ever is the admin, so set it before the site is reachable. |
+| `PORCHLIGHT_ADMIN_EMAIL`        | The email you sign in with (Google or an email link). It becomes admin on its first sign-in, and no other account does. Without it, the first profile ever is the admin, so set it before the site is reachable. |
 | `AUTH_DEV_SIGN_IN`              | Leave unset. A production build ignores it, but it should not be there. |
 | `PROFILE_PROVIDER`              | Leave unset (`supabase`). `fake` is refused in production. |
 | `POST_PROVIDER`, `COMMENT_PROVIDER`, `REACTION_PROVIDER`, `SITE_CONFIG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. |
@@ -75,8 +80,8 @@ step 8 sets them from the admin settings page after first sign-in.
 
 ## 4. First sign-in
 
-1. Deploy, open the site, click "Sign in with Google" with the `PORCHLIGHT_ADMIN_EMAIL`
-   account.
+1. Deploy, open the site, click "Sign in" and sign in with the `PORCHLIGHT_ADMIN_EMAIL`
+   account, through Google or an email link.
 2. Open `/settings` and confirm the role line reads `Role: admin.` Pick your handle.
 
 ## 5. Cloudflare Turnstile

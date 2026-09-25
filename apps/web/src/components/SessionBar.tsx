@@ -1,7 +1,7 @@
 import type { Actor, UserRole } from "@porchlight/core";
 import Link from "next/link";
 
-import { signInWithGoogle, signOut } from "@/app/auth/actions";
+import { signOut } from "@/app/auth/actions";
 import { createSessionClient } from "@/auth/session-client";
 import { Avatar } from "@/components/Avatar";
 import { HeaderMenu } from "@/components/header/HeaderMenu";
@@ -98,14 +98,9 @@ export async function SessionBar() {
           <Link href="/anon" className={classNames(styles.quietLink, styles.desktopOnly)}>
             Your anonymous activity
           </Link>
-          <form action={signInWithGoogle}>
-            <button className={classNames("pill-button", styles.signIn)} type="submit">
-              {/* One span: the button is a flex row, and a second item would add a gap. */}
-              <span>
-                Sign in<span className={styles.phoneHidden}> with Google</span>
-              </span>
-            </button>
-          </form>
+          <Link className={classNames("pill-button", styles.signIn)} href="/auth/sign-in">
+            Sign in
+          </Link>
           <HeaderMenu
             label="Menu"
             testId="visitor-menu"

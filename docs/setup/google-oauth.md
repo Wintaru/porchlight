@@ -71,10 +71,9 @@ sees an expired token.
 
 ## Production checklist
 
-- Disable email and password sign-in on the hosted project (Authentication, Providers,
-  Email) so Google is the only path. The local stack keeps it on for the seed users.
-  An unconfirmed email sign-up with the `PORCHLIGHT_ADMIN_EMAIL` address would become
-  admin, so this switch matters.
+- Keep the Email provider on for the sign-in links, with **Confirm email** on
+  ([email-sign-in.md](email-sign-in.md)). An unconfirmed email sign-up with the
+  `PORCHLIGHT_ADMIN_EMAIL` address would otherwise become admin.
 - Do not set `AUTH_DEV_SIGN_IN=on` in a production environment. The build refuses it,
   but the setting should not be there.
 - Set `PORCHLIGHT_ADMIN_EMAIL` before you deploy. Then only that account becomes admin,

@@ -20,11 +20,13 @@ async function devSignIn(
   await expect(page.getByTestId("session-handle")).toHaveText(`@${JUNE.handle}`);
 }
 
-test("a visitor sees the Google button and is sent to sign in from /settings", async ({
+test("a visitor sees the Sign in link and is sent to sign in from /settings", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Sign in" }),
+  ).toBeVisible();
 
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/auth\/dev-sign-in\?next=%2Fsettings$/);
@@ -99,7 +101,9 @@ test("sign-out ends the session", async ({ page }) => {
 
   await signOut(page);
 
-  await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Sign in" }),
+  ).toBeVisible();
   await expect(page.getByTestId("session-handle")).toHaveCount(0);
 });
 
@@ -113,10 +117,10 @@ test("the Google button starts the OAuth flow through Supabase Auth", async ({
   );
   const authorize = page.waitForRequest(/\/auth\/v1\/authorize\?.*provider=google/);
 
-  await page.goto("/");
+  await page.goto("/auth/sign-in?next=%2Fsettings");
   await page.getByRole("button", { name: "Sign in with Google" }).click();
 
   const request = await authorize;
   const redirectTo = new URL(request.url()).searchParams.get("redirect_to");
-  expect(redirectTo).toMatch(/\/auth\/callback\?next=%2F$/);
+  expect(redirectTo).toMatch(/\/auth\/callback\?next=%2Fsettings$/);
 });

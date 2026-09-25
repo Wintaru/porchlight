@@ -27,7 +27,7 @@ The MIT license covers the code only.
 | `packages/core`  | iDesign layers: Managers, Engines, Accessors, Utilities, and the composition root. |
 | `packages/db`    | The typed Supabase client, generated database types, and the RLS tests. |
 | `supabase`       | The local stack config, the migrations, and the seed.               |
-| `docs/setup`     | Setup guides for Supabase, Google OAuth, Turnstile, storage, hash matching, classifiers, email. |
+| `docs/setup`     | Setup guides for Supabase, Google OAuth, email sign-in, Turnstile, storage, hash matching, classifiers, email. |
 | `docs/deploy.md` | The ordered go-live steps that link those guides.                  |
 | `design`         | Approved screen boards.                                            |
 
@@ -64,7 +64,8 @@ The stack runs on the `583xx` ports (API `58321`, Postgres `58322`, Studio `5832
 The seed holds four members with password `porchlight`: `lamplighter` (admin), `mira`
 (moderator), `theo` (trusted) and `june` (probation). Sign in as one of them at
 http://localhost:3000/auth/dev-sign-in with `<handle>@porchlight.local`. Google sign-in
-needs keys and is for production (docs/setup/google-oauth.md).
+needs keys and is for production (docs/setup/google-oauth.md). Email sign-in links work
+locally: the emails go to Mailpit at http://127.0.0.1:58324 (docs/setup/email-sign-in.md).
 
 | Command          | What it does                                            |
 | ---------------- | ------------------------------------------------------- |
@@ -121,7 +122,7 @@ deliberate risk for a production deployment — and links that provider's guide 
 Porchlight runs anywhere Next.js and a Supabase project can: no vendor lock-in, and
 every external service has a fake mode so a first deploy can go live in a degraded but
 working state. [docs/deploy.md](docs/deploy.md) is the ordered, step-by-step sequence —
-a hosted Supabase project, Google sign-in, the application environment, and each
+a hosted Supabase project, Google and email sign-in, the application environment, and each
 provider guide in [docs/setup/](docs/setup/README.md) — from an empty account to a
 running instance.
 

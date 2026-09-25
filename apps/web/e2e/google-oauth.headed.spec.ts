@@ -18,10 +18,10 @@ test.skip(
 test("a person signs in with Google and gets a session", async ({ page }) => {
   test.setTimeout(PERSON_TIMEOUT + 30_000);
 
-  await page.goto("/");
+  await page.goto("/auth/sign-in");
   await page.getByRole("button", { name: "Sign in with Google" }).click();
 
-  // The person does the Google part. The header button carries no `next`, so the
+  // The person does the Google part. The page was opened with no `next`, so the
   // callback lands on `/`; the session showing is the thing to wait for.
   await expect(page.getByTestId("session-handle")).toHaveText(/^@/, {
     timeout: PERSON_TIMEOUT,
