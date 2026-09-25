@@ -1,7 +1,8 @@
 import { ResponseBase } from "../../../Common/ResponseBase";
 import type { PostRejectionReason } from "../PostRejectionReason";
 
-// The draft cannot be stored as sent: the title or a tag has no usable slug.
+// The draft cannot be stored as sent: the title or a tag has no usable slug, or the
+// cover is not one the author may use.
 export class PostRejectedResponse extends ResponseBase {
   constructor(
     correlationId: string,

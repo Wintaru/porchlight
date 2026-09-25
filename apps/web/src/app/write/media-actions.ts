@@ -4,10 +4,16 @@ import {
   DeleteMediaRequest,
   FinalizeUploadRequest,
   GetMediaRequest,
+  ListMediaRequest,
   MediaDeletedResponse,
   MediaFinalizedResponse,
+  MediaForbiddenResponse,
+  MediaListResponse,
+  MediaRepublishedResponse,
   MediaRefusedResponse,
   MediaResponse,
+  NoSuchMediaResponse,
+  RepublishMediaRequest,
   RequestUploadUrlRequest,
   UploadUrlIssuedResponse,
 } from "@porchlight/core";
@@ -16,17 +22,20 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
+import { type UploadView, uploadViewOf } from "@/lib/upload-view";
 import { mediaErrorTextFor } from "./media-messages";
 import type {
   DeleteUploadResult,
   FinalizeUploadResult,
   RequestUploadResult,
+  UploadLookup,
 } from "./media-results";
 
 const FILENAME_MAX_LENGTH = 255;
 
 // The editor's own attachment panel: request a place to put a file, confirm what the
-// browser already put there, or remove an upload the member owns (SPEC.md §6). Every
+// browser already put there, list or look up the member's uploads, or remove one
+// (SPEC.md §6). Every
 // Manager rule (the allowlist, the quota, the magic-byte check) lives in MediaManager;
 // these only parse the form and map the response to what the panel shows.
 
@@ -68,9 +77,8 @@ export async function finalizeUpload(
     return { ok: false, error: mediaErrorTextFor("unavailable") };
   }
 
-  const container = getDependencyContainer();
   const meta = await currentRequestMeta();
-  const finalized = await container.mediaManager.execute(
+  const finalized = await getDependencyContainer().mediaManager.execute(
     new FinalizeUploadRequest(
       actor,
       mediaId,
@@ -82,20 +90,61 @@ export async function finalizeUpload(
   if (!(finalized instanceof MediaFinalizedResponse)) {
     return { ok: false, error: errorTextFor(finalized) };
   }
-  const { asset } = finalized;
+  return { ok: true, upload: uploadViewOf(finalized.asset) };
+}
 
-  const viewed = await container.mediaManager.query(new GetMediaRequest(actor, mediaId));
-  if (!(viewed instanceof MediaResponse)) {
-    return { ok: false, error: errorTextFor(viewed) };
+// The member's newest uploads, so a file put up before a reload can still go into the
+// post (#52). An empty list for anyone else.
+export async function listUploads(): Promise<readonly UploadView[]> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member") {
+    return [];
   }
-  return {
-    ok: true,
-    mediaId: asset.id,
-    originalFilename: asset.originalFilename,
-    kind: asset.kind,
-    bytes: asset.bytes,
-    viewUrl: viewed.downloadUrl,
-  };
+  const response = await getDependencyContainer().mediaManager.query(
+    new ListMediaRequest(actor),
+  );
+  if (!(response instanceof MediaListResponse)) {
+    console.error(`upload list failed [${response.correlationId}]`, response);
+    return [];
+  }
+  return response.assets.map(uploadViewOf);
+}
+
+// One upload the member may see, for a cover older than the list (#52).
+export async function getUpload(mediaId: string): Promise<UploadLookup> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member" || !isEntityId(mediaId)) {
+    return { status: "gone" };
+  }
+  const response = await getDependencyContainer().mediaManager.query(
+    new GetMediaRequest(actor, mediaId),
+  );
+  if (response instanceof MediaResponse) {
+    return { status: "found", upload: uploadViewOf(response.asset) };
+  }
+  if (
+    response instanceof NoSuchMediaResponse ||
+    response instanceof MediaForbiddenResponse
+  ) {
+    return { status: "gone" };
+  }
+  console.error(`upload lookup failed [${response.correlationId}]`, response);
+  return { status: "failed" };
+}
+
+// Another try at an upload's public copy, after the first one failed (#36).
+export async function republishUpload(mediaId: string): Promise<FinalizeUploadResult> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member" || !isEntityId(mediaId)) {
+    return { ok: false, error: mediaErrorTextFor("unavailable") };
+  }
+  const response = await getDependencyContainer().mediaManager.execute(
+    new RepublishMediaRequest(actor, mediaId),
+  );
+  if (!(response instanceof MediaRepublishedResponse)) {
+    return { ok: false, error: errorTextFor(response) };
+  }
+  return { ok: true, upload: uploadViewOf(response.asset) };
 }
 
 export async function deleteUpload(mediaId: string): Promise<DeleteUploadResult> {

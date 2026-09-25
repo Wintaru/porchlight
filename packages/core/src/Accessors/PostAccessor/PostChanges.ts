@@ -12,6 +12,7 @@ export interface PostChanges {
   readonly summary?: string | null;
   readonly visibility?: PostVisibility;
   readonly commentsEnabled?: boolean;
+  readonly coverMediaId?: string | null;
   readonly tags?: readonly Tag[];
   readonly status?: PostStatus;
   readonly publishedAt?: Date | null;

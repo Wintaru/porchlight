@@ -59,6 +59,7 @@ import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMedi
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
 import { RepublishMediaHandler } from "../Managers/MediaManager/Handlers/RepublishMediaHandler";
+import { ListMediaHandler } from "../Managers/MediaManager/Handlers/ListMediaHandler";
 import { GetMediaHandler } from "../Managers/MediaManager/Handlers/GetMediaHandler";
 import { RequestUploadUrlAnonymouslyHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlAnonymouslyHandler";
 import { RequestUploadUrlHandler } from "../Managers/MediaManager/Handlers/RequestUploadUrlHandler";
@@ -68,6 +69,7 @@ import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMedi
 import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
 import { RepublishMediaRequest } from "../Managers/MediaManager/Requests/RepublishMediaRequest";
+import { ListMediaRequest } from "../Managers/MediaManager/Requests/ListMediaRequest";
 import { GetMediaRequest } from "../Managers/MediaManager/Requests/GetMediaRequest";
 import { RequestUploadUrlAnonymouslyRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlAnonymouslyRequest";
 import { RequestUploadUrlRequest } from "../Managers/MediaManager/Requests/RequestUploadUrlRequest";
@@ -302,12 +304,22 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           CreateDraftRequest,
-          new CreateDraftHandler(posts, content, permissions, agentGuard),
+          new CreateDraftHandler(posts, content, permissions, agentGuard, mediaAssets),
         )
-        .register(UpdateDraftRequest, new UpdateDraftHandler(posts, content, permissions))
+        .register(
+          UpdateDraftRequest,
+          new UpdateDraftHandler(posts, content, permissions, mediaAssets),
+        )
         .register(
           PublishPostRequest,
-          new PublishPostHandler(posts, profiles, notifications, permissions, agentGuard),
+          new PublishPostHandler(
+            posts,
+            profiles,
+            notifications,
+            permissions,
+            agentGuard,
+            mediaAssets,
+          ),
         )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))
         .register(DeletePostRequest, new DeletePostHandler(posts, permissions))
@@ -467,6 +479,7 @@ export class DependencyContainer {
           GetMediaRequest,
           new GetMediaHandler(mediaStorage, mediaAssets, permissions, mediaOptions),
         )
+        .register(ListMediaRequest, new ListMediaHandler(mediaAssets))
         .build(),
     );
 

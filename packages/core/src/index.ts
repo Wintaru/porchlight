@@ -212,6 +212,7 @@ export { DeleteMediaRequest } from "./Managers/MediaManager/Requests/DeleteMedia
 export { FinalizeUploadAnonymouslyRequest } from "./Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 export { FinalizeUploadRequest } from "./Managers/MediaManager/Requests/FinalizeUploadRequest";
 export { GetMediaRequest } from "./Managers/MediaManager/Requests/GetMediaRequest";
+export { ListMediaRequest } from "./Managers/MediaManager/Requests/ListMediaRequest";
 export { RepublishMediaRequest } from "./Managers/MediaManager/Requests/RepublishMediaRequest";
 export { RequestUploadUrlAnonymouslyRequest } from "./Managers/MediaManager/Requests/RequestUploadUrlAnonymouslyRequest";
 export { RequestUploadUrlRequest } from "./Managers/MediaManager/Requests/RequestUploadUrlRequest";
@@ -224,6 +225,7 @@ export { MediaQuotaExceededResponse } from "./Managers/MediaManager/Responses/Me
 export { MediaRefusedResponse } from "./Managers/MediaManager/Responses/MediaRefusedResponse";
 export { MediaRejectedResponse } from "./Managers/MediaManager/Responses/MediaRejectedResponse";
 export { MediaResponse } from "./Managers/MediaManager/Responses/MediaResponse";
+export { MediaListResponse } from "./Managers/MediaManager/Responses/MediaListResponse";
 export { MediaRepublishedResponse } from "./Managers/MediaManager/Responses/MediaRepublishedResponse";
 export { MediaUnavailableResponse } from "./Managers/MediaManager/Responses/MediaUnavailableResponse";
 export { NoSuchMediaResponse } from "./Managers/MediaManager/Responses/NoSuchMediaResponse";

@@ -65,6 +65,7 @@ function toInsert(post: NewPost): TablesInsert<"posts"> {
     summary: post.summary,
     visibility: post.visibility,
     comments_enabled: post.commentsEnabled,
+    cover_media_id: post.coverMediaId,
     origin: post.origin,
     agent_token_id: post.agentTokenId,
     reviewed_at: post.reviewedAt === null ? null : post.reviewedAt.toISOString(),

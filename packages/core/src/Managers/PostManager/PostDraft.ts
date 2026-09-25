@@ -9,4 +9,7 @@ export interface PostDraft {
   readonly tags: readonly string[];
   readonly visibility: PostVisibility;
   readonly commentsEnabled: boolean;
+  // The cover image (the Editor board's drop zone, #52): the author's own upload, or
+  // null for none. Absent means "no cover" on a new draft and "unchanged" on a save.
+  readonly coverMediaId?: string | null;
 }

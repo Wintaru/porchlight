@@ -31,6 +31,8 @@ export class FakeStorePostChangesHandler implements IHandler<
       bodyMd: changes.bodyMd ?? current.bodyMd,
       bodyHtml: changes.bodyHtml ?? current.bodyHtml,
       summary: changes.summary === undefined ? current.summary : changes.summary,
+      coverMediaId:
+        changes.coverMediaId === undefined ? current.coverMediaId : changes.coverMediaId,
       visibility: changes.visibility ?? current.visibility,
       commentsEnabled: changes.commentsEnabled ?? current.commentsEnabled,
       tags: changes.tags ?? current.tags,

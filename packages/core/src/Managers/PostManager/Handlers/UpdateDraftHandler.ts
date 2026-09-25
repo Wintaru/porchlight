@@ -1,3 +1,4 @@
+import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { PostChanges } from "../../../Accessors/PostAccessor/PostChanges";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
@@ -8,6 +9,8 @@ import { ResponseBase } from "../../../Common/ResponseBase";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
+import { checkCover } from "../checkCover";
+import { coverAwaitsReview } from "../coverAwaitsReview";
 import { permit } from "../permit";
 import { reviewStamp } from "../provenance";
 import type { UpdateDraftRequest } from "../Requests/UpdateDraftRequest";
@@ -36,6 +39,7 @@ export class UpdateDraftHandler implements IHandler<
     private readonly posts: IPostAccessor,
     private readonly content: IContentRenderEngine,
     private readonly permissions: IPermissionEngine,
+    private readonly mediaAssets: IMediaAssetAccessor,
   ) {}
 
   async handle(request: UpdateDraftRequest): Promise<UpdateDraftResult> {
@@ -84,6 +88,40 @@ export class UpdateDraftHandler implements IHandler<
       shaped.tags = tags;
     }
     if (changes.summary !== undefined) shaped.summary = changes.summary;
+    if (
+      changes.coverMediaId !== undefined &&
+      changes.coverMediaId !== current.coverMediaId
+    ) {
+      // Only a new cover is checked: a cover already on the post stays usable even if
+      // the author's upload list has since changed around it.
+      const authorId = current.author.kind === "member" ? current.author.profileId : "";
+      const badCover = await checkCover(
+        this.mediaAssets,
+        authorId,
+        changes.coverMediaId,
+        context,
+      );
+      if (badCover !== undefined) {
+        return badCover;
+      }
+      // A post already out (or in the queue) cannot take a cover a moderator has not
+      // seen: nothing would send it to them, and the cover would never show. A draft
+      // may, since publishing it sends the post to the queue (coverAwaitsReview).
+      if (current.status !== "draft") {
+        const held = await coverAwaitsReview(
+          this.mediaAssets,
+          changes.coverMediaId,
+          context,
+        );
+        if (held === true) {
+          return new PostRejectedResponse(correlationId, "cover");
+        }
+        if (held !== false) {
+          return held;
+        }
+      }
+      shaped.coverMediaId = changes.coverMediaId;
+    }
     if (changes.visibility !== undefined) shaped.visibility = changes.visibility;
     if (changes.commentsEnabled !== undefined)
       shaped.commentsEnabled = changes.commentsEnabled;

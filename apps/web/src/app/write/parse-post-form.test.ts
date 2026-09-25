@@ -28,6 +28,7 @@ describe("parsePostForm", () => {
         tags: " Woodworking, garden ,, ",
         visibility: "unlisted",
         commentsEnabled: "on",
+        coverMediaId: "11111111-1111-4111-8111-111111111111",
       }),
     );
     expect(parsed).toEqual({
@@ -39,6 +40,7 @@ describe("parsePostForm", () => {
         tags: ["Woodworking", "garden"],
         visibility: "unlisted",
         commentsEnabled: true,
+        coverMediaId: "11111111-1111-4111-8111-111111111111",
       },
     });
   });
@@ -51,6 +53,17 @@ describe("parsePostForm", () => {
       ok: true,
       draft: { summary: null, commentsEnabled: false, visibility: "public", tags: [] },
     });
+  });
+
+  test("an empty or malformed cover field is no cover", () => {
+    for (const coverMediaId of ["", "not-an-id", "../etc"]) {
+      expect(parsePostForm(form({ title: "x", bodyMd: "", coverMediaId }))).toMatchObject(
+        {
+          ok: true,
+          draft: { coverMediaId: null },
+        },
+      );
+    }
   });
 
   test("refuses a blank title and every over-long field", () => {

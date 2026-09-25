@@ -17,11 +17,17 @@ export class SupabaseLoadMediaAssetsByOwnerHandler implements IHandler<
   constructor(private readonly db: DbClient) {}
 
   async handle(request: LoadMediaAssetsByOwnerRequest): Promise<Result> {
-    const { data, error } = await this.db
+    const { listing } = request;
+    const query = this.db
       .from("media_assets")
       .select(MEDIA_ASSET_COLUMNS)
       .eq("owner_id", request.profileId)
       .order("created_at", { ascending: false });
+    const { data, error } = await (listing === undefined
+      ? query
+      : (listing.excludeLocked ? query.neq("scan_status", "locked") : query).limit(
+          listing.limit,
+        ));
     if (error) {
       return new MediaAssetAccessFailedResponse(request.correlationId, error.message);
     }

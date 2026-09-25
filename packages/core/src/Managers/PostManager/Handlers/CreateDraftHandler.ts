@@ -1,3 +1,4 @@
+import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { StoreNewPostRequest } from "../../../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { PostSlugTakenResponse } from "../../../Accessors/PostAccessor/Responses/PostSlugTakenResponse";
@@ -11,6 +12,7 @@ import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Respo
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { admitAgent } from "../admitAgent";
+import { checkCover } from "../checkCover";
 import { permit } from "../permit";
 import { provenanceOf } from "../provenance";
 import type { CreateDraftRequest } from "../Requests/CreateDraftRequest";
@@ -46,6 +48,7 @@ export class CreateDraftHandler implements IHandler<
     private readonly content: IContentRenderEngine,
     private readonly permissions: IPermissionEngine,
     private readonly agentGuard: IAgentGuardEngine,
+    private readonly mediaAssets: IMediaAssetAccessor,
   ) {}
 
   async handle(request: CreateDraftRequest): Promise<CreateDraftResult> {
@@ -76,6 +79,15 @@ export class CreateDraftHandler implements IHandler<
       return capped;
     }
 
+    const badCover = await checkCover(
+      this.mediaAssets,
+      actor.profile.id,
+      draft.coverMediaId,
+      context,
+    );
+    if (badCover !== undefined) {
+      return badCover;
+    }
     const tags = await shapeTags(this.content, draft.tags, context);
     if (tags instanceof ResponseBase) {
       return tags;
@@ -106,6 +118,7 @@ export class CreateDraftHandler implements IHandler<
             summary: draft.summary,
             visibility: draft.visibility,
             commentsEnabled: draft.commentsEnabled,
+            coverMediaId: draft.coverMediaId ?? null,
             tags,
             ...provenanceOf(actor, timestamp),
           },

@@ -67,6 +67,7 @@ function toColumns(changes: PostChanges): TablesUpdate<"posts"> {
   if (changes.bodyMd !== undefined) columns.body_md = changes.bodyMd;
   if (changes.bodyHtml !== undefined) columns.body_html = changes.bodyHtml;
   if (changes.summary !== undefined) columns.summary = changes.summary;
+  if (changes.coverMediaId !== undefined) columns.cover_media_id = changes.coverMediaId;
   if (changes.visibility !== undefined) columns.visibility = changes.visibility;
   if (changes.commentsEnabled !== undefined)
     columns.comments_enabled = changes.commentsEnabled;

@@ -32,6 +32,7 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "tag-length": `A tag is at most ${String(TAG_MAX_LENGTH)} characters.`,
   "rejected-title": "The title needs at least one letter or digit.",
   "rejected-tag": "Every tag needs at least one letter or digit.",
+  "rejected-cover": "That file cannot be the cover. Choose one of your own images.",
   "posting-closed": "Posting is closed to members on this site.",
   // Never reached by a post action; the table is keyed by every denial reason.
   "comments-closed": "Comments are closed here.",

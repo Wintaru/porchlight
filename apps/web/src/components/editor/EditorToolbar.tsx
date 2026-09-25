@@ -91,6 +91,9 @@ export function EditorToolbar({
       {children}
     </button>
   );
+  // Code is literal text: a link or a picture inside it would be written out as
+  // markdown characters, not made (#52).
+  const inCode = (active?.code ?? false) || (active?.codeBlock ?? false);
   return (
     <div className={styles.toolbar} role="toolbar" aria-label="Formatting">
       <div className={styles.tools}>
@@ -131,7 +134,7 @@ export function EditorToolbar({
           "H3",
         )}
         <span className={styles.divider} />
-        {tool("Link", active?.link ?? false, true, onInsertLink, <LinkIcon />)}
+        {tool("Link", active?.link ?? false, !inCode, onInsertLink, <LinkIcon />)}
         {tool(
           "Quote",
           active?.blockquote ?? false,
@@ -178,7 +181,7 @@ export function EditorToolbar({
           },
           <CodeBlockIcon />,
         )}
-        {tool("Image", false, true, onInsertImage, <ImageIcon />)}
+        {tool("Image", false, !inCode, onInsertImage, <ImageIcon />)}
       </div>
       <div className={styles.modes} role="group" aria-label="Body mode">
         <button

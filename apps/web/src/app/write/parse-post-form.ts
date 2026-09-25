@@ -1,5 +1,7 @@
 import type { PostDraft } from "@porchlight/core";
 
+import { isEntityId } from "@/lib/entity-id";
+
 // The edge of the editor form: trims, caps lengths, splits tags, and turns empty text
 // into `null` where the column is nullable. The rules of a post (slug, HTML, who may
 // write) belong to the PostManager; only the sizes are decided here.
@@ -59,8 +61,17 @@ export function parsePostForm(formData: FormData): PostFormResult {
       tags,
       visibility: formData.get("visibility") === "unlisted" ? "unlisted" : "public",
       commentsEnabled: formData.get("commentsEnabled") === "on",
+      coverMediaId: coverOf(formData),
     },
   };
+}
+
+// The cover picker's hidden field: an upload's id, or empty for no cover. Anything that
+// is not an id reads as no cover; whether the id is the author's own image is the
+// Manager's check.
+function coverOf(formData: FormData): string | null {
+  const value = formData.get("coverMediaId");
+  return typeof value === "string" && isEntityId(value) ? value : null;
 }
 
 // What the submit button asked for. Two buttons share the form; the one clicked sends

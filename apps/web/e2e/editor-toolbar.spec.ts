@@ -148,3 +148,23 @@ test("the markdown view disables every formatting button and keeps the text", as
   await page.getByRole("button", { name: "Rich text", exact: true }).click();
   await expect(tool(page, "Link")).toBeEnabled();
 });
+
+test("Link and Image are disabled inside code, where they cannot apply (#52)", async ({
+  page,
+}) => {
+  await openBlankEditor(page);
+  await expect(tool(page, "Link")).toBeEnabled();
+  await expect(tool(page, "Image")).toBeEnabled();
+
+  await tool(page, "Code block").click();
+  await page.keyboard.type("const x = 1;");
+  await expect(tool(page, "Link")).toBeDisabled();
+  await expect(tool(page, "Image")).toBeDisabled();
+
+  // Out of the block, both come back.
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
+  await expect(tool(page, "Link")).toBeEnabled();
+  await expect(tool(page, "Image")).toBeEnabled();
+});

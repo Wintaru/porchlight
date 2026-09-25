@@ -54,8 +54,7 @@ const PAGES: readonly PageCase[] = [
   { path: "/@theo/hello-from-the-porch", as: THEO },
   // A member sees the claim form a visitor does not.
   { path: "/anon", as: THEO },
-  // Attachments are a bare file input, not the Editor board's drop zone.
-  { path: "/write", as: THEO, gaps: ["file-input"] },
+  { path: "/write", as: THEO },
   { path: "/settings", as: THEO },
   { path: "/settings/erase", as: THEO },
   { path: "/mod/queue", as: MIRA },

@@ -1,3 +1,4 @@
+import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { PostChanges } from "../../../Accessors/PostAccessor/PostChanges";
@@ -11,6 +12,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { admitAgent } from "../admitAgent";
+import { coverAwaitsReview } from "../coverAwaitsReview";
 import { permit } from "../permit";
 import { publishesAtOnce } from "../publishesAtOnce";
 import { reviewStamp } from "../provenance";
@@ -32,8 +34,10 @@ type PublishPostResult =
   | PostUnavailableResponse;
 
 // A draft goes to `published` for a trusted member, an admin or a moderator, and to
-// `pending` for a member on probation (D7). Publishing a post that is already up, or
-// already waiting, changes nothing. A post a moderator took down stays down.
+// `pending` for a member on probation (D7) — or for anyone whose cover the classifier
+// flagged and nobody has approved yet (#36), so a moderator sees it in the queue.
+// Publishing a post that is already up, or already waiting, changes nothing. A post a
+// moderator took down stays down.
 export class PublishPostHandler implements IHandler<
   PublishPostRequest,
   PublishPostResult
@@ -44,6 +48,7 @@ export class PublishPostHandler implements IHandler<
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly agentGuard: IAgentGuardEngine,
+    private readonly mediaAssets: IMediaAssetAccessor,
   ) {}
 
   async handle(request: PublishPostRequest): Promise<PublishPostResult> {
@@ -76,10 +81,19 @@ export class PublishPostHandler implements IHandler<
       return new PostNotPublishableResponse(correlationId, current.status);
     }
 
+    const heldCover = await coverAwaitsReview(
+      this.mediaAssets,
+      current.coverMediaId,
+      context,
+    );
+    if (typeof heldCover !== "boolean") {
+      return heldCover;
+    }
     const review = reviewStamp(actor, timestamp);
-    const changes: PostChanges = publishesAtOnce(actor)
-      ? { status: "published", publishedAt: timestamp, ...review }
-      : { status: "pending", publishedAt: null, ...review };
+    const changes: PostChanges =
+      publishesAtOnce(actor) && !heldCover
+        ? { status: "published", publishedAt: timestamp, ...review }
+        : { status: "pending", publishedAt: null, ...review };
     const stored = await this.posts.store(
       new StorePostChangesRequest(postId, changes, context),
     );

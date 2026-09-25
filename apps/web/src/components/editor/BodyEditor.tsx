@@ -1,7 +1,7 @@
 "use client";
 
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 
 import { EDITOR_EXTENSIONS } from "./editor-extensions";
 import styles from "./editor.module.css";
@@ -9,16 +9,24 @@ import { type BodyMode, EditorToolbar } from "./EditorToolbar";
 import { trimBlankEnds } from "./trim-blank-ends";
 import { UrlDialog, type UrlDialogKind, type UrlDialogValue } from "./UrlDialog";
 
+// An upload going into the body (#52): an image as a picture, any other file as a
+// download link on a line of its own, which the prose styles draw as a card.
+export type BodyInsert =
+  | { readonly kind: "image"; readonly url: string; readonly alt: string }
+  | { readonly kind: "file"; readonly url: string; readonly label: string };
+
 interface BodyEditorProps {
   readonly initialMarkdown: string;
   readonly onChange: (markdown: string) => void;
+  // Set by the body to its insert function, for the attachment panel beside it.
+  readonly insertRef: RefObject<((item: BodyInsert) => void) | null>;
 }
 
 // The body: Tiptap in rich mode, a textarea over the same markdown in markdown mode.
 // Markdown is the one truth (SPEC.md §2): the hidden `bodyMd` field carries it to the
 // form, the rich view serializes to it on every edit, and switching to rich mode parses
 // it back. A body that is never touched is submitted as it was loaded, byte for byte.
-export function BodyEditor({ initialMarkdown, onChange }: BodyEditorProps) {
+export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorProps) {
   const [mode, setMode] = useState<BodyMode>("rich");
   const [markdown, setMarkdown] = useState(initialMarkdown);
   const [dialog, setDialog] = useState<UrlDialogKind | null>(null);
@@ -49,6 +57,45 @@ export function BodyEditor({ initialMarkdown, onChange }: BodyEditorProps) {
       onChangeRef.current(next);
     },
   });
+
+  // Rich mode inserts at the cursor. Markdown mode has no cursor to trust once focus
+  // left the textarea, so the snippet goes on a line of its own at the end.
+  useEffect(() => {
+    insertRef.current = (item) => {
+      if (mode === "rich" && editor !== null) {
+        // At the end of the selection, never over it: an image just inserted stays
+        // selected, and the next insert must go after it, not replace it.
+        const at = editor.state.selection.to;
+        const content =
+          item.kind === "image"
+            ? { type: "image", attrs: { src: item.url, alt: item.alt } }
+            : {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: item.label,
+                    marks: [{ type: "link", attrs: { href: item.url } }],
+                  },
+                ],
+              };
+        editor.chain().focus().insertContentAt(at, content).run();
+        return;
+      }
+      const snippet =
+        item.kind === "image"
+          ? `![${plain(item.alt)}](${item.url})`
+          : `[${plain(item.label)}](${item.url})`;
+      setMarkdown((current) => {
+        const next = `${current.trimEnd()}${current.trim() === "" ? "" : "\n\n"}${snippet}\n`;
+        onChangeRef.current(next);
+        return next;
+      });
+    };
+    return () => {
+      insertRef.current = null;
+    };
+  }, [editor, insertRef, mode]);
 
   const changeMode = (next: BodyMode) => {
     if (next === mode) {
@@ -156,4 +203,9 @@ export function BodyEditor({ initialMarkdown, onChange }: BodyEditorProps) {
       />
     </>
   );
+}
+
+// Text inside a markdown link or alt: square brackets would end it early.
+function plain(text: string): string {
+  return text.replace(/[[\]]/g, "");
 }

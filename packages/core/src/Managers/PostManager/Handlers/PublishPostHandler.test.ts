@@ -1,3 +1,4 @@
+import { MediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/MediaAssetAccessor";
 import { describe, expect, test } from "vitest";
 
 import { NotificationAccessor } from "../../../Accessors/NotificationAccessor/NotificationAccessor";
@@ -114,6 +115,12 @@ function wire(state: FakePostState) {
       notifications,
       permissions,
       agentGuard,
+      // No post here has a cover, so the cover lookup never runs.
+      new MediaAssetAccessor(
+        new HandlerResolverBuilder().build(),
+        new HandlerResolverBuilder().build(),
+        new HandlerResolverBuilder().build(),
+      ),
     ),
     unpublish: new UnpublishPostHandler(posts, permissions),
   };

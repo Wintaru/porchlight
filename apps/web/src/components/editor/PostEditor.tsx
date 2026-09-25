@@ -12,7 +12,8 @@ import {
 import { errorTextFor } from "@/app/write/post-form-messages";
 import { AttachmentPanel } from "./AttachmentPanel";
 import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
-import { BodyEditor } from "./BodyEditor";
+import { BodyEditor, type BodyInsert } from "./BodyEditor";
+import { CoverPicker } from "./CoverPicker";
 import { classNames } from "@/lib/class-names";
 import styles from "./editor.module.css";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
@@ -75,6 +76,7 @@ export function PostEditor({
   const lastSavedRef = useRef<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const bodyRef = useRef(post?.bodyMd ?? "");
+  const insertRef = useRef<((item: BodyInsert) => void) | null>(null);
   const isDraft = post === undefined || post.status === "draft";
 
   const markDirty = useCallback(() => {
@@ -248,6 +250,7 @@ export function PostEditor({
             }}
           />
           <BodyEditor
+            insertRef={insertRef}
             initialMarkdown={post?.bodyMd ?? ""}
             onChange={(markdown) => {
               bodyRef.current = markdown;
@@ -256,6 +259,7 @@ export function PostEditor({
           />
         </div>
         <aside className={styles.side}>
+          <CoverPicker initialMediaId={post?.coverMediaId ?? null} onChange={markDirty} />
           <label className={styles.field}>
             <span className={styles.label}>Summary for the preview card</span>
             <input
@@ -322,7 +326,11 @@ export function PostEditor({
               Allow comments
             </label>
           </div>
-          <AttachmentPanel />
+          <AttachmentPanel
+            onInsert={(item) => {
+              insertRef.current?.(item);
+            }}
+          />
           {trustLevel === "probation" && (
             <div className={styles.card} data-testid="probation-note">
               <strong>You are a new member</strong>
