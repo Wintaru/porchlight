@@ -412,3 +412,55 @@ describe("profiles", () => {
     expect(code).toBe(CHECK_VIOLATION);
   });
 });
+
+describe("auth.users (#67)", () => {
+  // As the migration owner, in a transaction that is always rolled back: the browser
+  // roles and the service role cannot write auth.users at all.
+  async function passwordAfter(
+    confirmedAtInsert: boolean,
+    change: (tx: TransactionSql, id: string) => Promise<unknown>,
+  ): Promise<string | null> {
+    let found: string | null | undefined;
+    await sql
+      .begin(async (tx) => {
+        const [row] = await tx<{ id: string }[]>`
+          insert into auth.users (id, email, encrypted_password, email_confirmed_at)
+          values (gen_random_uuid(), 'pre-registered@example.com', 'a-strangers-hash',
+                  ${confirmedAtInsert ? new Date() : null})
+          returning id
+        `;
+        if (row === undefined) throw new Error("no auth.users row");
+        await change(tx, row.id);
+        const [after] = await tx<{ encrypted_password: string | null }[]>`
+          select encrypted_password from auth.users where id = ${row.id}
+        `;
+        found = after?.encrypted_password ?? null;
+        throw new RolledBack();
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof RolledBack)) throw error;
+      });
+    if (found === undefined) throw new Error("the check did not run");
+    return found;
+  }
+
+  test("confirming an address drops a password set before it was confirmed", async () => {
+    const password = await passwordAfter(
+      false,
+      (tx, id) => tx`update auth.users set email_confirmed_at = now() where id = ${id}`,
+    );
+
+    expect(password).toBeNull();
+  });
+
+  test("an account written already confirmed keeps its password", async () => {
+    const password = await passwordAfter(
+      true,
+      (tx, id) => tx`update auth.users set last_sign_in_at = now() where id = ${id}`,
+    );
+
+    expect(password).toBe("a-strangers-hash");
+  });
+});
+
+class RolledBack extends Error {}
