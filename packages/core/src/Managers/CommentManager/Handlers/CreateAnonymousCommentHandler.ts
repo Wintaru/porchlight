@@ -11,6 +11,8 @@ import { AdmitAnonymousSubmissionRequest } from "../../../Engines/AnonymousGuard
 import { AnonymousAdmittedResponse } from "../../../Engines/AnonymousGuardEngine/Responses/AnonymousAdmittedResponse";
 import { AnonymousGuardDeniedResponse } from "../../../Engines/AnonymousGuardEngine/Responses/AnonymousGuardDeniedResponse";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
+import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { loadPost, postSubjectOf } from "../loadPost";
 import { notifyStaffOfPendingComment } from "../notifyStaff";
@@ -24,6 +26,7 @@ import { CommentGuardRefusedResponse } from "../Responses/CommentGuardRefusedRes
 import { CommentRejectedResponse } from "../Responses/CommentRejectedResponse";
 import { CommentUnavailableResponse } from "../Responses/CommentUnavailableResponse";
 import { unavailable } from "../unavailable";
+import { recordEvidence } from "../recordEvidence";
 
 type CreateAnonymousCommentResult =
   | AnonymousCommentCreatedResponse
@@ -47,6 +50,7 @@ export class CreateAnonymousCommentHandler implements IHandler<
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly guard: IAnonymousGuardEngine,
+    private readonly evidence: IEvidenceEngine,
   ) {}
 
   async handle(
@@ -117,6 +121,18 @@ export class CreateAnonymousCommentHandler implements IHandler<
     if (!(stored instanceof CommentStoredResponse)) {
       return unavailable(correlationId, stored, "store");
     }
+    await recordEvidence(
+      this.evidence,
+      new RecordTextEvidenceRequest(
+        { kind: "comment", id: stored.comment.id },
+        comment.author,
+        null,
+        submission,
+        "pass",
+        comment.bodyMd,
+        context,
+      ),
+    );
     const notified = await notifyStaffOfPendingComment(
       this.profiles,
       this.notifications,

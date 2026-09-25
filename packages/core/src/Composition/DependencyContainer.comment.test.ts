@@ -29,7 +29,7 @@ import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraft
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 
@@ -81,14 +81,18 @@ async function publishedPost(
   commentsEnabled = true,
 ): Promise<Post> {
   const drafted = await container.postManager.execute(
-    new CreateDraftRequest(THEO, {
-      title: "The Cedar Planter Box",
-      bodyMd: "Three weekends.",
-      summary: null,
-      tags: [],
-      visibility: "public",
-      commentsEnabled,
-    }),
+    new CreateDraftRequest(
+      THEO,
+      {
+        title: "The Cedar Planter Box",
+        bodyMd: "Three weekends.",
+        summary: null,
+        tags: [],
+        visibility: "public",
+        commentsEnabled,
+      },
+      TEST_ORIGIN,
+    ),
   );
   if (!(drafted instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -110,7 +114,7 @@ async function comment(
   parentId: string | null = null,
 ): Promise<Comment> {
   const response = await container.commentManager.execute(
-    new CreateCommentRequest(actor, { postId, parentId, bodyMd }),
+    new CreateCommentRequest(actor, { postId, parentId, bodyMd }, TEST_ORIGIN),
   );
   if (!(response instanceof CommentResponse)) {
     throw new Error(`expected CommentResponse, got ${response.constructor.name}`);
@@ -210,11 +214,15 @@ describe("DependencyContainer: CommentManager", () => {
     const post = await publishedPost(container);
 
     const created = await container.commentManager.execute(
-      new CreateCommentRequest(VISITOR, {
-        postId: post.id,
-        parentId: null,
-        bodyMd: "Hi",
-      }),
+      new CreateCommentRequest(
+        VISITOR,
+        {
+          postId: post.id,
+          parentId: null,
+          bodyMd: "Hi",
+        },
+        TEST_ORIGIN,
+      ),
     );
     expect(created).toBeInstanceOf(CommentForbiddenResponse);
     expect(created).toMatchObject({ reason: "signed-out" });
@@ -234,7 +242,11 @@ describe("DependencyContainer: CommentManager", () => {
     const post = await publishedPost(container, false);
 
     const created = await container.commentManager.execute(
-      new CreateCommentRequest(THEO, { postId: post.id, parentId: null, bodyMd: "Hi" }),
+      new CreateCommentRequest(
+        THEO,
+        { postId: post.id, parentId: null, bodyMd: "Hi" },
+        TEST_ORIGIN,
+      ),
     );
     expect(created).toBeInstanceOf(CommentForbiddenResponse);
     expect(created).toMatchObject({ reason: "comments-closed" });
@@ -256,11 +268,15 @@ describe("DependencyContainer: CommentManager", () => {
 
     for (const actor of [THEO, ADMIN]) {
       const created = await container.commentManager.execute(
-        new CreateCommentRequest(actor, {
-          postId: post.id,
-          parentId: null,
-          bodyMd: "Hi",
-        }),
+        new CreateCommentRequest(
+          actor,
+          {
+            postId: post.id,
+            parentId: null,
+            bodyMd: "Hi",
+          },
+          TEST_ORIGIN,
+        ),
       );
       expect(created).toBeInstanceOf(CommentForbiddenResponse);
       expect(created).toMatchObject({ reason: "comments-closed" });
@@ -270,31 +286,43 @@ describe("DependencyContainer: CommentManager", () => {
   test("a comment on a draft is not allowed; on a missing post it is rejected", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(THEO, {
-        title: "Half a thought",
-        bodyMd: "",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        THEO,
+        {
+          title: "Half a thought",
+          bodyMd: "",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(drafted instanceof PostResponse)) {
       throw new Error("draft failed");
     }
 
     const onDraft = await container.commentManager.execute(
-      new CreateCommentRequest(THEO, {
-        postId: drafted.post.id,
-        parentId: null,
-        bodyMd: "Hi",
-      }),
+      new CreateCommentRequest(
+        THEO,
+        {
+          postId: drafted.post.id,
+          parentId: null,
+          bodyMd: "Hi",
+        },
+        TEST_ORIGIN,
+      ),
     );
     expect(onDraft).toBeInstanceOf(CommentForbiddenResponse);
     expect(onDraft).toMatchObject({ reason: "not-allowed" });
 
     const onNothing = await container.commentManager.execute(
-      new CreateCommentRequest(THEO, { postId: "nope", parentId: null, bodyMd: "Hi" }),
+      new CreateCommentRequest(
+        THEO,
+        { postId: "nope", parentId: null, bodyMd: "Hi" },
+        TEST_ORIGIN,
+      ),
     );
     expect(onNothing).toBeInstanceOf(CommentRejectedResponse);
     expect(onNothing).toMatchObject({ reason: "no-such-post" });
@@ -308,18 +336,26 @@ describe("DependencyContainer: CommentManager", () => {
     const pending = await comment(container, JUNE, post.id, "Pending.");
 
     const blank = await container.commentManager.execute(
-      new CreateCommentRequest(THEO, {
-        postId: post.id,
-        parentId: null,
-        bodyMd: "  \n ",
-      }),
+      new CreateCommentRequest(
+        THEO,
+        {
+          postId: post.id,
+          parentId: null,
+          bodyMd: "  \n ",
+        },
+        TEST_ORIGIN,
+      ),
     );
     expect(blank).toBeInstanceOf(CommentRejectedResponse);
     expect(blank).toMatchObject({ reason: "empty-body" });
 
     for (const parentId of ["nope", elsewhere.id, pending.id]) {
       const reply = await container.commentManager.execute(
-        new CreateCommentRequest(THEO, { postId: post.id, parentId, bodyMd: "Hi" }),
+        new CreateCommentRequest(
+          THEO,
+          { postId: post.id, parentId, bodyMd: "Hi" },
+          TEST_ORIGIN,
+        ),
       );
       expect(reply).toBeInstanceOf(CommentRejectedResponse);
       expect(reply).toMatchObject({ reason: "no-such-parent" });
@@ -519,7 +555,11 @@ describe("DependencyContainer: CommentManager", () => {
     const post = await publishedPost(container);
 
     const created = await container.commentManager.execute(
-      new CreateCommentRequest(THEO, { postId: post.id, parentId: null, bodyMd: "Hi" }),
+      new CreateCommentRequest(
+        THEO,
+        { postId: post.id, parentId: null, bodyMd: "Hi" },
+        TEST_ORIGIN,
+      ),
     );
     expect(created).toBeInstanceOf(CommentUnavailableResponse);
     expect(created).toMatchObject({ reason: "COMMENT_FAKE_RESULT=fail" });
@@ -543,7 +583,11 @@ describe("DependencyContainer: CommentManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
     await expect(
       container.commentManager.query(
-        new CreateCommentRequest(THEO, { postId: "p", parentId: null, bodyMd: "x" }),
+        new CreateCommentRequest(
+          THEO,
+          { postId: "p", parentId: null, bodyMd: "x" },
+          TEST_ORIGIN,
+        ),
       ),
     ).resolves.toBeInstanceOf(UnhandledRequestResponse);
   });

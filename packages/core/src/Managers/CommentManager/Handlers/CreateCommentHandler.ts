@@ -10,6 +10,8 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
+import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { loadPost, postSubjectOf } from "../loadPost";
 import { notifyStaffOfPendingComment } from "../notifyStaff";
@@ -22,6 +24,7 @@ import { CommentRejectedResponse } from "../Responses/CommentRejectedResponse";
 import { CommentResponse } from "../Responses/CommentResponse";
 import { CommentUnavailableResponse } from "../Responses/CommentUnavailableResponse";
 import { unavailable } from "../unavailable";
+import { recordEvidence } from "../recordEvidence";
 
 type CreateCommentResult =
   | CommentResponse
@@ -43,10 +46,11 @@ export class CreateCommentHandler implements IHandler<
     private readonly content: IContentRenderEngine,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly evidence: IEvidenceEngine,
   ) {}
 
   async handle(request: CreateCommentRequest): Promise<CreateCommentResult> {
-    const { correlationId, actor, draft, timestamp } = request;
+    const { correlationId, actor, draft, origin, timestamp } = request;
     // One clock for the whole call: the store stamps the row with the request's time.
     const context = { correlationId, timestamp };
 
@@ -109,6 +113,18 @@ export class CreateCommentHandler implements IHandler<
     if (!(stored instanceof CommentStoredResponse)) {
       return unavailable(correlationId, stored, "store");
     }
+    await recordEvidence(
+      this.evidence,
+      new RecordTextEvidenceRequest(
+        { kind: "comment", id: stored.comment.id },
+        comment.author,
+        null,
+        origin,
+        "not_required",
+        comment.bodyMd,
+        context,
+      ),
+    );
 
     // `queue.pending` tells staff a probation reply is waiting; `reply.created` tells a
     // trusted member's reply is visible at once — never both for the same comment

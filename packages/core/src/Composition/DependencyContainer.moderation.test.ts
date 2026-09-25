@@ -38,7 +38,7 @@ import { AnonymousPostCreatedResponse } from "../Managers/PostManager/Responses/
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { UNTRUSTED_CLIENT_IP } from "../Common/Retention";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 
@@ -119,14 +119,18 @@ async function publishedPost(
   title: string,
 ): Promise<{ readonly id: string }> {
   const drafted = await container.postManager.execute(
-    new CreateDraftRequest(THEO, {
-      title,
-      bodyMd: "A post to report.",
-      summary: null,
-      tags: [],
-      visibility: "public",
-      commentsEnabled: true,
-    }),
+    new CreateDraftRequest(
+      THEO,
+      {
+        title,
+        bodyMd: "A post to report.",
+        summary: null,
+        tags: [],
+        visibility: "public",
+        commentsEnabled: true,
+      },
+      TEST_ORIGIN,
+    ),
   );
   if (!(drafted instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -204,14 +208,18 @@ describe("DependencyContainer: ModerationManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
 
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(JUNE, {
-        title: "My first post",
-        bodyMd: "Hello, porch.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        JUNE,
+        {
+          title: "My first post",
+          bodyMd: "Hello, porch.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -246,14 +254,18 @@ describe("DependencyContainer: ModerationManager", () => {
   test("RejectItem refuses an empty reason", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(JUNE, {
-        title: "Another post",
-        bodyMd: "Hello again.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        JUNE,
+        {
+          title: "Another post",
+          bodyMd: "Hello again.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -268,14 +280,18 @@ describe("DependencyContainer: ModerationManager", () => {
   test("a plain member may not act on the queue", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(JUNE, {
-        title: "Yet another post",
-        bodyMd: "Hello a third time.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        JUNE,
+        {
+          title: "Yet another post",
+          bodyMd: "Hello a third time.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -376,14 +392,18 @@ describe("DependencyContainer: ModerationManager", () => {
   test("only what the public can see is reportable, and never by its own author (#40)", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const drafted = await container.postManager.execute(
-      new CreateDraftRequest(THEO, {
-        title: "Still a draft",
-        bodyMd: "Not out yet.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        THEO,
+        {
+          title: "Still a draft",
+          bodyMd: "Not out yet.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);

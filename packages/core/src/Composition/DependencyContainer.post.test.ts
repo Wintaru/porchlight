@@ -25,7 +25,7 @@ import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { PostsResponse } from "../Managers/PostManager/Responses/PostsResponse";
 import { PostUnavailableResponse } from "../Managers/PostManager/Responses/PostUnavailableResponse";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 
@@ -78,7 +78,7 @@ async function draft(
   overrides: Partial<PostDraft> = {},
 ): Promise<Post> {
   const response = await container.postManager.execute(
-    new CreateDraftRequest(actor, { ...DRAFT, ...overrides }),
+    new CreateDraftRequest(actor, { ...DRAFT, ...overrides }, TEST_ORIGIN),
   );
   if (!(response instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${response.constructor.name}`);
@@ -123,10 +123,10 @@ describe("DependencyContainer: PostManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
 
     const title = await container.postManager.execute(
-      new CreateDraftRequest(THEO, { ...DRAFT, title: "???" }),
+      new CreateDraftRequest(THEO, { ...DRAFT, title: "???" }, TEST_ORIGIN),
     );
     const tag = await container.postManager.execute(
-      new CreateDraftRequest(THEO, { ...DRAFT, tags: ["fine", "!!!"] }),
+      new CreateDraftRequest(THEO, { ...DRAFT, tags: ["fine", "!!!"] }, TEST_ORIGIN),
     );
 
     expect(title).toBeInstanceOf(PostRejectedResponse);
@@ -138,12 +138,13 @@ describe("DependencyContainer: PostManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
 
     const asVisitor = await container.postManager.execute(
-      new CreateDraftRequest(VISITOR, DRAFT),
+      new CreateDraftRequest(VISITOR, DRAFT, TEST_ORIGIN),
     );
     const asSuspended = await container.postManager.execute(
       new CreateDraftRequest(
         { kind: "member", profile: profile({ status: "suspended" }) },
         DRAFT,
+        TEST_ORIGIN,
       ),
     );
 
@@ -159,7 +160,7 @@ describe("DependencyContainer: PostManager", () => {
     });
 
     const asMember = await container.postManager.execute(
-      new CreateDraftRequest(THEO, DRAFT),
+      new CreateDraftRequest(THEO, DRAFT, TEST_ORIGIN),
     );
     const canMember = await container.postManager.query(new CheckCanPostRequest(THEO));
     const canAdmin = await container.postManager.query(new CheckCanPostRequest(ADMIN));
@@ -365,11 +366,9 @@ describe("DependencyContainer: PostManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
     const older = await draft(container, THEO, { title: "Older" });
     const newer = await container.postManager.execute(
-      new CreateDraftRequest(
-        THEO,
-        { ...DRAFT, title: "Newer" },
-        { timestamp: new Date(Date.now() + 60_000) },
-      ),
+      new CreateDraftRequest(THEO, { ...DRAFT, title: "Newer" }, TEST_ORIGIN, {
+        timestamp: new Date(Date.now() + 60_000),
+      }),
     );
     await container.postManager.execute(new PublishPostRequest(THEO, older.id));
     await draft(container, JUNE, { title: "Not Theo's" });
@@ -418,7 +417,7 @@ describe("DependencyContainer: PostManager", () => {
     });
 
     const created = await postsDown.postManager.execute(
-      new CreateDraftRequest(THEO, DRAFT),
+      new CreateDraftRequest(THEO, DRAFT, TEST_ORIGIN),
     );
     const got = await postsDown.postManager.query(
       new GetPostRequest(THEO, { by: "slug", slug: "x" }),
@@ -439,7 +438,7 @@ describe("DependencyContainer: PostManager", () => {
       container.postManager.execute(new CheckCanPostRequest(THEO)),
     ).resolves.toBeInstanceOf(UnhandledRequestResponse);
     await expect(
-      container.postManager.query(new CreateDraftRequest(THEO, DRAFT)),
+      container.postManager.query(new CreateDraftRequest(THEO, DRAFT, TEST_ORIGIN)),
     ).resolves.toBeInstanceOf(UnhandledRequestResponse);
   });
 

@@ -13,10 +13,14 @@ import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/
 import { DeriveSlugRequest } from "../../../Engines/ContentRenderEngine/Requests/DeriveSlugRequest";
 import { SlugDerivedResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugDerivedResponse";
 import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugUnusableResponse";
+import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { IHandler } from "../../../Common/IHandler";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
+import { evidenceTextOf } from "../evidenceTextOf";
 import { permit } from "../permit";
+import { recordEvidence } from "../recordEvidence";
 import type { CreateAnonymousPostRequest } from "../Requests/CreateAnonymousPostRequest";
 import { AnonymousPostCreatedResponse } from "../Responses/AnonymousPostCreatedResponse";
 import { PostGuardRefusedResponse } from "../Responses/PostGuardRefusedResponse";
@@ -53,6 +57,7 @@ export class CreateAnonymousPostHandler implements IHandler<
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly guard: IAnonymousGuardEngine,
+    private readonly evidence: IEvidenceEngine,
   ) {}
 
   async handle(request: CreateAnonymousPostRequest): Promise<CreateAnonymousPostResult> {
@@ -96,6 +101,19 @@ export class CreateAnonymousPostHandler implements IHandler<
     if (!(stored instanceof PostStoredResponse)) {
       return stored;
     }
+    // The guard has checked the Turnstile token by now; a failed one never gets here.
+    await recordEvidence(
+      this.evidence,
+      new RecordTextEvidenceRequest(
+        { kind: "post", id: stored.post.id },
+        stored.post.author,
+        null,
+        submission,
+        "pass",
+        evidenceTextOf(stored.post),
+        context,
+      ),
+    );
 
     const moved = await this.posts.store(
       new StorePostChangesRequest(

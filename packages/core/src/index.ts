@@ -23,6 +23,7 @@ export { UnhandledRequestResponse } from "./Common/UnhandledRequestResponse";
 export { type Actor, type AgentActor, VISITOR } from "./Common/Actor";
 export type { AnonymousStatusItem } from "./Common/AnonymousStatusItem";
 export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
+export type { RequestOrigin } from "./Common/RequestOrigin";
 export type { AnonymousUploadCap } from "./Common/AnonymousUploadCap";
 export {
   attachmentTypeForExtension,

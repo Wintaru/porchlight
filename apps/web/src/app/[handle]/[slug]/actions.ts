@@ -22,6 +22,7 @@ import { redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
+import { currentRequestMeta } from "@/lib/request-meta";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { signInPathFor } from "@/lib/sign-in-path";
 
@@ -51,7 +52,11 @@ export async function createComment(formData: FormData): Promise<void> {
     redirect(withCode(returnTo, "error", "too-long"));
   }
   const response = await getDependencyContainer().commentManager.execute(
-    new CreateCommentRequest(actor, { postId, parentId, bodyMd }),
+    new CreateCommentRequest(
+      actor,
+      { postId, parentId, bodyMd },
+      await currentRequestMeta(),
+    ),
   );
   if (!(response instanceof CommentResponse)) {
     redirect(withCode(returnTo, "error", errorCode(response)));

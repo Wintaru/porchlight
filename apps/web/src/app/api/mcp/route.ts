@@ -15,6 +15,7 @@ import {
   POST_VISIBILITIES,
   publishesAtOnce,
   PublishPostRequest,
+  type RequestOrigin,
   ResolveAgentTokenRequest,
   UpdateDraftRequest,
 } from "@porchlight/core";
@@ -22,6 +23,7 @@ import * as z from "zod/v4";
 
 import { getAgentsPolicy } from "@/lib/agents-policy";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
 import { MCP_INSTRUCTIONS } from "./instructions";
 import { toPostIndexView, toPostView } from "./post-view";
@@ -58,22 +60,45 @@ function actorFrom(extra: unknown): AgentActor | undefined {
   return actor.kind === "agent" ? (actor as AgentActor) : undefined;
 }
 
+// Where the agent's request came from, for a draft's evidence envelope (SPEC.md §7),
+// set by `serve` below next to the actor.
+function originFrom(extra: unknown): RequestOrigin | undefined {
+  if (typeof extra !== "object" || extra === null || !("origin" in extra)) {
+    return undefined;
+  }
+  const { origin } = extra;
+  if (
+    typeof origin !== "object" ||
+    origin === null ||
+    !("clientIp" in origin) ||
+    typeof origin.clientIp !== "string"
+  ) {
+    return undefined;
+  }
+  return origin as RequestOrigin;
+}
+
 const handler = createMcpHandler(({ authInfo }) => {
   const actor = actorFrom(authInfo?.extra);
+  const origin = originFrom(authInfo?.extra);
   const server = new McpServer(
     { name: "porchlight", version: "1.0.0" },
     { instructions: MCP_INSTRUCTIONS },
   );
-  if (actor === undefined) {
+  if (actor === undefined || origin === undefined) {
     // `fetch` below refuses an unauthenticated request before it reaches here, so this
     // is a wiring bug, not a path a caller can take.
     return server;
   }
-  registerTools(server, actor);
+  registerTools(server, actor, origin);
   return server;
 });
 
-function registerTools(server: McpServer, actor: AgentActor): void {
+function registerTools(
+  server: McpServer,
+  actor: AgentActor,
+  origin: RequestOrigin,
+): void {
   const { postManager, siteConfigManager } = getDependencyContainer();
   const { handle } = actor.profile;
   const view = (post: Parameters<typeof toPostView>[0]) =>
@@ -181,14 +206,18 @@ function registerTools(server: McpServer, actor: AgentActor): void {
     },
     async (input) => {
       const response = await postManager.execute(
-        new CreateDraftRequest(actor, {
-          title: input.title,
-          bodyMd: input.body_md,
-          summary: input.summary ?? null,
-          tags: input.tags ?? [],
-          visibility: input.visibility ?? "public",
-          commentsEnabled: input.comments_enabled ?? true,
-        }),
+        new CreateDraftRequest(
+          actor,
+          {
+            title: input.title,
+            bodyMd: input.body_md,
+            summary: input.summary ?? null,
+            tags: input.tags ?? [],
+            visibility: input.visibility ?? "public",
+            commentsEnabled: input.comments_enabled ?? true,
+          },
+          origin,
+        ),
       );
       return isPost(response)
         ? ok(
@@ -333,7 +362,13 @@ async function serve(request: Request): Promise<Response> {
       token: "",
       clientId: verdict.actor.grant.tokenId,
       scopes: [...verdict.actor.grant.scopes],
-      extra: { actor: verdict.actor },
+      extra: {
+        actor: verdict.actor,
+        origin: {
+          clientIp: clientIpFrom(request.headers),
+          userAgent: request.headers.get("user-agent") ?? undefined,
+        },
+      },
     },
   });
 }

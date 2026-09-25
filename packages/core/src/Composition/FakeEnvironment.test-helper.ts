@@ -1,3 +1,5 @@
+import type { RequestOrigin } from "../Common/RequestOrigin";
+import { UNTRUSTED_CLIENT_IP } from "../Common/Retention";
 import type { Environment } from "./Environment";
 
 // The smallest environment that builds a container with no external store: every
@@ -19,6 +21,14 @@ export const FAKE_ENV: Environment = {
   AUDIT_PROVIDER: "fake",
   NOTIFICATION_PROVIDER: "fake",
   AGENT_TOKEN_PROVIDER: "fake",
-  // Required unconditionally by createAnonymousGuardEngine, even with every store faked.
+  EVIDENCE_PROVIDER: "fake",
+  // Required unconditionally by createAnonymousGuardEngine and createEvidenceEngine, even
+  // with every store faked.
   EVIDENCE_IP_HASH_SALT: "test-salt",
+};
+
+// Where a test's signed-in write came from: no trusted proxy, like a local stack.
+export const TEST_ORIGIN: RequestOrigin = {
+  clientIp: UNTRUSTED_CLIENT_IP,
+  userAgent: "vitest",
 };

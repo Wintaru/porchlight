@@ -10,17 +10,21 @@ import { DeriveSlugRequest } from "../../../Engines/ContentRenderEngine/Requests
 import { SlugDerivedResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugDerivedResponse";
 import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Responses/SlugUnusableResponse";
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
+import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { admitAgent } from "../admitAgent";
 import { checkCover } from "../checkCover";
 import { permit } from "../permit";
 import { provenanceOf } from "../provenance";
+import { recordEvidence } from "../recordEvidence";
 import type { CreateDraftRequest } from "../Requests/CreateDraftRequest";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import type { PostRateLimitedResponse } from "../Responses/PostRateLimitedResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
+import { evidenceTextOf } from "../evidenceTextOf";
 import { renderBody, shapeTags } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
@@ -49,10 +53,11 @@ export class CreateDraftHandler implements IHandler<
     private readonly permissions: IPermissionEngine,
     private readonly agentGuard: IAgentGuardEngine,
     private readonly mediaAssets: IMediaAssetAccessor,
+    private readonly evidence: IEvidenceEngine,
   ) {}
 
   async handle(request: CreateDraftRequest): Promise<CreateDraftResult> {
-    const { correlationId, actor, draft, timestamp } = request;
+    const { correlationId, actor, draft, origin, timestamp } = request;
     // One clock for the whole call: the store stamps the row with the request's time.
     const context = { correlationId, timestamp };
 
@@ -126,6 +131,18 @@ export class CreateDraftHandler implements IHandler<
         ),
       );
       if (stored instanceof PostStoredResponse) {
+        await recordEvidence(
+          this.evidence,
+          new RecordTextEvidenceRequest(
+            { kind: "post", id: stored.post.id },
+            stored.post.author,
+            stored.post.agentTokenId,
+            origin,
+            "not_required",
+            evidenceTextOf(stored.post),
+            context,
+          ),
+        );
         return new PostResponse(correlationId, stored.post);
       }
       if (!(stored instanceof PostSlugTakenResponse)) {

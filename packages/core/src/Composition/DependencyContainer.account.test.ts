@@ -19,7 +19,7 @@ import { ProfileResponse } from "../Managers/AccountManager/Responses/ProfileRes
 import { SignUpClosedResponse } from "../Managers/AccountManager/Responses/SignUpClosedResponse";
 import type { SignInIdentity } from "../Managers/AccountManager/SignInIdentity";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 const FIRST: SignInIdentity = {
   userId: "00000000-0000-4000-8000-000000000101",
@@ -295,14 +295,18 @@ describe("DependencyContainer: AccountManager", () => {
     const me = await signIn(container, FIRST);
     const actor = { kind: "member" as const, profile: me };
     const created = await container.postManager.execute(
-      new CreateDraftRequest(actor, {
-        title: "A porch post",
-        bodyMd: "Hello from the porch.",
-        summary: null,
-        tags: [],
-        visibility: "public",
-        commentsEnabled: true,
-      }),
+      new CreateDraftRequest(
+        actor,
+        {
+          title: "A porch post",
+          bodyMd: "Hello from the porch.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
     );
     if (!(created instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${created.constructor.name}`);

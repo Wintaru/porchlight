@@ -22,6 +22,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { isEntityId } from "@/lib/entity-id";
+import { currentRequestMeta } from "@/lib/request-meta";
 import type { AutosaveResult, PreviewResult } from "./editor-results";
 import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
 
@@ -45,7 +46,7 @@ export async function submitPost(formData: FormData): Promise<void> {
   }
   const response = await getDependencyContainer().postManager.execute(
     postId === undefined
-      ? new CreateDraftRequest(actor, parsed.draft)
+      ? new CreateDraftRequest(actor, parsed.draft, await currentRequestMeta())
       : new UpdateDraftRequest(actor, postId, parsed.draft),
   );
   if (!(response instanceof PostResponse)) {
@@ -75,7 +76,7 @@ export async function autosavePost(formData: FormData): Promise<AutosaveResult> 
   }
   const response = await getDependencyContainer().postManager.execute(
     postId === undefined
-      ? new CreateDraftRequest(actor, parsed.draft)
+      ? new CreateDraftRequest(actor, parsed.draft, await currentRequestMeta())
       : new UpdateDraftRequest(actor, postId, parsed.draft),
   );
   if (!(response instanceof PostResponse)) {

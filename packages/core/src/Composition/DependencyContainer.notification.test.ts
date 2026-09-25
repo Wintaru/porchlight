@@ -20,7 +20,7 @@ import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraft
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 
@@ -77,14 +77,18 @@ async function ensureProfile(
 
 async function publishedPost(container: DependencyContainer): Promise<Post> {
   const drafted = await container.postManager.execute(
-    new CreateDraftRequest(THEO, {
-      title: "The Cedar Planter Box",
-      bodyMd: "Three weekends.",
-      summary: null,
-      tags: [],
-      visibility: "public",
-      commentsEnabled: true,
-    }),
+    new CreateDraftRequest(
+      THEO,
+      {
+        title: "The Cedar Planter Box",
+        bodyMd: "Three weekends.",
+        summary: null,
+        tags: [],
+        visibility: "public",
+        commentsEnabled: true,
+      },
+      TEST_ORIGIN,
+    ),
   );
   if (!(drafted instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
@@ -106,7 +110,7 @@ async function comment(
   parentId: string | null = null,
 ): Promise<Comment> {
   const response = await container.commentManager.execute(
-    new CreateCommentRequest(actor, { postId, parentId, bodyMd }),
+    new CreateCommentRequest(actor, { postId, parentId, bodyMd }, TEST_ORIGIN),
   );
   if (!(response instanceof CommentResponse)) {
     throw new Error(`expected CommentResponse, got ${response.constructor.name}`);

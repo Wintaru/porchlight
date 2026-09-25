@@ -157,6 +157,8 @@ import { createAttachmentEngine } from "./createAttachmentEngine";
 import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
+import { createEvidenceAccessor } from "./createEvidenceAccessor";
+import { createEvidenceEngine } from "./createEvidenceEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
 import { createHashMatchAccessor } from "./createHashMatchAccessor";
 import { createImageClassifierAccessor } from "./createImageClassifierAccessor";
@@ -237,6 +239,11 @@ export class DependencyContainer {
     const notifications = createNotificationAccessor(env, db);
     const agentTokens = createAgentTokenAccessor(env, db);
     const agentGuard = createAgentGuardEngine(siteConfig, rateLimits);
+    const evidence = createEvidenceEngine(
+      env,
+      createEvidenceAccessor(env, db),
+      siteConfig,
+    );
 
     this.greetingManager = new GreetingManager(
       new HandlerResolverBuilder()
@@ -304,7 +311,14 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           CreateDraftRequest,
-          new CreateDraftHandler(posts, content, permissions, agentGuard, mediaAssets),
+          new CreateDraftHandler(
+            posts,
+            content,
+            permissions,
+            agentGuard,
+            mediaAssets,
+            evidence,
+          ),
         )
         .register(
           UpdateDraftRequest,
@@ -332,6 +346,7 @@ export class DependencyContainer {
             notifications,
             permissions,
             anonymousGuard,
+            evidence,
           ),
         )
         .build(),
@@ -361,6 +376,7 @@ export class DependencyContainer {
             content,
             notifications,
             permissions,
+            evidence,
           ),
         )
         .register(
@@ -385,6 +401,7 @@ export class DependencyContainer {
             notifications,
             permissions,
             anonymousGuard,
+            evidence,
           ),
         )
         .build(),
