@@ -5,6 +5,7 @@ import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccesso
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import { FileReportRequest as StoreFileReportRequest } from "../../../Accessors/ReportAccessor/Requests/FileReportRequest";
+import { ReportAlreadyOpenResponse } from "../../../Accessors/ReportAccessor/Responses/ReportAlreadyOpenResponse";
 import { ReportStoredResponse } from "../../../Accessors/ReportAccessor/Responses/ReportStoredResponse";
 import { RecordAuditEventRequest } from "../../../Accessors/AuditAccessor/Requests/RecordAuditEventRequest";
 import { AuditEventRecordedResponse } from "../../../Accessors/AuditAccessor/Responses/AuditEventRecordedResponse";
@@ -22,12 +23,14 @@ import type { FileReportRequest } from "../Requests/FileReportRequest";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
 import type { ModerationUnavailableResponse } from "../Responses/ModerationUnavailableResponse";
 import type { NoSuchItemResponse } from "../Responses/NoSuchItemResponse";
+import { ReportAlreadyFiledResponse } from "../Responses/ReportAlreadyFiledResponse";
 import { ReportFiledResponse } from "../Responses/ReportFiledResponse";
 import { ReportGuardRefusedResponse } from "../Responses/ReportGuardRefusedResponse";
 import { unavailable } from "../unavailable";
 
 type Result =
   | ReportFiledResponse
+  | ReportAlreadyFiledResponse
   | ReportGuardRefusedResponse
   | NoSuchItemResponse
   | ModerationForbiddenResponse
@@ -98,6 +101,9 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
         context,
       ),
     );
+    if (stored instanceof ReportAlreadyOpenResponse) {
+      return new ReportAlreadyFiledResponse(correlationId);
+    }
     if (!(stored instanceof ReportStoredResponse)) {
       return unavailable(correlationId, stored, "reports.store");
     }

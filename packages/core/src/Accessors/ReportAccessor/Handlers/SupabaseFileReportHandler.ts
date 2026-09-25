@@ -3,18 +3,23 @@ import type { DbClient } from "@porchlight/db";
 import type { IHandler } from "../../../Common/IHandler";
 import type { FileReportRequest } from "../Requests/FileReportRequest";
 import { ReportAccessFailedResponse } from "../Responses/ReportAccessFailedResponse";
+import { ReportAlreadyOpenResponse } from "../Responses/ReportAlreadyOpenResponse";
 import { ReportStoredResponse } from "../Responses/ReportStoredResponse";
 import { REPORT_COLUMNS, toReport } from "../toReport";
 
+const UNIQUE_VIOLATION = "23505";
+
 export class SupabaseFileReportHandler implements IHandler<
   FileReportRequest,
-  ReportStoredResponse | ReportAccessFailedResponse
+  ReportStoredResponse | ReportAlreadyOpenResponse | ReportAccessFailedResponse
 > {
   constructor(private readonly db: DbClient) {}
 
   async handle(
     request: FileReportRequest,
-  ): Promise<ReportStoredResponse | ReportAccessFailedResponse> {
+  ): Promise<
+    ReportStoredResponse | ReportAlreadyOpenResponse | ReportAccessFailedResponse
+  > {
     const { reporterId, target, reason, details, startsEscalated, correlationId } =
       request;
     const { data, error } = await this.db
@@ -30,7 +35,10 @@ export class SupabaseFileReportHandler implements IHandler<
       .select(REPORT_COLUMNS)
       .single();
     if (error) {
-      return new ReportAccessFailedResponse(correlationId, error.message);
+      // The one-open-report-per-member-and-reason index (#56).
+      return error.code === UNIQUE_VIOLATION
+        ? new ReportAlreadyOpenResponse(correlationId)
+        : new ReportAccessFailedResponse(correlationId, error.message);
     }
     return new ReportStoredResponse(correlationId, toReport(data));
   }

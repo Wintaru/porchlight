@@ -63,12 +63,20 @@ test("a member reports a post, and a moderator dismisses it", async ({ browser }
   await expect(june.getByTestId("report-sent")).toHaveText(
     "Thank you. A moderator will look at it.",
   );
+  // The same report again is not a second report (#56).
+  await june.goBack();
+  await june.getByLabel("Reason").selectOption("spam");
+  await june.getByRole("button", { name: "Send report" }).click();
+  await expect(june.getByTestId("report-sent")).toHaveText(
+    "You already reported this for that reason. A moderator will look at it.",
+  );
   await june.getByRole("link", { name: "Back to where you were" }).click();
   await expect(june).toHaveURL(postUrl);
 
   const mira = await reportsAsMira(browser);
   const card = mira.getByTestId("reported-item").filter({ hasText: title });
-  await expect(card.getByTestId("report-line-reason")).toHaveText("Spam");
+  // One line, not two: the repeat added nothing.
+  await expect(card.getByTestId("report-line-reason")).toHaveText(["Spam"]);
   await expect(card).toContainText("Links to a shop, nothing else.");
   await expect(card).toContainText("a member");
   await expect(card.getByTestId("reported-item-escalated")).toHaveCount(0);

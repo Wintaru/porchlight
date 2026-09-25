@@ -22,6 +22,7 @@ import { ModerationItemResponse } from "../Managers/ModerationManager/Responses/
 import { ProfileModeratedResponse } from "../Managers/ModerationManager/Responses/ProfileModeratedResponse";
 import { QueueResponse } from "../Managers/ModerationManager/Responses/QueueResponse";
 import { ReasonRequiredResponse } from "../Managers/ModerationManager/Responses/ReasonRequiredResponse";
+import { ReportAlreadyFiledResponse } from "../Managers/ModerationManager/Responses/ReportAlreadyFiledResponse";
 import { ReportFiledResponse } from "../Managers/ModerationManager/Responses/ReportFiledResponse";
 import { ReportedItemsResponse } from "../Managers/ModerationManager/Responses/ReportedItemsResponse";
 import { ReportGuardRefusedResponse } from "../Managers/ModerationManager/Responses/ReportGuardRefusedResponse";
@@ -404,6 +405,25 @@ describe("DependencyContainer: ModerationManager", () => {
     );
     expect(onOwn).toBeInstanceOf(ModerationForbiddenResponse);
     expect(await reportedItems(container)).toEqual([]);
+  });
+
+  test("a member's second report on the same item and reason is not a second report (#56)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await publishedPost(container, "Reported twice");
+    const target = { kind: "post" as const, id: post.id };
+    const file = (reason: "spam" | "illegal_content") =>
+      container.moderationManager.execute(
+        new FileReportRequest(JUNE, target, reason, null, undefined),
+      );
+    expect(await file("spam")).toBeInstanceOf(ReportFiledResponse);
+    expect(await file("spam")).toBeInstanceOf(ReportAlreadyFiledResponse);
+    // A different reason is its own report: an escalation is never swallowed.
+    expect(await file("illegal_content")).toBeInstanceOf(ReportFiledResponse);
+    const [item] = await reportedItems(container);
+    expect(item?.reports.map((r) => r.reason).sort()).toEqual([
+      "illegal_content",
+      "spam",
+    ]);
   });
 
   test("the reports page groups reports by item, escalated first (#40)", async () => {

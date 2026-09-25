@@ -26,6 +26,13 @@ interface ReportPageProps {
   }>;
 }
 
+// What the page says once a report is in, by the `sent` code the action sends back.
+const SENT_TEXT: Readonly<Record<string, string>> = {
+  open: "Thank you. A moderator will look at it.",
+  escalated: "Thank you. A moderator will look at this first, ahead of the usual queue.",
+  already: "You already reported this for that reason. A moderator will look at it.",
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   const { siteName } = await getSiteIdentity();
   return { title: `Report · ${siteName}`, robots: { index: false } };
@@ -54,9 +61,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     return (
       <SimplePage title="Report sent">
         <p className="form-status" role="status" data-testid="report-sent">
-          {params.sent === "escalated"
-            ? "Thank you. A moderator will look at this first, ahead of the usual queue."
-            : "Thank you. A moderator will look at it."}
+          {SENT_TEXT[params.sent] ?? SENT_TEXT.open}
         </p>
         <p>
           <Link href={from}>Back to where you were</Link>

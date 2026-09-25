@@ -267,6 +267,7 @@ export { NoSuchProfileResponse as ModerationNoSuchProfileResponse } from "./Mana
 export { ProfileModeratedResponse } from "./Managers/ModerationManager/Responses/ProfileModeratedResponse";
 export { QueueResponse } from "./Managers/ModerationManager/Responses/QueueResponse";
 export { ReasonRequiredResponse } from "./Managers/ModerationManager/Responses/ReasonRequiredResponse";
+export { ReportAlreadyFiledResponse } from "./Managers/ModerationManager/Responses/ReportAlreadyFiledResponse";
 export { ReportFiledResponse } from "./Managers/ModerationManager/Responses/ReportFiledResponse";
 export { ReportListResponse } from "./Managers/ModerationManager/Responses/ReportListResponse";
 export { ReportedItemsResponse } from "./Managers/ModerationManager/Responses/ReportedItemsResponse";

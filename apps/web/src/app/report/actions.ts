@@ -4,6 +4,7 @@ import {
   FileReportRequest,
   ModerationForbiddenResponse,
   NoSuchItemResponse,
+  ReportAlreadyFiledResponse,
   REPORT_REASONS,
   type ReportReason,
   ReportFiledResponse,
@@ -65,6 +66,9 @@ export async function fileReport(formData: FormData): Promise<void> {
       await setAnonymousSecretCookie(response.anonymousSecret);
     }
     redirect(back("sent", response.report.status));
+  }
+  if (response instanceof ReportAlreadyFiledResponse) {
+    redirect(back("sent", "already"));
   }
   if (response instanceof ReportGuardRefusedResponse) {
     redirect(withError("guard"));
