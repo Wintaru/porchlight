@@ -32,6 +32,8 @@ export const LAYER = Object.freeze({
 // The one file the Client may import from packages/core. A file category, not an
 // element, so it never swallows stray files under packages/core/src.
 const CORE_ENTRY = "core-entry";
+// The browser-safe entry (#59): Common's constants only.
+const CORE_CLIENT_ENTRY = "core-client-entry";
 
 const WORKSPACE_PACKAGES = ["@porchlight/*"];
 const SUPABASE_PACKAGES = ["@supabase/*"];
@@ -73,7 +75,10 @@ export const boundariesSettings = {
     { type: LAYER.utility, pattern: "packages/core/src/Utilities/*", capture: ["name"] },
     { type: LAYER.db, pattern: "packages/db" },
   ],
-  "boundaries/files": [{ pattern: "packages/core/src/index.ts", category: CORE_ENTRY }],
+  "boundaries/files": [
+    { pattern: "packages/core/src/index.ts", category: CORE_ENTRY },
+    { pattern: "packages/core/src/client.ts", category: CORE_CLIENT_ENTRY },
+  ],
   "import/resolver": {
     typescript: {
       alwaysTryTypes: true,
@@ -85,6 +90,7 @@ export const boundariesSettings = {
 
 const ANY = { element: { type: "*" } };
 const CORE_ENTRY_FILE = { file: { categories: CORE_ENTRY } };
+const CORE_CLIENT_ENTRY_FILE = { file: { categories: CORE_CLIENT_ENTRY } };
 const EXTERNAL_ORIGINS = ["external", "core"];
 const anyExternalModule = { module: { origin: EXTERNAL_ORIGINS } };
 const externalModule = (source) => ({ module: { origin: EXTERNAL_ORIGINS, source } });
@@ -108,8 +114,13 @@ export const boundariesRules = {
             to: [
               { element: { type: [LAYER.client, LAYER.readModel, LAYER.auth] } },
               CORE_ENTRY_FILE,
+              CORE_CLIENT_ENTRY_FILE,
             ],
           },
+        },
+        {
+          from: CORE_CLIENT_ENTRY_FILE,
+          allow: { to: { element: { type: LAYER.common } } },
         },
         allow(LAYER.readModel, [LAYER.readModel, LAYER.db, LAYER.common]),
         // The session client over @supabase/ssr lives in packages/db; auth adapts the

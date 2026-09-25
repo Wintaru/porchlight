@@ -1,4 +1,4 @@
-import { LINK_PROTOCOLS } from "@porchlight/core";
+import { LINK_PROTOCOLS } from "@porchlight/core/client";
 import type { Extensions } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extensions";

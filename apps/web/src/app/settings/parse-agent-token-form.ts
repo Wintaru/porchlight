@@ -3,7 +3,7 @@ import {
   AGENT_TOKEN_NAME_MAX_LENGTH,
   type AgentScope,
   DEFAULT_AGENT_SCOPES,
-} from "@porchlight/core";
+} from "@porchlight/core/client";
 
 // The edge of the mint form (SPEC.md §17): a name, the scope checkboxes, and an expiry
 // chosen from a short list of days. The Manager validates again; this only turns the
