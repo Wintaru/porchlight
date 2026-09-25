@@ -22,6 +22,9 @@ import { SupabaseStoreCommentTombstoneHandler } from "../Accessors/CommentAccess
 import { SupabaseStoreNewCommentHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreNewCommentHandler";
 import type { ICommentAccessor } from "../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentByIdRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
+import { LoadCommentsByIdsRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByIdsRequest";
+import { FakeLoadCommentsByIdsHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentsByIdsHandler";
+import { SupabaseLoadCommentsByIdsHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentsByIdsHandler";
 import { LoadCommentsByAuthorRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByAuthorRequest";
 import { LoadCommentsForPostRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsForPostRequest";
 import { LoadCommentsByStatusRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentsByStatusRequest";
@@ -62,6 +65,7 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new SupabaseLoadCommentByIdHandler(db))
+      .register(LoadCommentsByIdsRequest, new SupabaseLoadCommentsByIdsHandler(db))
       .register(LoadCommentsForPostRequest, new SupabaseLoadCommentsForPostHandler(db))
       .register(LoadCommentsByStatusRequest, new SupabaseLoadCommentsByStatusHandler(db))
       .register(LoadCommentsByAuthorRequest, new SupabaseLoadCommentsByAuthorHandler(db))
@@ -72,7 +76,7 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
   );
 }
 
-function createFakeCommentAccessor(state: FakeCommentState): ICommentAccessor {
+export function createFakeCommentAccessor(state: FakeCommentState): ICommentAccessor {
   return new CommentAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewCommentRequest, new FakeStoreNewCommentHandler(state))
@@ -82,6 +86,7 @@ function createFakeCommentAccessor(state: FakeCommentState): ICommentAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new FakeLoadCommentByIdHandler(state))
+      .register(LoadCommentsByIdsRequest, new FakeLoadCommentsByIdsHandler(state))
       .register(LoadCommentsForPostRequest, new FakeLoadCommentsForPostHandler(state))
       .register(LoadCommentsByStatusRequest, new FakeLoadCommentsByStatusHandler(state))
       .register(LoadCommentsByAuthorRequest, new FakeLoadCommentsByAuthorHandler(state))

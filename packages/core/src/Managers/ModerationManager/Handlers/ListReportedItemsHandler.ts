@@ -1,15 +1,14 @@
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
-import { LoadCommentByIdRequest } from "../../../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
-import { CommentLoadedResponse } from "../../../Accessors/CommentAccessor/Responses/CommentLoadedResponse";
-import { CommentNotFoundResponse } from "../../../Accessors/CommentAccessor/Responses/CommentNotFoundResponse";
+import { LoadCommentsByIdsRequest } from "../../../Accessors/CommentAccessor/Requests/LoadCommentsByIdsRequest";
+import { CommentsLoadedResponse } from "../../../Accessors/CommentAccessor/Responses/CommentsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
-import { LoadPostByIdRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
-import { PostLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostLoadedResponse";
-import { PostNotFoundResponse } from "../../../Accessors/PostAccessor/Responses/PostNotFoundResponse";
+import { LoadPostsByIdsRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByIdsRequest";
+import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import { ListReportsRequest as LoadReportsRequest } from "../../../Accessors/ReportAccessor/Requests/ListReportsRequest";
 import { ReportsLoadedResponse } from "../../../Accessors/ReportAccessor/Responses/ReportsLoadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
+import type { LiveComment } from "../../../Common/LiveComment";
 import type { Post } from "../../../Common/Post";
 import type { Report } from "../../../Common/Report";
 import type { RequestContext } from "../../../Common/RequestContext";
@@ -28,11 +27,10 @@ type Result =
 type Ctx = Required<Pick<RequestContext, "correlationId" | "timestamp">>;
 
 // ListReportedItems (#40): the open and escalated reports, grouped by the item they are
-// about, each item loaded as it stands. The open set is a small working set — every
-// moderator decision closes an item's reports — so loading each distinct item is a
-// bounded fan-out, the same exception ListQueue relies on. An item that is gone (a
-// tombstone, or deleted between the two reads) drops out: there is nothing to act on.
-// Escalated items come first, then the item with the newest report.
+// about, each item loaded as it stands in batched reads (#57). An item that is gone (a
+// tombstone, or deleted between the reads) drops out: there is nothing to act on.
+// Escalated items come first, then the item with the newest report. Reports past the
+// list's limit are counted, so the page can say some are not shown.
 export class ListReportedItemsHandler implements IHandler<
   ListReportedItemsRequest,
   Result
@@ -71,72 +69,89 @@ export class ListReportedItemsHandler implements IHandler<
     }
 
     const groups = groupByTarget([...open.reports, ...escalated.reports]);
-    const loaded = await Promise.all(
-      [...groups.values()].map((reports) => this.loadReported(reports, context)),
-    );
-    const items: ReportedItem[] = [];
-    for (const item of loaded) {
-      if (item instanceof ModerationUnavailableResponse) {
-        return item;
-      }
-      if (item !== undefined) {
-        items.push(item);
-      }
+    const loaded = await this.loadTargets([...groups.values()], context);
+    if (loaded instanceof ModerationUnavailableResponse) {
+      return loaded;
     }
+    const items = [...groups.values()].flatMap((reports) => {
+      const item = reportedItemOf(reports, loaded);
+      return item === undefined ? [] : [item];
+    });
     items.sort(byUrgency);
-    return new ReportedItemsResponse(correlationId, items);
+    const hidden =
+      open.total - open.reports.length + (escalated.total - escalated.reports.length);
+    return new ReportedItemsResponse(correlationId, items, hidden);
   }
 
-  // The item a group of reports is about, or undefined when it is gone.
-  private async loadReported(
-    reports: readonly Report[],
+  // Every reported item in a fixed number of reads (#57): the comments, then every post
+  // named by a report or by one of those comments, each in one batched read.
+  private async loadTargets(
+    groups: readonly (readonly Report[])[],
     context: Ctx,
-  ): Promise<ReportedItem | undefined | ModerationUnavailableResponse> {
-    const [first] = reports;
-    if (first === undefined) {
-      return undefined;
-    }
-    if (first.postId !== null) {
-      const post = await this.loadPost(first.postId, context);
-      return post === undefined || post instanceof ModerationUnavailableResponse
-        ? post
-        : { kind: "post", post, reports };
-    }
-    if (first.commentId === null) {
-      return undefined;
-    }
-    const loaded = await this.comments.load(
-      new LoadCommentByIdRequest(first.commentId, context),
+  ): Promise<Targets | ModerationUnavailableResponse> {
+    const firsts = groups.flatMap((reports) =>
+      reports[0] === undefined ? [] : [reports[0]],
     );
-    if (loaded instanceof CommentNotFoundResponse) {
-      return undefined;
+    const commentIds = firsts.flatMap((report) =>
+      report.postId === null && report.commentId !== null ? [report.commentId] : [],
+    );
+    const comments = new Map<string, LiveComment>();
+    if (commentIds.length > 0) {
+      const loaded = await this.comments.load(
+        new LoadCommentsByIdsRequest(commentIds, context),
+      );
+      if (!(loaded instanceof CommentsLoadedResponse)) {
+        return unavailable(context.correlationId, loaded, "comments.load");
+      }
+      for (const comment of loaded.comments) {
+        // A tombstone has nothing left to act on.
+        if (comment.status !== "tombstone") {
+          comments.set(comment.id, comment);
+        }
+      }
     }
-    if (!(loaded instanceof CommentLoadedResponse)) {
-      return unavailable(context.correlationId, loaded, "comments.load");
+    const postIds = [
+      ...firsts.flatMap((report) => (report.postId === null ? [] : [report.postId])),
+      ...[...comments.values()].map((comment) => comment.postId),
+    ];
+    const posts = new Map<string, Post>();
+    if (postIds.length > 0) {
+      const loaded = await this.posts.load(new LoadPostsByIdsRequest(postIds, context));
+      if (!(loaded instanceof PostsLoadedResponse)) {
+        return unavailable(context.correlationId, loaded, "posts.load");
+      }
+      for (const post of loaded.posts) {
+        posts.set(post.id, post);
+      }
     }
-    const { comment } = loaded;
-    if (comment.status === "tombstone") {
-      return undefined;
-    }
-    const post = await this.loadPost(comment.postId, context);
-    return post === undefined || post instanceof ModerationUnavailableResponse
-      ? post
-      : { kind: "comment", comment, postTitle: post.title, reports };
+    return { posts, comments };
   }
+}
 
-  private async loadPost(
-    id: string,
-    context: Ctx,
-  ): Promise<Post | undefined | ModerationUnavailableResponse> {
-    const loaded = await this.posts.load(new LoadPostByIdRequest(id, context));
-    if (loaded instanceof PostLoadedResponse) {
-      return loaded.post;
-    }
-    if (loaded instanceof PostNotFoundResponse) {
-      return undefined;
-    }
-    return unavailable(context.correlationId, loaded, "posts.load");
+interface Targets {
+  readonly posts: ReadonlyMap<string, Post>;
+  readonly comments: ReadonlyMap<string, LiveComment>;
+}
+
+// The item a group of reports is about, or undefined when it is gone (deleted, or a
+// tombstone, between the two reads).
+function reportedItemOf(
+  reports: readonly Report[],
+  { posts, comments }: Targets,
+): ReportedItem | undefined {
+  const [first] = reports;
+  if (first === undefined) {
+    return undefined;
   }
+  if (first.postId !== null) {
+    const post = posts.get(first.postId);
+    return post === undefined ? undefined : { kind: "post", post, reports };
+  }
+  const comment = first.commentId === null ? undefined : comments.get(first.commentId);
+  const post = comment === undefined ? undefined : posts.get(comment.postId);
+  return comment === undefined || post === undefined
+    ? undefined
+    : { kind: "comment", comment, postTitle: post.title, reports };
 }
 
 // Reports keyed by the item they name, each group newest first.

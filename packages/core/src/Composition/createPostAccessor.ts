@@ -21,6 +21,9 @@ import { SupabaseStorePostChangesHandler } from "../Accessors/PostAccessor/Handl
 import type { IPostAccessor } from "../Accessors/PostAccessor/IPostAccessor";
 import { PostAccessor } from "../Accessors/PostAccessor/PostAccessor";
 import { LoadPostByIdRequest } from "../Accessors/PostAccessor/Requests/LoadPostByIdRequest";
+import { LoadPostsByIdsRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByIdsRequest";
+import { FakeLoadPostsByIdsHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostsByIdsHandler";
+import { SupabaseLoadPostsByIdsHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostsByIdsHandler";
 import { LoadPostBySlugRequest } from "../Accessors/PostAccessor/Requests/LoadPostBySlugRequest";
 import { LoadPostsByAuthorRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
 import { LoadPostsByStatusRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
@@ -51,6 +54,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
+      .register(LoadPostsByIdsRequest, new SupabaseLoadPostsByIdsHandler(db))
       .register(LoadPostBySlugRequest, new SupabaseLoadPostBySlugHandler(db))
       .register(LoadPostsByAuthorRequest, new SupabaseLoadPostsByAuthorHandler(db))
       .register(LoadVoiceSamplesRequest, new SupabaseLoadVoiceSamplesHandler(db))
@@ -62,7 +66,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
   );
 }
 
-function createFakePostAccessor(state: FakePostState): IPostAccessor {
+export function createFakePostAccessor(state: FakePostState): IPostAccessor {
   return new PostAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new FakeStoreNewPostHandler(state))
@@ -70,6 +74,7 @@ function createFakePostAccessor(state: FakePostState): IPostAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))
+      .register(LoadPostsByIdsRequest, new FakeLoadPostsByIdsHandler(state))
       .register(LoadPostBySlugRequest, new FakeLoadPostBySlugHandler(state))
       .register(LoadPostsByAuthorRequest, new FakeLoadPostsByAuthorHandler(state))
       .register(LoadVoiceSamplesRequest, new FakeLoadVoiceSamplesHandler(state))

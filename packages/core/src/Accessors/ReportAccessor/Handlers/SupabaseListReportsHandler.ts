@@ -4,12 +4,8 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { ListReportsRequest } from "../Requests/ListReportsRequest";
 import { ReportAccessFailedResponse } from "../Responses/ReportAccessFailedResponse";
 import { ReportsLoadedResponse } from "../Responses/ReportsLoadedResponse";
+import { REPORT_LIST_LIMIT } from "../ReportListLimit";
 import { REPORT_COLUMNS, toReport } from "../toReport";
-
-// A real backlog is still a small number of rows (SPEC.md §7's report list is a
-// working set, not a feed); this bound exists so a runaway backlog degrades to "the
-// oldest ones are missing from this page" rather than an unbounded query.
-const MAX_ROWS = 500;
 
 export class SupabaseListReportsHandler implements IHandler<
   ListReportsRequest,
@@ -22,16 +18,20 @@ export class SupabaseListReportsHandler implements IHandler<
   ): Promise<ReportsLoadedResponse | ReportAccessFailedResponse> {
     let query = this.db
       .from("reports")
-      .select(REPORT_COLUMNS)
+      .select(REPORT_COLUMNS, { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(MAX_ROWS);
+      .limit(REPORT_LIST_LIMIT);
     if (request.status !== undefined) {
       query = query.eq("status", request.status);
     }
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) {
       return new ReportAccessFailedResponse(request.correlationId, error.message);
     }
-    return new ReportsLoadedResponse(request.correlationId, data.map(toReport));
+    return new ReportsLoadedResponse(
+      request.correlationId,
+      data.map(toReport),
+      count ?? data.length,
+    );
   }
 }

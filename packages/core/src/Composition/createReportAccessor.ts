@@ -47,7 +47,7 @@ function createSupabaseReportAccessor(db: DbClient): IReportAccessor {
   );
 }
 
-function createFakeReportAccessor(state: FakeReportState): IReportAccessor {
+export function createFakeReportAccessor(state: FakeReportState): IReportAccessor {
   return new ReportAccessor(
     new HandlerResolverBuilder()
       .register(FileReportRequest, new FakeFileReportHandler(state))

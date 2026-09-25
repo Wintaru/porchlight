@@ -1,5 +1,6 @@
 import type { IHandler } from "../../../Common/IHandler";
 import type { FakeReportState } from "../FakeReportState";
+import { REPORT_LIST_LIMIT } from "../ReportListLimit";
 import type { ListReportsRequest } from "../Requests/ListReportsRequest";
 import { ReportAccessFailedResponse } from "../Responses/ReportAccessFailedResponse";
 import { ReportsLoadedResponse } from "../Responses/ReportsLoadedResponse";
@@ -23,6 +24,12 @@ export class FakeListReportsHandler implements IHandler<
         (report) => request.status === undefined || report.status === request.status,
       )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    return Promise.resolve(new ReportsLoadedResponse(request.correlationId, reports));
+    return Promise.resolve(
+      new ReportsLoadedResponse(
+        request.correlationId,
+        reports.slice(0, REPORT_LIST_LIMIT),
+        reports.length,
+      ),
+    );
   }
 }
