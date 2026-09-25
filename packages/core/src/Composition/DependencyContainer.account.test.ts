@@ -88,6 +88,17 @@ describe("DependencyContainer: AccountManager", () => {
     expect(profile).toMatchObject({ role: "admin", trustLevel: "trusted" });
   });
 
+  test("with an admin email configured, a stranger who signs in first is a member", async () => {
+    const container = new DependencyContainer({
+      ...FAKE_ENV,
+      PORCHLIGHT_ADMIN_EMAIL: SECOND.email,
+    });
+
+    const profile = await signIn(container, FIRST);
+
+    expect(profile).toMatchObject({ role: "member", trustLevel: "probation" });
+  });
+
   test("a second sign-in by the same person finds the same profile", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const created = await signIn(container, FIRST);
@@ -271,10 +282,13 @@ describe("DependencyContainer: AccountManager", () => {
       SITE_CONFIG_FAKE_SIGN_UP: "closed",
       PORCHLIGHT_ADMIN_EMAIL: SECOND.email,
     });
-    await signIn(container, FIRST);
+    const stranger = await container.accountManager.execute(
+      new EnsureProfileRequest(FIRST),
+    );
 
     const profile = await signIn(container, SECOND);
 
+    expect(stranger).toBeInstanceOf(SignUpClosedResponse);
     expect(profile).toMatchObject({ role: "admin", trustLevel: "trusted" });
   });
 

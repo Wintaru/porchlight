@@ -34,9 +34,10 @@ type Standing = Pick<NewProfile, "role" | "trustLevel">;
 const FIRST_ADMIN: Standing = { role: "admin", trustLevel: "trusted" };
 const NEW_MEMBER: Standing = { role: "member", trustLevel: "probation" };
 
-// First sign-in creates the profile; every later one finds it. The first profile ever,
-// or the configured admin email, becomes admin (SPEC.md §4). The handle comes from the
-// Engine and is retried with the next candidate while the store says it is taken.
+// First sign-in creates the profile; every later one finds it. The configured admin
+// email becomes admin; with none configured, the first profile ever does (SPEC.md §4).
+// The handle comes from the Engine and is retried with the next candidate while the
+// store says it is taken.
 // `site_config.sign_up` (D20, #12) only gates an ordinary new member: the site's own
 // bootstrap admin and its configured admin email always get in, or the settings page
 // that closes sign-up could never be reopened.
@@ -115,19 +116,14 @@ export class EnsureProfileHandler implements IHandler<
     );
   }
 
+  // A configured admin email replaces the first-profile rule: otherwise a stranger who
+  // signs in between the deploy and the owner's first sign-in becomes admin.
   private standingFor(existingCount: number, email: string): Standing {
-    if (existingCount === 0) {
-      return FIRST_ADMIN;
-    }
     const adminEmail = this.options.adminEmail?.trim().toLowerCase();
-    if (
-      adminEmail !== undefined &&
-      adminEmail !== "" &&
-      adminEmail === email.toLowerCase()
-    ) {
-      return FIRST_ADMIN;
+    if (adminEmail !== undefined && adminEmail !== "") {
+      return adminEmail === email.toLowerCase() ? FIRST_ADMIN : NEW_MEMBER;
     }
-    return NEW_MEMBER;
+    return existingCount === 0 ? FIRST_ADMIN : NEW_MEMBER;
   }
 }
 

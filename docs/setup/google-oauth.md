@@ -60,8 +60,9 @@ test in `apps/web/e2e/auth.spec.ts`.
    `AccountManager` `EnsureProfile` request.
 4. On the first sign-in `EnsureProfile` creates the `profiles` row: role `member`,
    trust `probation`, and a handle derived from the email's local part (`marisol.vega`
-   becomes `marisol-vega`, then `-2`, `-3`, ... if taken). The first profile ever, or the
-   email in `PORCHLIGHT_ADMIN_EMAIL`, becomes `admin` and `trusted`.
+   becomes `marisol-vega`, then `-2`, `-3`, ... if taken). The email in
+   `PORCHLIGHT_ADMIN_EMAIL` becomes `admin` and `trusted`. When that variable is empty,
+   the first profile ever becomes admin instead.
 5. The member lands on the page they started from. `/settings` edits the display name,
    the handle and the bio.
 
@@ -72,6 +73,9 @@ sees an expired token.
 
 - Disable email and password sign-in on the hosted project (Authentication, Providers,
   Email) so Google is the only path. The local stack keeps it on for the seed users.
+  An unconfirmed email sign-up with the `PORCHLIGHT_ADMIN_EMAIL` address would become
+  admin, so this switch matters.
 - Do not set `AUTH_DEV_SIGN_IN=on` in a production environment. The build refuses it,
   but the setting should not be there.
-- Set `PORCHLIGHT_ADMIN_EMAIL` before the first sign-in, or sign in first yourself.
+- Set `PORCHLIGHT_ADMIN_EMAIL` before you deploy. Then only that account becomes admin,
+  even when a stranger signs in first. Without it, whoever signs in first is admin.

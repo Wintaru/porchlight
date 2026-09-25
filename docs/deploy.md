@@ -58,7 +58,7 @@ Copy `.env.example` as the starting point and set these on the host:
 | `NEXT_PUBLIC_SUPABASE_URL`      | From step 1.                                              |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | From step 1. Public by design.                            |
 | `SUPABASE_SERVICE_ROLE_KEY`     | From step 1. Server only. Never `NEXT_PUBLIC_`.           |
-| `PORCHLIGHT_ADMIN_EMAIL`        | Your Google account's email. It becomes admin on its first sign-in. Without it, the first profile ever is the admin. |
+| `PORCHLIGHT_ADMIN_EMAIL`        | Your Google account's email. It becomes admin on its first sign-in, and no other account does. Without it, the first profile ever is the admin, so set it before the site is reachable. |
 | `AUTH_DEV_SIGN_IN`              | Leave unset. A production build ignores it, but it should not be there. |
 | `PROFILE_PROVIDER`              | Leave unset (`supabase`). `fake` is refused in production. |
 | `POST_PROVIDER`, `COMMENT_PROVIDER`, `REACTION_PROVIDER`, `SITE_CONFIG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. |
