@@ -648,6 +648,7 @@ export class DependencyContainer {
             mediaAssets,
             modActions,
             permissions,
+            content,
           ),
         )
         .register(

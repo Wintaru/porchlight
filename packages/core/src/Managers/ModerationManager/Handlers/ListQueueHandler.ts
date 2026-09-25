@@ -20,6 +20,9 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { LiveComment } from "../../../Common/LiveComment";
 import type { Post } from "../../../Common/Post";
 import type { TrustLevel } from "../../../Common/TrustLevel";
+import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
+import { RenderInertMarkdownRequest } from "../../../Engines/ContentRenderEngine/Requests/RenderInertMarkdownRequest";
+import { MarkdownRenderedResponse } from "../../../Engines/ContentRenderEngine/Responses/MarkdownRenderedResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { permit } from "../permit";
 import type { QueueItem } from "../QueueItem";
@@ -44,6 +47,7 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     private readonly mediaAssets: IMediaAssetAccessor,
     private readonly modActions: IModActionAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly content: IContentRenderEngine,
   ) {}
 
   async handle(request: ListQueueRequest): Promise<Result> {
@@ -77,7 +81,7 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
 
     // Three lookups that do not depend on each other, so none waits on another. The
     // escalation read is one request per hundred items, not one per item.
-    const [trustLevels, flaggedCovers, escalated] = await Promise.all([
+    const [trustLevels, flaggedCovers, escalated, inertBodies] = await Promise.all([
       this.loadTrustLevels(loadedPosts.posts, pendingComments, context),
       this.loadFlaggedCovers(loadedPosts.posts, context),
       this.modActions.load(
@@ -89,6 +93,7 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
           context,
         ),
       ),
+      this.renderInert(loadedPosts.posts, pendingComments, context),
     ]);
     if (trustLevels instanceof ModerationUnavailableResponse) {
       return trustLevels;
@@ -99,6 +104,9 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     if (!(escalated instanceof EscalatedTargetsLoadedResponse)) {
       return unavailable(correlationId, escalated, "modActions.load");
     }
+    if (inertBodies instanceof ModerationUnavailableResponse) {
+      return inertBodies;
+    }
 
     const items: QueueItem[] = [
       ...loadedPosts.posts.map((post): QueueItem => ({
@@ -107,18 +115,52 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
         authorTrustLevel: trustLevelOf(post.author, trustLevels),
         flagged: post.coverMediaId !== null && flaggedCovers.has(post.coverMediaId),
         escalated: escalated.postIds.has(post.id),
+        displayHtml: inertBodies.get(post.id) ?? post.bodyHtml,
       })),
       ...pendingComments.map((comment): QueueItem => ({
         kind: "comment",
         comment,
         authorTrustLevel: trustLevelOf(comment.author, trustLevels),
         escalated: escalated.commentIds.has(comment.id),
+        displayHtml: inertBodies.get(comment.id) ?? comment.bodyHtml,
       })),
     ]
       .filter((item) => matchesFilter(item, filter))
       .sort((a, b) => createdAtOf(b).getTime() - createdAtOf(a).getTime());
 
     return new QueueResponse(correlationId, items);
+  }
+
+  // Each anonymous item's body with its links and images made text (#34), by item id.
+  // Rendered from the markdown on every read and never stored: the cached render stays
+  // the one the public sees once the item is approved.
+  private async renderInert(
+    posts: readonly Post[],
+    comments: readonly LiveComment[],
+    context: { readonly correlationId: string },
+  ): Promise<ReadonlyMap<string, string> | ModerationUnavailableResponse> {
+    const anonymous = [
+      ...posts.filter((post) => post.author.kind === "anonymous"),
+      ...comments.filter((comment) => comment.author.kind === "anonymous"),
+    ];
+    const rendered = await Promise.all(
+      anonymous.map(async (item) => {
+        const response = await this.content.transform(
+          new RenderInertMarkdownRequest(item.bodyMd, context),
+        );
+        return response instanceof MarkdownRenderedResponse
+          ? ([item.id, response.html] as const)
+          : unavailable(context.correlationId, response, "content.transform");
+      }),
+    );
+    const byId = new Map<string, string>();
+    for (const entry of rendered) {
+      if (entry instanceof ModerationUnavailableResponse) {
+        return entry;
+      }
+      byId.set(entry[0], entry[1]);
+    }
+    return byId;
   }
 
   private async loadTrustLevels(

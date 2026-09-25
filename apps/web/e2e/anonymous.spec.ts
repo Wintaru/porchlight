@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { devSignIn, THEO } from "./helpers";
+import { devSignIn, MIRA, THEO } from "./helpers";
 
 // The issue #8 acceptance test: a visitor posts anonymously, sees it pending on the
 // status page with a claim code, signs in, claims it, and the old `/p/slug` URL 301s
@@ -53,4 +53,57 @@ test("a visitor posts anonymously, checks its status, claims it after signing in
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
   await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
+});
+
+// #34: an anonymous body's links are text while it waits, and links once approved.
+test("links in an anonymous post stay inert until a moderator approves it", async ({
+  page,
+  browser,
+}) => {
+  const stamp = Date.now().toString(36);
+  const title = `Anonymous link ${stamp}`;
+  await page.goto("/p/new");
+  await page.getByLabel("Title").fill(title);
+  await page
+    .getByLabel("Body (markdown)")
+    .fill(
+      "See [my plans](https://example.com/plans) and ![a sketch](https://example.com/s.png).",
+    );
+  await page.getByRole("button", { name: "Post anonymously" }).click();
+  await expect(page).toHaveURL(/\/anon$/);
+  const anonymousUrl =
+    (await page
+      .getByTestId("anonymous-item")
+      .filter({ hasText: title })
+      .getByTestId("anonymous-item-link")
+      .getAttribute("href")) ?? "";
+
+  const mira = await browser.newPage();
+  await devSignIn(mira, MIRA);
+  await mira.goto("/mod/queue?filter=anonymous");
+  const item = mira.getByTestId("queue-item").filter({ hasText: title });
+  const body = item.getByTestId("queue-item-body");
+  await expect(body).toContainText("my plans [https://example.com/plans]");
+  await expect(body).toContainText("[image: a sketch] [https://example.com/s.png]");
+  await expect(body.locator("a, img")).toHaveCount(0);
+  await item.getByTestId("queue-approve").click();
+  await expect(mira.getByTestId("queue-status")).toHaveText("Approved.");
+
+  // Approved, it reads as written: a real link and a real image.
+  await page.goto(anonymousUrl);
+  const published = page.getByTestId("post-body");
+  await expect(published.getByRole("link", { name: "my plans" })).toHaveAttribute(
+    "href",
+    "https://example.com/plans",
+  );
+  await expect(published.locator("img")).toHaveAttribute("alt", "a sketch");
+
+  // Claim it and delete it, so the seed is the same for the next run.
+  await devSignIn(page, THEO);
+  await page.goto("/anon");
+  await page.getByTestId("claim-button").click();
+  await page.goto("/write");
+  await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/write\?deleted=1$/);
 });

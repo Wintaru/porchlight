@@ -9,6 +9,9 @@ import type { TrustLevel } from "../../Common/TrustLevel";
 // for one. `escalated` means a moderator has ever asked for a senior look at the item:
 // it stays pending, and the queue marks it so the next moderator knows. A post that
 // went back to draft and was submitted again keeps the mark from its first visit.
+// `displayHtml` is the body as the moderator reads it: an anonymous author's with its
+// links and images made plain text until it is approved (SPEC.md §4, #34), anyone
+// else's as stored.
 export type QueueItem =
   | {
       readonly kind: "post";
@@ -16,10 +19,12 @@ export type QueueItem =
       readonly authorTrustLevel: TrustLevel | null;
       readonly flagged: boolean;
       readonly escalated: boolean;
+      readonly displayHtml: string;
     }
   | {
       readonly kind: "comment";
       readonly comment: LiveComment;
       readonly authorTrustLevel: TrustLevel | null;
       readonly escalated: boolean;
+      readonly displayHtml: string;
     };

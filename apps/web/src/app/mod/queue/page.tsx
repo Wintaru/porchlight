@@ -229,12 +229,13 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
         />
       )}
       {/* Moderators see full content through the same sanitizer as published pages
-          (WAYFINDER D15): the cached, sanitized render, never raw markdown. */}
+          (WAYFINDER D15), never raw markdown — and an anonymous body with its links
+          and images as plain text until it is approved (SPEC.md §4, #34). */}
       <div
         className={`prose ${styles.excerpt ?? ""}`}
         data-testid="queue-item-body"
         dangerouslySetInnerHTML={{
-          __html: item.kind === "post" ? item.post.bodyHtml : item.comment.bodyHtml,
+          __html: item.displayHtml,
         }}
       />
       <form action={approveItem} className={styles.decide}>
