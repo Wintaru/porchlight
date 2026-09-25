@@ -73,6 +73,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           {queueErrorTextFor(error)}
         </p>
       )}
+      {response.hiddenReportCount > 0 && (
+        <p role="note" className="form-hint" data-testid="reports-hidden">
+          {response.hiddenReportCount === 1
+            ? "1 older report is not shown. Deal with these, and it will come up."
+            : `${String(response.hiddenReportCount)} older reports are not shown. Deal with these, and they will come up.`}
+        </p>
+      )}
       {response.items.length === 0 ? (
         <p className={queueStyles.empty} data-testid="reports-empty">
           No open reports.
