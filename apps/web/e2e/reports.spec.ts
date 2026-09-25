@@ -159,6 +159,42 @@ test("a visitor reports a comment as illegal content, and a moderator hides it",
   await deletePost(theo, title);
 });
 
+// #58: a visitor's report names its anonymous author, and a moderator can block a
+// visitor who files false reports; that visitor's next report is refused. Locally every
+// visitor shares one untrusted address, so the block reaches this visitor's cookie only.
+test("a moderator blocks a visitor who files false reports", async ({ browser }) => {
+  const title = `Falsely reported ${Date.now().toString(36)}`;
+  const theo = await publishAsTheo(browser, title);
+  const postUrl = theo.url();
+
+  const visitor = await browser.newPage();
+  await visitor.goto(postUrl);
+  await visitor.getByTestId("post-report").click();
+  await visitor.getByLabel("Reason").selectOption("spam");
+  await visitor.getByRole("button", { name: "Send report" }).click();
+  await expect(visitor.getByTestId("report-sent")).toBeVisible();
+
+  const mira = await browser.newPage();
+  await devSignIn(mira, MIRA);
+  await mira.goto("/mod/reports");
+  const card = mira.getByTestId("reported-item").filter({ hasText: title });
+  await card.getByTestId("report-block-reporter").click();
+  await expect(mira.getByTestId("reports-status")).toContainText("Blocked.");
+
+  await visitor.goto(postUrl);
+  await visitor.getByTestId("post-report").click();
+  await visitor.getByLabel("Reason").selectOption("harassment");
+  await visitor.getByRole("button", { name: "Send report" }).click();
+  await expect(visitor.getByTestId("report-error")).toHaveText(
+    "That report could not be sent. Wait a little and try again.",
+  );
+
+  // The item and its report stay for the moderator; closing them cleans up.
+  await mira.goto("/mod/reports");
+  await card.getByTestId("report-dismiss").click();
+  await deletePost(theo, title);
+});
+
 test("the report form needs a reason and names a missing item as a 404", async ({
   page,
 }) => {

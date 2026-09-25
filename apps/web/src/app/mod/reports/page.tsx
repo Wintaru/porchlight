@@ -8,6 +8,7 @@ import {
 import { notFound, redirect } from "next/navigation";
 
 import {
+  blockAnonymous,
   dismissReports,
   escalateItem,
   hideItem,
@@ -34,6 +35,7 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   removed: "Removed. Its reports are closed.",
   escalated: "Escalated.",
   dismissed: "Dismissed. The item stays as it is.",
+  blocked: "Blocked. Nothing more from that visitor or their address gets through.",
 } satisfies Partial<Record<StaffOutcome, string>>;
 
 // The Queue board's Reports tab (SPEC.md §7, #40): every post or comment with an open
@@ -209,6 +211,26 @@ function ReportLine({ report }: { readonly report: Report }) {
       </p>
       {report.details !== null && (
         <p className={styles.reportDetails}>{report.details}</p>
+      )}
+      {/* A visitor who files false reports can be blocked like an anonymous writer
+          (D15, #58): the item and its other reports stay for the moderator. */}
+      {report.reporterAnonymousAuthorId !== null && (
+        <form action={blockAnonymous}>
+          <input type="hidden" name="from" value={REPORTS_PATH} />
+          <input
+            type="hidden"
+            name="anonymousAuthorId"
+            value={report.reporterAnonymousAuthorId}
+          />
+          <input type="hidden" name="reason" value="False or abusive reports." />
+          <button
+            type="submit"
+            className="pill-button pill-button--danger"
+            data-testid="report-block-reporter"
+          >
+            Block this reporter
+          </button>
+        </form>
       )}
     </li>
   );
