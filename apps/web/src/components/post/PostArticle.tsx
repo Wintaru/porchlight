@@ -46,7 +46,10 @@ export function PostArticle({
       )}
       {notices}
       <header className={styles.head}>
-        <TagChips tags={post.post_tags} />
+        <TagChips
+          tags={post.post_tags}
+          linked={post.status === "published" && post.visibility === "public"}
+        />
         <h1 className={styles.title}>{post.title}</h1>
         <div className={styles.byline}>
           <Byline post={post} />

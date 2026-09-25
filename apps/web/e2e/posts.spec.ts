@@ -66,8 +66,8 @@ test("author and tag pages list only public published posts", async ({ page }) =
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Making");
   await expect(page.getByTestId("post-card")).toHaveCount(1);
 
-  await page.goto("/t/hiking");
-  await expect(page.getByTestId("post-list-empty")).toBeVisible();
+  // Hiking's only post is pending, so it is not a public tag yet.
+  expect((await page.goto("/t/hiking"))?.status()).toBe(404);
 });
 
 test("an erased author is 410 Gone; an unknown handle and a bare word are 404", async ({
@@ -210,5 +210,37 @@ test("the editor refuses a blank title and saves a draft that only its author se
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByTestId("form-status")).toHaveText("Saved.");
   await expect(page.getByLabel("Title")).toHaveValue(`${title} edited`);
+  await deleteCurrentPost(page);
+});
+
+// #53: a tag carried only by a draft is not public. "hiking" is seeded on a pending post
+// only; a new tag name would outlive this test's post and change the seed, so the draft
+// reuses it.
+test("a tag on a draft only shows nowhere a visitor can see", async ({
+  page,
+  request,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await fillPost(page, {
+    title: `Trail notes ${Date.now().toString(36)}`,
+    body: "Not ready yet.",
+    tags: "hiking",
+  });
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByTestId("post-status")).toHaveText("Draft");
+
+  await page.goto("/");
+  const cloud = page.getByTestId("tag-cloud");
+  await expect(cloud.getByRole("link", { name: "Making" })).toBeVisible();
+  await expect(cloud.getByRole("link", { name: "Hiking" })).toHaveCount(0);
+  expect(await (await request.get("/sitemap.xml")).text()).not.toContain("/t/hiking");
+  expect((await page.goto("/t/hiking"))?.status()).toBe(404);
+
+  await page.goto("/write");
+  await page
+    .getByTestId("my-posts")
+    .getByRole("link", { name: /Trail notes/ })
+    .click();
   await deleteCurrentPost(page);
 });

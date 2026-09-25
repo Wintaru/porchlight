@@ -98,7 +98,14 @@ function PostRow({ post }: { readonly post: PostCard }) {
   );
 }
 
-export function TagChips({ tags }: { readonly tags: PostCard["post_tags"] }) {
+interface TagChipsProps {
+  readonly tags: PostCard["post_tags"];
+  // False on a post that is not public: its tags may have no public page yet (#53), so
+  // they show as plain chips, not links to a 404.
+  readonly linked?: boolean;
+}
+
+export function TagChips({ tags, linked = true }: TagChipsProps) {
   const named = tags.flatMap((link) => (link.tag === null ? [] : [link.tag]));
   if (named.length === 0) {
     return null;
@@ -107,9 +114,13 @@ export function TagChips({ tags }: { readonly tags: PostCard["post_tags"] }) {
     <ul className={styles.tagRow} aria-label="Tags">
       {named.map((tag) => (
         <li key={tag.slug}>
-          <Link className="chip" href={`/t/${tag.slug}`}>
-            {tag.name}
-          </Link>
+          {linked ? (
+            <Link className="chip" href={`/t/${tag.slug}`}>
+              {tag.name}
+            </Link>
+          ) : (
+            <span className="chip">{tag.name}</span>
+          )}
         </li>
       ))}
     </ul>

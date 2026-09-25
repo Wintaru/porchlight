@@ -29,7 +29,7 @@ export function HomeSidebar({ actor, mayWriteAnonymously, tags }: HomeSidebarPro
       {tags.length > 0 && (
         <div className="card">
           <p className={styles.tagsLabel}>Tags</p>
-          <ul className={styles.tagCloud}>
+          <ul className={styles.tagCloud} data-testid="tag-cloud">
             {tags.map((tag) => (
               <li key={tag.id}>
                 <Link className="chip" href={`/t/${tag.slug}`}>

@@ -41,10 +41,8 @@ test("a tag's feed lists only posts under that tag; an unknown tag is 404, an em
   expect(makingBody).toContain("Hello from the porch");
   expect(makingBody).not.toContain("Welcome to Porchlight");
 
-  // "hiking" exists but its only post is still pending, so the feed is valid and empty.
-  const hiking = await request.get("/t/hiking/feed.xml");
-  expect(hiking.status()).toBe(200);
-  expect(await hiking.text()).not.toContain("<item>");
+  // "hiking" exists but its only post is still pending, so it is not a public tag yet.
+  expect((await request.get("/t/hiking/feed.xml")).status()).toBe(404);
 
   expect((await request.get("/t/no-such-tag/feed.xml")).status()).toBe(404);
 });

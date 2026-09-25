@@ -174,10 +174,13 @@ test("a visitor on a desktop has no Menu button: every link is on the bar", asyn
   ).toBeVisible();
 });
 
-test("the tags page lists every tag, each linking to its own page", async ({ page }) => {
+test("the tags page lists every public tag, each linking to its own page", async ({
+  page,
+}) => {
   await page.goto("/tags");
   const tags = page.getByRole("main").getByRole("link");
-  await expect(tags).toContainText(["Hiking", "Making", "Porch talk"]);
+  // "Hiking" is on a pending post only, so it is not listed (#53).
+  await expect(tags).toHaveText(["Making", "Porch talk"]);
   await page.getByRole("main").getByRole("link", { name: "Porch talk" }).click();
   await expect(page).toHaveURL(/\/t\/porch-talk$/);
 });
