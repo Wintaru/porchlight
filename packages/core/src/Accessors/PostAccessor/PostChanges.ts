@@ -19,4 +19,7 @@ export interface PostChanges {
   readonly rejectionReason?: string | null;
   // Stamped by the Manager when a signed-in person saves or publishes (D22).
   readonly reviewedAt?: Date | null;
+  // Set once, at an agent's first write to a post no agent wrote before (D22). The
+  // store refuses any later change.
+  readonly agentDraftMd?: string;
 }

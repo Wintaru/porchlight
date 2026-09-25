@@ -10,7 +10,7 @@ import {
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { PostEditor } from "@/components/editor/PostEditor";
+import { type EditorPost, PostEditor } from "@/components/editor/PostEditor";
 import styles from "@/components/editor/editor.module.css";
 import { classNames } from "@/lib/class-names";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -84,11 +84,24 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
       )}
     </>
   );
+  // PostEditor is a client component, so all of its props reach the browser: only the
+  // fields it shows go, never the agent's first draft (D22).
+  const editable: EditorPost = {
+    id: post.id,
+    title: post.title,
+    bodyMd: post.bodyMd,
+    summary: post.summary,
+    tags: post.tags,
+    visibility: post.visibility,
+    commentsEnabled: post.commentsEnabled,
+    coverMediaId: post.coverMediaId,
+    status: post.status,
+  };
   return (
     <main>
       <PostEditor
         heading={post.title === "" ? "Edit post" : post.title}
-        post={post}
+        post={editable}
         canPublish={post.status === "draft"}
         trustLevel={actor.profile.trustLevel}
         notices={notices}

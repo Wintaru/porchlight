@@ -25,6 +25,15 @@ export class FakeStorePostChangesHandler implements IHandler<
     if (current === undefined) {
       return Promise.resolve(new PostNotFoundResponse(correlationId));
     }
+    // The store's trigger refuses a second agent draft; the fake answers the same way.
+    if (current.agentDraftMd !== null && changes.agentDraftMd !== undefined) {
+      return Promise.resolve(
+        new PostAccessFailedResponse(
+          correlationId,
+          "agent_draft_md is frozen once written",
+        ),
+      );
+    }
     const stored: Post = {
       ...current,
       title: changes.title ?? current.title,
@@ -43,6 +52,7 @@ export class FakeStorePostChangesHandler implements IHandler<
           : changes.rejectionReason,
       reviewedAt:
         changes.reviewedAt === undefined ? current.reviewedAt : changes.reviewedAt,
+      agentDraftMd: current.agentDraftMd ?? changes.agentDraftMd ?? null,
       publishedAt:
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,

@@ -125,7 +125,7 @@ export class CreateDraftHandler implements IHandler<
             commentsEnabled: draft.commentsEnabled,
             coverMediaId: draft.coverMediaId ?? null,
             tags,
-            ...provenanceOf(actor, timestamp),
+            ...provenanceOf(actor, timestamp, draft.bodyMd),
           },
           context,
         ),

@@ -19,8 +19,24 @@ import styles from "./editor.module.css";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
 import { TagInput } from "./TagInput";
 
+// The fields the editor shows, and nothing else: this is a client component, so every
+// prop reaches the browser, and a Post carries text only its author may see (the
+// agent's first draft, D22).
+export type EditorPost = Pick<
+  Post,
+  | "id"
+  | "title"
+  | "bodyMd"
+  | "summary"
+  | "tags"
+  | "visibility"
+  | "commentsEnabled"
+  | "coverMediaId"
+  | "status"
+>;
+
 interface PostEditorProps {
-  readonly post?: Post;
+  readonly post?: EditorPost;
   readonly canPublish: boolean;
   readonly trustLevel: TrustLevel;
   readonly heading: string;

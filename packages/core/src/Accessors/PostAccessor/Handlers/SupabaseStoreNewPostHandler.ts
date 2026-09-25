@@ -69,5 +69,6 @@ function toInsert(post: NewPost): TablesInsert<"posts"> {
     origin: post.origin,
     agent_token_id: post.agentTokenId,
     reviewed_at: post.reviewedAt === null ? null : post.reviewedAt.toISOString(),
+    agent_draft_md: post.agentDraftMd,
   };
 }

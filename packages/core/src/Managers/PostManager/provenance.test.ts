@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Profile } from "../../Common/Profile";
-import { provenanceOf, reviewStamp } from "./provenance";
+import { agentDraftStamp, provenanceOf, reviewStamp } from "./provenance";
 
 const AT = new Date("2026-09-22T10:00:00.000Z");
 
@@ -26,19 +26,32 @@ const AGENT = {
 
 describe("provenanceOf", () => {
   test("a person's post is written and reviewed at once", () => {
-    expect(provenanceOf(MEMBER, AT)).toEqual({
+    expect(provenanceOf(MEMBER, AT, "Body")).toEqual({
       origin: "editor",
       agentTokenId: null,
       reviewedAt: AT,
+      agentDraftMd: null,
     });
   });
 
   test("an agent's draft names its token and waits for a person", () => {
-    expect(provenanceOf(AGENT, AT)).toEqual({
+    expect(provenanceOf(AGENT, AT, "Body")).toEqual({
       origin: "agent",
       agentTokenId: AGENT.grant.tokenId,
       reviewedAt: null,
+      agentDraftMd: "Body",
     });
+  });
+});
+
+describe("agentDraftStamp", () => {
+  test("an agent's first write keeps its text; nothing after it does", () => {
+    expect(agentDraftStamp(AGENT, { agentDraftMd: null }, "First")).toEqual({
+      agentDraftMd: "First",
+    });
+    expect(agentDraftStamp(AGENT, { agentDraftMd: "First" }, "Second")).toEqual({});
+    expect(agentDraftStamp(AGENT, { agentDraftMd: null }, undefined)).toEqual({});
+    expect(agentDraftStamp(MEMBER, { agentDraftMd: null }, "Mine")).toEqual({});
   });
 });
 

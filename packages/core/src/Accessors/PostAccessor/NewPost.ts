@@ -21,4 +21,5 @@ export interface NewPost {
   readonly origin: PostOrigin;
   readonly agentTokenId: string | null;
   readonly reviewedAt: Date | null;
+  readonly agentDraftMd: string | null;
 }

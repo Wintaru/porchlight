@@ -79,6 +79,7 @@ function toColumns(changes: PostChanges): TablesUpdate<"posts"> {
     columns.reviewed_at =
       changes.reviewedAt === null ? null : changes.reviewedAt.toISOString();
   }
+  if (changes.agentDraftMd !== undefined) columns.agent_draft_md = changes.agentDraftMd;
   if (changes.publishedAt !== undefined) {
     columns.published_at =
       changes.publishedAt === null ? null : changes.publishedAt.toISOString();

@@ -12,7 +12,7 @@ import { isPost, loadPost, subjectOf } from "../loadPost";
 import { checkCover } from "../checkCover";
 import { coverAwaitsReview } from "../coverAwaitsReview";
 import { permit } from "../permit";
-import { reviewStamp } from "../provenance";
+import { agentDraftStamp, reviewStamp } from "../provenance";
 import type { UpdateDraftRequest } from "../Requests/UpdateDraftRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
@@ -63,7 +63,10 @@ export class UpdateDraftHandler implements IHandler<
     }
 
     // A person's save is a review (D22); an agent's is not.
-    const columns: PostChanges = reviewStamp(actor, timestamp);
+    const columns: PostChanges = {
+      ...reviewStamp(actor, timestamp),
+      ...agentDraftStamp(actor, current, changes.bodyMd),
+    };
     const shaped: { -readonly [K in keyof PostChanges]: PostChanges[K] } = columns;
     if (changes.title !== undefined) {
       const title = changes.title.trim();

@@ -177,6 +177,7 @@ export class CreateAnonymousPostHandler implements IHandler<
             origin: "editor",
             agentTokenId: null,
             reviewedAt: context.timestamp,
+            agentDraftMd: null,
           },
           context,
         ),

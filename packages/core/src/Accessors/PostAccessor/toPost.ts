@@ -9,7 +9,7 @@ import type { Tag } from "../../Common/Tag";
 // purpose: the client parses the select string at the type level, and a concatenation
 // would widen it to `string` and lose the row type.
 export const POST_COLUMNS =
-  "id, author_id, anonymous_author_id, slug, title, body_md, body_html, summary, cover_media_id, status, visibility, comments_enabled, rejection_reason, origin, agent_token_id, reviewed_at, published_at, created_at, updated_at, post_tags(tag:tags(slug, name))";
+  "id, author_id, anonymous_author_id, slug, title, body_md, body_html, summary, cover_media_id, status, visibility, comments_enabled, rejection_reason, origin, agent_token_id, reviewed_at, agent_draft_md, published_at, created_at, updated_at, post_tags(tag:tags(slug, name))";
 
 export type PostRow = Pick<
   Tables<"posts">,
@@ -29,6 +29,7 @@ export type PostRow = Pick<
   | "origin"
   | "agent_token_id"
   | "reviewed_at"
+  | "agent_draft_md"
   | "published_at"
   | "created_at"
   | "updated_at"
@@ -57,6 +58,7 @@ export function toPost(row: PostRow): Post {
     origin: row.origin,
     agentTokenId: row.agent_token_id,
     reviewedAt: row.reviewed_at === null ? null : new Date(row.reviewed_at),
+    agentDraftMd: row.agent_draft_md,
     tags: row.post_tags.flatMap((link) => (link.tag === null ? [] : [link.tag])),
     publishedAt: row.published_at === null ? null : new Date(row.published_at),
     createdAt: new Date(row.created_at),

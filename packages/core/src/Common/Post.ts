@@ -29,6 +29,9 @@ export interface Post {
   readonly origin: PostOrigin;
   readonly agentTokenId: string | null;
   readonly reviewedAt: Date | null;
+  // The agent's own text at its first write, frozen after (D22): null when no agent
+  // wrote this post. Only the member and their agent ever see it.
+  readonly agentDraftMd: string | null;
   readonly publishedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
