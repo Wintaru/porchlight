@@ -20,12 +20,20 @@ export class SupabaseFileReportHandler implements IHandler<
   ): Promise<
     ReportStoredResponse | ReportAlreadyOpenResponse | ReportAccessFailedResponse
   > {
-    const { reporterId, target, reason, details, startsEscalated, correlationId } =
-      request;
+    const {
+      reporterId,
+      reporterAnonymousAuthorId,
+      target,
+      reason,
+      details,
+      startsEscalated,
+      correlationId,
+    } = request;
     const { data, error } = await this.db
       .from("reports")
       .insert({
         reporter_id: reporterId,
+        reporter_anonymous_author_id: reporterAnonymousAuthorId,
         post_id: target.kind === "post" ? target.id : null,
         comment_id: target.kind === "comment" ? target.id : null,
         reason,

@@ -373,6 +373,38 @@ describe("DependencyContainer: ModerationManager", () => {
     expect(filed.anonymousSecret).toEqual(expect.any(String));
   });
 
+  test("a visitor's report names its anonymous author, and blocking it refuses the next (#58)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await publishedPost(container, "Falsely reported");
+    const filed = await container.moderationManager.execute(
+      new FileReportRequest(
+        VISITOR,
+        { kind: "post", id: post.id },
+        "spam",
+        null,
+        VISITOR_SUBMISSION,
+      ),
+    );
+    if (!(filed instanceof ReportFiledResponse)) {
+      throw new Error(`expected ReportFiledResponse, got ${filed.constructor.name}`);
+    }
+    const reporter = filed.report.reporterAnonymousAuthorId;
+    if (reporter === null) {
+      throw new Error("expected the report to name its anonymous author");
+    }
+
+    await container.moderationManager.execute(
+      new BlockAnonymousRequest(MIRA, reporter, "false reports"),
+    );
+    const again = await container.moderationManager.execute(
+      new FileReportRequest(VISITOR, { kind: "post", id: post.id }, "harassment", null, {
+        ...VISITOR_SUBMISSION,
+        secret: filed.anonymousSecret ?? undefined,
+      }),
+    );
+    expect(again).toBeInstanceOf(ReportGuardRefusedResponse);
+  });
+
   test("a visitor's report with no submission is refused before it is stored", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const post = await publishedPost(container, "Guarded");

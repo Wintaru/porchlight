@@ -7,6 +7,9 @@ import type { ReportStatus } from "./ReportStatus";
 export interface Report {
   readonly id: string;
   readonly reporterId: string | null;
+  // The anonymous author a visitor's report came from (#58), for the block button.
+  // Null for a member's report, and for a visitor's filed before #58.
+  readonly reporterAnonymousAuthorId: string | null;
   readonly postId: string | null;
   readonly commentId: string | null;
   readonly reason: ReportReason;

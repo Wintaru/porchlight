@@ -9,6 +9,8 @@ import type { ReportReason } from "../../../Common/ReportReason";
 export class FileReportRequest extends RequestBase {
   constructor(
     readonly reporterId: string | null,
+    // The admitted anonymous author, for a visitor's report (#58).
+    readonly reporterAnonymousAuthorId: string | null,
     readonly target: ModerationTarget,
     readonly reason: ReportReason,
     readonly details: string | null,

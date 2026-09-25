@@ -22,7 +22,15 @@ export class FakeFileReportHandler implements IHandler<
         new ReportAccessFailedResponse(request.correlationId, "REPORT_FAKE_RESULT=fail"),
       );
     }
-    const { reporterId, target, reason, details, startsEscalated, timestamp } = request;
+    const {
+      reporterId,
+      reporterAnonymousAuthorId,
+      target,
+      reason,
+      details,
+      startsEscalated,
+      timestamp,
+    } = request;
     // Mirrors the partial unique indexes on `reports` (#56).
     const duplicate =
       reporterId !== null &&
@@ -40,6 +48,7 @@ export class FakeFileReportHandler implements IHandler<
     const report: Report = {
       id: globalThis.crypto.randomUUID(),
       reporterId,
+      reporterAnonymousAuthorId,
       postId: target.kind === "post" ? target.id : null,
       commentId: target.kind === "comment" ? target.id : null,
       reason,

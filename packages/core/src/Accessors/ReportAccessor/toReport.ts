@@ -4,12 +4,13 @@ import type { Report } from "../../Common/Report";
 
 // Never `select *`: the shape here is the one the mapper below expects.
 export const REPORT_COLUMNS =
-  "id, reporter_id, post_id, comment_id, reason, details, status, resolved_by, resolved_at, created_at";
+  "id, reporter_id, reporter_anonymous_author_id, post_id, comment_id, reason, details, status, resolved_by, resolved_at, created_at";
 
 export type ReportRow = Pick<
   Tables<"reports">,
   | "id"
   | "reporter_id"
+  | "reporter_anonymous_author_id"
   | "post_id"
   | "comment_id"
   | "reason"
@@ -27,6 +28,7 @@ export function toReport(row: ReportRow): Report {
   return {
     id: row.id,
     reporterId: row.reporter_id,
+    reporterAnonymousAuthorId: row.reporter_anonymous_author_id,
     postId: row.post_id,
     commentId: row.comment_id,
     reason: row.reason,

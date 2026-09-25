@@ -60,6 +60,7 @@ function report(id: number, target: { postId?: string; commentId?: string }): Re
   return {
     id: `r${String(id)}`,
     reporterId: null,
+    reporterAnonymousAuthorId: null,
     postId: target.postId ?? null,
     commentId: target.commentId ?? null,
     reason: "spam",

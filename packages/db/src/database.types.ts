@@ -744,6 +744,7 @@ export type Database = {
           id: string
           post_id: string | null
           reason: Database["public"]["Enums"]["report_reason"]
+          reporter_anonymous_author_id: string | null
           reporter_id: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -756,6 +757,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           reason: Database["public"]["Enums"]["report_reason"]
+          reporter_anonymous_author_id?: string | null
           reporter_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -768,6 +770,7 @@ export type Database = {
           id?: string
           post_id?: string | null
           reason?: Database["public"]["Enums"]["report_reason"]
+          reporter_anonymous_author_id?: string | null
           reporter_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -786,6 +789,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_anonymous_author_id_fkey"
+            columns: ["reporter_anonymous_author_id"]
+            isOneToOne: false
+            referencedRelation: "anonymous_authors"
             referencedColumns: ["id"]
           },
           {

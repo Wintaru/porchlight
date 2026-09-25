@@ -22,6 +22,7 @@ test("the domain report status union matches the schema enum", () => {
 test("toReport maps an open report on a post", () => {
   const report = toReport({
     id: "r1",
+    reporter_anonymous_author_id: null,
     reporter_id: "u1",
     post_id: "p1",
     comment_id: null,
@@ -35,6 +36,7 @@ test("toReport maps an open report on a post", () => {
   expect(report).toEqual({
     id: "r1",
     reporterId: "u1",
+    reporterAnonymousAuthorId: null,
     postId: "p1",
     commentId: null,
     reason: "spam",
@@ -50,6 +52,7 @@ test("toReport maps a resolved report from a visitor on a comment", () => {
   const report = toReport({
     id: "r2",
     reporter_id: null,
+    reporter_anonymous_author_id: null,
     post_id: null,
     comment_id: "c1",
     reason: "illegal_content",

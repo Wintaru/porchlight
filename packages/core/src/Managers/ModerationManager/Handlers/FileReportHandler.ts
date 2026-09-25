@@ -74,6 +74,7 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
     // address never writes a report. With no submission at all, there is no challenge
     // to pass.
     let anonymousSecret: string | null = null;
+    let anonymousAuthorId: string | null = null;
     if (actor.kind === "visitor") {
       if (submission === undefined) {
         return new ReportGuardRefusedResponse(correlationId, "turnstile-failed");
@@ -88,12 +89,14 @@ export class FileReportHandler implements IHandler<FileReportRequest, Result> {
         return unavailable(correlationId, admitted, "guard.evaluate");
       }
       anonymousSecret = admitted.secret;
+      anonymousAuthorId = admitted.author.id;
     }
 
     const startsEscalated = reason === "illegal_content";
     const stored = await this.reports.store(
       new StoreFileReportRequest(
         reporterId(actor),
+        anonymousAuthorId,
         target,
         reason,
         details,
