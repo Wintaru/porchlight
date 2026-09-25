@@ -11,8 +11,8 @@ import type { PostUnavailableResponse } from "../Responses/PostUnavailableRespon
 
 type GetPostResult = PostResponse | NoSuchPostResponse | PostUnavailableResponse;
 
-// A post the actor may not view answers NoSuchPost, not Forbidden: a draft's existence
-// is the author's business.
+// A post the actor may not view (or, for the editor's load, may not edit) answers
+// NoSuchPost, not Forbidden: a draft's existence is the author's business.
 export class GetPostHandler implements IHandler<GetPostRequest, GetPostResult> {
   constructor(
     private readonly posts: IPostAccessor,
@@ -20,7 +20,7 @@ export class GetPostHandler implements IHandler<GetPostRequest, GetPostResult> {
   ) {}
 
   async handle(request: GetPostRequest): Promise<GetPostResult> {
-    const { correlationId, actor, selector } = request;
+    const { correlationId, actor, selector, purpose } = request;
     const context = { correlationId };
 
     const post = await loadPost(this.posts, selector, context);
@@ -30,7 +30,7 @@ export class GetPostHandler implements IHandler<GetPostRequest, GetPostResult> {
     const refused = await permit(
       this.permissions,
       actor,
-      "post.view",
+      purpose === "edit" ? "post.edit" : "post.view",
       subjectOf(post),
       context,
     );

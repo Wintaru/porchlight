@@ -35,7 +35,8 @@ const STATUS_TEXT = {
 } as const;
 
 // An existing post: the same form, plus publish, unpublish and delete. A post the
-// member may not see is a 404, the same answer the Manager gives.
+// member may not edit is a 404, the same answer the Manager gives (#66): another
+// member's published post is theirs to read on its own page, not to open here.
 export default async function EditPage({ params, searchParams }: EditPageProps) {
   const { id } = await params;
   const actor = await getCurrentActor();
@@ -46,7 +47,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
     notFound();
   }
   const response = await getDependencyContainer().postManager.query(
-    new GetPostRequest(actor, { by: "id", id }),
+    new GetPostRequest(actor, { by: "id", id }, "edit"),
   );
   if (response instanceof NoSuchPostResponse) {
     notFound();

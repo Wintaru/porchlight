@@ -194,3 +194,14 @@ test("an untouched body is saved as it was loaded, and a published post does not
   await expect(page.getByLabel("Body (markdown)")).toHaveValue(loose);
   await deleteCurrentPost(page);
 });
+
+// #66: the editor opens only for someone who may edit the post. June may read Theo's
+// published post on its own page, but not open it here.
+test("another member's published post does not open in the editor", async ({ page }) => {
+  const SEED_PUBLIC_POST_ID = "00000000-0000-4000-8000-0000000000b2";
+  await devSignIn(page, JUNE);
+  const response = await page.goto(`/write/${SEED_PUBLIC_POST_ID}`);
+  expect(response?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Nothing here" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Publish" })).toHaveCount(0);
+});

@@ -362,6 +362,25 @@ describe("DependencyContainer: PostManager", () => {
     expect(unknown).toBeInstanceOf(NoSuchPostResponse);
   });
 
+  test("the editor's load answers only someone who may edit the post (#66)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await draft(container, THEO, { title: "Edit gate" });
+    await container.postManager.execute(new PublishPostRequest(THEO, post.id));
+    const asEditor = (actor: Actor) =>
+      container.postManager.query(
+        new GetPostRequest(actor, { by: "id", id: post.id }, "edit"),
+      );
+
+    expect(await asEditor(THEO)).toBeInstanceOf(PostResponse);
+    expect(await asEditor(ADMIN)).toBeInstanceOf(PostResponse);
+    expect(await asEditor(JUNE)).toBeInstanceOf(NoSuchPostResponse);
+    // Reading it is still anyone's.
+    expect(
+      await container.postManager.query(
+        new GetPostRequest(JUNE, { by: "id", id: post.id }),
+      ),
+    ).toBeInstanceOf(PostResponse);
+  });
   test("ListPostsForAuthor is the author's own list, newest first, every status", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const older = await draft(container, THEO, { title: "Older" });
