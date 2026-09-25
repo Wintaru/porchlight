@@ -102,6 +102,10 @@ test("links in an anonymous post stay inert until a moderator approves it", asyn
   await devSignIn(page, THEO);
   await page.goto("/anon");
   await page.getByTestId("claim-button").click();
+  // Wait for the claim to land: leaving the page first can cancel it.
+  await expect(page.getByTestId("claim-status")).toHaveText(
+    "Claimed. These are yours now.",
+  );
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
   await page.getByRole("button", { name: "Delete" }).click();
