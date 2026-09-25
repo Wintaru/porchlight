@@ -332,6 +332,35 @@ describe("retention (§7)", () => {
     }
   });
 
+  test("erasure removes a member's evidence but keeps frozen rows (#63)", async () => {
+    const left = await asService(async (tx) => {
+      const insert = (requestId: string, frozen: boolean) => tx`
+        insert into public.submission_evidence (
+          subject_kind, subject_id, author_id, raw_ip_expires_at, ip_hash,
+          turnstile_result, request_id, frozen, retain_until
+        ) values (
+          'post', ${SEED.publicPost}, ${SEED.trustedMember}, now(), 'hash',
+          'not_required', ${requestId}, ${frozen},
+          case when ${frozen} then now() + interval '1 year' end
+        )
+      `;
+      await insert("theo-plain", false);
+      await insert("theo-frozen", true);
+      // The seed's anonymous author, as if Theo had claimed it: its row goes too.
+      await tx`
+        update public.anonymous_authors
+        set claimed_by = ${SEED.trustedMember}, claimed_at = now()
+        where id = ${SEED.anonymousAuthor}
+      `;
+      await tx`select public.erase_account(${SEED.trustedMember})`;
+      return tx<{ request_id: string }[]>`
+        select request_id from public.submission_evidence
+        where request_id in ('theo-plain', 'theo-frozen', 'seed-request-1')
+      `;
+    });
+    expect(left.map((row) => row.request_id)).toEqual(["theo-frozen"]);
+  });
+
   test("the audit log is append-only", async () => {
     const update = await errorCodeOf(() =>
       asService((tx) => tx`update public.audit_log set event = 'x'`),
