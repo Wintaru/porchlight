@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { refreshSession } from "@/auth/refresh-session";
+import { ERASED_AUTHOR_HEADER, ERASED_AUTHOR_PATH } from "@/lib/erased-author";
 import { parseHandleParam } from "@/lib/handle-param";
 import { loadAuthorStatus } from "@/read-model/author";
 import { loadPostClaimStatus } from "@/read-model/post-page";
@@ -10,7 +11,8 @@ import { loadPostClaimStatus } from "@/read-model/post-page";
 //
 // One status code a page cannot send: 410 Gone for an erased author (D11). A page can
 // only render, redirect or 404, so the proxy reads the author's status under RLS
-// (erased rows are readable, and blank) and answers before the page runs.
+// (erased rows are readable, and blank) and rewrites to the erased-author page with a
+// 410 status. That page is in the site's shell, so the visitor still has the header.
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { response, client } = await refreshSession(request);
   const anonymousSlug = anonymousPostSlugOf(request.nextUrl.pathname);
@@ -36,10 +38,24 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
   const status = await loadAuthorStatus(client, handle);
   if (status === "erased") {
-    return new NextResponse("This author has erased their account.", {
+    const forwarded = new Headers(request.headers);
+    forwarded.set(ERASED_AUTHOR_HEADER, "1");
+    const gone = NextResponse.rewrite(new URL(ERASED_AUTHOR_PATH, request.url), {
       status: 410,
-      headers: { "content-type": "text/plain; charset=utf-8", "x-robots-tag": "noindex" },
+      request: { headers: forwarded },
     });
+    // Keep what the session refresh wrote: its cookies (the header on the page still
+    // shows who is signed in) and its no-store headers, so no cache keeps those tokens.
+    for (const [name, value] of response.headers) {
+      if (!name.startsWith("x-middleware-") && name !== "set-cookie") {
+        gone.headers.set(name, value);
+      }
+    }
+    for (const cookie of response.cookies.getAll()) {
+      gone.cookies.set(cookie);
+    }
+    gone.headers.set("x-robots-tag", "noindex");
+    return gone;
   }
   return response;
 }

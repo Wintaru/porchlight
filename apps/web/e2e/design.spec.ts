@@ -40,19 +40,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/" },
   { path: "/@theo/hello-from-the-porch" },
   { path: "/@theo" },
-  // The 410 answer is a bare text body: no header, no document at all.
-  {
-    path: "/@wren",
-    status: 410,
-    gaps: ["no-site-header", "no-main"],
-    axeGaps: [
-      "document-title",
-      "html-has-lang",
-      "landmark-one-main",
-      "page-has-heading-one",
-      "region",
-    ],
-  },
+  // An erased author: the site's own "gone" page, still answering 410.
+  { path: "/@wren", status: 410 },
   { path: "/t/making" },
   { path: "/tags" },
   { path: "/about" },
