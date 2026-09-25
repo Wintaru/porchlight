@@ -176,15 +176,19 @@ for (const target of PAGES) {
     });
   }
 
-  test(`${titleOf(target, "desktop")} has no detectable accessibility violations`, async ({
-    page,
-  }) => {
-    await open(page, target, 1280, 800);
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations.map((violation) => violation.id)).toEqual(
-      target.axeGaps ?? [],
-    );
-  });
+  // Both themes: a colour pair can pass on cream and fail on the dark surface.
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`${titleOf(target, "desktop")} in ${colorScheme} mode has no detectable accessibility violations`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await open(page, target, 1280, 800);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations.map((violation) => violation.id)).toEqual(
+        target.axeGaps ?? [],
+      );
+    });
+  }
 }
 
 // The header is one row at every width, so a height check alone cannot see crowding:

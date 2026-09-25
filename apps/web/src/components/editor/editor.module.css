@@ -401,7 +401,8 @@
 .primary {
   border-color: var(--amber);
   background: var(--amber);
-  color: #fffcf7;
+  /* The surface colour, not a fixed cream: it reads on amber in both themes. */
+  color: var(--surface);
 }
 
 .primary:hover:not(:disabled) {
