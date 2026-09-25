@@ -25,7 +25,12 @@ export function clientIpFrom(list: Headers): string {
     return UNTRUSTED_CLIENT_IP;
   }
   const forwardedFor = list.get("x-forwarded-for");
-  return (
-    forwardedFor?.split(",")[0]?.trim() ?? list.get("x-real-ip") ?? UNTRUSTED_CLIENT_IP
-  );
+  // An empty header is no address: "" would be one more address every such caller
+  // shares, so it falls through like a missing one.
+  const first = forwardedFor?.split(",")[0]?.trim();
+  if (first !== undefined && first !== "") {
+    return first;
+  }
+  const realIp = list.get("x-real-ip");
+  return realIp !== null && realIp !== "" ? realIp : UNTRUSTED_CLIENT_IP;
 }

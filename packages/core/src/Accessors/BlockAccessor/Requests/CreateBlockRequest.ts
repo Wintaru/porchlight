@@ -1,12 +1,13 @@
 import { RequestBase } from "../../../Common/RequestBase";
 import type { RequestContext } from "../../../Common/RequestContext";
 
-// BlockAnonymous's write (#11): one-click admin block by anonymous token (D15). IP-hash
-// blocking needs a lookup no accessor yet provides (`submission_evidence` has none) and
-// is deferred — this blocks the token only.
+// BlockAnonymous's write (#11, #37): one-click block by anonymous token and the salted
+// hash of the address that token last wrote from (D15). `ipHash` is null for a token
+// whose row predates the hash.
 export class CreateBlockRequest extends RequestBase {
   constructor(
     readonly anonymousAuthorId: string,
+    readonly ipHash: string | null,
     readonly reason: string,
     readonly createdBy: string,
     context?: RequestContext,

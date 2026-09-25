@@ -19,6 +19,9 @@ export class FakeCreateBlockHandler implements IHandler<
       );
     }
     this.state.blockedAuthorIds.add(request.anonymousAuthorId);
+    if (request.ipHash !== null) {
+      this.state.blockedIpHashes.add(request.ipHash);
+    }
     return Promise.resolve(
       new BlockCreatedResponse(request.correlationId, globalThis.crypto.randomUUID()),
     );

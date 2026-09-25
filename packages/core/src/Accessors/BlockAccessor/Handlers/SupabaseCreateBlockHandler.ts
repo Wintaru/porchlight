@@ -14,11 +14,12 @@ export class SupabaseCreateBlockHandler implements IHandler<
   async handle(
     request: CreateBlockRequest,
   ): Promise<BlockCreatedResponse | BlockAccessFailedResponse> {
-    const { anonymousAuthorId, reason, createdBy, correlationId } = request;
+    const { anonymousAuthorId, ipHash, reason, createdBy, correlationId } = request;
     const { data, error } = await this.db
       .from("blocks")
       .insert({
         anonymous_author_id: anonymousAuthorId,
+        ip_hash: ipHash,
         reason,
         created_by: createdBy,
       })

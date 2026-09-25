@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import type { Actor } from "../Common/Actor";
 import { VISITOR } from "../Common/Actor";
 import type { Profile } from "../Common/Profile";
+import { BlockAnonymousRequest } from "../Managers/ModerationManager/Requests/BlockAnonymousRequest";
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
 import { DismissReportsRequest } from "../Managers/ModerationManager/Requests/DismissReportsRequest";
@@ -15,6 +16,7 @@ import { ListReportsRequest } from "../Managers/ModerationManager/Requests/ListR
 import { PromoteMemberRequest } from "../Managers/ModerationManager/Requests/PromoteMemberRequest";
 import { RejectItemRequest } from "../Managers/ModerationManager/Requests/RejectItemRequest";
 import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
+import { AnonymousAuthorBlockedResponse } from "../Managers/ModerationManager/Responses/AnonymousAuthorBlockedResponse";
 import { ModerationForbiddenResponse } from "../Managers/ModerationManager/Responses/ModerationForbiddenResponse";
 import { ModerationItemResponse } from "../Managers/ModerationManager/Responses/ModerationItemResponse";
 import { ProfileModeratedResponse } from "../Managers/ModerationManager/Responses/ProfileModeratedResponse";
@@ -30,8 +32,10 @@ import { CreateAnonymousPostRequest } from "../Managers/PostManager/Requests/Cre
 import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
 import { GetPostRequest } from "../Managers/PostManager/Requests/GetPostRequest";
+import { PostGuardRefusedResponse } from "../Managers/PostManager/Responses/PostGuardRefusedResponse";
 import { AnonymousPostCreatedResponse } from "../Managers/PostManager/Responses/AnonymousPostCreatedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
+import { UNTRUSTED_CLIENT_IP } from "../Common/Retention";
 import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV } from "./FakeEnvironment.test-helper";
 
@@ -526,6 +530,75 @@ describe("DependencyContainer: ModerationManager", () => {
       resolvedBy: null,
       resolvedAt: null,
     });
+  });
+
+  test("a block reaches the address an anonymous author last wrote from (#37)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const write = (secret: string | undefined, clientIp: string, title: string) =>
+      container.postManager.execute(
+        new CreateAnonymousPostRequest(
+          VISITOR,
+          { title, bodyMd: "An anonymous note.", summary: null },
+          { secret, turnstileToken: undefined, clientIp, userAgent: "test-agent" },
+        ),
+      );
+    const first = await write(undefined, "203.0.113.10", "From home");
+    if (!(first instanceof AnonymousPostCreatedResponse)) {
+      throw new Error(
+        `expected AnonymousPostCreatedResponse, got ${first.constructor.name}`,
+      );
+    }
+    // The same cookie, later, from another address: that one is now the current one.
+    const second = await write(first.secret, "198.51.100.20", "From the cafe");
+    expect(second).toBeInstanceOf(AnonymousPostCreatedResponse);
+    if (first.post.author.kind !== "anonymous") {
+      throw new Error("expected an anonymous author");
+    }
+
+    const blocked = await container.moderationManager.execute(
+      new BlockAnonymousRequest(MIRA, first.post.author.anonymousAuthorId, "spam"),
+    );
+    expect(blocked).toBeInstanceOf(AnonymousAuthorBlockedResponse);
+
+    // A fresh cookie from the current address is refused; the old address is not
+    // blocked, since the author has moved on from it.
+    expect(
+      await write(undefined, "198.51.100.20", "Fresh cookie, same cafe"),
+    ).toBeInstanceOf(PostGuardRefusedResponse);
+    expect(await write(undefined, "203.0.113.10", "Back home")).toBeInstanceOf(
+      AnonymousPostCreatedResponse,
+    );
+  });
+
+  test("with no trusted address, a block is by cookie only and never by the placeholder", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const write = (secret: string | undefined) =>
+      container.postManager.execute(
+        new CreateAnonymousPostRequest(
+          VISITOR,
+          { title: "No proxy", bodyMd: "An anonymous note.", summary: null },
+          {
+            secret,
+            turnstileToken: undefined,
+            clientIp: UNTRUSTED_CLIENT_IP,
+            userAgent: "a",
+          },
+        ),
+      );
+    const first = await write(undefined);
+    if (
+      !(first instanceof AnonymousPostCreatedResponse) ||
+      first.post.author.kind !== "anonymous"
+    ) {
+      throw new Error("expected an anonymous post");
+    }
+    await container.moderationManager.execute(
+      new BlockAnonymousRequest(MIRA, first.post.author.anonymousAuthorId, "spam"),
+    );
+    // The blocked cookie is refused; every other visitor behind the same placeholder
+    // still gets through.
+    expect(await write(first.secret)).toBeInstanceOf(PostGuardRefusedResponse);
+    expect(await write(undefined)).toBeInstanceOf(AnonymousPostCreatedResponse);
   });
 
   test("the queue marks an escalated item, and only that one", async () => {

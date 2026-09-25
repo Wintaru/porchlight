@@ -1,3 +1,9 @@
+import { FakeLoadAnonymousAuthorIpHashHandler } from "../Accessors/AnonymousAuthorAccessor/Handlers/FakeLoadAnonymousAuthorIpHashHandler";
+import { FakeStoreAnonymousAuthorSeenHandler } from "../Accessors/AnonymousAuthorAccessor/Handlers/FakeStoreAnonymousAuthorSeenHandler";
+import { SupabaseLoadAnonymousAuthorIpHashHandler } from "../Accessors/AnonymousAuthorAccessor/Handlers/SupabaseLoadAnonymousAuthorIpHashHandler";
+import { SupabaseStoreAnonymousAuthorSeenHandler } from "../Accessors/AnonymousAuthorAccessor/Handlers/SupabaseStoreAnonymousAuthorSeenHandler";
+import { LoadAnonymousAuthorIpHashRequest } from "../Accessors/AnonymousAuthorAccessor/Requests/LoadAnonymousAuthorIpHashRequest";
+import { StoreAnonymousAuthorSeenRequest } from "../Accessors/AnonymousAuthorAccessor/Requests/StoreAnonymousAuthorSeenRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { FakeAnonymousAuthorState } from "../Accessors/AnonymousAuthorAccessor/FakeAnonymousAuthorState";
@@ -37,6 +43,10 @@ export function createAnonymousAuthorAccessor(
             ClaimAnonymousAuthorRequest,
             new SupabaseClaimAnonymousAuthorHandler(client),
           )
+          .register(
+            StoreAnonymousAuthorSeenRequest,
+            new SupabaseStoreAnonymousAuthorSeenHandler(client),
+          )
           .build(),
         new HandlerResolverBuilder()
           .register(
@@ -46,6 +56,10 @@ export function createAnonymousAuthorAccessor(
           .register(
             LoadAnonymousStatusRequest,
             new SupabaseLoadAnonymousStatusHandler(client),
+          )
+          .register(
+            LoadAnonymousAuthorIpHashRequest,
+            new SupabaseLoadAnonymousAuthorIpHashHandler(client),
           )
           .build(),
       );
@@ -64,6 +78,10 @@ export function createAnonymousAuthorAccessor(
             ClaimAnonymousAuthorRequest,
             new FakeClaimAnonymousAuthorHandler(state),
           )
+          .register(
+            StoreAnonymousAuthorSeenRequest,
+            new FakeStoreAnonymousAuthorSeenHandler(state),
+          )
           .build(),
         new HandlerResolverBuilder()
           .register(
@@ -71,6 +89,10 @@ export function createAnonymousAuthorAccessor(
             new FakeLoadAnonymousAuthorBySecretHashHandler(state),
           )
           .register(LoadAnonymousStatusRequest, new FakeLoadAnonymousStatusHandler(state))
+          .register(
+            LoadAnonymousAuthorIpHashRequest,
+            new FakeLoadAnonymousAuthorIpHashHandler(state),
+          )
           .build(),
       );
     }

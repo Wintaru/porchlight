@@ -21,10 +21,16 @@ export class SupabaseCheckAnonymousBlockHandler implements IHandler<
   ): Promise<
     AnonymousBlockedResponse | AnonymousNotBlockedResponse | BlockAccessFailedResponse
   > {
-    const subjects =
-      request.anonymousAuthorId === undefined
-        ? `ip_hash.eq.${request.ipHash}`
-        : `anonymous_author_id.eq.${request.anonymousAuthorId},ip_hash.eq.${request.ipHash}`;
+    const subjects = [
+      ...(request.anonymousAuthorId === undefined
+        ? []
+        : [`anonymous_author_id.eq.${request.anonymousAuthorId}`]),
+      ...(request.ipHash === null ? [] : [`ip_hash.eq.${request.ipHash}`]),
+    ];
+    if (subjects.length === 0) {
+      // A first write from an unknown address: nothing to match a block against.
+      return new AnonymousNotBlockedResponse(request.correlationId);
+    }
     // PostgREST filter values are literals, not SQL expressions: "now()" would be
     // compared as the four-character string, so the instant is computed here.
     const notExpired = `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`;
@@ -34,7 +40,7 @@ export class SupabaseCheckAnonymousBlockHandler implements IHandler<
     const { data, error } = await this.db
       .from("blocks")
       .select("reason, expires_at")
-      .or(subjects)
+      .or(subjects.join(","))
       .or(notExpired)
       .order("expires_at", { ascending: true, nullsFirst: true })
       .limit(1);

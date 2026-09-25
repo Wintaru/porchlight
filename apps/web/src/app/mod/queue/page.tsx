@@ -25,6 +25,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import {
   approveAsMature,
   approveItem,
+  blockAnonymous,
   escalateItem,
   hideItem,
   removeItem,
@@ -54,6 +55,7 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   hidden: "Hidden.",
   removed: "Removed.",
   escalated: "Escalated.",
+  blocked: "Blocked. Nothing more from that writer or their address reaches the queue.",
 } satisfies Partial<Record<StaffOutcome, string>>;
 
 // The moderation queue (SPEC.md §7): pending posts and comments, newest first,
@@ -184,6 +186,8 @@ interface QueueItemCardProps {
 
 function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
   const target = { kind: item.kind, id: itemId(item) };
+  const author = item.kind === "post" ? item.post.author : item.comment.author;
+  const anonymousAuthorId = author.kind === "anonymous" ? author.anonymousAuthorId : null;
   // A flagged cover may only be approved with the mature tag (SPEC.md §7).
   const heldCoverId =
     item.kind === "post" && item.flagged ? item.post.coverMediaId : null;
@@ -244,6 +248,9 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
         {heldCoverId !== null && (
           <input type="hidden" name="mediaId" value={heldCoverId} />
         )}
+        {anonymousAuthorId !== null && (
+          <input type="hidden" name="anonymousAuthorId" value={anonymousAuthorId} />
+        )}
         <label className="field">
           <span className="field-label">
             Reason (required to reject, optional to hide, remove or escalate)
@@ -295,6 +302,16 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
           >
             Remove
           </button>
+          {anonymousAuthorId !== null && (
+            <button
+              type="submit"
+              formAction={blockAnonymous}
+              className="pill-button pill-button--danger"
+              data-testid="queue-block"
+            >
+              Block this writer
+            </button>
+          )}
           <button
             type="submit"
             formAction={escalateItem}

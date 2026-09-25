@@ -2,7 +2,9 @@
 
 import {
   type Actor,
+  AnonymousAuthorBlockedResponse,
   ApproveAsMatureRequest,
+  BlockAnonymousRequest,
   ApproveItemRequest,
   DismissReportsRequest,
   EscalateRequest,
@@ -136,6 +138,27 @@ export async function dismissReports(formData: FormData): Promise<void> {
     new DismissReportsRequest(actor, target, reason),
   );
   finish(response, path, "dismissed");
+}
+
+// Blocks an anonymous writer's cookie and the address it last wrote from (SPEC.md §7,
+// D15, #37): nothing more from either reaches the queue. The item itself stays for the
+// moderator to decide.
+export async function blockAnonymous(formData: FormData): Promise<void> {
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
+  const authorId = formData.get("anonymousAuthorId");
+  if (typeof authorId !== "string" || !isEntityId(authorId)) {
+    redirect(withError(path, "unavailable"));
+  }
+  const reason = optionalReasonOf(formData) ?? "Blocked from the moderation queue.";
+  const response = await getDependencyContainer().moderationManager.execute(
+    new BlockAnonymousRequest(actor, authorId, reason),
+  );
+  if (response instanceof AnonymousAuthorBlockedResponse) {
+    revalidatePath(path);
+    redirect(withCode(path, "done", "blocked"));
+  }
+  finish(response, path, "blocked");
 }
 
 async function requireStaff(path: StaffPath): Promise<Actor & { kind: "member" }> {

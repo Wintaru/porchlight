@@ -1,3 +1,6 @@
+import type { IAnonymousAuthorAccessor } from "../../../Accessors/AnonymousAuthorAccessor/IAnonymousAuthorAccessor";
+import { LoadAnonymousAuthorIpHashRequest } from "../../../Accessors/AnonymousAuthorAccessor/Requests/LoadAnonymousAuthorIpHashRequest";
+import { AnonymousAuthorIpHashLoadedResponse } from "../../../Accessors/AnonymousAuthorAccessor/Responses/AnonymousAuthorIpHashLoadedResponse";
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { IBlockAccessor } from "../../../Accessors/BlockAccessor/IBlockAccessor";
 import { CreateBlockRequest } from "../../../Accessors/BlockAccessor/Requests/CreateBlockRequest";
@@ -21,12 +24,13 @@ type Result =
   | ModerationForbiddenResponse
   | ModerationUnavailableResponse;
 
-// One-click admin block by anonymous token (D15). An unknown token surfaces as
-// ModerationUnavailableResponse through the `blocks.anonymous_author_id` foreign key
-// rather than a dedicated existence check — the schema already enforces it.
+// One-click admin block by anonymous token and the address it last wrote from (D15,
+// #37). An unknown token surfaces as ModerationUnavailableResponse from the address
+// lookup, the same way the `blocks.anonymous_author_id` foreign key would refuse it.
 export class BlockAnonymousHandler implements IHandler<BlockAnonymousRequest, Result> {
   constructor(
     private readonly blocks: IBlockAccessor,
+    private readonly anonymousAuthors: IAnonymousAuthorAccessor,
     private readonly modActions: IModActionAccessor,
     private readonly auditLog: IAuditAccessor,
     private readonly reports: IReportAccessor,
@@ -49,8 +53,22 @@ export class BlockAnonymousHandler implements IHandler<BlockAnonymousRequest, Re
       return refused;
     }
 
+    // The address goes on the block too (SPEC.md §7: token and IP hash), so a fresh
+    // cookie from the same place is still refused (#37).
+    const address = await this.anonymousAuthors.load(
+      new LoadAnonymousAuthorIpHashRequest(anonymousAuthorId, context),
+    );
+    if (!(address instanceof AnonymousAuthorIpHashLoadedResponse)) {
+      return unavailable(correlationId, address, "anonymousAuthors.load");
+    }
     const created = await this.blocks.store(
-      new CreateBlockRequest(anonymousAuthorId, reason, actorId(actor), context),
+      new CreateBlockRequest(
+        anonymousAuthorId,
+        address.ipHash,
+        reason,
+        actorId(actor),
+        context,
+      ),
     );
     if (!(created instanceof BlockCreatedResponse)) {
       return unavailable(correlationId, created, "blocks.store");

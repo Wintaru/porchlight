@@ -27,7 +27,11 @@ export class FakeStoreNewAnonymousAuthorHandler implements IHandler<
       claimedBy: null,
       createdAt: request.timestamp,
     };
-    this.state.store({ ...author, secretHash: request.secretHash });
+    this.state.store({
+      ...author,
+      secretHash: request.secretHash,
+      ipHash: request.ipHash,
+    });
     return Promise.resolve(
       new AnonymousAuthorStoredResponse(request.correlationId, author),
     );

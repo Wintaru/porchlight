@@ -24,7 +24,7 @@ export class FakeCheckAnonymousBlockHandler implements IHandler<
     const blocked =
       (request.anonymousAuthorId !== undefined &&
         this.state.blockedAuthorIds.has(request.anonymousAuthorId)) ||
-      this.state.blockedIpHashes.has(request.ipHash);
+      (request.ipHash !== null && this.state.blockedIpHashes.has(request.ipHash));
     return Promise.resolve(
       blocked
         ? new AnonymousBlockedResponse(request.correlationId, "fake block")

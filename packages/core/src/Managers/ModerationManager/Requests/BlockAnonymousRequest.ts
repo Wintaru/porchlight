@@ -2,9 +2,9 @@ import type { Actor } from "../../../Common/Actor";
 import { RequestBase } from "../../../Common/RequestBase";
 import type { RequestContext } from "../../../Common/RequestContext";
 
-// One-click admin block by anonymous token (D15). Blocks the token only — IP-hash
-// blocking needs a submission_evidence lookup no accessor yet provides, and is
-// deferred (see DECISIONS.md).
+// One-click block by anonymous token (D15). The block also carries the salted hash of
+// the address that token last wrote from, so a fresh cookie from there is refused too
+// (#37).
 export class BlockAnonymousRequest extends RequestBase {
   constructor(
     readonly actor: Actor,

@@ -57,7 +57,7 @@ Copy `.env.example` as the starting point and set these on the host:
 | `ANONYMOUS_AUTHOR_PROVIDER`, `BLOCK_PROVIDER`, `RATE_LIMIT_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. Behind the D15 anonymous guard (issue #8). |
 | `EVIDENCE_IP_HASH_SALT`         | Required to admit any anonymous write. Generate once, never rotate — see `setup/turnstile.md`. |
 | `ANONYMOUS_LIMIT_PER_IP_PER_HOUR`, `ANONYMOUS_LIMIT_PER_TOKEN_PER_HOUR` | Optional. Defaults: 30 and 15. |
-| `TRUST_FORWARDED_FOR`           | `true` only behind a reverse proxy that owns `X-Forwarded-For` (see `setup/turnstile.md`). Leave unset otherwise — every anonymous visitor then shares one IP bucket instead of the block list and rate limit being spoofable. |
+| `TRUST_FORWARDED_FOR`           | `true` only behind a reverse proxy that owns `X-Forwarded-For` (see `setup/turnstile.md`). Leave unset otherwise — every anonymous visitor then shares one IP bucket instead of the block list and rate limit being spoofable, and a moderator's block reaches the writer's cookie only, never an address. |
 | `GREETING_PROVIDER`             | Leave unset. The greeting example has no production provider. |
 | `ALLOW_FAKE_PROVIDERS`          | Leave unset. Setting it to `1` lifts the production refusal on a `*_PROVIDER=fake` (hash matching, the image classifier, Turnstile, media storage) for a deliberate degraded launch — the admin checklist (`/admin`) then shows that provider red, "not yet active" (issue #12). |
 

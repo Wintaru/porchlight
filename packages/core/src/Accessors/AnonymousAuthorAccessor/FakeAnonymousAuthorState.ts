@@ -3,6 +3,7 @@ import type { AnonymousStatusItem } from "../../Common/AnonymousStatusItem";
 
 interface FakeRow extends AnonymousAuthor {
   readonly secretHash: string;
+  readonly ipHash: string | null;
 }
 
 // The fake's `anonymous_authors` table, keyed the way the store is: by id and by the

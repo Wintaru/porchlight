@@ -582,6 +582,7 @@ export class DependencyContainer {
           BlockAnonymousRequest,
           new BlockAnonymousHandler(
             blocks,
+            anonymousAuthors,
             modActions,
             auditLog,
             reports,

@@ -107,3 +107,52 @@ test("links in an anonymous post stay inert until a moderator approves it", asyn
   await page.getByRole("button", { name: "Delete" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
 });
+
+// #37: the queue's Block refuses that writer's next submission; other visitors still
+// get through. Locally every browser shares one untrusted address, so the block is by
+// cookie alone — it must never take every anonymous writer down with it.
+test("a moderator blocks an anonymous writer from the queue", async ({
+  page,
+  browser,
+}) => {
+  const stamp = Date.now().toString(36);
+  const title = `Spam from the step ${stamp}`;
+  await page.goto("/p/new");
+  await page.getByLabel("Title").fill(title);
+  await page.getByLabel("Body (markdown)").fill("Buy things.");
+  await page.getByRole("button", { name: "Post anonymously" }).click();
+  await expect(page).toHaveURL(/\/anon$/);
+
+  const mira = await browser.newPage();
+  await devSignIn(mira, MIRA);
+  await mira.goto("/mod/queue?filter=anonymous");
+  const item = mira.getByTestId("queue-item").filter({ hasText: title });
+  await item.getByTestId("queue-block").click();
+  await expect(mira.getByTestId("queue-status")).toHaveText(
+    "Blocked. Nothing more from that writer or their address reaches the queue.",
+  );
+
+  await page.goto("/p/new");
+  await page.getByLabel("Title").fill(`Again ${stamp}`);
+  await page.getByLabel("Body (markdown)").fill("Buy more things.");
+  await page.getByRole("button", { name: "Post anonymously" }).click();
+  await expect(page.getByTestId("form-error")).toBeVisible();
+
+  const someoneElse = await browser.newPage();
+  await someoneElse.goto("/p/new");
+  await someoneElse.getByLabel("Title").fill(`Someone else ${stamp}`);
+  await someoneElse.getByLabel("Body (markdown)").fill("A kind note.");
+  await someoneElse.getByRole("button", { name: "Post anonymously" }).click();
+  await expect(someoneElse).toHaveURL(/\/anon$/);
+
+  // Clear both from the queue, so the seed is the same for the next run.
+  await mira.goto("/mod/queue?filter=anonymous");
+  for (const text of [title, `Someone else ${stamp}`]) {
+    await mira
+      .getByTestId("queue-item")
+      .filter({ hasText: text })
+      .getByTestId("queue-remove")
+      .click();
+    await expect(mira.getByTestId("queue-status")).toHaveText("Removed.");
+  }
+});

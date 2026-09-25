@@ -1,8 +1,10 @@
 import type { IAnonymousAuthorAccessor } from "../../../Accessors/AnonymousAuthorAccessor/IAnonymousAuthorAccessor";
 import { LoadAnonymousAuthorBySecretHashRequest } from "../../../Accessors/AnonymousAuthorAccessor/Requests/LoadAnonymousAuthorBySecretHashRequest";
+import { StoreAnonymousAuthorSeenRequest } from "../../../Accessors/AnonymousAuthorAccessor/Requests/StoreAnonymousAuthorSeenRequest";
 import { StoreNewAnonymousAuthorRequest } from "../../../Accessors/AnonymousAuthorAccessor/Requests/StoreNewAnonymousAuthorRequest";
 import { AnonymousAuthorLoadedResponse } from "../../../Accessors/AnonymousAuthorAccessor/Responses/AnonymousAuthorLoadedResponse";
 import { AnonymousAuthorNotFoundResponse } from "../../../Accessors/AnonymousAuthorAccessor/Responses/AnonymousAuthorNotFoundResponse";
+import { AnonymousAuthorSeenResponse } from "../../../Accessors/AnonymousAuthorAccessor/Responses/AnonymousAuthorSeenResponse";
 import { AnonymousAuthorStoredResponse } from "../../../Accessors/AnonymousAuthorAccessor/Responses/AnonymousAuthorStoredResponse";
 import type { IBlockAccessor } from "../../../Accessors/BlockAccessor/IBlockAccessor";
 import { CheckAnonymousBlockRequest } from "../../../Accessors/BlockAccessor/Requests/CheckAnonymousBlockRequest";
@@ -17,6 +19,7 @@ import { TurnstileVerifiedResponse } from "../../../Accessors/TurnstileAccessor/
 import type { AnonymousAuthor } from "../../../Common/AnonymousAuthor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
+import { UNTRUSTED_CLIENT_IP } from "../../../Common/Retention";
 import { generateAnonymousSecret } from "../../../Utilities/anonymous/generateAnonymousSecret";
 import { hashIp } from "../../../Utilities/anonymous/hashIp";
 import { sha256Hex } from "../../../Utilities/anonymous/sha256Hex";
@@ -77,13 +80,17 @@ export class EvaluateAdmitAnonymousSubmissionHandler implements IHandler<
     }
 
     const ipHash = await hashIp(this.options.ipHashSalt, submission.clientIp);
+    // Without a trusted proxy every visitor shares one placeholder address. Its hash
+    // never names an author and is never checked against a block: a block on it would
+    // refuse every anonymous writer (#37). The rate limit below still uses it.
+    const authorIpHash = submission.clientIp === UNTRUSTED_CLIENT_IP ? null : ipHash;
     const existing = await this.loadExisting(submission.secret, context);
     if (existing instanceof AnonymousGuardUnavailableResponse) {
       return existing;
     }
 
     const blocked = await this.blocks.load(
-      new CheckAnonymousBlockRequest(existing?.author.id, ipHash, context),
+      new CheckAnonymousBlockRequest(existing?.author.id, authorIpHash, context),
     );
     if (blocked instanceof AnonymousBlockedResponse) {
       return new AnonymousGuardDeniedResponse(correlationId, "blocked");
@@ -106,6 +113,15 @@ export class EvaluateAdmitAnonymousSubmissionHandler implements IHandler<
     }
 
     if (existing !== undefined) {
+      // Keep the address current (#37): a block then reaches where they write from now.
+      if (authorIpHash !== null) {
+        const seen = await this.authors.store(
+          new StoreAnonymousAuthorSeenRequest(existing.author.id, authorIpHash, context),
+        );
+        if (!(seen instanceof AnonymousAuthorSeenResponse)) {
+          return unavailable(correlationId, seen, "authors.store");
+        }
+      }
       return new AnonymousAdmittedResponse(
         correlationId,
         existing.author,
@@ -116,7 +132,7 @@ export class EvaluateAdmitAnonymousSubmissionHandler implements IHandler<
 
     const secret = generateAnonymousSecret();
     const stored = await this.authors.store(
-      new StoreNewAnonymousAuthorRequest(await sha256Hex(secret), ipHash, context),
+      new StoreNewAnonymousAuthorRequest(await sha256Hex(secret), authorIpHash, context),
     );
     if (!(stored instanceof AnonymousAuthorStoredResponse)) {
       return unavailable(correlationId, stored, "authors.store");
