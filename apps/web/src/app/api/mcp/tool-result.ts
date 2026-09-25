@@ -1,4 +1,5 @@
 import {
+  ActionForbiddenResponse,
   NoSuchPostResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
@@ -8,6 +9,8 @@ import {
   PostResponse,
   PostsResponse,
   type ResponseBase,
+  VoiceGuideRejectedResponse,
+  VOICE_GUIDE_MAX_LENGTH,
 } from "@porchlight/core";
 
 // What a tool hands back to the agent. `isError: true` is a refusal the agent can
@@ -49,6 +52,25 @@ export function refusalFor(response: ResponseBase, what: string) {
   }
   if (response instanceof PostNotPublishableResponse) {
     return refuse(`This post is ${response.status}, so it cannot be published.`);
+  }
+  console.error(`mcp ${what} failed [${response.correlationId}]`, response);
+  return refuse("Porchlight could not do that right now. Tell your member and stop.");
+}
+
+// The voice guide tools' refusals (SPEC.md §17). Changing the guide needs its own
+// scope, so the agent is told which one to ask its member for.
+export function voiceRefusalFor(response: ResponseBase, what: string) {
+  if (response instanceof ActionForbiddenResponse) {
+    return refuse(
+      response.reason === "agents-closed"
+        ? "This site has turned agents off, or off for your account. Ask the site's admin."
+        : "Not allowed. Reading the guide needs posts:draft; changing it needs voice:write. Ask your member.",
+    );
+  }
+  if (response instanceof VoiceGuideRejectedResponse) {
+    return refuse(
+      `The guide is longer than ${String(VOICE_GUIDE_MAX_LENGTH)} characters. Shorten it and try once more.`,
+    );
   }
   console.error(`mcp ${what} failed [${response.correlationId}]`, response);
   return refuse("Porchlight could not do that right now. Tell your member and stop.");

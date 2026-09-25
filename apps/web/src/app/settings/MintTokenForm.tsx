@@ -11,7 +11,7 @@ const SCOPE_TEXT: Readonly<Record<AgentScope, string>> = {
   "posts:draft": "Write drafts (you publish from the editor)",
   "posts:publish": "Publish without you",
   "media:upload": "Upload images (arrives with issue #31)",
-  "voice:write": "Change your voice guide (arrives with issue #29)",
+  "voice:write": "Change your voice guide",
 };
 
 const EXPIRY_TEXT: Readonly<Record<ExpiryChoice, string>> = {

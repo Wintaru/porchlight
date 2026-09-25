@@ -1,51 +1,10 @@
-import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 import { devSignIn, JUNE, THEO } from "./helpers";
+import { connect, firstText, mintToken, structured } from "./mcp-client";
 
 // Issue #28's acceptance test (SPEC.md §17, D22): a real MCP client, a real token, and
 // the draft it writes showing up in the member's editor.
-
-interface MintedToken {
-  readonly rawToken: string;
-  readonly name: string;
-}
-
-// Mints a token on the settings page, the way a member does, and returns the raw value
-// the page shows once.
-async function mintToken(page: Page, scopes: readonly string[]): Promise<MintedToken> {
-  const name = `MCP ${Date.now().toString(36)}${Math.floor(Math.random() * 1000).toString(36)}`;
-  await page.goto("/settings");
-  const form = page.getByTestId("mint-token-form");
-  await form.getByLabel("Token name").fill(name);
-  if (scopes.includes("posts:publish")) {
-    await form.getByLabel("Publish without you").check();
-  }
-  await form.getByRole("button", { name: "Mint token" }).click();
-  const rawToken = await page.getByTestId("minted-token-value").innerText();
-  return { rawToken, name };
-}
-
-async function connect(baseURL: string, rawToken: string): Promise<Client> {
-  const client = new Client({ name: "porchlight-e2e", version: "1.0.0" });
-  await client.connect(
-    new StreamableHTTPClientTransport(new URL("/api/mcp", baseURL), {
-      requestInit: { headers: { Authorization: `Bearer ${rawToken}` } },
-    }),
-  );
-  return client;
-}
-
-function structured(
-  result: Awaited<ReturnType<Client["callTool"]>>,
-): Record<string, unknown> {
-  return (result.structuredContent ?? {}) as Record<string, unknown>;
-}
-
-function firstText(result: Awaited<ReturnType<Client["callTool"]>>): string {
-  const content = result.content as { type: string; text?: string }[] | undefined;
-  return content?.[0]?.text ?? "";
-}
 
 test("an agent drafts through the door and the draft waits in the editor", async ({
   page,

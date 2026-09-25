@@ -8,6 +8,9 @@ import {
   TokenMintedResponse,
   TokenRejectedResponse,
   TokenRevokedResponse,
+  UpdateVoiceGuideRequest,
+  VoiceGuideRejectedResponse,
+  VoiceGuideResponse,
 } from "@porchlight/core";
 import { redirect } from "next/navigation";
 
@@ -97,4 +100,30 @@ export async function revokeAgentToken(formData: FormData): Promise<void> {
   }
   console.error(`token revoke failed [${response.correlationId}]`, response);
   redirect("/settings?agentError=unavailable");
+}
+
+// The voice guide editor. Blank text clears the guide (the Manager decides that).
+export async function saveVoiceGuide(formData: FormData): Promise<void> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member") {
+    redirect(signInPathFor("/settings"));
+  }
+  const guideMd = formData.get("voiceGuideMd");
+  if (typeof guideMd !== "string") {
+    redirect("/settings?agentError=unavailable#voice");
+  }
+  const response = await getDependencyContainer().accountManager.execute(
+    new UpdateVoiceGuideRequest(actor, guideMd),
+  );
+  if (response instanceof VoiceGuideResponse) {
+    redirect("/settings?voiceSaved=1#voice");
+  }
+  if (response instanceof VoiceGuideRejectedResponse) {
+    redirect("/settings?agentError=voice-too-long#voice");
+  }
+  if (response instanceof ActionForbiddenResponse) {
+    redirect("/settings?agentError=forbidden#voice");
+  }
+  console.error(`voice guide save failed [${response.correlationId}]`, response);
+  redirect("/settings?agentError=unavailable#voice");
 }

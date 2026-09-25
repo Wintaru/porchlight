@@ -20,6 +20,12 @@ export interface PostView {
   readonly updatedAt: string;
 }
 
+// `agentDraftMd` is the agent's own first text, frozen (D22): beside `bodyMd` it shows
+// what the member changed, which is where a new voice-guide rule comes from.
+export interface PostDetailView extends PostView {
+  readonly agentDraftMd: string | null;
+}
+
 // One post in a list: the index fields, without the body. A member with a long shelf
 // should not pay context tokens for every word they have written; `get_post` is there
 // for the one post the agent actually wants to read.
@@ -52,6 +58,14 @@ export function toPostView(post: Post, handle: string, siteUrl: string): PostVie
     ...toPostIndexView(post, handle, siteUrl),
     bodyMd: post.bodyMd,
   };
+}
+
+export function toPostDetailView(
+  post: Post,
+  handle: string,
+  siteUrl: string,
+): PostDetailView {
+  return { ...toPostView(post, handle, siteUrl), agentDraftMd: post.agentDraftMd };
 }
 
 function postUrl(post: Post, handle: string, siteUrl: string): string {

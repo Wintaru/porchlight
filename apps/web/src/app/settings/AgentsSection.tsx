@@ -2,30 +2,42 @@ import {
   type Actor,
   AGENT_SCOPES,
   type AgentToken,
+  GetVoiceGuideRequest,
   ListAgentTokensRequest,
   TokensResponse,
+  VoiceGuideResponse,
   isAgentTokenLive,
 } from "@porchlight/core";
 
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { revokeAgentToken } from "./agent-actions";
 import { MintTokenForm } from "./MintTokenForm";
+import { VoiceGuideForm } from "./VoiceGuideForm";
 import styles from "./settings.module.css";
 
 interface AgentsSectionProps {
   readonly actor: Extract<Actor, { kind: "member" }>;
   readonly revoked: boolean;
+  readonly voiceSaved: boolean;
   readonly errorText: string | undefined;
 }
 
 // The Agents card of the settings page (SPEC.md §17): mint, the list with last used,
 // revoke. The page shows it only when the site's `agents` key opens agents to this
 // member.
-export async function AgentsSection({ actor, revoked, errorText }: AgentsSectionProps) {
-  const response = await getDependencyContainer().accountManager.query(
-    new ListAgentTokensRequest(actor),
-  );
+export async function AgentsSection({
+  actor,
+  revoked,
+  voiceSaved,
+  errorText,
+}: AgentsSectionProps) {
+  const { accountManager } = getDependencyContainer();
+  const [response, voice] = await Promise.all([
+    accountManager.query(new ListAgentTokensRequest(actor)),
+    accountManager.query(new GetVoiceGuideRequest(actor)),
+  ]);
   const tokens = response instanceof TokensResponse ? response.tokens : undefined;
+  const guide = voice instanceof VoiceGuideResponse ? voice.guide : undefined;
   const now = new Date();
 
   return (
@@ -86,6 +98,7 @@ export async function AgentsSection({ actor, revoked, errorText }: AgentsSection
           ))}
         </ul>
       )}
+      <VoiceGuideForm guide={guide} saved={voiceSaved} />
     </section>
   );
 }

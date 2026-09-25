@@ -1,4 +1,4 @@
-import { agentsOpenTo } from "@porchlight/core";
+import { agentsOpenTo, VOICE_GUIDE_MAX_LENGTH } from "@porchlight/core";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -18,6 +18,7 @@ interface SettingsPageProps {
     readonly error?: string;
     readonly agentRevoked?: string;
     readonly agentError?: string;
+    readonly voiceSaved?: string;
   }>;
 }
 
@@ -35,7 +36,8 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
 const AGENT_ERROR_TEXT: Readonly<Record<string, string>> = {
   "no-such-token": "That token is not one of yours.",
   forbidden: "This account cannot change its tokens right now.",
-  unavailable: "The token could not be changed. Try again in a moment.",
+  unavailable: "The change could not be saved. Try again in a moment.",
+  "voice-too-long": `A voice guide is at most ${VOICE_GUIDE_MAX_LENGTH.toLocaleString("en-US")} characters.`,
 };
 
 const TRUST_TEXT = {
@@ -51,7 +53,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     redirect(signInPathFor("/settings"));
   }
   const { profile } = actor;
-  const { saved, error, agentRevoked, agentError } = await searchParams;
+  const { saved, error, agentRevoked, agentError, voiceSaved } = await searchParams;
   const errorText =
     error === undefined ? undefined : (ERROR_TEXT[error] ?? ERROR_TEXT.unavailable);
   const agentErrorText =
@@ -140,6 +142,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           <AgentsSection
             actor={actor}
             revoked={agentRevoked !== undefined}
+            voiceSaved={voiceSaved !== undefined}
             errorText={agentErrorText}
           />
         )}
@@ -153,8 +156,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </Link>
           </div>
           <p className="form-hint">
-            Includes your posts, comments, reactions and uploads. Ready in a minute. No
-            waiting period, no support ticket.
+            Includes your posts, comments, reactions, uploads, voice guide and the names
+            of your agent tokens. Ready in a minute. No waiting period, no support ticket.
           </p>
         </section>
         <section

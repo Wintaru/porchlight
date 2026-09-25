@@ -10,6 +10,7 @@ import {
   DeletePostRequest,
   GetAgentLimitsRequest,
   GetPostRequest,
+  GetVoiceGuideRequest,
   ListPostsForAuthorRequest,
   POST_STATUSES,
   POST_VISIBILITIES,
@@ -18,6 +19,9 @@ import {
   type RequestOrigin,
   ResolveAgentTokenRequest,
   UpdateDraftRequest,
+  UpdateVoiceGuideRequest,
+  VOICE_GUIDE_MAX_LENGTH,
+  VoiceGuideResponse,
 } from "@porchlight/core";
 import * as z from "zod/v4";
 
@@ -26,8 +30,17 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
 import { MCP_INSTRUCTIONS } from "./instructions";
-import { toPostIndexView, toPostView } from "./post-view";
-import { isDeleted, isPost, isPosts, ok, refusalFor, refuse } from "./tool-result";
+import { toPostDetailView, toPostIndexView, toPostView } from "./post-view";
+import { toVoiceGuideView, voiceGuideText } from "./voice-guide-view";
+import {
+  isDeleted,
+  isPost,
+  isPosts,
+  ok,
+  refusalFor,
+  refuse,
+  voiceRefusalFor,
+} from "./tool-result";
 
 // The MCP door (SPEC.md §17, D22). Porchlight is the server; the member's own agent is
 // the client, running on the member's own subscription, so nothing here calls a model
@@ -99,7 +112,7 @@ function registerTools(
   actor: AgentActor,
   origin: RequestOrigin,
 ): void {
-  const { postManager, siteConfigManager } = getDependencyContainer();
+  const { accountManager, postManager, siteConfigManager } = getDependencyContainer();
   const { handle } = actor.profile;
   const view = (post: Parameters<typeof toPostView>[0]) =>
     toPostView(post, handle, SITE_URL);
@@ -137,6 +150,43 @@ function registerTools(
   );
 
   server.registerTool(
+    "get_voice_guide",
+    {
+      description:
+        "The member's voice guide: their rules, the phrases every guide bans, and their latest posts written by hand as samples. Read it before you draft.",
+      inputSchema: z.object({}),
+    },
+    async () => {
+      const response = await accountManager.query(new GetVoiceGuideRequest(actor));
+      if (!(response instanceof VoiceGuideResponse)) {
+        return voiceRefusalFor(response, "get_voice_guide");
+      }
+      const view = toVoiceGuideView(response.guide);
+      return ok({ ...view }, voiceGuideText(view));
+    },
+  );
+
+  server.registerTool(
+    "update_voice_guide",
+    {
+      description:
+        "Replace the member's own rules with guide_md, the whole text. Read get_voice_guide first and keep their rules. Only add a rule the member agreed to. Needs the voice:write scope.",
+      inputSchema: z.object({
+        guide_md: z.string().max(VOICE_GUIDE_MAX_LENGTH),
+      }),
+    },
+    async ({ guide_md }) => {
+      const response = await accountManager.execute(
+        new UpdateVoiceGuideRequest(actor, guide_md),
+      );
+      if (!(response instanceof VoiceGuideResponse)) {
+        return voiceRefusalFor(response, "update_voice_guide");
+      }
+      return ok({ ...toVoiceGuideView(response.guide) }, "Voice guide saved.");
+    },
+  );
+
+  server.registerTool(
     "list_posts",
     {
       description: "The member's own posts, newest first. Filter by status.",
@@ -163,7 +213,8 @@ function registerTools(
   server.registerTool(
     "get_post",
     {
-      description: "One post of the member's, by id or by slug.",
+      description:
+        "One post of the member's, by id or by slug. For a post you drafted, agentDraftMd is your first text: compare it with bodyMd to see what the member changed.",
       inputSchema: z.object({
         id: z.string().min(1).optional(),
         slug: z.string().min(1).optional(),
@@ -185,7 +236,7 @@ function registerTools(
       // shelf: another author's post would come back with a link built from the wrong
       // handle, so it answers the same "not yours" a missing post does.
       return isOwn(response.post)
-        ? ok({ post: view(response.post) })
+        ? ok({ post: toPostDetailView(response.post, handle, SITE_URL) })
         : refuse("No such post, or it is not yours.");
     },
   );

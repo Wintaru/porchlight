@@ -70,7 +70,7 @@ test("the settings form saves and the handle rules answer", async ({ page }) => 
 
   await page.getByLabel("Display name").fill("June P.");
   await page.getByLabel("Bio").fill(bio);
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("form-status")).toHaveText("Saved.");
   await expect(page.getByLabel("Display name")).toHaveValue("June P.");
   await expect(page.getByLabel("Bio")).toHaveValue(bio);
@@ -81,7 +81,7 @@ test("the settings form saves and the handle rules answer", async ({ page }) => 
     ["theo", /already someone's/],
   ] as const) {
     await page.getByLabel("Handle").fill(handle);
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByTestId("form-error")).toHaveText(message);
   }
   await expect(page.getByLabel("Handle")).toHaveValue(JUNE.handle);
@@ -89,7 +89,7 @@ test("the settings form saves and the handle rules answer", async ({ page }) => 
   // Put the seed row back so the next run starts from the same place.
   await page.getByLabel("Display name").fill(original.displayName);
   await page.getByLabel("Bio").fill(original.bio);
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByTestId("form-status")).toHaveText("Saved.");
 });
 

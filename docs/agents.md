@@ -50,10 +50,32 @@ The way this is meant to be used:
    "agent draft, not yet reviewed".
 4. You open it, read it, change what you want, and publish. Your edit marks the post
    reviewed.
+5. Later, the agent can read the post again with `get_post`. It sees its own first text
+   beside what you published, and it can suggest a rule for your voice guide from the
+   difference.
+
+## Your voice guide
+
+Open **Settings**, section **Agents**, and write the rules you would give a person who
+writes for you: sentence length, words you never use, how you open and how you stop.
+The agent reads the guide with `get_voice_guide` before it drafts.
+
+With the guide, the agent also receives two things you do not write:
+
+- A list of phrases that every guide bans, such as "delve" and "in conclusion". You
+  can add your own to your rules. You cannot remove the default ones.
+- Your five latest published posts **that you wrote in the editor**, as samples of your
+  writing. A post an agent drafted never counts, even after you edit it, so the agent
+  does not learn from itself.
+
+The settings page shows both under "What your agent also receives". An agent can change
+your guide only with the **Change your voice guide** scope, and the house rules tell it
+to add a rule only when you agree. The guide is part of your export, and erasing your
+account deletes it.
 
 The server tells every connecting agent the house rules before it writes: draft from
 your notes and your voice guide only, do not pad, do not add a closing summary, do not
-invent facts or opinions, one draft per request.
+invent facts or opinions, one draft per request, and read the voice guide first.
 
 ## The tools
 
@@ -61,7 +83,9 @@ invent facts or opinions, one draft per request.
 | ---- | ------------ |
 | `get_me` | Who the agent is writing as: your handle, your trust level, the token's scopes. |
 | `list_posts` | Your own posts, newest first, filtered by status. Titles and status, not bodies — use `get_post` for one. |
-| `get_post` | One of your own posts, by id or slug. |
+| `get_voice_guide` | Your rules, the default banned phrases, and your latest hand-written posts as samples. |
+| `update_voice_guide` | Replaces your rules with new text. Needs the **Change your voice guide** scope. |
+| `get_post` | One of your own posts, by id or slug. For a post the agent drafted, it also returns the agent's first text. |
 | `create_draft` | Starts a draft. Never publishes. |
 | `update_draft` | Changes a draft of yours. |
 | `delete_draft` | Deletes a draft of yours. |
