@@ -499,6 +499,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          agent_draft_md: string | null
           agent_token_id: string | null
           anonymous_author_id: string | null
           author_id: string | null
@@ -520,6 +521,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["post_visibility"]
         }
         Insert: {
+          agent_draft_md?: string | null
           agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
@@ -541,6 +543,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Update: {
+          agent_draft_md?: string | null
           agent_token_id?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
@@ -604,6 +607,7 @@ export type Database = {
           status: Database["public"]["Enums"]["profile_status"]
           trust_level: Database["public"]["Enums"]["trust_level"]
           updated_at: string
+          voice_guide_md: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -616,6 +620,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["profile_status"]
           trust_level?: Database["public"]["Enums"]["trust_level"]
           updated_at?: string
+          voice_guide_md?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -628,6 +633,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["profile_status"]
           trust_level?: Database["public"]["Enums"]["trust_level"]
           updated_at?: string
+          voice_guide_md?: string | null
         }
         Relationships: []
       }

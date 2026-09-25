@@ -226,6 +226,57 @@ describe("anon", () => {
     expect(code).toBe(INSUFFICIENT_PRIVILEGE);
   });
 
+  // The posts grant is a column list (#29): a column added later stays closed until
+  // the grant names it. This fails when the table and the list drift, so the choice is
+  // made on purpose — grant it, or add it to the private set here.
+  test("may read every posts column except the private ones", async () => {
+    const PRIVATE_POST_COLUMNS = ["agent_draft_md"];
+    const all = await sql<{ column_name: string }[]>`
+      select column_name from information_schema.columns
+      where table_schema = 'public' and table_name = 'posts'
+    `;
+    for (const role of BROWSER_ROLES) {
+      const granted = await sql<{ column_name: string }[]>`
+        select column_name from information_schema.column_privileges
+        where table_schema = 'public' and table_name = 'posts'
+          and grantee = ${role} and privilege_type = 'SELECT'
+      `;
+      expect({ role, columns: granted.map((row) => row.column_name).sort() }).toEqual({
+        role,
+        columns: all
+          .map((row) => row.column_name)
+          .filter((column) => !PRIVATE_POST_COLUMNS.includes(column))
+          .sort(),
+      });
+    }
+  });
+
+  test("never reads a voice guide or an agent's original draft (#29)", async () => {
+    for (const role of BROWSER_ROLES) {
+      const guide = await errorCodeOf(() =>
+        asRole(
+          sql,
+          role,
+          (tx) => tx`select voice_guide_md from public.profiles`,
+          SEED.trustedMember,
+        ),
+      );
+      const draft = await errorCodeOf(() =>
+        asRole(
+          sql,
+          role,
+          (tx) => tx`select agent_draft_md from public.posts`,
+          SEED.trustedMember,
+        ),
+      );
+      expect({ role, guide, draft }).toEqual({
+        role,
+        guide: INSUFFICIENT_PRIVILEGE,
+        draft: INSUFFICIENT_PRIVILEGE,
+      });
+    }
+  });
+
   test("reads tags, and only the tags of posts it can see", async () => {
     const tags = await asRole(
       sql,

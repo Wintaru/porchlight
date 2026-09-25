@@ -361,6 +361,33 @@ describe("retention (§7)", () => {
     expect(left.map((row) => row.request_id)).toEqual(["theo-frozen"]);
   });
 
+  test("an agent's original draft is frozen once written (#29)", async () => {
+    const first = await errorCodeOf(() =>
+      asService(
+        (tx) => tx`
+          update public.posts set agent_draft_md = 'first' where id = ${SEED.draftPost}
+        `,
+      ),
+    );
+    const second = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await tx`update public.posts set agent_draft_md = 'first' where id = ${SEED.draftPost}`;
+        await tx`update public.posts set agent_draft_md = 'second' where id = ${SEED.draftPost}`;
+      }),
+    );
+    const body = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await tx`update public.posts set agent_draft_md = 'first' where id = ${SEED.draftPost}`;
+        await tx`update public.posts set body_md = 'edited' where id = ${SEED.draftPost}`;
+      }),
+    );
+    expect({ first, second, body }).toEqual({
+      first: null,
+      second: CHECK_VIOLATION,
+      body: null,
+    });
+  });
+
   test("the audit log is append-only", async () => {
     const update = await errorCodeOf(() =>
       asService((tx) => tx`update public.audit_log set event = 'x'`),

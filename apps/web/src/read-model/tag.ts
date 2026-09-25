@@ -9,10 +9,11 @@ export interface TagPage {
 }
 
 // A tag is public only once a public, published post carries it (SPEC.md §5): a draft's
-// new tag name must not show anywhere a visitor can see. `post_tags!inner(posts!inner())`
-// is an empty embed used only as a join — the filters on it drop a tag with no such
-// post, and it adds nothing to the rows returned.
-const PUBLIC_TAG_COLUMNS = "id, slug, name, post_tags!inner(posts!inner())";
+// new tag name must not show anywhere a visitor can see. `post_tags!inner(posts!inner(id))`
+// is an embed used only as a join — the filters on it drop a tag with no such post, and
+// toTagPage drops it from the rows. It names `id` because an empty embed reads the whole
+// row, and the browser roles may read only the granted columns of `posts` (#29).
+const PUBLIC_TAG_COLUMNS = "id, slug, name, post_tags!inner(posts!inner(id))";
 
 function publicTags(db: DbClient) {
   return db
@@ -22,7 +23,7 @@ function publicTags(db: DbClient) {
     .eq("post_tags.posts.visibility", "public");
 }
 
-// The join's embed has no columns, but its type still names it; keep the rows to a tag.
+// The join's embed is only a filter; keep the rows to a tag.
 function toTagPage({ id, slug, name }: TagPage): TagPage {
   return { id, slug, name };
 }
