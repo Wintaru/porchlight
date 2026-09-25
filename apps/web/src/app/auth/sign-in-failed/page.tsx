@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SimplePage } from "@/components/SimplePage";
+
 interface SignInFailedPageProps {
   readonly searchParams: Promise<{ readonly reason?: string }>;
 }
@@ -11,18 +13,17 @@ interface SignInFailedPageProps {
 export default async function SignInFailedPage({ searchParams }: SignInFailedPageProps) {
   const { reason } = await searchParams;
   return (
-    <main>
-      <h1>Sign-in did not complete</h1>
+    <SimplePage title="Sign-in did not complete">
       {reason === "sign-up-closed" ? (
-        <p data-testid="sign-in-failed-reason">
+        <p className="form-status" data-testid="sign-in-failed-reason">
           This site is not accepting new members right now. Nothing was saved.
         </p>
       ) : (
-        <p data-testid="sign-in-failed-reason">
+        <p className="form-status" data-testid="sign-in-failed-reason">
           Something went wrong between Google and Porchlight. Nothing was saved. Try again
           from the <Link href="/">home page</Link>.
         </p>
       )}
-    </main>
+    </SimplePage>
   );
 }

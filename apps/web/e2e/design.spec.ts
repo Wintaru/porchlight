@@ -32,10 +32,6 @@ interface PageCase {
   readonly axeGaps?: readonly string[];
 }
 
-// Pages with no stylesheet yet: bare HTML, flush against the window edge, with the
-// browser's own buttons and inputs.
-const UNSTYLED: readonly Gap[] = ["flush-left", "browser-control"];
-
 const PAGES: readonly PageCase[] = [
   { path: "/" },
   { path: "/@theo/hello-from-the-porch" },
@@ -49,8 +45,8 @@ const PAGES: readonly PageCase[] = [
   { path: "/code-of-conduct" },
   { path: "/p/new" },
   { path: "/anon" },
-  { path: "/auth/dev-sign-in", gaps: UNSTYLED },
-  { path: "/auth/sign-in-failed", gaps: ["flush-left"] },
+  { path: "/auth/dev-sign-in" },
+  { path: "/auth/sign-in-failed" },
   { path: "/no-such-page", status: 404 },
   { path: "/", as: THEO },
   { path: "/@theo/hello-from-the-porch", as: THEO },

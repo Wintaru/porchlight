@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { isDevSignInEnabled } from "@/auth/dev-sign-in";
+import { SimplePage } from "@/components/SimplePage";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { devSignIn } from "@/app/auth/actions";
 
@@ -22,34 +23,48 @@ export default async function DevSignInPage({ searchParams }: DevSignInPageProps
   const { error, next } = await searchParams;
   const message = error === undefined ? undefined : ERROR_TEXT[error];
   return (
-    <main>
-      <h1>Development sign-in</h1>
-      <p>
-        Local stack only. Use a seeded member, for example{" "}
-        <code>june@porchlight.local</code> with the seed password.
-      </p>
-      {message !== undefined && (
-        <p role="alert" data-testid="form-error">
-          {message}
-        </p>
-      )}
-      <form action={devSignIn}>
+    <SimplePage
+      title="Development sign-in"
+      lead={
+        <>
+          Local stack only. Use a seeded member, for example{" "}
+          <code>june@porchlight.local</code> with the seed password.
+        </>
+      }
+    >
+      <form action={devSignIn} className="card form-stack">
+        {message !== undefined && (
+          <p className="form-alert" role="alert" data-testid="form-error">
+            {message}
+          </p>
+        )}
         <input type="hidden" name="next" value={safeNextPath(next)} />
-        <label>
-          Email
-          <input type="email" name="email" autoComplete="username" required />
-        </label>
-        <label>
-          Password
+        <label className="field">
+          <span className="field-label">Email</span>
           <input
+            className="text-input"
+            type="email"
+            name="email"
+            autoComplete="username"
+            required
+          />
+        </label>
+        <label className="field">
+          <span className="field-label">Password</span>
+          <input
+            className="text-input"
             type="password"
             name="password"
             autoComplete="current-password"
             required
           />
         </label>
-        <button type="submit">Sign in as this member</button>
+        <div>
+          <button type="submit" className="pill-button pill-button--amber">
+            Sign in as this member
+          </button>
+        </div>
       </form>
-    </main>
+    </SimplePage>
   );
 }
