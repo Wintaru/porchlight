@@ -20,17 +20,21 @@ import { safeNextPath } from "@/lib/safe-next-path";
 
 // The visitor's half of the comment form, shared by `/@handle/slug` and `/p/slug`
 // (both post pages ask CommentSection to render it when `formState` is `anonymous`).
-// A root comment only: an anonymous reply nested under another comment is left for a
-// follow-up (ISSUE-8-HANDOFF.md).
+// A root comment or a reply to one (#33): the Manager checks the parent is on this
+// post and visible.
 
 const COMMENT_MAX_LENGTH = 10_000;
 
 export async function createAnonymousComment(formData: FormData): Promise<void> {
   const returnTo = returnToOf(formData);
   const postId = idOf(formData, "postId");
+  const parentId = optionalIdOf(formData.get("parentId"));
   const bodyMd = formData.get("bodyMd");
   if (postId === undefined || typeof bodyMd !== "string") {
     redirect(withCode(returnTo, "error", "unavailable"));
+  }
+  if (parentId === INVALID_ID) {
+    redirect(withCode(returnTo, "error", "rejected-no-such-parent"));
   }
   if (bodyMd.length > COMMENT_MAX_LENGTH) {
     redirect(withCode(returnTo, "error", "too-long"));
@@ -38,11 +42,7 @@ export async function createAnonymousComment(formData: FormData): Promise<void> 
   const turnstileToken = turnstileTokenOf(formData);
   const submission = await currentAnonymousSubmission(turnstileToken);
   const response = await getDependencyContainer().commentManager.execute(
-    new CreateAnonymousCommentRequest(
-      VISITOR,
-      { postId, parentId: null, bodyMd },
-      submission,
-    ),
+    new CreateAnonymousCommentRequest(VISITOR, { postId, parentId, bodyMd }, submission),
   );
   if (!(response instanceof AnonymousCommentCreatedResponse)) {
     redirect(withCode(returnTo, "error", errorCode(response)));
@@ -70,6 +70,18 @@ function returnToOf(formData: FormData): string {
 
 function withCode(path: string, key: string, code: string): string {
   return `${path}?${key}=${encodeURIComponent(code)}`;
+}
+
+const INVALID_ID = Symbol("invalid parent id");
+
+// An absent or blank parent is a root comment.
+function optionalIdOf(
+  value: FormDataEntryValue | null,
+): string | null | typeof INVALID_ID {
+  if (value === null || value === "") {
+    return null;
+  }
+  return typeof value === "string" && isEntityId(value) ? value : INVALID_ID;
 }
 
 function idOf(formData: FormData, field: string): string | undefined {

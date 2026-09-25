@@ -18,7 +18,7 @@ interface CommentSectionProps {
   readonly comments: readonly CommentPageNode[];
   readonly reactions: ReadonlyMap<string, ItemReactions>;
   readonly formState: CommentFormState;
-  readonly viewer: Omit<CommentViewer, "canComment">;
+  readonly viewer: Omit<CommentViewer, "replyAs">;
   readonly signInPath: string;
   readonly returnTo: string;
   readonly noticeCode: string | undefined;
@@ -62,7 +62,7 @@ export function CommentSection({
         <CommentForm postId={postId} parentId={null} returnTo={returnTo} />
       )}
       {formState === "anonymous" && (
-        <AnonymousCommentForm postId={postId} returnTo={returnTo} />
+        <AnonymousCommentForm postId={postId} parentId={null} returnTo={returnTo} />
       )}
       {formState === "signed-out" && (
         <p className={styles.notice} data-testid="comment-sign-in">
@@ -74,11 +74,23 @@ export function CommentSection({
         postId={postId}
         postAuthorId={postAuthorId}
         reactions={reactions}
-        viewer={{ ...viewer, canComment: formState === "open" }}
+        viewer={{ ...viewer, replyAs: replyAsFor(formState) }}
         returnTo={returnTo}
       />
     </section>
   );
+}
+
+// Who may answer a comment, and how: the same gate as the root form (#33).
+function replyAsFor(formState: CommentFormState): CommentViewer["replyAs"] {
+  switch (formState) {
+    case "open":
+      return "member";
+    case "anonymous":
+      return "visitor";
+    default:
+      return null;
+  }
 }
 
 // Tombstones hold a place but are not comments anyone made.

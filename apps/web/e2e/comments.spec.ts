@@ -5,6 +5,8 @@ import {
   devSignIn,
   fillBodyMarkdown,
   JUNE,
+  LAMPLIGHTER,
+  MIRA,
   type SeedMember,
   THEO,
 } from "./helpers";
@@ -93,6 +95,49 @@ test("a visitor reads the seeded thread, the tombstone and the counts, with the 
       .filter({ hasText: "I will tell the bench" })
       .getByText("author"),
   ).toBeVisible();
+});
+
+// #33: a visitor answers one comment, not only the thread. The reply waits for a
+// moderator, then shows under the comment it answers; an admin deletes it at the end.
+test("a visitor replies to a comment, and it lands pending under that comment", async ({
+  page,
+  browser,
+}) => {
+  const body = `An anonymous reply ${Date.now().toString(36)}`;
+  await page.goto(SEED_POST);
+  const parent = page
+    .getByTestId("comment")
+    .filter({ hasText: "The wobble is character." });
+  await parent.getByText("Reply", { exact: true }).click();
+  const form = parent.getByTestId("anonymous-reply-form");
+  await form.getByLabel("Your reply").fill(body);
+  await form.getByRole("button", { name: "Reply anonymously" }).click();
+  await expect(page).toHaveURL(/comment=pending/);
+  await expect(page.getByTestId("comment-notice")).toBeVisible();
+
+  const mira = await browser.newPage();
+  await devSignIn(mira, MIRA);
+  await mira.goto("/mod/queue?filter=anonymous");
+  const item = mira.getByTestId("queue-item").filter({ hasText: body });
+  await expect(item).toHaveCount(1);
+  await item.getByTestId("queue-approve").click();
+  await expect(mira.getByTestId("queue-status")).toHaveText("Approved.");
+
+  await page.goto(SEED_POST);
+  const parentDepth = Number(await parent.first().getAttribute("data-depth"));
+  const reply = page.getByTestId("comment").filter({ hasText: body });
+  await expect(reply).toHaveAttribute("data-depth", String(parentDepth + 1));
+  await expect(reply.getByText("anonymous", { exact: true })).toBeVisible();
+
+  const admin = await browser.newPage();
+  await devSignIn(admin, LAMPLIGHTER);
+  await admin.goto(SEED_POST);
+  await admin
+    .getByTestId("comment")
+    .filter({ hasText: body })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  await expect(admin.getByTestId("comment").filter({ hasText: body })).toHaveCount(0);
 });
 
 test("comment → reply → delete: a deleted parent leaves a [deleted] slot, a leaf is gone", async ({

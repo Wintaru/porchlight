@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format-date";
 import { reportPathFor } from "@/lib/report-link";
 import type { CommentPage, CommentPageNode } from "@/read-model/comments";
 import { type ItemReactions, NO_REACTIONS } from "@/read-model/reactions";
+import { AnonymousCommentForm } from "./AnonymousCommentForm";
 import { CommentForm } from "./CommentForm";
 import styles from "./comments.module.css";
 import { ReactionBar } from "./ReactionBar";
@@ -15,7 +16,8 @@ import { ReactionBar } from "./ReactionBar";
 export interface CommentViewer {
   readonly profileId: string | undefined;
   readonly isAdmin: boolean;
-  readonly canComment: boolean;
+  // Who may reply here, and through which form: a member's or a visitor's (#33).
+  readonly replyAs: "member" | "visitor" | null;
 }
 
 interface CommentThreadProps {
@@ -147,10 +149,18 @@ function CommentRow({
             </form>
           )}
         </div>
-        {viewer.canComment && comment.status === "visible" && (
+        {viewer.replyAs !== null && comment.status === "visible" && (
           <details className={styles.reply}>
             <summary>Reply</summary>
-            <CommentForm postId={postId} parentId={comment.id} returnTo={returnTo} />
+            {viewer.replyAs === "member" ? (
+              <CommentForm postId={postId} parentId={comment.id} returnTo={returnTo} />
+            ) : (
+              <AnonymousCommentForm
+                postId={postId}
+                parentId={comment.id}
+                returnTo={returnTo}
+              />
+            )}
           </details>
         )}
       </div>
