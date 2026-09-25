@@ -1,0 +1,121 @@
+/* The admin page in the Queue board's frame: one card per concern, the checklist
+   first, the save button last. */
+.title {
+  margin: 0;
+  font-size: 32px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  scroll-margin-top: 24px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.card p {
+  margin: 0;
+}
+
+.card fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.card legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.duties {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.duties li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--danger);
+}
+
+.duties li[data-status="configured"] .dot {
+  background: #2f6b3a;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.preset p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.save {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+  background: linear-gradient(to top, var(--cream) 70%, transparent);
+}

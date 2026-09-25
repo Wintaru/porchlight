@@ -16,8 +16,10 @@ import { notFound, redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { StaffShell } from "@/components/staff/StaffShell";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { applyPreset, saveSiteConfig } from "./actions";
+import styles from "./admin.module.css";
 
 interface AdminPageProps {
   readonly searchParams: Promise<{ readonly done?: string; readonly error?: string }>;
@@ -50,8 +52,7 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
 
 // The admin settings page (SPEC.md §4, §7): region and the duty checklist, site
 // identity, the D20 access keys and their presets, attachments, moderation, and
-// retention. Unstyled until issue #16 lands the tokens, the same as every other page
-// built before it.
+// retention, in the staff frame of the Queue board (#49).
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
@@ -74,237 +75,226 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const errorText = error === undefined ? undefined : (ERROR_TEXT[error] ?? `${error}.`);
 
   return (
-    <main>
-      <h1>Site settings</h1>
+    <StaffShell current="admin" isAdmin>
+      <h1 className={styles.title}>Site settings</h1>
       {done === "saved" && (
-        <p role="status" data-testid="form-status">
+        <p role="status" className="form-status" data-testid="form-status">
           Saved.
         </p>
       )}
       {errorText !== undefined && (
-        <p role="alert" data-testid="form-error">
+        <p role="alert" className="form-alert" data-testid="form-error">
           {errorText}
         </p>
       )}
 
-      <section aria-labelledby="duty-checklist-heading">
+      <section
+        id="duties"
+        className={styles.card}
+        aria-labelledby="duty-checklist-heading"
+      >
         <h2 id="duty-checklist-heading">Duty checklist</h2>
-        <ul>
+        <ul className={styles.duties}>
           {dutyChecklist.map((item) => (
-            <li key={item.id} data-testid={`duty-${item.id}`}>
-              <strong>{item.status === "configured" ? "🟢" : "🔴"}</strong> {item.label}:{" "}
-              {DUTY_STATUS_LABEL[item.status]} (see {item.setupGuidePath})
+            <li key={item.id} data-status={item.status} data-testid={`duty-${item.id}`}>
+              <span className={styles.dot} aria-hidden="true" />
+              <span>
+                <strong>{item.label}</strong>: {DUTY_STATUS_LABEL[item.status]}{" "}
+                <span className={styles.muted}>(see {item.setupGuidePath})</span>
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
-      <section aria-labelledby="presets-heading">
+      <section className={styles.card} aria-labelledby="presets-heading">
         <h2 id="presets-heading">Setup presets</h2>
         <p>
           A preset sets posting, comments and sign-up only. Change any one of them below
           afterward.
         </p>
-        {SITE_CONFIG_PRESETS.map((preset) => (
-          <form
-            action={applyPreset}
-            key={preset}
-            style={{ display: "inline-block", marginRight: "1em" }}
-          >
-            <input type="hidden" name="preset" value={preset} />
-            <button type="submit" data-testid={`preset-${preset}`}>
-              {PRESET_LABEL[preset]}
-            </button>
-            <p>{PRESET_DESCRIPTION[preset]}</p>
-          </form>
-        ))}
+        <div className={styles.presets}>
+          {SITE_CONFIG_PRESETS.map((preset) => (
+            <form action={applyPreset} key={preset} className={styles.preset}>
+              <input type="hidden" name="preset" value={preset} />
+              <button
+                type="submit"
+                className="pill-button"
+                data-testid={`preset-${preset}`}
+              >
+                {PRESET_LABEL[preset]}
+              </button>
+              <p>{PRESET_DESCRIPTION[preset]}</p>
+            </form>
+          ))}
+        </div>
       </section>
 
-      <form action={saveSiteConfig}>
-        <section aria-labelledby="identity-heading">
+      <form action={saveSiteConfig} className={styles.form}>
+        <section className={styles.card} aria-labelledby="identity-heading">
           <h2 id="identity-heading">Site identity</h2>
-          <label>
-            Site name
-            <input
-              type="text"
-              name="siteName"
-              defaultValue={config.siteIdentity.siteName}
-              required
+          <div className={styles.grid}>
+            <label className="field">
+              <span className="field-label">Site name</span>
+              <input
+                className="text-input"
+                type="text"
+                name="siteName"
+                defaultValue={config.siteIdentity.siteName}
+                required
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">Tagline</span>
+              <input
+                className="text-input"
+                type="text"
+                name="siteTagline"
+                defaultValue={config.siteIdentity.siteTagline}
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span className="field-label">About (markdown)</span>
+            <textarea
+              className="text-input"
+              name="aboutMd"
+              defaultValue={config.siteIdentity.aboutMd}
             />
-          </label>
-          <label>
-            Tagline
-            <input
-              type="text"
-              name="siteTagline"
-              defaultValue={config.siteIdentity.siteTagline}
-            />
-          </label>
-          <label>
-            About (markdown)
-            <textarea name="aboutMd" defaultValue={config.siteIdentity.aboutMd} />
           </label>
         </section>
 
-        <section aria-labelledby="access-heading">
+        <section className={styles.card} aria-labelledby="access-heading">
           <h2 id="access-heading">Access</h2>
-          <label>
-            Posting
-            <select name="posting" defaultValue={config.posting}>
-              {POSTING_POLICIES.map((policy) => (
-                <option key={policy} value={policy}>
-                  {policy}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Comments
-            <select name="comments" defaultValue={config.comments}>
-              {COMMENT_POLICIES.map((policy) => (
-                <option key={policy} value={policy}>
-                  {policy}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sign-up
-            <select name="signUp" defaultValue={config.signUp}>
-              {SIGN_UP_POLICIES.map((policy) => (
-                <option key={policy} value={policy}>
-                  {policy}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className={styles.grid}>
+            <PolicySelect
+              label="Posting"
+              name="posting"
+              value={config.posting}
+              options={POSTING_POLICIES}
+            />
+            <PolicySelect
+              label="Comments"
+              name="comments"
+              value={config.comments}
+              options={COMMENT_POLICIES}
+            />
+            <PolicySelect
+              label="Sign-up"
+              name="signUp"
+              value={config.signUp}
+              options={SIGN_UP_POLICIES}
+            />
+            <PolicySelect
+              label="Agents"
+              name="agents"
+              value={config.agents}
+              options={AGENTS_POLICIES}
+            />
+          </div>
           {config.signUp === "invite" && (
-            <p>
+            <p className="form-hint">
               Invite links are not active yet (issue #25). Sign-up behaves as closed until
               then.
             </p>
           )}
-          <label>
-            Agents
-            <select name="agents" defaultValue={config.agents}>
-              {AGENTS_POLICIES.map((policy) => (
-                <option key={policy} value={policy}>
-                  {policy}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p>
-            Who may mint a personal token for their own writing agent (D22). Off hides the
-            Agents section of every member&apos;s settings.
+          <p className="form-hint">
+            Agents: who may mint a personal token for their own writing agent (D22). Off
+            hides the Agents section of every member&apos;s settings.
           </p>
         </section>
 
-        <section aria-labelledby="region-heading">
+        <section className={styles.card} aria-labelledby="region-heading">
           <h2 id="region-heading">Region</h2>
           {/* Not "Region" again: the section landmark already carries that name from its
               heading, and two controls named "Region" make the field ambiguous to
               assistive tech and to getByLabel (#39). */}
-          <label>
-            Hosting region
-            <select name="region" defaultValue={config.region}>
-              {REGIONS.map((region) => (
-                <option key={region} value={region}>
-                  {region}
-                </option>
-              ))}
-            </select>
-          </label>
+          <PolicySelect
+            label="Hosting region"
+            name="region"
+            value={config.region}
+            options={REGIONS}
+          />
           <p data-testid="region-reporting-target">
             Reporting target: {regionProfile.reportingTarget} (
             {regionProfile.reportingContact})
           </p>
-          <p>{regionProfile.deadlineText}</p>
+          <p className={styles.muted}>{regionProfile.deadlineText}</p>
           <p data-testid="region-ip-window">
             Raw IP retention window: {String(regionProfile.ipWindowDays)} days (starting
             point — set the exact value under Retention below).
           </p>
           {regionProfile.warning !== null && (
-            <p role="alert" data-testid="region-warning">
+            <p role="alert" className="form-alert" data-testid="region-warning">
               {regionProfile.warning}
             </p>
           )}
-          <p>
+          <p className="form-hint">
             1-year minimum retention for locked items, the audit log, and scanning are
             always on, regardless of region.
           </p>
         </section>
 
-        <section aria-labelledby="attachments-heading">
+        <section className={styles.card} aria-labelledby="attachments-heading">
           <h2 id="attachments-heading">Attachments</h2>
           <fieldset>
-            <legend>Allowed types</legend>
-            {KNOWN_ATTACHMENT_TYPES.map((type) => (
-              <label key={type.extension}>
-                <input
-                  type="checkbox"
-                  name="attachmentAllowlist"
-                  value={type.extension}
-                  defaultChecked={config.attachmentAllowlist.includes(type.extension)}
-                />
-                {type.extension}
-              </label>
-            ))}
+            <legend className="field-label">Allowed types</legend>
+            <div className={styles.checks}>
+              {KNOWN_ATTACHMENT_TYPES.map((type) => (
+                <label key={type.extension} className="check">
+                  <input
+                    type="checkbox"
+                    name="attachmentAllowlist"
+                    value={type.extension}
+                    defaultChecked={config.attachmentAllowlist.includes(type.extension)}
+                  />
+                  {type.extension}
+                </label>
+              ))}
+            </div>
           </fieldset>
           <fieldset>
-            <legend>Anonymous upload cap</legend>
-            <label>
-              Files
-              <input
-                type="number"
+            <legend className="field-label">Anonymous upload cap</legend>
+            <div className={styles.grid}>
+              <NumberField
+                label="Files"
                 name="anonymousUploadCapFiles"
-                min={1}
-                defaultValue={config.anonymousUploadCap.files}
+                value={config.anonymousUploadCap.files}
               />
-            </label>
-            <label>
-              Bytes per file
-              <input
-                type="number"
+              <NumberField
+                label="Bytes per file"
                 name="anonymousUploadCapBytesPerFile"
-                min={1}
-                defaultValue={config.anonymousUploadCap.bytesPerFile}
+                value={config.anonymousUploadCap.bytesPerFile}
               />
-            </label>
+            </div>
           </fieldset>
-          <fieldset>
-            <legend>Byte caps by trust level</legend>
-            {TRUST_LEVELS.map((level) => (
-              <div key={level}>
-                <p>{level}</p>
-                <label>
-                  Max file bytes
-                  <input
-                    type="number"
-                    name={`${level}MaxFileBytes`}
-                    min={1}
-                    defaultValue={config.attachmentQuotaByTrust[level].maxFileBytes}
-                  />
-                </label>
-                <label>
-                  Max account bytes
-                  <input
-                    type="number"
-                    name={`${level}MaxAccountBytes`}
-                    min={1}
-                    defaultValue={config.attachmentQuotaByTrust[level].maxAccountBytes}
-                  />
-                </label>
+          {TRUST_LEVELS.map((level) => (
+            <fieldset key={level}>
+              <legend className="field-label">Byte caps for {level} members</legend>
+              <div className={styles.grid}>
+                <NumberField
+                  label="Max file bytes"
+                  name={`${level}MaxFileBytes`}
+                  value={config.attachmentQuotaByTrust[level].maxFileBytes}
+                />
+                <NumberField
+                  label="Max account bytes"
+                  name={`${level}MaxAccountBytes`}
+                  value={config.attachmentQuotaByTrust[level].maxAccountBytes}
+                />
               </div>
-            ))}
-          </fieldset>
+            </fieldset>
+          ))}
         </section>
 
-        <section aria-labelledby="moderation-heading">
+        <section className={styles.card} aria-labelledby="moderation-heading">
           <h2 id="moderation-heading">Moderation</h2>
-          <label>
-            Auto-promote after this many approved posts (leave blank to keep off)
+          <label className="field">
+            <span className="field-label">
+              Auto-promote after this many approved posts (leave blank to keep off)
+            </span>
             <input
+              className="text-input"
               type="number"
               name="autoPromoteAfterApprovedPosts"
               min={1}
@@ -312,49 +302,101 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             />
           </label>
           <fieldset>
-            <legend>
+            <legend className="field-label">
               Image classifier thresholds (may only be lowered from the shipped default)
             </legend>
-            <label>
-              Flag at
-              <input
-                type="number"
+            <div className={styles.grid}>
+              <NumberField
+                label="Flag at"
                 name="moderationFlagAt"
+                value={config.moderationThresholds.flagAt}
                 step="0.01"
                 min={0}
                 max={1}
-                defaultValue={config.moderationThresholds.flagAt}
               />
-            </label>
-            <label>
-              Lock at
-              <input
-                type="number"
+              <NumberField
+                label="Lock at"
                 name="moderationLockAt"
+                value={config.moderationThresholds.lockAt}
                 step="0.01"
                 min={0}
                 max={1}
-                defaultValue={config.moderationThresholds.lockAt}
               />
-            </label>
+            </div>
           </fieldset>
         </section>
 
-        <section aria-labelledby="retention-heading">
+        <section className={styles.card} aria-labelledby="retention-heading">
           <h2 id="retention-heading">Retention</h2>
-          <label>
-            Raw IP retention window (days)
-            <input
-              type="number"
-              name="rawIpRetentionDays"
-              min={1}
-              defaultValue={config.rawIpRetentionDays}
-            />
-          </label>
+          <NumberField
+            label="Raw IP retention window (days)"
+            name="rawIpRetentionDays"
+            value={config.rawIpRetentionDays}
+          />
         </section>
 
-        <button type="submit">Save settings</button>
+        <div className={styles.save}>
+          <button type="submit" className="pill-button pill-button--amber">
+            Save settings
+          </button>
+        </div>
       </form>
-    </main>
+    </StaffShell>
+  );
+}
+
+function PolicySelect({
+  label,
+  name,
+  value,
+  options,
+}: {
+  readonly label: string;
+  readonly name: string;
+  readonly value: string;
+  readonly options: readonly string[];
+}) {
+  return (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      <select className="text-input" name={name} defaultValue={value}>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function NumberField({
+  label,
+  name,
+  value,
+  step,
+  min = 1,
+  max,
+}: {
+  readonly label: string;
+  readonly name: string;
+  readonly value: number;
+  readonly step?: string;
+  readonly min?: number;
+  readonly max?: number;
+}) {
+  return (
+    <label className="field">
+      <span className="field-label">{label}</span>
+      <input
+        className="text-input"
+        type="number"
+        name={name}
+        min={min}
+        max={max}
+        step={step}
+        defaultValue={value}
+      />
+    </label>
   );
 }

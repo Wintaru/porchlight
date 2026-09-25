@@ -1,0 +1,125 @@
+/* The Queue board's column: a heading with the filter pills, then one card per item
+   with its chips, the content, a reason and the decisions. */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pills a {
+  display: block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--chip);
+  color: var(--label);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.pills a[aria-current="page"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.item[data-escalated="true"] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.flagged {
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  color: var(--danger);
+}
+
+.escalated {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* Long posts are read in full on their own page; the card keeps its height. */
+.excerpt {
+  max-height: 12em;
+  overflow: hidden;
+  font-size: 15px;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+
+.decide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.escalate {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.empty {
+  margin: 0;
+  padding: 32px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+}

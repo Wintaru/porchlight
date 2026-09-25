@@ -75,6 +75,14 @@ test("each filter tab narrows the queue and marks itself current", async ({
   await mod.close();
 });
 
+test("an item nobody escalated carries no escalated mark", async ({ browser }) => {
+  const mod = await queueAs(browser, "probation");
+  const item = mod.getByTestId("queue-item").filter({ hasText: SEED_PROBATION_POST });
+  await expect(item).toHaveCount(1);
+  await expect(item.getByTestId("queue-item-escalated")).toHaveCount(0);
+  await mod.close();
+});
+
 test("a reject with no reason is refused in words and the item stays", async ({
   browser,
 }) => {
@@ -115,6 +123,16 @@ for (const action of [
       await expect(mod.getByTestId("queue-item").filter({ hasText: title })).toHaveCount(
         action.leaves ? 0 : 1,
       );
+      if (!action.leaves) {
+        // It stays in the queue, marked, so the next moderator knows it is waiting on
+        // a senior decision (#49).
+        await expect(
+          mod
+            .getByTestId("queue-item")
+            .filter({ hasText: title })
+            .getByTestId("queue-item-escalated"),
+        ).toHaveText("escalated");
+      }
       await mod.close();
 
       // The post never reached the public, whatever the moderator chose.

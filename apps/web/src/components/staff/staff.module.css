@@ -1,0 +1,165 @@
+/* The Queue board: side menu, a column of item cards, the duties card on the right.
+   The right column drops under the page below 1200px, the menu becomes a row below
+   900px. */
+.shell {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 720px) 300px;
+  justify-content: center;
+  align-items: start;
+  gap: 40px;
+  padding: 36px 24px 80px;
+}
+
+.side {
+  position: sticky;
+  top: 24px;
+}
+
+.role {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.side ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.side a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--label);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.side a:hover,
+.side a[aria-current="page"] {
+  background: var(--chip);
+  color: var(--ink);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.aside {
+  position: sticky;
+  top: 24px;
+}
+
+.duties {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.dutiesHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.duties h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.duties ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.duties li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.box {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.duties li[data-status="configured"] .box {
+  border-color: #2f6b3a;
+  background: #2f6b3a;
+}
+
+.duties li[data-status="fakeInProduction"] {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.duties li[data-status="fakeInProduction"] .box {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.duties a {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (max-width: 1200px) {
+  .shell {
+    grid-template-columns: 200px minmax(0, 720px);
+  }
+
+  .aside {
+    position: static;
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 20px 16px 56px;
+  }
+
+  .side {
+    position: static;
+  }
+
+  .side ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .aside {
+    grid-column: 1;
+  }
+}

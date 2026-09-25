@@ -75,8 +75,9 @@ const PAGES: readonly PageCase[] = [
   { path: "/write", as: THEO, gaps: ["file-input"] },
   { path: "/settings", as: THEO },
   { path: "/settings/erase", as: THEO },
-  { path: "/mod/queue", as: MIRA, gaps: UNSTYLED },
-  { path: "/admin", as: LAMPLIGHTER, gaps: UNSTYLED },
+  { path: "/mod/queue", as: MIRA },
+  { path: "/mod/queue", as: LAMPLIGHTER },
+  { path: "/admin", as: LAMPLIGHTER },
 ];
 
 const VIEWPORTS = [
