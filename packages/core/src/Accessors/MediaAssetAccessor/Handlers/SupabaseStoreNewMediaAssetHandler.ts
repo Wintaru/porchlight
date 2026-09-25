@@ -46,6 +46,9 @@ export class SupabaseStoreNewMediaAssetHandler implements IHandler<
         : {}),
       ...(evidence.sourceIp !== null ? { p_source_ip: evidence.sourceIp } : {}),
       ...(evidence.sourcePort !== null ? { p_source_port: evidence.sourcePort } : {}),
+      ...(evidence.agentTokenId !== null
+        ? { p_agent_token_id: evidence.agentTokenId }
+        : {}),
       ...(evidence.userAgent !== undefined ? { p_user_agent: evidence.userAgent } : {}),
       ...(evidence.perceptualHash !== null
         ? { p_perceptual_hash: evidence.perceptualHash }

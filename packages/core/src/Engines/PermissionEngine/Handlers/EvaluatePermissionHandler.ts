@@ -566,7 +566,8 @@ async function mayManageOwnTokens(
 // its own member's drafts with the `posts:draft` scope. Publishing needs
 // `posts:publish`. Everything else is `deny`: profile edits, comments, reactions,
 // moderation, erasure, token management, and deleting or editing a published post.
-// The upload scope opens `media.*` in #31. Reading the voice guide is part of drafting
+// The upload scope opens `media.upload` and the member's own uploads (#31). Reading the
+// voice guide is part of drafting
 // (`posts:draft`); changing it needs `voice:write` (#29).
 
 type AgentRule = (
@@ -591,7 +592,7 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "comment.edit": deny,
   "comment.delete": deny,
   "reaction.toggle": deny,
-  "media.upload": deny,
+  "media.upload": agentMayUploadMedia,
   "media.upload.anonymous": deny,
   "media.view": agentMayViewMedia,
   "media.delete": deny,
@@ -750,11 +751,38 @@ async function agentMayPublishPost(
 
 // A published copy is everyone's, the same wall `mayViewMedia` draws. Quarantined
 // uploads wait for the upload scope (#31).
-function agentMayViewMedia(
-  _agent: AgentActor,
+// With the upload scope, an agent uploads as its member (#31): the member owns the file
+// and pays its quota, and the scan and the quarantine apply as to any upload.
+async function agentMayUploadMedia(
+  agent: AgentActor,
   subject: PermissionSubject,
+  policy: SitePolicy,
 ): Promise<Denial> {
-  return Promise.resolve(
-    verdict(subject.kind === "media" && subject.publishedPath !== null),
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  return verdict(subject.kind === "site" && hasScope(agent.grant, "media:upload"));
+}
+
+// The member's own uploads, with the upload scope, so the agent can see where its file
+// stands (#31). Never a locked one, and never another member's: a published copy needs
+// no permission to read, and the upload's record carries its private original name.
+async function agentMayViewMedia(
+  agent: AgentActor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  if (subject.kind !== "media" || subject.scanStatus === "locked") {
+    return "not-allowed";
+  }
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  return verdict(
+    subject.owner.kind === "member" &&
+      subject.owner.profileId === gate.id &&
+      hasScope(agent.grant, "media:upload"),
   );
 }

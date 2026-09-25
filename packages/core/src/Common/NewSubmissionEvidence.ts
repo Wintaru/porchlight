@@ -19,4 +19,6 @@ export interface NewSubmissionEvidence {
   readonly sha256: string;
   readonly perceptualHash: string | null;
   readonly requestId: string;
+  // The token when an agent uploaded it (D22, #31); null for a person at a form.
+  readonly agentTokenId: string | null;
 }

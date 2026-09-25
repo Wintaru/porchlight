@@ -974,6 +974,7 @@ export type Database = {
       erase_account: { Args: { p_profile_id: string }; Returns: string }
       finalize_media_scan: {
         Args: {
+          p_agent_token_id?: string
           p_anonymous_author_id?: string
           p_audit_details?: Json
           p_audit_event?: string

@@ -64,8 +64,9 @@ export class RequestUploadUrlHandler implements IHandler<
     if (refused !== undefined) {
       return refused;
     }
-    if (actor.kind !== "member") {
+    if (actor.kind === "visitor") {
       // The rule above already refused a visitor; this narrows the type for the owner.
+      // An agent uploads as its member (#31): the member owns the file and its quota.
       return new MediaUnavailableResponse(
         correlationId,
         "media.upload granted to a visitor",

@@ -194,6 +194,56 @@ describe("the agents site setting", () => {
   });
 });
 
+describe("uploads (#31)", () => {
+  function media(
+    scanStatus: "pending" | "clear" | "flagged" | "locked",
+    publishedPath: string | null,
+    ownerId = THEO_ID,
+  ): PermissionSubject {
+    return {
+      kind: "media",
+      id: "00000000-0000-4000-8000-0000000000d9",
+      owner: { kind: "member", profileId: ownerId },
+      publishedPath,
+      scanStatus,
+    };
+  }
+
+  test("uploading needs media:upload", async () => {
+    expect(await verdict(agent(), "media.upload", SITE)).toBe("not-allowed");
+    expect(await verdict(agent(["media:upload"]), "media.upload", SITE)).toBe("granted");
+  });
+
+  test("the member's own unpublished upload is visible with the scope, a locked one never", async () => {
+    const uploader = agent(["media:upload"]);
+    expect(await verdict(uploader, "media.view", media("flagged", null))).toBe("granted");
+    expect(await verdict(agent(), "media.view", media("flagged", null))).toBe(
+      "not-allowed",
+    );
+    expect(await verdict(uploader, "media.view", media("clear", null, JUNE_ID))).toBe(
+      "not-allowed",
+    );
+    expect(await verdict(uploader, "media.view", media("locked", null))).toBe(
+      "not-allowed",
+    );
+    expect(
+      await verdict(uploader, "media.view", media("clear", "public-media/x.png")),
+    ).toBe("granted");
+    // Another member's published image is not the agent's to look up, and without
+    // the scope not even the member's own.
+    expect(
+      await verdict(
+        uploader,
+        "media.view",
+        media("clear", "public-media/x.png", JUNE_ID),
+      ),
+    ).toBe("not-allowed");
+    expect(
+      await verdict(agent(), "media.view", media("clear", "public-media/x.png")),
+    ).toBe("not-allowed");
+  });
+});
+
 describe("the voice guide (#29)", () => {
   const OTHER_PROFILE: PermissionSubject = { kind: "profile", id: JUNE_ID };
 
@@ -231,6 +281,7 @@ describe("every other action", () => {
     "post.edit",
     "post.publish",
     "post.delete",
+    "media.upload",
     "media.view",
     "voice.view",
     "voice.edit",

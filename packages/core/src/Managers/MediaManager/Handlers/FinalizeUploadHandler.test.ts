@@ -33,11 +33,13 @@ import { QuotaAccessor } from "../../../Accessors/QuotaAccessor/QuotaAccessor";
 import { AdjustQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/AdjustQuotaUsageRequest";
 import { LoadQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/LoadQuotaUsageRequest";
 import { FakeSiteConfigState } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigState";
+import { FakeLoadAgentsPolicyHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadAgentsPolicyHandler";
 import { FakeLoadAttachmentAllowlistHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentAllowlistHandler";
 import { FakeLoadAttachmentQuotaByTrustHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadAttachmentQuotaByTrustHandler";
 import { FakeLoadModerationThresholdsHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadModerationThresholdsHandler";
 import { FakeLoadRawIpRetentionDaysHandler } from "../../../Accessors/SiteConfigAccessor/Handlers/FakeLoadRawIpRetentionDaysHandler";
 import { SiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/SiteConfigAccessor";
+import { LoadAgentsPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentsPolicyRequest";
 import { LoadAttachmentAllowlistRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
 import { LoadModerationThresholdsRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadModerationThresholdsRequest";
@@ -165,6 +167,8 @@ function harness(
         LoadRawIpRetentionDaysRequest,
         new FakeLoadRawIpRetentionDaysHandler(siteConfigState),
       )
+      // The agent rules read `agents` (#31).
+      .register(LoadAgentsPolicyRequest, new FakeLoadAgentsPolicyHandler(siteConfigState))
       .build(),
   );
 
@@ -267,6 +271,58 @@ describe("FinalizeUploadHandler", () => {
     expect(typeof assetState.evidence[0]?.requestId).toBe("string");
     expect(assetState.auditEvents).toHaveLength(1);
     expect(assetState.auditEvents[0]).toMatchObject({ event: "media.locked" });
+  });
+
+  test("an agent with media:upload finalizes as its member, and a lock still refuses (#31)", async () => {
+    const agent = {
+      kind: "agent" as const,
+      profile: THEO.profile,
+      grant: {
+        tokenId: "00000000-0000-4000-8000-0000000000f1",
+        scopes: ["posts:draft", "media:upload"] as const,
+      },
+    };
+    const clear = harness();
+    clear.seed("77777777-7777-4777-8777-777777777771", "porch.png", PNG_BYTES);
+    const finalized = await clear.handler.handle(
+      new FinalizeUploadRequest(
+        agent,
+        "77777777-7777-4777-8777-777777777771",
+        "porch.png",
+        CLIENT_IP,
+        "claude-code",
+      ),
+    );
+    expect(finalized).toBeInstanceOf(MediaFinalizedResponse);
+    expect(
+      clear.assetState.assets.get("77777777-7777-4777-8777-777777777771"),
+    ).toMatchObject({ owner: { kind: "member", profileId: THEO.profile.id } });
+    // The envelope names the token that sent the file (SPEC.md §17).
+    expect(clear.assetState.evidence[0]?.agentTokenId).toBe(agent.grant.tokenId);
+
+    const locked = harness("match", "clear");
+    locked.seed("77777777-7777-4777-8777-777777777772", "porch.png", PNG_BYTES);
+    const refused = await locked.handler.handle(
+      new FinalizeUploadRequest(
+        agent,
+        "77777777-7777-4777-8777-777777777772",
+        "porch.png",
+        CLIENT_IP,
+        "claude-code",
+      ),
+    );
+    expect(refused).toBeInstanceOf(MediaRefusedResponse);
+
+    const unscoped = await clear.handler.handle(
+      new FinalizeUploadRequest(
+        { ...agent, grant: { ...agent.grant, scopes: ["posts:draft"] as const } },
+        "77777777-7777-4777-8777-777777777771",
+        "porch.png",
+        CLIENT_IP,
+        undefined,
+      ),
+    );
+    expect(unscoped).toMatchObject({ reason: "not-allowed" });
   });
 
   test("a classifier lock (minors signal) refuses the same as a hash match", async () => {

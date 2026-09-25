@@ -225,6 +225,8 @@ export class FinalizeUploadAnonymouslyHandler implements IHandler<
           sha256,
           perceptualHash: null,
           requestId: correlationId,
+          // A visitor at a form, never an agent: a token is always a member's (D22).
+          agentTokenId: null,
         },
         verdict.auditEvent,
         context,
