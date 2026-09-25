@@ -1,4 +1,6 @@
 import {
+  AGENT_DISCLOSURES,
+  MAX_AGENT_DAILY_LIMIT,
   AGENTS_POLICIES,
   COMMENT_POLICIES,
   type DutyChecklistStatus,
@@ -48,6 +50,8 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   "signed-out": "Sign in as the site's admin first.",
   "account-inactive": "This account cannot make changes right now.",
   unavailable: "The settings could not be saved. Try again in a moment.",
+  agentLimits: `Each agent limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}.`,
+  agentDisclosure: "Pick a disclosure setting from the list.",
 };
 
 // The admin settings page (SPEC.md §4, §7): region and the duty checklist, site
@@ -191,6 +195,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               value={config.agents}
               options={AGENTS_POLICIES}
             />
+            <PolicySelect
+              label="Agent disclosure"
+              name="agentDisclosure"
+              value={config.agentDisclosure}
+              options={AGENT_DISCLOSURES}
+            />
+            <NumberField
+              label="Agent drafts per day"
+              name="agentDraftsPerDay"
+              value={config.agentLimits.draftsPerDay}
+              min={0}
+              max={MAX_AGENT_DAILY_LIMIT}
+            />
+            <NumberField
+              label="Agent publishes per day"
+              name="agentPublishesPerDay"
+              value={config.agentLimits.publishesPerDay}
+              min={0}
+              max={MAX_AGENT_DAILY_LIMIT}
+            />
           </div>
           {config.signUp === "invite" && (
             <p className="form-hint">
@@ -200,7 +224,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           )}
           <p className="form-hint">
             Agents: who may mint a personal token for their own writing agent (D22). Off
-            hides the Agents section of every member&apos;s settings.
+            hides the Agents section of every member&apos;s settings. Disclosure: whether
+            a post an agent drafted says so under it. The daily limits count per token; 0
+            turns that action off.
           </p>
         </section>
 

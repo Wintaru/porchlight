@@ -8,6 +8,9 @@ function validFields(): Readonly<Record<string, string>> {
     comments: "anyone",
     signUp: "open",
     agents: "members",
+    agentDisclosure: "footer",
+    agentDraftsPerDay: "5",
+    agentPublishesPerDay: "0",
     region: "US",
     siteName: "The Porch",
     siteTagline: "A place to sit a while",
@@ -40,6 +43,18 @@ function form(
 }
 
 describe("parseSiteConfigForm", () => {
+  test("an unknown disclosure or a negative agent limit names its field (#30)", () => {
+    expect(
+      parseSiteConfigForm(form({ ...validFields(), agentDisclosure: "banner" })),
+    ).toEqual({ ok: false, field: "agentDisclosure" });
+    expect(
+      parseSiteConfigForm(form({ ...validFields(), agentDraftsPerDay: "-1" })),
+    ).toEqual({
+      ok: false,
+      field: "agentLimits",
+    });
+  });
+
   test("a fully filled form parses into a whole snapshot", () => {
     const result = parseSiteConfigForm(form(validFields()));
 
@@ -50,6 +65,8 @@ describe("parseSiteConfigForm", () => {
         comments: "anyone",
         signUp: "open",
         agents: "members",
+        agentLimits: { draftsPerDay: 5, publishesPerDay: 0 },
+        agentDisclosure: "footer",
         region: "US",
         siteIdentity: {
           siteName: "The Porch",

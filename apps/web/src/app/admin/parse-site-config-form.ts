@@ -1,4 +1,5 @@
 import {
+  AGENT_DISCLOSURES,
   AGENTS_POLICIES,
   COMMENT_POLICIES,
   MIN_AUTO_PROMOTE_AFTER_APPROVED_POSTS,
@@ -40,6 +41,15 @@ export function parseSiteConfigForm(
   const agents = oneOf(formData, "agents", AGENTS_POLICIES);
   if (agents === undefined) {
     return { ok: false, field: "agents" };
+  }
+  const agentDisclosure = oneOf(formData, "agentDisclosure", AGENT_DISCLOSURES);
+  if (agentDisclosure === undefined) {
+    return { ok: false, field: "agentDisclosure" };
+  }
+  const draftsPerDay = wholeNumber(formData, "agentDraftsPerDay");
+  const publishesPerDay = wholeNumber(formData, "agentPublishesPerDay");
+  if (draftsPerDay === undefined || publishesPerDay === undefined) {
+    return { ok: false, field: "agentLimits" };
   }
   const region = oneOf(formData, "region", REGIONS);
   if (region === undefined) {
@@ -107,6 +117,8 @@ export function parseSiteConfigForm(
       comments,
       signUp,
       agents,
+      agentLimits: { draftsPerDay, publishesPerDay },
+      agentDisclosure,
       region,
       siteIdentity: { siteName, siteTagline, aboutMd },
       attachmentAllowlist,
@@ -140,6 +152,16 @@ function positiveInt(formData: FormData, name: string): number | undefined {
   }
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+// Zero allowed: a daily limit of 0 turns that agent action off.
+function wholeNumber(formData: FormData, name: string): number | undefined {
+  const value = formData.get(name);
+  if (typeof value !== "string" || value.trim() === "") {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function fraction(formData: FormData, name: string): number | undefined {
