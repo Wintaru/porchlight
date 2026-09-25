@@ -51,13 +51,7 @@ const PAGES: readonly PageCase[] = [
   { path: "/anon" },
   { path: "/auth/dev-sign-in", gaps: UNSTYLED },
   { path: "/auth/sign-in-failed", gaps: ["flush-left"] },
-  // No not-found page: Next.js's default renders, with no main landmark.
-  {
-    path: "/no-such-page",
-    status: 404,
-    gaps: ["no-main"],
-    axeGaps: ["landmark-one-main", "region"],
-  },
+  { path: "/no-such-page", status: 404 },
   { path: "/", as: THEO },
   { path: "/@theo/hello-from-the-porch", as: THEO },
   // A member sees the claim form a visitor does not.
