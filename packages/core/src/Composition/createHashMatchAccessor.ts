@@ -61,6 +61,13 @@ export function createHashMatchAccessor(env: Environment): IHashMatchAccessor {
   if (provider === "photodna") {
     throw new Error("HASH_MATCH_PROVIDER=photodna is a reserved slot, not yet built.");
   }
+  // Shield signs in with a username and a password; both live in the one
+  // HASH_MATCH_API_KEY value as "username:password", the same shape Sightengine uses.
+  if (!/^[^:]+:.+$/.test(apiKey)) {
+    throw new Error(
+      "HASH_MATCH_PROVIDER=arachnid-shield needs HASH_MATCH_API_KEY as username:password.",
+    );
+  }
   return new HashMatchAccessor(
     new HandlerResolverBuilder()
       .register(MatchImageHashRequest, new ArachnidShieldMatchImageHashHandler(apiKey))

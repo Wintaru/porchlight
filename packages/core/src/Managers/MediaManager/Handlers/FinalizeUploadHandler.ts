@@ -296,7 +296,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
 
     if (isImage) {
       const hashResult = await this.hashMatch.load(
-        new MatchImageHashRequest(bytes, sha256, context),
+        new MatchImageHashRequest(bytes, sha256, mimeType, context),
       );
       if (!(hashResult instanceof HashMatchResultResponse)) {
         return unavailable(context.correlationId, hashResult, "hashMatch.load");

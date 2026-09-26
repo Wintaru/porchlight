@@ -18,8 +18,17 @@ Cloudflare's own tool are reserved provider slots for later — `HASH_MATCH_PROV
 will accept them once they are built.
 
 1. Apply for Shield access through Project Arachnid. Access is vetted; it is not a
-   self-serve signup.
-2. Once approved, the API key goes in `HASH_MATCH_API_KEY`.
+   self-serve signup. If the form asks for the site or host name, give the site's
+   public address, for example `blog.example.com`.
+2. Once approved, make an API user in the Shield dashboard. Shield signs requests with
+   that user's username and password (HTTP Basic auth).
+3. Set `HASH_MATCH_API_KEY` to `username:password`, both values joined with a colon.
+   The build refuses a value with no username or no password.
+
+Porchlight calls `POST https://shield.projectarachnid.ca/v1/media/` with the image
+bytes, the same call as the official SDK's `scanMediaFromBytes`
+(https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). Any
+classification other than `no-known-match` counts as a match.
 
 ## Where the values go
 
@@ -43,6 +52,9 @@ deployment's environment.
 
 ## Production checklist
 
+- After you set the key, upload one ordinary image. It must pass. A wrong username or
+  password makes every image upload fail with "try again". The failure reason includes
+  `Shield answered 401`.
 - Set `HASH_MATCH_API_KEY` before opening uploads to anyone the site does not fully
   trust (`site_config.posting` or the attachment allowlist matters more than this
   alone — a hash match only ever catches what is already fingerprinted elsewhere).
