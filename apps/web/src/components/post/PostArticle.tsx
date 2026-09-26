@@ -10,8 +10,7 @@ import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
 import { unpublishPost } from "@/app/write/actions";
 import { formatDate } from "@/lib/format-date";
-import { MATURE_TAG } from "@/lib/mature-tag";
-import { publicMediaUrl } from "@/lib/media-url";
+import { shownCover } from "@/lib/post-cover";
 import { readingMinutes } from "@/lib/reading-time";
 import { reportPathFor } from "@/lib/report-link";
 import type { PostPage } from "@/read-model/post-page";
@@ -162,16 +161,14 @@ function agentLineFor(post: PostPage): string | undefined {
 }
 
 function Cover({ post }: { readonly post: PostPage }) {
-  const path = post.cover?.published_path;
-  if (post.cover === null || path === null || path === undefined) {
+  const cover = shownCover(post);
+  if (cover === undefined) {
     return null;
   }
-  const src = publicMediaUrl(path);
-  const mature =
-    post.cover.mature || post.post_tags.some((link) => link.tag?.slug === MATURE_TAG);
+  const { src } = cover;
   return (
     <figure className={styles.cover} data-testid="post-cover">
-      {mature ? (
+      {cover.mature ? (
         <RevealImage id={post.id} src={src} alt="" mode="mature" />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image

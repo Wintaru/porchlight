@@ -26,6 +26,21 @@
   font-size: 24px;
 }
 
+/* The Main board's cover: the card's width, 220px tall, cropped to fill. The img rule
+   also reaches RevealImage's img, whose own class sets only width and the blur. */
+.cover {
+  margin: 0 0 12px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.cover img {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
 .summary {
   margin: 0 0 12px;
   color: var(--label);

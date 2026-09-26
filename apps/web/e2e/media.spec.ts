@@ -63,6 +63,9 @@ test("a cover, a picture and a PDF go into a post, from a re-encoded public copy
   await page.getByLabel("Title").fill(`Sawhorse notes ${stamp}`);
   await fillBodyMarkdown(page, "Two 2x4s and a cut list.");
   await page.getByRole("button", { name: "Rich text", exact: true }).click();
+  // A seeded tag, so the tag page's card shows the cover too (#73).
+  await page.getByLabel("Add a tag").fill("Making");
+  await page.getByLabel("Add a tag").press("Enter");
 
   await chooseCover(page, cover, PHOTO);
   const coverImage = page.getByTestId("cover-image");
@@ -98,6 +101,28 @@ test("a cover, a picture and a PDF go into a post, from a re-encoded public copy
     "src",
     coverUrl,
   );
+
+  // The feed card and the tag page's card show the same cover (#73). A seeded post
+  // with no cover has no image on its card.
+  const postUrl = page.url();
+  for (const list of ["/", "/t/making"]) {
+    await page.goto(list);
+    const card = page
+      .getByTestId("post-card")
+      .filter({ hasText: `Sawhorse notes ${stamp}` });
+    await expect(card.getByTestId("post-card-cover").locator("img")).toHaveAttribute(
+      "src",
+      coverUrl,
+    );
+  }
+  await page.goto("/");
+  await expect(
+    page
+      .getByTestId("post-card")
+      .filter({ hasNot: page.getByTestId("post-card-cover") })
+      .first(),
+  ).toBeVisible();
+  await page.goto(postUrl);
   const body = page.getByTestId("post-body");
   await expect(body.locator("img")).toHaveAttribute(
     "src",
@@ -170,6 +195,18 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   expect(await img.evaluate((el) => getComputedStyle(el).filter)).toContain("blur");
   await shown.getByText("Mature content. Show image").click();
   await expect.poll(() => img.evaluate((el) => getComputedStyle(el).filter)).toBe("none");
+
+  // The feed card blurs the same cover until the reader asks (#73).
+  await reader.goto("/");
+  const card = reader.getByTestId("post-card").filter({ hasText: title });
+  const cardCover = card.getByTestId("post-card-cover").getByTestId("reveal-image");
+  await expect(cardCover).toHaveAttribute("data-mode", "mature");
+  const cardImg = cardCover.locator("img");
+  expect(await cardImg.evaluate((el) => getComputedStyle(el).filter)).toContain("blur");
+  await cardCover.getByText("Mature content. Show image").click();
+  await expect
+    .poll(() => cardImg.evaluate((el) => getComputedStyle(el).filter))
+    .toBe("none");
 
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();

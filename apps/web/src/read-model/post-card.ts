@@ -2,10 +2,12 @@ import type { DbClient } from "@porchlight/db";
 
 // The shape every list on the site shows for one post: the feed, an author's page, a
 // tag page. Names its columns (never `select *`, the grants are column lists) and the
-// two embeds: the author through the posts→profiles key, the tags through post_tags.
-// An anonymous post has no author row until it is claimed (D7): `author` is null.
+// three embeds: the author through the posts→profiles key, the tags through post_tags,
+// and the cover the feed card shows (#73). An anonymous post has no author row until
+// it is claimed (D7): `author` is null. The cover's `published_path` is null until the
+// scan passes, and the grants hide it from anyone else (#36), as on the post page.
 export const POST_CARD_COLUMNS =
-  "id, slug, title, summary, published_at, comments_enabled, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name))";
+  "id, slug, title, summary, published_at, comments_enabled, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostCardAuthor {
   readonly handle: string;
@@ -27,6 +29,10 @@ export interface PostCard {
   readonly comments_enabled: boolean;
   readonly author: PostCardAuthor | null;
   readonly post_tags: readonly { readonly tag: PostCardTag | null }[];
+  readonly cover: {
+    readonly published_path: string | null;
+    readonly mature: boolean;
+  } | null;
 }
 
 // How many cards one list shows. Paging arrives with #16's feed board.

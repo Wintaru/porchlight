@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { formatDate } from "@/lib/format-date";
+import { shownCover } from "@/lib/post-cover";
 import type { PostCard } from "@/read-model/post-card";
 
 import { Avatar } from "./Avatar";
+import { RevealImage } from "./RevealImage";
 import styles from "./PostCardList.module.css";
 
 interface PostCardListProps {
@@ -73,9 +75,29 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
           <Link href={`/@${author.handle}/${post.slug}`}>{post.title}</Link>
         )}
       </h2>
+      <CardCover post={post} />
       {post.summary !== null && <p className={styles.summary}>{post.summary}</p>}
       <TagChips tags={post.post_tags} />
     </>
+  );
+}
+
+// The Main board's cover: under the title, the card's width, a fixed height (#73).
+// The same rule as the post page decides whether it shows and whether it blurs.
+function CardCover({ post }: { readonly post: PostCard }) {
+  const cover = shownCover(post);
+  if (cover === undefined) {
+    return null;
+  }
+  return (
+    <div className={styles.cover} data-testid="post-card-cover">
+      {cover.mature ? (
+        <RevealImage id={`card-${post.id}`} src={cover.src} alt="" mode="mature" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image
+        <img src={cover.src} alt="" loading="lazy" />
+      )}
+    </div>
   );
 }
 
