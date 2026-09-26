@@ -1,10 +1,13 @@
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
+import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
 import { MediaAssetStoredResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetStoredResponse";
 import type { IMediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
 import { DownloadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
+import { RemoveStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
 import { UploadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
 import { StorageObjectDownloadedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectDownloadedResponse";
+import { StorageObjectRemovedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectRemovedResponse";
 import { StorageObjectUploadedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectUploadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
 import type { MediaAsset } from "../../../Common/MediaAsset";
@@ -93,6 +96,22 @@ export class TransformPublishMediaHandler implements IHandler<
         context,
       ),
     );
+    // A DeleteMedia that ran since the upload removed the row: take the copy back down,
+    // so no public object outlives its row (#60). Only on not-found: a failed write may
+    // still have committed (a lost reply), or a concurrent publish of the same asset
+    // may own the key, and a row naming a missing object cannot be retried. An orphan
+    // object is harmless; a dangling path is a broken image for good.
+    if (stored instanceof MediaAssetNotFoundResponse) {
+      const removed = await this.storage.remove(
+        new RemoveStorageObjectRequest(this.options.publicBucket, key, context),
+      );
+      if (!(removed instanceof StorageObjectRemovedResponse)) {
+        console.error(
+          `public copy ${key} left without a row [${correlationId}]`,
+          removed.constructor.name,
+        );
+      }
+    }
     if (!(stored instanceof MediaAssetStoredResponse)) {
       return unavailable(correlationId, stored, "mediaAssets.store");
     }

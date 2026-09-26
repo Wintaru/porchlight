@@ -7,9 +7,11 @@ import { MediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/MediaA
 import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
 import { FakeMediaStorageState } from "../../../Accessors/MediaStorageAccessor/FakeMediaStorageState";
 import { FakeDownloadStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeDownloadStorageObjectHandler";
+import { FakeRemoveStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeRemoveStorageObjectHandler";
 import { FakeUploadStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeUploadStorageObjectHandler";
 import { MediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/MediaStorageAccessor";
 import { DownloadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
+import { RemoveStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
 import { UploadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
 import { HandlerResolverBuilder } from "../../../Common/HandlerResolverBuilder";
 import type { MediaAsset } from "../../../Common/MediaAsset";
@@ -41,7 +43,7 @@ function asset(overrides: Partial<MediaAsset>): MediaAsset {
   };
 }
 
-function harness(start: MediaAsset) {
+function harness(start: MediaAsset, assetsFailing = false) {
   const storageState = new FakeMediaStorageState();
   const storage = new MediaStorageAccessor(
     new HandlerResolverBuilder()
@@ -56,9 +58,14 @@ function harness(start: MediaAsset) {
         new FakeDownloadStorageObjectHandler(storageState),
       )
       .build(),
-    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder()
+      .register(
+        RemoveStorageObjectRequest,
+        new FakeRemoveStorageObjectHandler(storageState),
+      )
+      .build(),
   );
-  const assetState = new FakeMediaAssetState();
+  const assetState = new FakeMediaAssetState(assetsFailing);
   assetState.assets.set(start.id, start);
   const mediaAssets = new MediaAssetAccessor(
     new HandlerResolverBuilder()
@@ -146,6 +153,26 @@ describe("TransformPublishMediaHandler", () => {
     const result = await handler.handle(new PublishMediaRequest(start, await png()));
     expect(result).toMatchObject({ asset: { publishedPath: `public-media/${ID}.png` } });
     expect(storageState.objects.size).toBe(0);
+  });
+
+  test("a row deleted during the publish takes its public copy with it", async () => {
+    const start = asset({ scanStatus: "clear" });
+    const { handler, storageState, assetState } = harness(start);
+    // What a DeleteMedia between the upload and the row write leaves: no row.
+    assetState.assets.delete(ID);
+    const result = await handler.handle(new PublishMediaRequest(start, await png()));
+    expect(result).toMatchObject({
+      reason: "unexpected MediaAssetNotFoundResponse from mediaAssets.store",
+    });
+    expect(storageState.objects.size).toBe(0);
+  });
+
+  test("a failed row write leaves the copy, since the write may have landed", async () => {
+    const start = asset({ scanStatus: "clear" });
+    const { handler, storageState } = harness(start, true);
+    const result = await handler.handle(new PublishMediaRequest(start, await png()));
+    expect(result).toMatchObject({ reason: "MEDIA_FAKE_RESULT=fail" });
+    expect(storageState.objects.size).toBe(1);
   });
 
   test("bytes that do not decode are refused, not published", async () => {
