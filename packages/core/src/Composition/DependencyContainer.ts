@@ -143,6 +143,7 @@ import { GetAgentDisclosureHandler } from "../Managers/SiteConfigManager/Handler
 import { GetAgentsPolicyHandler } from "../Managers/SiteConfigManager/Handlers/GetAgentsPolicyHandler";
 import { GetRegionHandler } from "../Managers/SiteConfigManager/Handlers/GetRegionHandler";
 import { GetSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteConfigHandler";
+import { GetAboutPageHandler } from "../Managers/SiteConfigManager/Handlers/GetAboutPageHandler";
 import { GetSiteIdentityHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteIdentityHandler";
 import { SaveSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/SaveSiteConfigHandler";
 import type { ISiteConfigManager } from "../Managers/SiteConfigManager/ISiteConfigManager";
@@ -152,6 +153,7 @@ import { GetAgentDisclosureRequest } from "../Managers/SiteConfigManager/Request
 import { GetAgentsPolicyRequest } from "../Managers/SiteConfigManager/Requests/GetAgentsPolicyRequest";
 import { GetRegionRequest } from "../Managers/SiteConfigManager/Requests/GetRegionRequest";
 import { GetSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+import { GetAboutPageRequest } from "../Managers/SiteConfigManager/Requests/GetAboutPageRequest";
 import { GetSiteIdentityRequest } from "../Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 import { SaveSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 import { SiteConfigManager } from "../Managers/SiteConfigManager/SiteConfigManager";
@@ -721,6 +723,7 @@ export class DependencyContainer {
           new GetSiteConfigHandler(siteConfig, permissions, dutyChecklist),
         )
         .register(GetSiteIdentityRequest, new GetSiteIdentityHandler(siteConfig))
+        .register(GetAboutPageRequest, new GetAboutPageHandler(siteConfig, content))
         .register(GetRegionRequest, new GetRegionHandler(siteConfig))
         .register(GetAgentsPolicyRequest, new GetAgentsPolicyHandler(siteConfig))
         .register(GetAgentDisclosureRequest, new GetAgentDisclosureHandler(siteConfig))

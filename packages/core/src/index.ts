@@ -318,8 +318,10 @@ export { GetAgentDisclosureRequest } from "./Managers/SiteConfigManager/Requests
 export { GetAgentsPolicyRequest } from "./Managers/SiteConfigManager/Requests/GetAgentsPolicyRequest";
 export { GetRegionRequest } from "./Managers/SiteConfigManager/Requests/GetRegionRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
+export { GetAboutPageRequest } from "./Managers/SiteConfigManager/Requests/GetAboutPageRequest";
 export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
+export { AboutPageResponse } from "./Managers/SiteConfigManager/Responses/AboutPageResponse";
 export { AgentLimitsResponse } from "./Managers/SiteConfigManager/Responses/AgentLimitsResponse";
 export { AgentDisclosureResponse } from "./Managers/SiteConfigManager/Responses/AgentDisclosureResponse";
 export { AgentsPolicyResponse } from "./Managers/SiteConfigManager/Responses/AgentsPolicyResponse";

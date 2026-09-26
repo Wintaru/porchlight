@@ -1,5 +1,7 @@
+import { AboutPageResponse, GetAboutPageRequest } from "@porchlight/core";
 import type { Metadata } from "next";
 
+import { getDependencyContainer } from "@/lib/dependency-container";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 
@@ -10,10 +12,9 @@ import { getSiteIdentity } from "@/lib/site-identity";
 // next request, never held back until a rebuild.
 export const dynamic = "force-dynamic";
 
-// `/about`, a reserved route (SPEC.md §4): renders `site_config.about_md` as the admin
-// wrote it. Plain text, not a markdown render — `about_md` has no cached HTML column
-// the way a post's `body_md` does (D3 only caches a post's own render), and admin-only
-// prose does not need a parser and a sanitizer just to keep its line breaks.
+// `/about`, a reserved route (SPEC.md §4): renders `site_config.about_md` as markdown,
+// through the same sanitizing render path as a post body (GetAboutPageHandler). The
+// admin form labels the field "About (markdown)", so plain text broke that promise.
 export async function generateMetadata(): Promise<Metadata> {
   const { siteName } = await getSiteIdentity();
   const title = `About · ${siteName}`;
@@ -24,18 +25,44 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// Same resilience as `getSiteIdentity`: a `site_config` hiccup shows the empty state,
+// never an error page.
+async function loadAboutHtml(): Promise<string> {
+  try {
+    const response = await getDependencyContainer().siteConfigManager.query(
+      new GetAboutPageRequest(),
+    );
+    if (response instanceof AboutPageResponse) {
+      return response.aboutHtml;
+    }
+    console.error("about page load failed", response);
+    return "";
+  } catch (error: unknown) {
+    console.error("about page load failed", error);
+    return "";
+  }
+}
+
 export default async function AboutPage() {
-  const { siteName, aboutMd } = await getSiteIdentity();
+  const [{ siteName }, aboutHtml] = await Promise.all([
+    getSiteIdentity(),
+    loadAboutHtml(),
+  ]);
   return (
     <main
       className="container"
       style={{ maxWidth: 720, paddingTop: 40, paddingBottom: 64 }}
     >
       <h1>About {siteName}</h1>
-      {aboutMd === "" ? (
+      {aboutHtml === "" ? (
         <p style={{ color: "var(--muted)" }}>Nothing here yet.</p>
       ) : (
-        <p style={{ whiteSpace: "pre-wrap" }}>{aboutMd}</p>
+        <div
+          className="prose"
+          data-testid="about-body"
+          // Sanitized by the render engine's allowlist, the same one a post body uses.
+          dangerouslySetInnerHTML={{ __html: aboutHtml }}
+        />
       )}
     </main>
   );
