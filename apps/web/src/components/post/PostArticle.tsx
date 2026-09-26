@@ -9,6 +9,7 @@ import { RaccoonMark } from "@/components/RaccoonMark";
 import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
 import { formatDate } from "@/lib/format-date";
+import { MATURE_TAG } from "@/lib/mature-tag";
 import { publicMediaUrl } from "@/lib/media-url";
 import { readingMinutes } from "@/lib/reading-time";
 import { reportPathFor } from "@/lib/report-link";
@@ -16,9 +17,6 @@ import type { PostPage } from "@/read-model/post-page";
 import type { ItemReactions } from "@/read-model/reactions";
 
 import styles from "./post.module.css";
-
-// The seeded content-note tag (SPEC.md §7): a post that carries it blurs its cover too.
-const MATURE_TAG = "mature";
 
 interface PostArticleProps {
   readonly post: PostPage;

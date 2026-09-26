@@ -15,6 +15,7 @@ import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor, type BodyInsert } from "./BodyEditor";
 import { CoverPicker } from "./CoverPicker";
 import { classNames } from "@/lib/class-names";
+import { MATURE_TAG } from "@/lib/mature-tag";
 import styles from "./editor.module.css";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
 import { TagInput } from "./TagInput";
@@ -42,10 +43,6 @@ interface PostEditorProps {
   readonly heading: string;
   readonly notices?: ReactNode;
 }
-
-// The `mature` content note is the seeded `mature` tag (SPEC.md §7): the checkbox adds
-// or removes it, and the chips never show it.
-const MATURE_TAG = "mature";
 
 // A save that takes longer than this is treated as failed, so a hung request can never
 // keep the buttons locked. A late answer is ignored.
