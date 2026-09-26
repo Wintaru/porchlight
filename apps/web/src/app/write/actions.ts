@@ -16,6 +16,7 @@ import {
   UnpublishPostRequest,
   UpdateDraftRequest,
 } from "@porchlight/core";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
@@ -23,6 +24,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
+import { safeNextPath } from "@/lib/safe-next-path";
 import type { AutosaveResult, PreviewResult } from "./editor-results";
 import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
 
@@ -106,16 +108,24 @@ export async function previewPost(bodyMd: unknown): Promise<PreviewResult> {
   return { ok: true, bodyHtml: response.bodyHtml };
 }
 
+// From the editor, back to the editor. From the post page, the form carries the post's
+// path as `returnTo`, and the author lands back on it, now showing its draft note.
+// A failure always goes to the editor, which has the sentence for every error code.
 export async function unpublishPost(formData: FormData): Promise<void> {
   const postId = idOf(formData);
-  const actor = await requireMember(`/write/${postId}`);
+  const editor = `/write/${postId}`;
+  const returnTo = returnToOf(formData) ?? editor;
+  const actor = await requireMember(returnTo);
   const response = await getDependencyContainer().postManager.execute(
     new UnpublishPostRequest(actor, postId),
   );
   if (!(response instanceof PostResponse)) {
-    redirect(`/write/${postId}?error=${errorCode(response)}`);
+    redirect(`${editor}?error=${errorCode(response)}`);
   }
-  redirect(`/write/${postId}?saved=unpublished`);
+  if (returnTo !== editor) {
+    revalidatePath(returnTo);
+  }
+  redirect(`${returnTo}?saved=unpublished`);
 }
 
 export async function deletePost(formData: FormData): Promise<void> {
@@ -151,6 +161,15 @@ async function requireMember(next: string): Promise<Actor & { kind: "member" }> 
     redirect(signInPathFor(next));
   }
   return actor;
+}
+
+// A same-site path with no query or hash, or undefined when the form carried none.
+function returnToOf(formData: FormData): string | undefined {
+  const value = formData.get("returnTo");
+  if (typeof value !== "string" || value === "") {
+    return undefined;
+  }
+  return safeNextPath(value).split("?")[0]?.split("#")[0];
 }
 
 function idOf(formData: FormData): string {

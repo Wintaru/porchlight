@@ -18,7 +18,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { deletePost, unpublishPost } from "../actions";
+import { unpublishPost } from "../actions";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
 
 interface EditPageProps {
@@ -122,12 +122,13 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
             </button>
           </form>
         )}
-        <form action={deletePost}>
-          <input type="hidden" name="postId" value={post.id} />
-          <button type="submit" className={classNames(styles.button, styles.danger)}>
-            Delete
-          </button>
-        </form>
+        {/* Asks first on its own page (#72), which holds the delete form. */}
+        <Link
+          href={`/write/${post.id}/delete`}
+          className={classNames(styles.button, styles.danger)}
+        >
+          Delete
+        </Link>
       </div>
     </main>
   );

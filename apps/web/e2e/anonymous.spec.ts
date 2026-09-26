@@ -51,7 +51,8 @@ test("a visitor posts anonymously, checks its status, claims it after signing in
   // Clean up through the normal editor, now that it is a real post there.
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("link", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete this post" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
   await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
 });
@@ -109,7 +110,8 @@ test("links in an anonymous post stay inert until a moderator approves it", asyn
   );
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("link", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete this post" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
 });
 

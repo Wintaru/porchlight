@@ -35,10 +35,12 @@ export async function fillBodyMarkdown(page: Page, body: string): Promise<void> 
   await page.getByLabel("Body (markdown)").fill(body);
 }
 
-// Deletes the post the editor page is showing. Every test that creates one ends here,
-// so the seed is the same for the next run. Comments on the post go with it (D6).
+// Deletes the post the editor page is showing, through the confirm page (#72). Every
+// test that creates one ends here, so the seed is the same for the next run. Comments
+// on the post go with it (D6).
 export async function deleteCurrentPost(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("link", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete this post" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
   await expect(page.getByTestId("form-status")).toHaveText("Deleted.");
 }

@@ -8,6 +8,7 @@ import { TagChips } from "@/components/PostCardList";
 import { RaccoonMark } from "@/components/RaccoonMark";
 import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
+import { unpublishPost } from "@/app/write/actions";
 import { formatDate } from "@/lib/format-date";
 import { MATURE_TAG } from "@/lib/mature-tag";
 import { publicMediaUrl } from "@/lib/media-url";
@@ -63,6 +64,9 @@ export function PostArticle({
         <div className={styles.byline}>
           <Byline post={post} />
           <div className={styles.bylineActions}>
+            {viewerId !== undefined && viewerId === post.author_id && (
+              <AuthorControls post={post} returnTo={returnTo} />
+            )}
             <ShareButton url={shareUrl} title={post.title} />
             {/* Anyone may report a published post (SPEC.md §7), except its author. */}
             {post.status === "published" && viewerId !== post.author_id && (
@@ -99,6 +103,49 @@ export function PostArticle({
         </div>
       )}
     </article>
+  );
+}
+
+// Edit, and a menu for Unpublish and Delete, for the post's own author only (#72). The
+// page decides who that is from the session, and each action checks ownership again.
+// The menu is a <details>, so it opens with no JavaScript. Delete goes to its confirm
+// page, which sends Cancel back here.
+function AuthorControls({
+  post,
+  returnTo,
+}: {
+  readonly post: PostPage;
+  readonly returnTo: string;
+}) {
+  const canUnpublish = post.status === "published" || post.status === "pending";
+  return (
+    <>
+      <Link
+        href={`/write/${post.id}`}
+        className={styles.authorLink}
+        data-testid="post-edit"
+      >
+        Edit
+      </Link>
+      <details className={styles.authorMenu} data-testid="post-author-menu">
+        <summary aria-label="More actions for this post">⋯</summary>
+        <div className={styles.authorMenuItems}>
+          {canUnpublish && (
+            <form action={unpublishPost}>
+              <input type="hidden" name="postId" value={post.id} />
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <button type="submit">Unpublish</button>
+            </form>
+          )}
+          <Link
+            href={`/write/${post.id}/delete?from=${encodeURIComponent(returnTo)}`}
+            className={styles.dangerItem}
+          >
+            Delete
+          </Link>
+        </div>
+      </details>
+    </>
   );
 }
 

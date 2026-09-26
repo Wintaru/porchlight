@@ -92,6 +92,81 @@ a.name:hover {
   gap: 16px;
 }
 
+.authorLink {
+  color: var(--link);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* The author's menu: a <details> whose items drop below the ⋯, over the page. */
+.authorMenu {
+  position: relative;
+}
+
+.authorMenu > summary {
+  padding: 0 6px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+}
+
+.authorMenu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.authorMenu > summary:hover,
+.authorMenu[open] > summary {
+  color: var(--ink);
+}
+
+.authorMenu > summary:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.authorMenuItems {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 12%);
+}
+
+.authorMenuItems button,
+.authorMenuItems a {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.authorMenuItems button:hover,
+.authorMenuItems a:hover {
+  background: var(--chip);
+}
+
+.authorMenuItems .dangerItem {
+  color: var(--danger);
+}
+
 .reportLink {
   color: var(--muted);
   font-size: 14px;

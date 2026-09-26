@@ -73,7 +73,8 @@ test("an agent drafts through the door and the draft waits in the editor", async
 
     // Cleanup: the post is the seed's only trace of this test.
     await page.goto(`/write/${String(post.id)}`);
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("link", { name: "Delete", exact: true }).click();
+    await page.getByRole("button", { name: "Delete this post" }).click();
     await expect(page).toHaveURL(/\/write\?deleted=1$/);
   } finally {
     await client.close();
@@ -113,7 +114,8 @@ test("the sixth draft of the day is refused with the cap named", async ({
     // Cleanup: the five drafts, so the seed reads the same for the next run.
     for (const id of created) {
       await page.goto(`/write/${id}`);
-      await page.getByRole("button", { name: "Delete" }).click();
+      await page.getByRole("link", { name: "Delete", exact: true }).click();
+      await page.getByRole("button", { name: "Delete this post" }).click();
       await expect(page).toHaveURL(/\/write\?deleted=1$/);
     }
   }

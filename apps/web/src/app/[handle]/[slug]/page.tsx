@@ -6,6 +6,7 @@ import { createSessionClient } from "@/auth/session-client";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { PostArticle } from "@/components/post/PostArticle";
 import postStyles from "@/components/post/post.module.css";
+import { Toast } from "@/components/toast/Toast";
 import { commentFormStateFor } from "@/lib/can-comment";
 import { getAgentDisclosure } from "@/lib/agent-disclosure";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -17,10 +18,16 @@ import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadPostPage, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
+import { savedTextFor } from "../../write/post-form-messages";
 
 interface PostPageProps {
   readonly params: Promise<{ readonly handle: string; readonly slug: string }>;
-  readonly searchParams: Promise<{ readonly comment?: string; readonly error?: string }>;
+  readonly searchParams: Promise<{
+    readonly comment?: string;
+    readonly error?: string;
+    // Only `unpublished`: the author's menu on this page redirects back with it (#72).
+    readonly saved?: string;
+  }>;
 }
 
 const getPost = cache(async (segment: string, slug: string) => {
@@ -83,15 +90,20 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   const note = STATUS_NOTE[post.status];
   const returnTo = `/@${post.author.handle}/${post.slug}`;
 
-  const [actor, db, { comment: noticeCode, error: errorCode }, { siteName }, disclosure] =
-    await Promise.all([
-      getCurrentActor(),
-      createSessionClient(),
-      searchParams,
-      getSiteIdentity(),
-      // Only an agent's post has a line to show, so only it pays for the read.
-      post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
-    ]);
+  const [
+    actor,
+    db,
+    { comment: noticeCode, error: errorCode, saved },
+    { siteName },
+    disclosure,
+  ] = await Promise.all([
+    getCurrentActor(),
+    createSessionClient(),
+    searchParams,
+    getSiteIdentity(),
+    // Only an agent's post has a line to show, so only it pays for the read.
+    post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
+  ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   const [formState, comments, reactions] = await Promise.all([
     commentFormStateFor(actor, post.id),
@@ -100,6 +112,11 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   ]);
 
   const url = `${SITE_URL}${returnTo}`;
+  // Only the author unpublished it: a crafted link must not tell a reader otherwise.
+  const savedText =
+    saved === "unpublished" && viewerId === post.author_id
+      ? savedTextFor(saved)
+      : undefined;
 
   return (
     <main className={postStyles.page}>
@@ -111,6 +128,9 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
             __html: JSON.stringify(articleJsonLd(post, url, siteName)),
           }}
         />
+      )}
+      {savedText !== undefined && (
+        <Toast message={savedText} param="saved" testId="post-toast" />
       )}
       <PostArticle
         post={post}

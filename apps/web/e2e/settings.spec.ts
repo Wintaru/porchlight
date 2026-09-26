@@ -33,7 +33,8 @@ test("the Anonymous posts card claims what this browser posted", async ({ page }
 
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("link", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete this post" }).click();
   await expect(page).toHaveURL(/\/write\?deleted=1$/);
 });
 
