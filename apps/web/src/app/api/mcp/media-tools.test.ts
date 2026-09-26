@@ -79,6 +79,11 @@ describe("the MCP upload tools (#31)", () => {
     expect(ready.markdown).toMatch(/^!\[porch\]\(http.+porch\.jpg\)$/);
   });
 
+  test("an image that will not decode says so, and a failed copy stays retryable", () => {
+    expect(uploadStatusOf(asset({}), "undecodable").status).toBe("unreadable image");
+    expect(uploadStatusOf(asset({})).status).toBe("not published");
+  });
+
   test("the curl line carries the URL and the public key, never a secret", () => {
     const line = curlLineFor("http://storage.example/upload?token=t", "anon-key");
     expect(line).toContain('"http://storage.example/upload?token=t"');

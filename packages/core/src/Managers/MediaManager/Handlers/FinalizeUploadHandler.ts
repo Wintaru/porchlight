@@ -266,11 +266,16 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     if (verdict.scanStatus === "locked") {
       return new MediaRefusedResponse(correlationId);
     }
-    const asset = await publishIfClear(this.publisher, stored.asset, downloaded.bytes, {
-      correlationId,
-      timestamp: request.timestamp,
-    });
-    return new MediaFinalizedResponse(correlationId, asset);
+    const { asset, unpublishable } = await publishIfClear(
+      this.publisher,
+      stored.asset,
+      downloaded.bytes,
+      {
+        correlationId,
+        timestamp: request.timestamp,
+      },
+    );
+    return new MediaFinalizedResponse(correlationId, asset, unpublishable);
   }
 
   // The fixed order (SPEC.md §7, WAYFINDER D17): hash match, then the purpose-built

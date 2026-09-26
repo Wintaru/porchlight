@@ -66,10 +66,10 @@ export class RepublishMediaHandler implements IHandler<RepublishMediaRequest, Re
       new PublishMediaRequest(asset, undefined, context),
     );
     if (published instanceof MediaPublishedResponse) {
-      return new MediaRepublishedResponse(correlationId, published.asset);
+      return new MediaRepublishedResponse(correlationId, published.asset, null);
     }
     if (published instanceof MediaUnpublishableResponse) {
-      return new MediaRepublishedResponse(correlationId, asset);
+      return new MediaRepublishedResponse(correlationId, asset, published.reason);
     }
     return unavailable(correlationId, published, "publisher.transform");
   }

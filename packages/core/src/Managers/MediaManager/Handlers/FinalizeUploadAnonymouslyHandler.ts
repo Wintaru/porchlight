@@ -239,11 +239,16 @@ export class FinalizeUploadAnonymouslyHandler implements IHandler<
     if (verdict.scanStatus === "locked") {
       return new MediaRefusedResponse(correlationId);
     }
-    const asset = await publishIfClear(this.publisher, stored.asset, downloaded.bytes, {
-      correlationId,
-      timestamp: request.timestamp,
-    });
-    return new MediaFinalizedResponse(correlationId, asset);
+    const { asset, unpublishable } = await publishIfClear(
+      this.publisher,
+      stored.asset,
+      downloaded.bytes,
+      {
+        correlationId,
+        timestamp: request.timestamp,
+      },
+    );
+    return new MediaFinalizedResponse(correlationId, asset, unpublishable);
   }
 
   private async scan(

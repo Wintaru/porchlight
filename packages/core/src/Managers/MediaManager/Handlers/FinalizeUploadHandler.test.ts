@@ -364,6 +364,25 @@ describe("FinalizeUploadHandler", () => {
     expect(metadata.exif).toBeUndefined();
   });
 
+  test("an image that will not decode finalizes with no copy and says why (#60)", async () => {
+    const { seed, finalize } = harness();
+    const id = "99999999-9999-4999-8999-999999999999";
+    // A PNG signature and nothing after it: the right type, but no picture to encode.
+    seed(
+      id,
+      "porch.png",
+      new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+
+    const result = await finalize(id, "porch.png");
+
+    expect(result).toBeInstanceOf(MediaFinalizedResponse);
+    expect(result).toMatchObject({
+      asset: { scanStatus: "clear", publishedPath: null },
+      unpublishable: "undecodable",
+    });
+  });
+
   test("a flagged image gets no public copy until a moderator approves it", async () => {
     const { assetState, storageState, seed, finalize } = harness("clear", "flagged");
     const id = "99999999-9999-4999-8999-999999999999";

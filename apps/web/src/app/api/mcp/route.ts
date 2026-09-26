@@ -248,14 +248,16 @@ function registerTools(
       if (!(response instanceof MediaFinalizedResponse)) {
         return mediaRefusalFor(response, "finalize_upload");
       }
-      const upload = uploadStatusOf(response.asset);
+      const upload = uploadStatusOf(response.asset, response.unpublishable);
       return ok(
         { upload },
         upload.status === "held for review"
           ? "Held for review: a moderator looks at it first. Do not put it in a draft yet."
-          : upload.markdown === null
-            ? "Uploaded, but its public copy could not be made. Ask your member to press Try again beside it in the editor."
-            : `Ready. Put this in the draft: ${upload.markdown}`,
+          : upload.status === "unreadable image"
+            ? "Uploaded, but the image could not be read. Upload a different file."
+            : upload.markdown === null
+              ? "Uploaded, but its public copy could not be made. Ask your member to press Try again beside it in the editor."
+              : `Ready. Put this in the draft: ${upload.markdown}`,
       );
     },
   );

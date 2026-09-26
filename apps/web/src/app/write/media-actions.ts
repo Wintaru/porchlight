@@ -90,7 +90,7 @@ export async function finalizeUpload(
   if (!(finalized instanceof MediaFinalizedResponse)) {
     return { ok: false, error: errorTextFor(finalized) };
   }
-  return { ok: true, upload: uploadViewOf(finalized.asset) };
+  return { ok: true, upload: uploadViewOf(finalized.asset, finalized.unpublishable) };
 }
 
 // The member's newest uploads, so a file put up before a reload can still go into the
@@ -107,7 +107,7 @@ export async function listUploads(): Promise<readonly UploadView[]> {
     console.error(`upload list failed [${response.correlationId}]`, response);
     return [];
   }
-  return response.assets.map(uploadViewOf);
+  return response.assets.map((asset) => uploadViewOf(asset));
 }
 
 // One upload the member may see, for a cover older than the list (#52).
@@ -144,7 +144,7 @@ export async function republishUpload(mediaId: string): Promise<FinalizeUploadRe
   if (!(response instanceof MediaRepublishedResponse)) {
     return { ok: false, error: errorTextFor(response) };
   }
-  return { ok: true, upload: uploadViewOf(response.asset) };
+  return { ok: true, upload: uploadViewOf(response.asset, response.unpublishable) };
 }
 
 export async function deleteUpload(mediaId: string): Promise<DeleteUploadResult> {

@@ -1,5 +1,6 @@
 import {
   type MediaAsset,
+  type MediaFinalizedResponse,
   MediaForbiddenResponse,
   MediaQuotaExceededResponse,
   MediaRefusedResponse,
@@ -17,22 +18,28 @@ import { refuse } from "./tool-result";
 export interface UploadStatusView {
   readonly mediaId: string;
   readonly filename: string;
-  readonly status: "ready" | "held for review" | "not published";
+  readonly status: "ready" | "held for review" | "unreadable image" | "not published";
   // The public copy's address, to put in a draft's markdown. Null until it exists.
   readonly url: string | null;
   readonly markdown: string | null;
 }
 
 // Where an upload stands, in the agent's terms. Never the quarantine original's
-// address: only the published copy is for a post.
-export function uploadStatusOf(asset: MediaAsset): UploadStatusView {
-  const view = uploadViewOf(asset);
+// address: only the published copy is for a post. `unpublishable` comes from a
+// finalize, the one call that knows an image will not decode (#60).
+export function uploadStatusOf(
+  asset: MediaAsset,
+  unpublishable: MediaFinalizedResponse["unpublishable"] = null,
+): UploadStatusView {
+  const view = uploadViewOf(asset, unpublishable);
   const status =
     view.publicUrl !== null
       ? "ready"
       : view.awaitingReview
         ? "held for review"
-        : "not published";
+        : view.unreadable
+          ? "unreadable image"
+          : "not published";
   return {
     mediaId: view.mediaId,
     filename: view.originalFilename,

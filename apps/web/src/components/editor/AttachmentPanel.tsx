@@ -156,7 +156,9 @@ function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowPro
       ? " · mature: it can be the cover, where it is blurred"
       : upload.retryable
         ? " · not ready to show yet"
-        : "";
+        : upload.unreadable
+          ? " · this image could not be read, so upload a different file"
+          : "";
   return (
     <div className={styles.attachmentRow}>
       <span className={styles.attachmentName}>
