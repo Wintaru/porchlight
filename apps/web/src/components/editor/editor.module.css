@@ -47,7 +47,9 @@
   box-sizing: border-box;
 }
 
-.notices p {
+/* Direct children only: a toast in the notices renders its own <p>, which must not get
+   this box. */
+.notices > p {
   margin: 0 0 8px;
   padding: 10px 14px;
   border: 1px solid var(--line);
@@ -56,7 +58,7 @@
   font-size: 14px;
 }
 
-.notices p[role="alert"] {
+.notices > p[role="alert"] {
   border-color: var(--danger);
   color: var(--danger);
 }
