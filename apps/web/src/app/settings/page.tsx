@@ -2,6 +2,7 @@ import { agentsOpenTo, VOICE_GUIDE_MAX_LENGTH } from "@porchlight/core";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { Toast } from "@/components/toast/Toast";
 import { getAgentsPolicy } from "@/lib/agents-policy";
 import { getCurrentActor } from "@/lib/current-actor";
 import { signInPathFor } from "@/lib/sign-in-path";
@@ -85,9 +86,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <section id="profile" className={styles.card} aria-labelledby="profile-heading">
           <h2 id="profile-heading">Profile</h2>
           {saved !== undefined && (
-            <p role="status" className="form-status" data-testid="form-status">
-              Saved.
-            </p>
+            <Toast message="Saved." param="saved" testId="form-status" />
           )}
           {errorText !== undefined && (
             <p role="alert" className="form-alert" data-testid="form-error">

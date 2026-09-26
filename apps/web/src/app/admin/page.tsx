@@ -19,6 +19,7 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { StaffShell } from "@/components/staff/StaffShell";
+import { Toast } from "@/components/toast/Toast";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { applyPreset, saveSiteConfig } from "./actions";
 import styles from "./admin.module.css";
@@ -81,11 +82,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <StaffShell current="admin" isAdmin>
       <h1 className={styles.title}>Site settings</h1>
-      {done === "saved" && (
-        <p role="status" className="form-status" data-testid="form-status">
-          Saved.
-        </p>
-      )}
+      {done === "saved" && <Toast message="Saved." param="done" testId="form-status" />}
       {errorText !== undefined && (
         <p role="alert" className="form-alert" data-testid="form-error">
           {errorText}

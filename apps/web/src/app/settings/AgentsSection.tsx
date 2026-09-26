@@ -9,6 +9,7 @@ import {
   isAgentTokenLive,
 } from "@porchlight/core";
 
+import { Toast } from "@/components/toast/Toast";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { revokeAgentToken } from "./agent-actions";
 import { MintTokenForm } from "./MintTokenForm";
@@ -53,9 +54,7 @@ export async function AgentsSection({
         for you in the editor unless you also grant publishing.
       </p>
       {revoked && (
-        <p role="status" className="form-status" data-testid="agent-status">
-          Token revoked.
-        </p>
+        <Toast message="Token revoked." param="agentRevoked" testId="agent-status" />
       )}
       {errorText !== undefined && (
         <p role="alert" className="form-alert" data-testid="agent-error">

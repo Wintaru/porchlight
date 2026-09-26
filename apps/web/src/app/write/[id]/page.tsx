@@ -12,6 +12,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { type EditorPost, PostEditor } from "@/components/editor/PostEditor";
 import styles from "@/components/editor/editor.module.css";
+import { Toast } from "@/components/toast/Toast";
 import { classNames } from "@/lib/class-names";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
@@ -81,9 +82,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
         </p>
       )}
       {savedText !== undefined && (
-        <p role="status" data-testid="form-status">
-          {savedText}
-        </p>
+        <Toast message={savedText} param="saved" testId="form-status" />
       )}
       {errorText !== undefined && (
         <p role="alert" data-testid="form-error">

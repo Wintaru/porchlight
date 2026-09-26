@@ -4,6 +4,7 @@ import {
   commentErrorTextFor,
   commentNoticeTextFor,
 } from "@/app/[handle]/[slug]/comment-messages";
+import { Toast } from "@/components/toast/Toast";
 import type { CommentFormState } from "@/lib/can-comment";
 import type { CommentPageNode } from "@/read-model/comments";
 import type { ItemReactions } from "@/read-model/reactions";
@@ -49,9 +50,7 @@ export function CommentSection({
         {count === 1 ? "1 comment" : `${String(count)} comments`}
       </h2>
       {notice !== undefined && (
-        <p role="status" className={styles.notice} data-testid="comment-notice">
-          {notice}
-        </p>
+        <Toast message={notice} param="comment" testId="comment-notice" />
       )}
       {error !== undefined && (
         <p role="alert" className={styles.error} data-testid="comment-error">

@@ -17,6 +17,7 @@ import {
 import queueStyles from "@/app/mod/queue/queue.module.css";
 import { queueErrorTextFor, type StaffOutcome } from "@/app/mod/queue/queue-messages";
 import { StaffShell } from "@/components/staff/StaffShell";
+import { Toast } from "@/components/toast/Toast";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { formatDate } from "@/lib/format-date";
@@ -66,9 +67,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <h1>Reports</h1>
       </div>
       {doneText !== undefined && (
-        <p role="status" className="form-status" data-testid="reports-status">
-          {doneText}
-        </p>
+        <Toast message={doneText} param="done" testId="reports-status" />
       )}
       {error !== undefined && (
         <p role="alert" className="form-alert" data-testid="reports-error">

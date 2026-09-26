@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 
 import { PostEditor } from "@/components/editor/PostEditor";
 import styles from "@/components/editor/editor.module.css";
+import { Toast } from "@/components/toast/Toast";
 import { canPost } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
@@ -53,9 +54,7 @@ export default async function WritePage({ searchParams }: WritePageProps) {
   const notices = (
     <>
       {deleted !== undefined && (
-        <p role="status" data-testid="form-status">
-          Deleted.
-        </p>
+        <Toast message="Deleted." param="deleted" testId="form-status" />
       )}
       {errorText !== undefined && (
         <p role="alert" data-testid="form-error">

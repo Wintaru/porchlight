@@ -1,5 +1,6 @@
 import { VOICE_GUIDE_MAX_LENGTH, type VoiceGuide } from "@porchlight/core";
 
+import { Toast } from "@/components/toast/Toast";
 import { formatDate } from "@/lib/format-date";
 import { saveVoiceGuide } from "./agent-actions";
 import styles from "./settings.module.css";
@@ -28,9 +29,7 @@ export function VoiceGuideForm({ guide, saved }: VoiceGuideFormProps) {
         who writes for you: sentence length, words you never use, how you open and close.
       </p>
       {saved && (
-        <p role="status" className="form-status" data-testid="voice-status">
-          Voice guide saved.
-        </p>
+        <Toast message="Voice guide saved." param="voiceSaved" testId="voice-status" />
       )}
       <form action={saveVoiceGuide} className={styles.voiceForm}>
         <label className="field">

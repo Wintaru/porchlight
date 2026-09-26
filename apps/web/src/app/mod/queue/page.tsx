@@ -19,6 +19,7 @@ import { notFound, redirect } from "next/navigation";
 import { RevealImage } from "@/components/RevealImage";
 import { DutyCard } from "@/components/staff/DutyCard";
 import { StaffShell } from "@/components/staff/StaffShell";
+import { Toast } from "@/components/toast/Toast";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { formatDate } from "@/lib/format-date";
@@ -111,9 +112,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
         </nav>
       </div>
       {doneText !== undefined && (
-        <p role="status" className="form-status" data-testid="queue-status">
-          {doneText}
-        </p>
+        <Toast message={doneText} param="done" testId="queue-status" />
       )}
       {error !== undefined && (
         <p role="alert" className="form-alert" data-testid="queue-error">
