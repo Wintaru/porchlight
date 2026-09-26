@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { deletePostsByTitle } from "./auth-admin";
 import { devSignIn, MIRA, THEO } from "./helpers";
 
 // The issue #8 acceptance test: a visitor posts anonymously, sees it pending on the
@@ -149,14 +150,16 @@ test("a moderator blocks an anonymous writer from the queue", async ({
   await someoneElse.getByRole("button", { name: "Post anonymously" }).click();
   await expect(someoneElse).toHaveURL(/\/anon$/);
 
-  // Clear both from the queue, so the seed is the same for the next run.
+  // Clear both from the queue, then delete them so the seed is the same for the next
+  // run: a removed post and its staff bells stay in the tables otherwise (#70).
   await mira.goto("/mod/queue?filter=anonymous");
   for (const text of [title, `Someone else ${stamp}`]) {
-    await mira
-      .getByTestId("queue-item")
-      .filter({ hasText: text })
-      .getByTestId("queue-remove")
-      .click();
+    const queued = mira.getByTestId("queue-item").filter({ hasText: text });
+    await queued.getByTestId("queue-remove").click();
     await expect(mira.getByTestId("queue-status")).toHaveText("Removed.");
+    // The first removal's toast is still up for the second, so wait for the item
+    // itself to leave: deleting it mid-action fails the action.
+    await expect(queued).toHaveCount(0);
   }
+  await deletePostsByTitle([title, `Someone else ${stamp}`]);
 });

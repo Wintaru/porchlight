@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 
-// Supabase Auth's admin API on the local stack, for the one cleanup a page cannot do:
-// removing an auth user that a test made. The local stack's fixed keys come from
-// .env.example at the repo root, the same source packages/db/test uses.
+// The service-role key on the local stack, for the cleanups a page cannot do: removing
+// an auth user that a test made, and deleting an anonymous post no visitor can delete.
+// The local stack's fixed keys come from .env.example at the repo root, the same source
+// packages/db/test uses.
 const ENV_EXAMPLE = new URL("../../../.env.example", import.meta.url);
 
 function localValue(name: string): string {
@@ -42,5 +43,34 @@ export async function deleteAuthUser(email: string): Promise<void> {
     throw new Error(
       `could not delete the auth user for ${email}: ${String(deleted.status)}`,
     );
+  }
+}
+
+// Deletes the posts with these titles. The delete cascades to their notifications, so
+// a test that sends an anonymous post to the queue leaves no `queue.pending` bell
+// behind (#70). A removed post stays in the table, which is why a queue decision alone
+// is not enough.
+export async function deletePostsByTitle(titles: readonly string[]): Promise<void> {
+  const url = localValue("NEXT_PUBLIC_SUPABASE_URL");
+  const key = localValue("SUPABASE_SERVICE_ROLE_KEY");
+  const quoted = titles.map((title) => `"${title}"`).join(",");
+  const deleted = await fetch(
+    `${url}/rest/v1/posts?title=in.(${encodeURIComponent(quoted)})`,
+    {
+      method: "DELETE",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Prefer: "return=representation",
+      },
+    },
+  );
+  if (!deleted.ok) {
+    throw new Error(`could not delete posts ${quoted}: ${String(deleted.status)}`);
+  }
+  // A filter that matches nothing still answers 204, so count what went.
+  const rows = (await deleted.json()) as readonly unknown[];
+  if (rows.length !== titles.length) {
+    throw new Error(`deleted ${String(rows.length)} of ${String(titles.length)} posts`);
   }
 }

@@ -402,10 +402,15 @@ describe("a signed-in member", () => {
       sql,
       "authenticated",
       (tx) =>
-        tx<{ recipient_id: string }[]>`select recipient_id from public.notifications`,
+        tx<
+          { recipient_id: string; post_id: string | null }[]
+        >`select recipient_id, post_id from public.notifications`,
       SEED.admin,
     );
-    expect(admin.map((row) => row.recipient_id)).toEqual([SEED.admin]);
+    // Every row is the admin's own and the seeded one is among them. Not a count: an
+    // e2e run on the same database can leave the admin a bell of its own (#70).
+    expect(admin.map((row) => row.post_id)).toContain(SEED.anonymousPendingPost);
+    expect(admin.every((row) => row.recipient_id === SEED.admin)).toBe(true);
 
     const theo = await asRole(
       sql,
