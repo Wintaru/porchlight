@@ -14,3 +14,5 @@ design/
 *.md
 # Supabase Auth email templates are Go templates; rewrapping breaks the links.
 supabase/templates/
+# Written by `supabase link`; not source.
+supabase/.temp/
