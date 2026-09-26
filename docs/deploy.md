@@ -35,6 +35,12 @@ Guide: [`setup/supabase.md`](setup/supabase.md).
    database that `cron.database_name` names (`postgres` by default), so run the schema
    there.
 
+5. Let GitHub apply later migrations. The `Deploy database` workflow
+   (`.github/workflows/deploy-db.yml`) runs `supabase db push` after each green CI run
+   on `main`. It needs a GitHub environment and three secrets. Follow
+   [`setup/supabase.md`](setup/supabase.md), Deploy migrations from GitHub. If you skip
+   this step, run `supabase db push` yourself after every push that adds a migration.
+
 ## 2. Sign-in: Google and email links
 
 Guides: [`setup/google-oauth.md`](setup/google-oauth.md),

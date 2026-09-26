@@ -119,3 +119,38 @@ For a hosted project, create one at https://supabase.com/dashboard, open Project
 Settings, API, and paste the URL and the two keys into the deployment's environment.
 Apply the migrations with `supabase db push` after `supabase link`. See
 https://supabase.com/docs/guides/deployment/database-migrations.
+
+## Deploy migrations from GitHub
+
+The `Deploy database` workflow (`.github/workflows/deploy-db.yml`) applies new
+migrations to the hosted project after CI passes on `main`. It applies only the
+migrations the project does not have yet. It never loads the seed.
+
+The app and the database deploy separately. Vercel deploys the app when you push, and
+it does not wait for CI. For a short time, new code can run on the old schema. If CI
+fails, the migration does not apply until a later CI run passes, but the app is already
+live. Write each migration so that the code already in production still works with it.
+
+To turn the workflow on:
+
+1. Make a personal access token at https://supabase.com/dashboard/account/tokens. The
+   token can change every project on your Supabase account, not only this one. If the
+   account holds other projects, think about a separate account for Porchlight.
+2. In the GitHub repository, open Settings, Environments. Make an environment named
+   `production`.
+3. Under Deployment branches and tags, select Selected branches and tags. Add `main`.
+   A workflow edited on another branch then cannot read the secrets.
+4. Add three environment secrets:
+
+   | Secret                  | Value                                               |
+   | ----------------------- | --------------------------------------------------- |
+   | `SUPABASE_ACCESS_TOKEN` | the token from step 1                               |
+   | `SUPABASE_DB_PASSWORD`  | the database password you set when you made the project |
+   | `SUPABASE_PROJECT_REF`  | the project ref only, not a URL: the 20-character id in `https://<ref>.supabase.co` |
+
+5. Push to `main`, or open Actions, CI, and re-run the last run on `main`. When CI
+   passes, Deploy database starts. Read its `supabase db push` step. With no new
+   migrations, it says the remote database is up to date.
+
+Until the secrets exist, the workflow fails at `supabase link`. The app deploy does not
+change.

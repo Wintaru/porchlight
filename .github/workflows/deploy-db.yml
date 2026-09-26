@@ -1,0 +1,58 @@
+# Applies supabase/migrations/ to the production database after CI passes on main.
+# Vercel deploys the app on its own; this is the database half. `supabase db push`
+# applies only migrations the remote history table does not have, so a run with no new
+# migration changes nothing. It never loads supabase/seed.sql.
+name: Deploy database
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Never cancel a running push: stopping one halfway leaves the remote history
+# mid-sequence. A newer pending run replaces an older pending one, which is safe on a
+# linear main because the newer commit carries every older migration.
+concurrency:
+  group: deploy-db
+  cancel-in-progress: false
+
+jobs:
+  push-migrations:
+    # Only a green CI run from a push to main. A pull request from a branch named main
+    # also reports head_branch main, so the event check is load-bearing.
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The secrets live on this environment, which only main may deploy to, so a
+    # workflow edited on another branch cannot read them.
+    environment: production
+    steps:
+      # The commit CI tested, not whatever main points at now. No git work follows, so
+      # the token is not left in .git/config.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      # Same CLI version as ci.yml, so production gets what CI tested. The action is
+      # pinned to a commit (v1.7.3) because this job holds production secrets.
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 2.117.0
+
+      # The secrets go to these two steps only, not to the third-party actions above.
+      - run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      # --yes: the runner has no terminal to answer the confirm prompt.
+      - run: supabase db push --yes
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
