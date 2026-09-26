@@ -122,16 +122,11 @@ https://supabase.com/docs/guides/deployment/database-migrations.
 
 ## Deploy migrations from GitHub
 
-The `Deploy database` workflow (`.github/workflows/deploy-db.yml`) applies new
-migrations to the hosted project after CI passes on `main`. It applies only the
-migrations the project does not have yet. It never loads the seed.
+The `push-migrations` job in `.github/workflows/ci.yml` applies new migrations to the
+hosted project. It runs on each push to `main`, after the `verify` job passes. It applies
+only the migrations the project does not have yet. It never loads the seed.
 
-The app and the database deploy separately. Vercel deploys the app when you push, and
-it does not wait for CI. For a short time, new code can run on the old schema. If CI
-fails, the migration does not apply until a later CI run passes, but the app is already
-live. Write each migration so that the code already in production still works with it.
-
-To turn the workflow on:
+To turn the job on:
 
 1. Make a personal access token at https://supabase.com/dashboard/account/tokens. The
    token can change every project on your Supabase account, not only this one. If the
@@ -148,9 +143,34 @@ To turn the workflow on:
    | `SUPABASE_DB_PASSWORD`  | the database password you set when you made the project |
    | `SUPABASE_PROJECT_REF`  | the project ref only, not a URL: the 20-character id in `https://<ref>.supabase.co` |
 
-5. Push to `main`, or open Actions, CI, and re-run the last run on `main`. When CI
-   passes, Deploy database starts. Read its `supabase db push` step. With no new
+5. Push to `main`, or open Actions, CI, and re-run the last run on `main`. When `verify`
+   passes, `push-migrations` starts. Read its `supabase db push` step. With no new
    migrations, it says the remote database is up to date.
 
-Until the secrets exist, the workflow fails at `supabase link`. The app deploy does not
+Until the secrets exist, the job fails at `supabase link`. The app deploy does not
 change.
+
+### Release the app after the migrations
+
+The app and the database deploy separately. Many hosts deploy the app when you push and
+do not wait for CI. Then new code can run on the old schema for a short time. If CI
+fails, the migration does not apply until a later CI run passes, but the app is already
+live.
+
+On Vercel, make the release wait for both jobs:
+
+1. Open the project's Settings, Environments, Production. Make sure automatic aliasing
+   for production is on.
+2. Open Settings, Build and Deployment, Deployment Checks. Select Add Checks, then
+   GitHub.
+3. Add the checks `verify` and `push-migrations`.
+
+Vercel still builds each push at once. It gives the build the production domain only
+when both checks pass on that commit, so the schema is in place first. A build whose CI
+fails or stops never goes live. The next push that passes releases its code too. To
+release a held build by hand, use Force Promote on its deployment page. The check names
+are the job names, so if you rename a job, change the check too.
+
+Force Promote and a rollback to an older build still put code next to a schema it was
+not tested with. So write each migration so that the code already in production still
+works with it, even with the checks on.

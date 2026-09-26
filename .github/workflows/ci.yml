@@ -1,6 +1,7 @@
 # Issue #19: the whole verify gate on every push and pull request, against a real local
 # Supabase stack in the runner. The packages/db tests are the RLS suite, so a broken
 # policy fails this run. Playwright runs with zero retries (apps/web/playwright.config.ts).
+# On a push to main, push-migrations then applies new migrations to production.
 name: CI
 
 on:
@@ -11,11 +12,17 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels the older run. On main, never cancel: a run may
+# be in the middle of push-migrations, and stopping it leaves the remote migration
+# history mid-sequence. A newer pending run still replaces an older pending one, which
+# is safe because the newer commit carries every older migration.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # A Vercel Deployment Check requires this job by name (docs/setup/supabase.md). Rename it
+  # there too, or production deploys wait forever.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -70,3 +77,43 @@ jobs:
             apps/web/test-results/
           retention-days: 14
           if-no-files-found: ignore
+
+  # Applies supabase/migrations/ to the production database. It is a job here, not a
+  # separate workflow, so its check lands on the commit CI tested: a Vercel Deployment
+  # Check waits for it before that commit goes live. `supabase db push` applies only the
+  # migrations the remote history table does not have, so a run with no new migration
+  # changes nothing. It never loads supabase/seed.sql.
+  # A Vercel Deployment Check requires this job by name (docs/setup/supabase.md). Rename it
+  # there too, or production deploys wait forever.
+  push-migrations:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The secrets live on this environment, which only main may deploy to, so a
+    # workflow edited on another branch cannot read them.
+    environment: production
+    steps:
+      # No git work follows, so the token is not left in .git/config.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # Same CLI version as the verify job, so production gets what CI tested. The action
+      # is pinned to a commit (v1.7.3) because this job holds production secrets.
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 2.117.0
+
+      # The secrets go to these two steps only, not to the third-party actions above.
+      - run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      # --yes: the runner has no terminal to answer the confirm prompt.
+      - run: supabase db push --yes
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
