@@ -17,11 +17,19 @@ export class SupabaseLoadPostsByAuthorHandler implements IHandler<
   async handle(
     request: LoadPostsByAuthorRequest,
   ): Promise<PostsLoadedResponse | PostAccessFailedResponse> {
-    const { data, error } = await this.db
+    const { status, limit } = request.filter;
+    let query = this.db
       .from("posts")
       .select(POST_COLUMNS)
-      .eq("author_id", request.profileId)
-      .order("created_at", { ascending: false });
+      .eq("author_id", request.profileId);
+    if (status !== null) {
+      query = query.eq("status", status);
+    }
+    // `id` breaks ties, so a capped list is the same list on every call.
+    const ordered = query
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: true });
+    const { data, error } = await (limit === null ? ordered : ordered.limit(limit));
     if (error) {
       return new PostAccessFailedResponse(request.correlationId, error.message);
     }

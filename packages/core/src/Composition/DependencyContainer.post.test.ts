@@ -414,6 +414,32 @@ describe("DependencyContainer: PostManager", () => {
     expect(asAdmin).toBeInstanceOf(PostsResponse);
   });
 
+  test("ListPostsForAuthor narrows to one status and caps the count (#44)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const published = await draft(container, THEO, { title: "Out" });
+    await container.postManager.execute(new PublishPostRequest(THEO, published.id));
+    for (const title of ["Draft one", "Draft two"]) {
+      await draft(container, THEO, { title });
+    }
+
+    const drafts = await container.postManager.query(
+      new ListPostsForAuthorRequest(THEO, THEO.profile.id, {
+        status: "draft",
+        limit: null,
+      }),
+    );
+    const one = await container.postManager.query(
+      new ListPostsForAuthorRequest(THEO, THEO.profile.id, { status: null, limit: 1 }),
+    );
+
+    expect(drafts).toBeInstanceOf(PostsResponse);
+    expect((drafts as PostsResponse).posts.map((post) => post.title).sort()).toEqual([
+      "Draft one",
+      "Draft two",
+    ]);
+    expect((one as PostsResponse).posts).toHaveLength(1);
+  });
+
   test("PreviewPost renders the same sanitized HTML a save would cache, for anyone", async () => {
     const container = new DependencyContainer(FAKE_ENV);
 

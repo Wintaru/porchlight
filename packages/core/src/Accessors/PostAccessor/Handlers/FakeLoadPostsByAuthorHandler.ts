@@ -18,12 +18,19 @@ export class FakeLoadPostsByAuthorHandler implements IHandler<
         new PostAccessFailedResponse(request.correlationId, "POST_FAKE_RESULT=fail"),
       );
     }
+    const { status, limit } = request.filter;
     const posts = [...this.state.posts.values()]
       .filter(
         (post) =>
-          post.author.kind === "member" && post.author.profileId === request.profileId,
+          post.author.kind === "member" &&
+          post.author.profileId === request.profileId &&
+          (status === null || post.status === status),
       )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort(
+        (a, b) =>
+          b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id),
+      )
+      .slice(0, limit ?? undefined);
     return Promise.resolve(new PostsLoadedResponse(request.correlationId, posts));
   }
 }

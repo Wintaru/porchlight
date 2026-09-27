@@ -21,6 +21,7 @@ import { LoadMediaAssetsByOwnerRequest } from "../../../Accessors/MediaAssetAcce
 import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { LoadPostRevisionsByAuthorRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostRevisionsByAuthorRequest";
+import { ALL_POSTS } from "../../../Common/PostListFilter";
 import { LoadPostsByAuthorRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
 import { PostRevisionsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostRevisionsLoadedResponse";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
@@ -79,7 +80,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     }
 
     const loadedPosts = await this.posts.load(
-      new LoadPostsByAuthorRequest(profileId, context),
+      new LoadPostsByAuthorRequest(profileId, ALL_POSTS, context),
     );
     if (!(loadedPosts instanceof PostsLoadedResponse)) {
       return unavailable(correlationId, loadedPosts, "posts.load");

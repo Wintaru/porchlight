@@ -22,7 +22,7 @@ export class ListPostsForAuthorHandler implements IHandler<
   ) {}
 
   async handle(request: ListPostsForAuthorRequest): Promise<ListPostsResult> {
-    const { correlationId, actor, profileId } = request;
+    const { correlationId, actor, profileId, filter } = request;
     const context = { correlationId };
 
     const refused = await permit(
@@ -36,7 +36,7 @@ export class ListPostsForAuthorHandler implements IHandler<
       return refused;
     }
     const loaded = await this.posts.load(
-      new LoadPostsByAuthorRequest(profileId, context),
+      new LoadPostsByAuthorRequest(profileId, filter, context),
     );
     if (loaded instanceof PostsLoadedResponse) {
       return new PostsResponse(correlationId, loaded.posts);

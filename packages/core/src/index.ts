@@ -191,6 +191,7 @@ export { CreateDraftRequest } from "./Managers/PostManager/Requests/CreateDraftR
 export { DeletePostRequest } from "./Managers/PostManager/Requests/DeletePostRequest";
 export { GetPostRequest } from "./Managers/PostManager/Requests/GetPostRequest";
 export { ListPostRevisionsRequest } from "./Managers/PostManager/Requests/ListPostRevisionsRequest";
+export { ALL_POSTS, type PostListFilter } from "./Common/PostListFilter";
 export { ListPostsForAuthorRequest } from "./Managers/PostManager/Requests/ListPostsForAuthorRequest";
 export { PreviewPostRequest } from "./Managers/PostManager/Requests/PreviewPostRequest";
 export { PublishPostRequest } from "./Managers/PostManager/Requests/PublishPostRequest";
