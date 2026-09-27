@@ -1,6 +1,7 @@
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import {
   AccountUnavailableResponse,
+  AGENT_TOKEN_PREFIX,
   type AgentActor,
   AgentActorResponse,
   AgentLimitsResponse,
@@ -27,6 +28,7 @@ import {
   type RequestOrigin,
   RequestUploadUrlRequest,
   ResolveAgentTokenRequest,
+  ResolveOAuthAgentRequest,
   UpdateDraftRequest,
   UpdateVoiceGuideRequest,
   UploadUrlIssuedResponse,
@@ -37,7 +39,9 @@ import * as z from "zod/v4";
 
 import { getAgentsPolicy } from "@/lib/agents-policy";
 import { readSupabasePublicEnv } from "@/auth/supabase-env";
+import { verifyOAuthAccessToken } from "@/auth/oauth-access-token";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
 import { MCP_INSTRUCTIONS } from "./instructions";
@@ -488,25 +492,21 @@ function registerTools(
 
 // The door itself. Auth is checked here, before the MCP layer sees the request, so an
 // unknown token never reaches a tool. 401 with a WWW-Authenticate header is what an MCP
-// client expects for a bad or missing bearer token; 403 is the site saying agents are
-// off (SPEC.md §17).
+// client expects for a bad or missing bearer token, and its `resource_metadata` is how
+// an OAuth client (a claude.ai connector, D25) finds Supabase Auth; 403 is the site
+// saying agents are off (SPEC.md §17).
 async function authorize(
   request: Request,
 ): Promise<{ actor: AgentActor } | { response: Response }> {
   const match = BEARER.exec(request.headers.get("authorization") ?? "");
   if (match === null) {
-    return { response: unauthorized("A Bearer token is required.") };
+    return { response: unauthorized("A Bearer token is required.", false) };
   }
-  const resolved = await getDependencyContainer().accountManager.execute(
-    new ResolveAgentTokenRequest(match[1] ?? ""),
-  );
-  if (resolved instanceof AccountUnavailableResponse) {
-    // The store is down, not the token. "Invalid" here makes a member revoke and
-    // re-mint a perfectly good token.
-    console.error(
-      `mcp token resolve unavailable [${resolved.correlationId}]`,
-      resolved.reason,
-    );
+  const resolved = await resolveBearer(match[1] ?? "");
+  if (resolved.kind === "unavailable") {
+    // The store or the signing keys are down, not the token. "Invalid" here makes a
+    // member revoke and re-mint a perfectly good token.
+    console.error(`mcp token resolve unavailable [${resolved.logId}]`, resolved.reason);
     return {
       response: Response.json(
         { error: "Porchlight cannot check tokens right now. Try again shortly." },
@@ -514,8 +514,8 @@ async function authorize(
       ),
     };
   }
-  if (!(resolved instanceof AgentActorResponse)) {
-    return { response: unauthorized("That token is not valid.") };
+  if (resolved.kind === "refused") {
+    return { response: unauthorized("That token is not valid.", true) };
   }
   const policy = await getAgentsPolicy();
   if (!agentsOpenTo(resolved.actor.profile, policy)) {
@@ -529,10 +529,57 @@ async function authorize(
   return { actor: resolved.actor };
 }
 
-function unauthorized(message: string): Response {
+type BearerVerdict =
+  | { readonly kind: "agent"; readonly actor: AgentActor }
+  | { readonly kind: "refused" }
+  | { readonly kind: "unavailable"; readonly logId: string; readonly reason: string };
+
+// Two kinds of bearer, one actor (D25). A `plt_` token is a personal token, resolved by
+// its hash. Anything else must be an OAuth access token from Supabase Auth: verified
+// here, then resolved by the member's grant for that client, which is where the scopes
+// come from. Nothing else is tried, so a token is never read two ways.
+async function resolveBearer(raw: string): Promise<BearerVerdict> {
+  const { accountManager } = getDependencyContainer();
+  if (raw.startsWith(AGENT_TOKEN_PREFIX)) {
+    return verdictOf(await accountManager.execute(new ResolveAgentTokenRequest(raw)));
+  }
+  const verified = await verifyOAuthAccessToken(raw);
+  if (verified.kind === "unavailable") {
+    return {
+      kind: "unavailable",
+      logId: globalThis.crypto.randomUUID(),
+      reason: verified.reason,
+    };
+  }
+  if (verified.kind === "invalid") {
+    return { kind: "refused" };
+  }
+  const { profileId, clientId, issuedAt } = verified.identity;
+  return verdictOf(
+    await accountManager.execute(
+      new ResolveOAuthAgentRequest(profileId, clientId, issuedAt),
+    ),
+  );
+}
+
+function verdictOf(resolved: unknown): BearerVerdict {
+  if (resolved instanceof AgentActorResponse) {
+    return { kind: "agent", actor: resolved.actor };
+  }
+  if (resolved instanceof AccountUnavailableResponse) {
+    return {
+      kind: "unavailable",
+      logId: resolved.correlationId,
+      reason: resolved.reason,
+    };
+  }
+  return { kind: "refused" };
+}
+
+function unauthorized(message: string, tokenRefused: boolean): Response {
   return Response.json(
     { error: message },
-    { status: 401, headers: { "WWW-Authenticate": 'Bearer realm="porchlight"' } },
+    { status: 401, headers: { "WWW-Authenticate": bearerChallenge(tokenRefused) } },
   );
 }
 

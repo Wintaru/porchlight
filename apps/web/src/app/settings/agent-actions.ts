@@ -19,7 +19,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
-import { MCP_PATH } from "./agent-mcp";
+import { MCP_PATH } from "@/lib/mcp-resource";
 import { parseAgentTokenForm } from "./parse-agent-token-form";
 
 // The Agents section's Server Functions (SPEC.md §17). Minting answers through
