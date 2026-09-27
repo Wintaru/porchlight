@@ -1157,11 +1157,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      following_post_ids: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          published_at: string
+        }[]
+      }
       null_expired_raw_ips: { Args: never; Returns: number }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
         Returns: unknown
       }
+      published_author_count: { Args: never; Returns: number }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined

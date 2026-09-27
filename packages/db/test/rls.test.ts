@@ -248,6 +248,43 @@ describe("search_site", () => {
   });
 });
 
+// Issue #24: the Following feed runs as the caller and keeps to public published posts
+// by a followed author or under a followed tag. A visitor cannot call it.
+describe("following_post_ids", () => {
+  test("lists a followed author's public posts and nothing a visitor may call", async () => {
+    await sql`
+      insert into public.follows (follower_id, author_id)
+      values (${SEED.probationMember}, ${SEED.trustedMember})
+    `;
+    try {
+      const rows = await asRole(
+        sql,
+        "authenticated",
+        (tx) => tx<{ id: string }[]>`select id from public.following_post_ids(50)`,
+        SEED.probationMember,
+      );
+      const ids = rows.map((row) => row.id);
+      expect(ids).toContain(SEED.publicPost);
+      for (const hidden of [SEED.unlistedPost, SEED.draftPost]) {
+        expect(ids).not.toContain(hidden);
+      }
+      const nobody = await asRole(
+        sql,
+        "authenticated",
+        (tx) => tx<{ id: string }[]>`select id from public.following_post_ids(50)`,
+        SEED.moderator,
+      );
+      expect(nobody).toEqual([]);
+      const anonCode = await errorCodeOf(() =>
+        asRole(sql, "anon", (tx) => tx`select id from public.following_post_ids(50)`),
+      );
+      expect(anonCode).toBe(INSUFFICIENT_PRIVILEGE);
+    } finally {
+      await sql`delete from public.follows where follower_id = ${SEED.probationMember}`;
+    }
+  });
+});
+
 // Issue #24: follows are private to the follower, like mutes and blocks. Nobody reads
 // who follows them (no follower counts, D9), a visitor reads nothing, and every write
 // goes through the AccountManager.
