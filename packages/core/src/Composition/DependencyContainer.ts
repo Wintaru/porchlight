@@ -16,6 +16,8 @@ import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/Ensure
 import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
 import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
+import { CheckNewAccountHandler } from "../Managers/AccountManager/Handlers/CheckNewAccountHandler";
+import { CheckNewAccountRequest } from "../Managers/AccountManager/Requests/CheckNewAccountRequest";
 import { GetProfileHandler } from "../Managers/AccountManager/Handlers/GetProfileHandler";
 import { ListAgentTokensHandler } from "../Managers/AccountManager/Handlers/ListAgentTokensHandler";
 import { ResolveAgentTokenHandler } from "../Managers/AccountManager/Handlers/ResolveAgentTokenHandler";
@@ -363,6 +365,12 @@ export class DependencyContainer {
         .build(),
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
+        .register(
+          CheckNewAccountRequest,
+          new CheckNewAccountHandler(profiles, siteConfig, {
+            adminEmail: env.PORCHLIGHT_ADMIN_EMAIL,
+          }),
+        )
         .register(
           GetVoiceGuideRequest,
           new GetVoiceGuideHandler(profiles, posts, permissions),

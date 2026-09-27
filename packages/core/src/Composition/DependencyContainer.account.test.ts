@@ -16,6 +16,8 @@ import { ExportBundleResponse } from "../Managers/AccountManager/Responses/Expor
 import { HandleRejectedResponse } from "../Managers/AccountManager/Responses/HandleRejectedResponse";
 import { NoSuchProfileResponse } from "../Managers/AccountManager/Responses/NoSuchProfileResponse";
 import { ProfileResponse } from "../Managers/AccountManager/Responses/ProfileResponse";
+import { CheckNewAccountRequest } from "../Managers/AccountManager/Requests/CheckNewAccountRequest";
+import { NewAccountCheckedResponse } from "../Managers/AccountManager/Responses/NewAccountCheckedResponse";
 import { SignUpClosedResponse } from "../Managers/AccountManager/Responses/SignUpClosedResponse";
 import type { SignInIdentity } from "../Managers/AccountManager/SignInIdentity";
 import { DependencyContainer } from "./DependencyContainer";
@@ -290,6 +292,30 @@ describe("DependencyContainer: AccountManager", () => {
 
     expect(stranger).toBeInstanceOf(SignUpClosedResponse);
     expect(profile).toMatchObject({ role: "admin", trustLevel: "trusted" });
+  });
+
+  test("CheckNewAccount matches the first-sign-in gate (#68)", async () => {
+    const closed = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "closed",
+      PORCHLIGHT_ADMIN_EMAIL: SECOND.email,
+    });
+    const open = new DependencyContainer(FAKE_ENV);
+    const invite = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "invite",
+    });
+    await signIn(invite, FIRST);
+    const check = (container: DependencyContainer, email: string) =>
+      container.accountManager.query(new CheckNewAccountRequest(email));
+
+    expect(await check(closed, FIRST.email)).toMatchObject({ allowed: false });
+    expect(await check(closed, SECOND.email.toUpperCase())).toMatchObject({
+      allowed: true,
+    });
+    expect(await check(open, FIRST.email)).toMatchObject({ allowed: true });
+    expect(await check(invite, SECOND.email)).toMatchObject({ allowed: false });
+    expect(await check(open, FIRST.email)).toBeInstanceOf(NewAccountCheckedResponse);
   });
 
   test("a closed sign-up never refuses a returning member", async () => {

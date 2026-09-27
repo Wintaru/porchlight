@@ -326,6 +326,9 @@ export { EmailSettingsResponse } from "./Managers/NotificationManager/Responses/
 export { DigestsSentResponse } from "./Managers/NotificationManager/Responses/DigestsSentResponse";
 export { UnsubscribedResponse } from "./Managers/NotificationManager/Responses/UnsubscribedResponse";
 export { SubscribeRequest } from "./Managers/NotificationManager/Requests/SubscribeRequest";
+// The sign-in link's gate (#68): may a new address get an account here.
+export { CheckNewAccountRequest } from "./Managers/AccountManager/Requests/CheckNewAccountRequest";
+export { NewAccountCheckedResponse } from "./Managers/AccountManager/Responses/NewAccountCheckedResponse";
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";

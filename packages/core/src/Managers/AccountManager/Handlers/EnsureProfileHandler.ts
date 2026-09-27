@@ -20,6 +20,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { DeriveHandleRequest } from "../../../Engines/PermissionEngine/Requests/DeriveHandleRequest";
 import { HandleDerivedResponse } from "../../../Engines/PermissionEngine/Responses/HandleDerivedResponse";
 import type { EnsureProfileOptions } from "../EnsureProfileOptions";
+import { isSiteAdminEmail } from "../isSiteAdminEmail";
 import type { EnsureProfileRequest } from "../Requests/EnsureProfileRequest";
 import { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
 import { ProfileResponse } from "../Responses/ProfileResponse";
@@ -116,14 +117,10 @@ export class EnsureProfileHandler implements IHandler<
     );
   }
 
-  // A configured admin email replaces the first-profile rule: otherwise a stranger who
-  // signs in between the deploy and the owner's first sign-in becomes admin.
   private standingFor(existingCount: number, email: string): Standing {
-    const adminEmail = this.options.adminEmail?.trim().toLowerCase();
-    if (adminEmail !== undefined && adminEmail !== "") {
-      return adminEmail === email.toLowerCase() ? FIRST_ADMIN : NEW_MEMBER;
-    }
-    return existingCount === 0 ? FIRST_ADMIN : NEW_MEMBER;
+    return isSiteAdminEmail(this.options, existingCount, email)
+      ? FIRST_ADMIN
+      : NEW_MEMBER;
   }
 }
 
