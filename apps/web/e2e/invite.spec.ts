@@ -86,9 +86,10 @@ test("a friend joins through an invite link as trusted, and a used link lets nob
       expect(await authUserExists(stranger)).toBe(false);
     });
 
-    await page.goto("/admin#invites");
-    // Filtered, not `.first()`: CI run 36330965295 listed a second, unused invite above
-    // this one. Its source is not known yet; this test only needs the used link's count.
+    // No fragment: the toast strips `?done=saved` when it fades, and once the URL is
+    // plain /admin, a goto to "/admin#invites" is a same-page hash change that keeps
+    // the stale "0 of 1 joined" render (CI runs 36330965295 and 36332941618).
+    await page.goto("/admin");
     await expect(
       page.getByTestId("invite-row").filter({ hasText: "1 of 1 joined" }),
     ).toHaveCount(1);
