@@ -18,8 +18,8 @@ the fake provider.
 
 Sightengine is the implemented provider. Hive is a reserved slot for later.
 
-1. Create a Sightengine account and a workflow that scores nudity, violence, gore,
-   self-harm, and minors.
+1. Create a Sightengine account. No dashboard workflow is needed: each request names
+   its models (`nudity-2.1`, `violence`, `gore`, `self-harm`, `offensive`, `face-age`).
 2. Sightengine authenticates with a user id and a secret. Set
    `IMAGE_CLASSIFIER_API_KEY` to `user:secret` (both values, one variable, joined with
    a colon) rather than a second variable only this provider needs.
@@ -42,7 +42,11 @@ in the deployment's environment.
 2. `ModerationPolicyEngine` compares the score against `site_config.moderation_thresholds`
    (defaults: flag at 0.5, lock at 0.9 — an admin may only lower these, never raise
    them, once #12 builds the editor). A minors signal always locks, regardless of the
-   score.
+   score. With Sightengine, the minors signal is a face scored 0.5 or more as a minor
+   together with a sexual or very suggestive score of 0.2 or more. A plain photo of a
+   child is not a minors signal and goes through like any other photo. Sexual content with no
+   face that the model can read gives no minors signal; it still flags or locks on its
+   score. Sightengine's `erotica` score counts toward severity, so any nudity is held.
 3. **flagged** holds the item for a moderator: shown blurred and grayscale in the
    queue, cannot publish until reviewed. **locked** freezes it the same way a hash
    match does (`docs/setup/hash-matching.md`).
