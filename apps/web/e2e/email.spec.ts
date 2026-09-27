@@ -28,7 +28,7 @@ test.describe("email digests", () => {
     // The queue email is for staff only.
     await expect(email.getByLabel(/moderation queue/)).toHaveCount(0);
     await email.getByLabel("Digest of your notifications").selectOption("hourly");
-    await email.getByRole("button", { name: "Save" }).click();
+    await email.getByRole("button", { name: "Save email settings" }).click();
     await expect(page.getByTestId("email-status")).toHaveText("Saved.");
 
     await backdateDigest("june");
@@ -57,7 +57,7 @@ test.describe("email digests", () => {
     await page.goto("/settings#email");
     const email = page.locator("#email");
     await email.getByLabel(/moderation queue/).check();
-    await email.getByRole("button", { name: "Save" }).click();
+    await email.getByRole("button", { name: "Save email settings" }).click();
     await expect(page.getByTestId("email-status")).toHaveText("Saved.");
     await expect(email.getByLabel(/moderation queue/)).toBeChecked();
   });

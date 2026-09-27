@@ -77,7 +77,7 @@ export async function EmailSection({ actor, saved, errorText }: EmailSectionProp
           )}
           <div>
             <button type="submit" className="pill-button pill-button--amber">
-              Save
+              Save email settings
             </button>
           </div>
         </form>

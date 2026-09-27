@@ -10,15 +10,17 @@ interface UnsubscribePageProps {
   }>;
 }
 
-// Where an email's "Stop all email" link lands (#22). Opening it changes nothing: mail
+// Where an email's unsubscribe link lands (#22). A member's link stops all of their
+// email; a reader's stops the one subscription it came with. Opening it changes nothing: mail
 // scanners open every link, so only the button unsubscribes. No sign-in needed.
 export default async function UnsubscribePage({ searchParams }: UnsubscribePageProps) {
   const { token = "", done, error } = await searchParams;
   if (done !== undefined) {
     return (
-      <SimplePage title="Unsubscribed" lead="This site sends you no more email.">
+      <SimplePage title="Unsubscribed" lead="You will get no more of these emails.">
         <p data-testid="unsubscribe-done">
-          A member can turn email on again in Settings.
+          A member can turn email on again in Settings. A reader can subscribe again from
+          the site.
         </p>
       </SimplePage>
     );
@@ -26,7 +28,7 @@ export default async function UnsubscribePage({ searchParams }: UnsubscribePageP
   return (
     <SimplePage
       title="Stop email"
-      lead="Press the button to stop all email from this site."
+      lead="Press the button to stop the emails this link came in."
     >
       {error !== undefined && (
         <p role="alert" className="form-alert" data-testid="form-error">
