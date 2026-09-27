@@ -315,6 +315,17 @@ export { NotificationForbiddenResponse } from "./Managers/NotificationManager/Re
 export { NotificationsMarkedResponse } from "./Managers/NotificationManager/Responses/NotificationsMarkedResponse";
 export { NotificationsResponse } from "./Managers/NotificationManager/Responses/NotificationsResponse";
 export { NotificationUnavailableResponse } from "./Managers/NotificationManager/Responses/NotificationUnavailableResponse";
+// Email (#22): a member's digest settings, the scheduled sweep, and unsubscribe links.
+export { GetEmailSettingsRequest } from "./Managers/NotificationManager/Requests/GetEmailSettingsRequest";
+export { SetEmailSettingsRequest } from "./Managers/NotificationManager/Requests/SetEmailSettingsRequest";
+export { SendDigestsRequest } from "./Managers/NotificationManager/Requests/SendDigestsRequest";
+export { UnsubscribeRequest } from "./Managers/NotificationManager/Requests/UnsubscribeRequest";
+export { EmailSettingsResponse } from "./Managers/NotificationManager/Responses/EmailSettingsResponse";
+export { DigestsSentResponse } from "./Managers/NotificationManager/Responses/DigestsSentResponse";
+export { UnsubscribedResponse } from "./Managers/NotificationManager/Responses/UnsubscribedResponse";
+export { DIGEST_SCHEDULES, type DigestSchedule } from "./Common/DigestSchedule";
+export type { EmailPreference } from "./Common/EmailPreference";
+export type { EmailSite } from "./Common/EmailSite";
 
 // SiteConfigManager: the admin settings page, presets, and the duty checklist
 // (SPEC.md §4, §7, issue #12).

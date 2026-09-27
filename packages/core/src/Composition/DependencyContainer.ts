@@ -65,6 +65,14 @@ import type { INotificationManager } from "../Managers/NotificationManager/INoti
 import { NotificationManager } from "../Managers/NotificationManager/NotificationManager";
 import { ListNotificationsRequest as ManagerListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
 import { MarkReadRequest } from "../Managers/NotificationManager/Requests/MarkReadRequest";
+import { GetEmailSettingsHandler } from "../Managers/NotificationManager/Handlers/GetEmailSettingsHandler";
+import { SendDigestsHandler } from "../Managers/NotificationManager/Handlers/SendDigestsHandler";
+import { SetEmailSettingsHandler } from "../Managers/NotificationManager/Handlers/SetEmailSettingsHandler";
+import { UnsubscribeHandler } from "../Managers/NotificationManager/Handlers/UnsubscribeHandler";
+import { GetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/GetEmailSettingsRequest";
+import { SendDigestsRequest } from "../Managers/NotificationManager/Requests/SendDigestsRequest";
+import { SetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/SetEmailSettingsRequest";
+import { UnsubscribeRequest } from "../Managers/NotificationManager/Requests/UnsubscribeRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -177,6 +185,9 @@ import { createAttachmentEngine } from "./createAttachmentEngine";
 import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
+import { createEmailAccessor, readEmailProvider } from "./createEmailAccessor";
+import { createEmailComposeEngine } from "./createEmailComposeEngine";
+import { createEmailPreferenceAccessor } from "./createEmailPreferenceAccessor";
 import { createEvidenceAccessor } from "./createEvidenceAccessor";
 import { createEvidenceEngine } from "./createEvidenceEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
@@ -270,6 +281,10 @@ export class DependencyContainer {
       memberBlocks,
       notifications,
     );
+    const email = createEmailAccessor(env);
+    const emailPreferences = createEmailPreferenceAccessor(env, db);
+    const emailCompose = createEmailComposeEngine();
+    const emailOptions = { enabled: readEmailProvider(env) !== "none" };
     const agentTokens = createAgentTokenAccessor(env, db);
     const agentGuard = createAgentGuardEngine(siteConfig, rateLimits);
     const evidence = createEvidenceEngine(
@@ -783,11 +798,24 @@ export class DependencyContainer {
     this.notificationManager = new NotificationManager(
       new HandlerResolverBuilder()
         .register(MarkReadRequest, new MarkReadHandler(notifications, permissions))
+        .register(
+          SetEmailSettingsRequest,
+          new SetEmailSettingsHandler(emailPreferences, permissions, emailOptions),
+        )
+        .register(
+          SendDigestsRequest,
+          new SendDigestsHandler(emailPreferences, email, emailCompose, emailOptions),
+        )
+        .register(UnsubscribeRequest, new UnsubscribeHandler(emailPreferences))
         .build(),
       new HandlerResolverBuilder()
         .register(
           ManagerListNotificationsRequest,
           new ListNotificationsHandler(notifications, permissions),
+        )
+        .register(
+          GetEmailSettingsRequest,
+          new GetEmailSettingsHandler(emailPreferences, permissions, emailOptions),
         )
         .build(),
     );
