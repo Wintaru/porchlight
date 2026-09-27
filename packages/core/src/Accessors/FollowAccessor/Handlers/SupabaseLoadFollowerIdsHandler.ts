@@ -6,7 +6,7 @@ import { FollowAccessFailedResponse } from "../Responses/FollowAccessFailedRespo
 import { FollowerIdsLoadedResponse } from "../Responses/FollowerIdsLoadedResponse";
 
 // A popular author can have more followers than PostgREST answers in one request, and a
-// missed follower is a missed notification, so each read pages until a short page.
+// missed follower is a missed notification, so each read pages until an empty page.
 const PAGE = 1000;
 
 export class SupabaseLoadFollowerIdsHandler implements IHandler<
@@ -47,17 +47,21 @@ export class SupabaseLoadFollowerIdsHandler implements IHandler<
           ]),
     ];
     for (const read of reads) {
-      for (let from = 0; ; from += PAGE) {
+      // Step by what came back and stop on an empty page: a server whose `max_rows` is
+      // below PAGE answers short pages, and stopping on the first short one would miss
+      // followers.
+      for (let from = 0; ;) {
         const { data, error } = await read(from);
         if (error) {
           return new FollowAccessFailedResponse(correlationId, error.message);
         }
+        if (data.length === 0) {
+          break;
+        }
         for (const row of data) {
           ids.add(row.follower_id);
         }
-        if (data.length < PAGE) {
-          break;
-        }
+        from += data.length;
       }
     }
     return new FollowerIdsLoadedResponse(correlationId, [...ids]);

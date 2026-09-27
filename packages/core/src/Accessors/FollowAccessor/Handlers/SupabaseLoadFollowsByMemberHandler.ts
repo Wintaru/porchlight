@@ -20,7 +20,9 @@ export class SupabaseLoadFollowsByMemberHandler implements IHandler<
     request: LoadFollowsByMemberRequest,
   ): Promise<FollowsLoadedResponse | FollowAccessFailedResponse> {
     const follows = [];
-    for (let from = 0; ; from += PAGE) {
+    // Step by what came back and stop on an empty page, so a lower `max_rows` on the
+    // server costs extra reads, never missing rows.
+    for (let from = 0; ;) {
       const { data, error } = await this.db
         .from("follows")
         .select(FOLLOW_COLUMNS)
@@ -31,10 +33,11 @@ export class SupabaseLoadFollowsByMemberHandler implements IHandler<
       if (error) {
         return new FollowAccessFailedResponse(request.correlationId, error.message);
       }
-      follows.push(...data.flatMap((row) => toFollow(row) ?? []));
-      if (data.length < PAGE) {
+      if (data.length === 0) {
         return new FollowsLoadedResponse(request.correlationId, follows);
       }
+      follows.push(...data.flatMap((row) => toFollow(row) ?? []));
+      from += data.length;
     }
   }
 }
