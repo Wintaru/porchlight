@@ -14,6 +14,8 @@ export interface UploadView {
   readonly mediaId: string;
   readonly originalFilename: string;
   readonly kind: MediaKind;
+  // The type the server found in the bytes, named in the editor's preview (#80).
+  readonly mimeType: string;
   readonly bytes: number;
   readonly publicUrl: string | null;
   readonly awaitingReview: boolean;
@@ -32,6 +34,7 @@ export function uploadViewOf(
     mediaId: asset.id,
     originalFilename: asset.originalFilename,
     kind: asset.kind,
+    mimeType: asset.mimeType,
     bytes: asset.bytes,
     publicUrl:
       asset.publishedPath === null ? null : publicUrlOf(asset, asset.publishedPath),
