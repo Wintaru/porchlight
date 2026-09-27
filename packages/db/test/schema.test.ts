@@ -464,3 +464,102 @@ describe("auth.users (#67)", () => {
 });
 
 class RolledBack extends Error {}
+
+// Issue #22: the sweep claims each due email once, and a failed send puts it back.
+describe("claim_member_emails (#22)", () => {
+  interface Claim {
+    readonly profile_id: string;
+    readonly kind: string;
+    readonly counts: Record<string, number>;
+  }
+
+  async function arrange(tx: TransactionSql, queueImmediate: boolean): Promise<void> {
+    await tx`
+      select public.set_email_preferences(${SEED.moderator}, 'hourly', ${queueImmediate})
+    `;
+    await tx`
+      update public.email_preferences
+      set digest_cursor = now() - interval '2 hours',
+          queue_cursor = now() - interval '2 hours'
+      where profile_id = ${SEED.moderator}
+    `;
+    await tx`update public.notifications set read_at = now() where recipient_id = ${SEED.moderator}`;
+    await tx`
+      insert into public.notifications (recipient_id, kind, payload) values
+        (${SEED.moderator}, 'reply.created', '{}'),
+        (${SEED.moderator}, 'reply.created', '{}'),
+        (${SEED.moderator}, 'queue.pending', '{}')
+    `;
+  }
+
+  const claim = (tx: TransactionSql) => tx<Claim[]>`
+    select profile_id, kind, counts
+    from public.claim_member_emails(now() + interval '1 minute', 50)
+    where profile_id = ${SEED.moderator}
+    order by kind
+  `;
+
+  test("claims a due digest once, with counts by kind", async () => {
+    const [first, second] = await asService(async (tx) => {
+      await arrange(tx, false);
+      return [await claim(tx), await claim(tx)];
+    });
+    expect(first).toEqual([
+      {
+        profile_id: SEED.moderator,
+        kind: "digest",
+        counts: { "reply.created": 2, "queue.pending": 1 },
+      },
+    ]);
+    expect(second).toEqual([]);
+  });
+
+  test("the queue goes apart for staff who want it at once", async () => {
+    const claims = await asService(async (tx) => {
+      await arrange(tx, true);
+      return claim(tx);
+    });
+    expect(claims.map(({ kind, counts }) => ({ kind, counts }))).toEqual([
+      { kind: "digest", counts: { "reply.created": 2 } },
+      { kind: "queue", counts: { "queue.pending": 1 } },
+    ]);
+  });
+
+  test("a digest is not due before its interval, and a release puts a window back", async () => {
+    const [early, again] = await asService(async (tx) => {
+      await arrange(tx, false);
+      const until = await tx<{ at: Date }[]>`select now() + interval '1 minute' as at`;
+      const at = until[0]?.at;
+      const [claimed] = await tx<{ window_start: Date; window_end: Date }[]>`
+        select window_start, window_end
+        from public.claim_member_emails(${at ?? null}, 50)
+        where profile_id = ${SEED.moderator}
+      `;
+      await tx`
+        insert into public.notifications (recipient_id, kind, payload)
+        values (${SEED.moderator}, 'reply.created', '{}')
+      `;
+      const early = await claim(tx);
+      await tx`
+        select public.release_member_email(
+          ${SEED.moderator}, 'digest', ${claimed?.window_start ?? null},
+          ${claimed?.window_end ?? null}
+        )
+      `;
+      return [early, await claim(tx)];
+    });
+    expect(early).toEqual([]);
+    expect(again.map((row) => row.kind)).toEqual(["digest"]);
+  });
+
+  test("erasure removes the member's email settings", async () => {
+    const left = await asService(async (tx) => {
+      await tx`select public.set_email_preferences(${SEED.trustedMember}, 'daily', false)`;
+      await tx`select public.erase_account(${SEED.trustedMember})`;
+      return tx`
+        select 1 from public.email_preferences where profile_id = ${SEED.trustedMember}
+      `;
+    });
+    expect(left.length).toBe(0);
+  });
+});

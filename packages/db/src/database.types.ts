@@ -248,6 +248,44 @@ export type Database = {
           },
         ]
       }
+      email_preferences: {
+        Row: {
+          digest: Database["public"]["Enums"]["digest_schedule"]
+          digest_cursor: string
+          profile_id: string
+          queue_cursor: string
+          queue_immediate: boolean
+          unsubscribe_token: string
+          updated_at: string
+        }
+        Insert: {
+          digest?: Database["public"]["Enums"]["digest_schedule"]
+          digest_cursor?: string
+          profile_id: string
+          queue_cursor?: string
+          queue_immediate?: boolean
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Update: {
+          digest?: Database["public"]["Enums"]["digest_schedule"]
+          digest_cursor?: string
+          profile_id?: string
+          queue_cursor?: string
+          queue_immediate?: boolean
+          unsubscribe_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           author_id: string | null
@@ -1107,6 +1145,18 @@ export type Database = {
         Args: { p_anonymous_author_id: string; p_profile_id: string }
         Returns: string
       }
+      claim_member_emails: {
+        Args: { p_limit: number; p_until: string }
+        Returns: {
+          counts: Json
+          email: string
+          kind: string
+          profile_id: string
+          unsubscribe_token: string
+          window_end: string
+          window_start: string
+        }[]
+      }
       comment_search_document: { Args: { p_body_md: string }; Returns: unknown }
       erase_account: { Args: { p_profile_id: string }; Returns: string }
       finalize_media_scan: {
@@ -1173,6 +1223,15 @@ export type Database = {
         Returns: unknown
       }
       published_author_count: { Args: never; Returns: number }
+      release_member_email: {
+        Args: {
+          p_kind: string
+          p_profile_id: string
+          p_window_end: string
+          p_window_start: string
+        }
+        Returns: undefined
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
@@ -1192,6 +1251,14 @@ export type Database = {
           title: string
         }[]
       }
+      set_email_preferences: {
+        Args: {
+          p_digest: Database["public"]["Enums"]["digest_schedule"]
+          p_profile_id: string
+          p_queue_immediate: boolean
+        }
+        Returns: undefined
+      }
       viewer_hidden_authors: { Args: never; Returns: string[] }
     }
     Enums: {
@@ -1207,6 +1274,7 @@ export type Database = {
         | "hidden"
         | "removed"
         | "tombstone"
+      digest_schedule: "off" | "hourly" | "daily"
       media_kind: "image" | "document" | "model" | "track" | "video"
       member_block_level: "mute" | "block"
       mod_action_kind:
@@ -1399,6 +1467,7 @@ export const Constants = {
         "removed",
         "tombstone",
       ],
+      digest_schedule: ["off", "hourly", "daily"],
       media_kind: ["image", "document", "model", "track", "video"],
       member_block_level: ["mute", "block"],
       mod_action_kind: [

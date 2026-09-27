@@ -48,6 +48,23 @@ const PHASE_1_TABLES = [
   "agent_tokens",
 ] as const;
 
+// The tables phase 2 adds. Each is listed on purpose: a new one lands here and, unless
+// it joins BROWSER_READABLE_TABLES below, the closed-by-default test covers it.
+const PHASE_2_TABLES = [
+  "member_blocks",
+  "post_revisions",
+  "follows",
+  // #22: email settings and digest cursors, server only.
+  "email_preferences",
+] as const;
+
+// Server-only functions: the service role calls them, a browser role never may (#22).
+const SERVER_ONLY_FUNCTIONS = [
+  "public.set_email_preferences(uuid, public.digest_schedule, boolean)",
+  "public.claim_member_emails(timestamptz, integer)",
+  "public.release_member_email(uuid, text, timestamptz, timestamptz)",
+] as const;
+
 // The only tables a browser role may read at all. Every other table in `public`, now or
 // later, must refuse a select, so a new table is closed by default and tested as such.
 const BROWSER_READABLE_TABLES: ReadonlySet<string> = new Set([
@@ -78,6 +95,23 @@ describe("every table", () => {
   test("from SPEC.md §11 exists", async () => {
     const tables = await publicTables();
     expect(tables).toEqual(expect.arrayContaining([...PHASE_1_TABLES]));
+  });
+
+  test("from phase 2 exists", async () => {
+    const tables = await publicTables();
+    expect(tables).toEqual(expect.arrayContaining([...PHASE_2_TABLES]));
+  });
+
+  test("server-only functions refuse the browser roles", async () => {
+    const rows = await sql<{ fn: string; role: string; allowed: boolean }[]>`
+      select f.fn, r.role, has_function_privilege(r.role, f.fn, 'execute') as allowed
+      from unnest(${sql.array([...SERVER_ONLY_FUNCTIONS])}::text[]) as f(fn)
+      cross join unnest(${sql.array([...BROWSER_ROLES, "service_role"])}::text[]) as r(role)
+      order by 1, 2
+    `;
+    expect(rows.filter((row) => row.allowed !== (row.role === "service_role"))).toEqual(
+      [],
+    );
   });
 
   test("has row level security on", async () => {
