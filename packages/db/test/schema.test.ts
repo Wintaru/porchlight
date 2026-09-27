@@ -756,6 +756,23 @@ describe("redeem_invite (#25)", () => {
     expect(answers).toEqual([null, null, null]);
   });
 
+  test("a released use can be spent again, and a release never goes below zero", async () => {
+    const answers = await asService(async (tx) => {
+      await tx`
+        insert into public.invites (token_hash, created_by, max_uses)
+        values ('h-release', ${SEED.admin}, 1)
+      `;
+      const first = await redeem(tx, "h-release");
+      await tx`select public.release_invite('h-release')`;
+      await tx`select public.release_invite('h-release')`;
+      const [row] = await tx<{ used_count: number }[]>`
+        select used_count from public.invites where token_hash = 'h-release'
+      `;
+      return [first, row?.used_count, await redeem(tx, "h-release")];
+    });
+    expect(answers).toEqual(["trusted", 0, "trusted"]);
+  });
+
   test("a link with no limit defaults to trusted", async () => {
     const trust = await asService(async (tx) => {
       await tx`insert into public.invites (token_hash, created_by) values ('h-open', ${SEED.admin})`;

@@ -1359,6 +1359,7 @@ export type Database = {
         Args: { p_token_hash: string }
         Returns: Database["public"]["Enums"]["trust_level"]
       }
+      release_invite: { Args: { p_token_hash: string }; Returns: undefined }
       release_member_email: {
         Args: {
           p_kind: string

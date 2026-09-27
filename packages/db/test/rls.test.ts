@@ -74,6 +74,7 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.claim_subscriber_emails(timestamptz, integer)",
   "public.release_subscriber_email(uuid, timestamptz, timestamptz)",
   "public.redeem_invite(text)",
+  "public.release_invite(text)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or
