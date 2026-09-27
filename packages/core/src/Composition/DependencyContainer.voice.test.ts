@@ -6,6 +6,8 @@ import type { Post } from "../Common/Post";
 import type { Profile } from "../Common/Profile";
 import { DEFAULT_BANNED_PHRASES } from "../Common/VoiceGuideRules";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
+import { ListVoiceGuideRevisionsRequest } from "../Managers/AccountManager/Requests/ListVoiceGuideRevisionsRequest";
+import { VoiceGuideRevisionsResponse } from "../Managers/AccountManager/Responses/VoiceGuideRevisionsResponse";
 import { CheckDraftRequest } from "../Managers/AccountManager/Requests/CheckDraftRequest";
 import { DraftCheckResponse } from "../Managers/AccountManager/Responses/DraftCheckResponse";
 import { GetVoiceGuideRequest } from "../Managers/AccountManager/Requests/GetVoiceGuideRequest";
@@ -204,5 +206,23 @@ describe("DependencyContainer: check_draft (#32)", () => {
         new CheckDraftRequest({ kind: "visitor" }, "Hello."),
       ),
     ).toBeInstanceOf(ActionForbiddenResponse);
+  });
+});
+
+describe("DependencyContainer: voice guide revisions (#32)", () => {
+  test("each change keeps the text it replaced, newest first, for the member and their agent", async () => {
+    const container = await setUp();
+    for (const text of ["first", "second", "third"]) {
+      await container.accountManager.execute(new UpdateVoiceGuideRequest(THEO, text));
+    }
+    for (const actor of [THEO, agent(["posts:draft"])]) {
+      const listed = await container.accountManager.query(
+        new ListVoiceGuideRevisionsRequest(actor),
+      );
+      expect(listed).toBeInstanceOf(VoiceGuideRevisionsResponse);
+      expect(
+        (listed as VoiceGuideRevisionsResponse).revisions.map((r) => r.guideMd),
+      ).toEqual(["second", "first"]);
+    }
   });
 });

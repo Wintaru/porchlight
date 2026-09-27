@@ -327,6 +327,9 @@ export { SubscribeRequest } from "./Managers/NotificationManager/Requests/Subscr
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";
+export { ListVoiceGuideRevisionsRequest } from "./Managers/AccountManager/Requests/ListVoiceGuideRevisionsRequest";
+export { VoiceGuideRevisionsResponse } from "./Managers/AccountManager/Responses/VoiceGuideRevisionsResponse";
+export type { VoiceGuideRevision } from "./Common/VoiceGuideRevision";
 export { draftWarningText, type DraftWarning } from "./Common/DraftWarning";
 export { GetEmailAvailabilityRequest } from "./Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 export { EmailAvailabilityResponse } from "./Managers/NotificationManager/Responses/EmailAvailabilityResponse";

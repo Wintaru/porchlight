@@ -25,6 +25,13 @@ export class FakeStoreVoiceGuideHandler implements IHandler<
     if (!this.state.profiles.has(profileId)) {
       return Promise.resolve(new ProfileNotFoundResponse(correlationId));
     }
+    // What the trigger does: keep the replaced text when it changes.
+    const before = this.state.voiceGuides.get(profileId);
+    if (before !== undefined && before !== guideMd) {
+      const kept = this.state.voiceGuideRevisions.get(profileId) ?? [];
+      kept.push({ guideMd: before, replacedAt: request.timestamp });
+      this.state.voiceGuideRevisions.set(profileId, kept);
+    }
     if (guideMd === null) {
       this.state.voiceGuides.delete(profileId);
     } else {

@@ -1,3 +1,6 @@
+import { FakeLoadVoiceGuideRevisionsHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadVoiceGuideRevisionsHandler";
+import { SupabaseLoadVoiceGuideRevisionsHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadVoiceGuideRevisionsHandler";
+import { LoadVoiceGuideRevisionsRequest } from "../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRevisionsRequest";
 import { FakeLoadVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadVoiceGuideHandler";
 import { FakeStoreVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStoreVoiceGuideHandler";
 import { SupabaseLoadVoiceGuideHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadVoiceGuideHandler";
@@ -64,6 +67,10 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(CountProfilesRequest, new SupabaseCountProfilesHandler(db))
       .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
       .register(LoadVoiceGuideRequest, new SupabaseLoadVoiceGuideHandler(db))
+      .register(
+        LoadVoiceGuideRevisionsRequest,
+        new SupabaseLoadVoiceGuideRevisionsHandler(db),
+      )
       .build(),
   );
 }
@@ -83,6 +90,10 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .register(CountProfilesRequest, new FakeCountProfilesHandler(state))
       .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))
       .register(LoadVoiceGuideRequest, new FakeLoadVoiceGuideHandler(state))
+      .register(
+        LoadVoiceGuideRevisionsRequest,
+        new FakeLoadVoiceGuideRevisionsHandler(state),
+      )
       .build(),
   );
 }

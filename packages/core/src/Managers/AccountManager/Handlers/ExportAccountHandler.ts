@@ -10,6 +10,8 @@ import { MemberBlocksLoadedResponse } from "../../../Accessors/MemberBlockAccess
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import { LoadVoiceGuideRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRequest";
 import { VoiceGuideLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/VoiceGuideLoadedResponse";
+import { LoadVoiceGuideRevisionsRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRevisionsRequest";
+import { VoiceGuideRevisionsLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/VoiceGuideRevisionsLoadedResponse";
 import type { AgentToken } from "../../../Common/AgentToken";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentsByAuthorRequest } from "../../../Accessors/CommentAccessor/Requests/LoadCommentsByAuthorRequest";
@@ -113,6 +115,12 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     if (!(loadedGuide instanceof VoiceGuideLoadedResponse)) {
       return unavailable(correlationId, loadedGuide, "profiles.load");
     }
+    const loadedGuideRevisions = await this.profiles.load(
+      new LoadVoiceGuideRevisionsRequest(profileId, context),
+    );
+    if (!(loadedGuideRevisions instanceof VoiceGuideRevisionsLoadedResponse)) {
+      return unavailable(correlationId, loadedGuideRevisions, "profiles.load revisions");
+    }
     const loadedTokens = await this.agentTokens.load(
       new ListAgentTokensByOwnerRequest(profileId, context),
     );
@@ -157,6 +165,10 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
           reactions: loadedReactions.reactions.map(reactionJson),
           uploads: loadedMedia.assets.map(mediaJson),
           voiceGuide: loadedGuide.guideMd,
+          voiceGuideRevisions: loadedGuideRevisions.revisions.map((revision) => ({
+            guideMd: revision.guideMd,
+            replacedAt: revision.replacedAt.toISOString(),
+          })),
           agentTokens: loadedTokens.tokens.map(tokenJson),
           mutesAndBlocks: loadedBlocks.blocks.map(memberBlockJson),
           follows: loadedFollows.follows.map(followJson),

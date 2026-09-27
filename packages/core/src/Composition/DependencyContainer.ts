@@ -3,6 +3,8 @@ import { UpdateVoiceGuideHandler } from "../Managers/AccountManager/Handlers/Upd
 import { GetVoiceGuideRequest } from "../Managers/AccountManager/Requests/GetVoiceGuideRequest";
 import { CheckDraftHandler } from "../Managers/AccountManager/Handlers/CheckDraftHandler";
 import { CheckDraftRequest } from "../Managers/AccountManager/Requests/CheckDraftRequest";
+import { ListVoiceGuideRevisionsHandler } from "../Managers/AccountManager/Handlers/ListVoiceGuideRevisionsHandler";
+import { ListVoiceGuideRevisionsRequest } from "../Managers/AccountManager/Requests/ListVoiceGuideRevisionsRequest";
 import { UpdateVoiceGuideRequest } from "../Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 import type { DbClient } from "@porchlight/db";
 
@@ -364,6 +366,10 @@ export class DependencyContainer {
         .register(
           GetVoiceGuideRequest,
           new GetVoiceGuideHandler(profiles, posts, permissions),
+        )
+        .register(
+          ListVoiceGuideRevisionsRequest,
+          new ListVoiceGuideRevisionsHandler(profiles, permissions),
         )
         .register(
           CheckDraftRequest,
