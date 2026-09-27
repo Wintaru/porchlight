@@ -114,6 +114,10 @@ Guides: `setup/hash-matching.md`, `setup/classifiers.md`. Until Shield access is
 approved (D17b) the fake hash provider runs and the admin checklist (step 8) shows
 "hash matching: not yet active".
 
+When Shield approves access, set `HASH_MATCH_PROVIDER`, `HASH_MATCH_API_KEY` and
+`ARACHNID_VERIFICATION_TOKEN` (the domain check token), redeploy, and confirm
+`/robots.txt` shows the `ProjectArachnid/` line before you run the domain check.
+
 ## 8. Site settings: region, identity, and the duty checklist
 
 Open `/admin` (admin only). Set `site_name`, `site_tagline` and `about_md`; pick the

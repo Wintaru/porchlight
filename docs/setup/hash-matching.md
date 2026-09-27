@@ -24,6 +24,11 @@ will accept them once they are built.
    that user's username and password (HTTP Basic auth).
 3. Set `HASH_MATCH_API_KEY` to `username:password`, both values joined with a colon.
    The build refuses a value with no username or no password.
+4. Verify the domain. In the Shield dashboard, "Update domain" shows a robots.txt entry
+   `User-Agent: ProjectArachnid/<token>`. Copy the token (the part after the slash) into
+   `ARACHNID_VERIFICATION_TOKEN` and restart or redeploy. Porchlight then adds that line to
+   `/robots.txt`. Open `https://<your site>/robots.txt`, confirm the line is there, then
+   start the check in the dashboard. The token is public once served, so it is not a secret.
 
 Porchlight calls `POST https://shield.projectarachnid.ca/v1/media/` with the image
 bytes, the same call as the official SDK's `scanMediaFromBytes`
