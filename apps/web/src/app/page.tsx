@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PostCardList } from "@/components/PostCardList";
 import { HomeSidebar } from "@/components/HomeSidebar";
@@ -7,14 +8,14 @@ import { canPostAnonymously } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
-import { loadFeed } from "@/read-model/feed";
-import { loadViewerBlocks } from "@/read-model/member-blocks";
+import { loadFeedFor } from "@/read-model/feed";
+import { loadFollowingFeed, loadPublishedAuthorCount } from "@/read-model/follows";
 import { loadTagCloud } from "@/read-model/tag";
 
 import styles from "./home.module.css";
 
 interface HomePageProps {
-  readonly searchParams: Promise<{ readonly erased?: string }>;
+  readonly searchParams: Promise<{ readonly erased?: string; readonly feed?: string }>;
 }
 
 // SPEC.md §9: the site feed's `<link rel="alternate">` and the home page's own OG
@@ -44,24 +45,23 @@ export async function generateMetadata(): Promise<Metadata> {
 // session is gone (SPEC.md §10): nowhere under `/settings` can show this, since that
 // gate now redirects to sign-in.
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const [{ siteName, siteTagline }, actor, { erased }] = await Promise.all([
+  const [{ siteName, siteTagline }, actor, { erased, feed }] = await Promise.all([
     getSiteIdentity(),
     getCurrentActor(),
     searchParams,
   ]);
   const db = await createSessionClient();
-  // The viewer's mutes and blocks first: the feed leaves those members out at the
-  // source (#23).
-  const blocks = await loadViewerBlocks(
-    db,
-    actor.kind === "member" ? actor.profile.id : undefined,
-  );
+  const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
+  // The Following tab (#24, D20) is a member's, and only on a site with two or more
+  // authors: with one, it would be the same list as Everything.
+  const authorCount = viewerId === undefined ? 0 : await loadPublishedAuthorCount(db);
+  const showTabs = authorCount >= 2;
+  const following = showTabs && feed === "following";
   const [posts, tags, mayWriteAnonymously] = await Promise.all([
-    loadFeed(db, blocks.keys()),
+    following ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
     loadTagCloud(db),
     canPostAnonymously(actor),
   ]);
-
   return (
     <main>
       {erased !== undefined && (
@@ -75,7 +75,32 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           <p className={styles.tagline}>{siteTagline}</p>
           <h2 className={styles.heading}>Latest on the porch</h2>
           <p className={styles.subheading}>Newest first · no votes, no rankings</p>
-          <PostCardList posts={posts} empty="Nothing on the porch yet." />
+          {showTabs && (
+            <nav className="tabs" aria-label="Feed">
+              <Link
+                className="tab-link"
+                aria-current={following ? undefined : "page"}
+                href="/"
+              >
+                Everything
+              </Link>
+              <Link
+                className="tab-link"
+                aria-current={following ? "page" : undefined}
+                href="/?feed=following"
+              >
+                Following
+              </Link>
+            </nav>
+          )}
+          <PostCardList
+            posts={posts}
+            empty={
+              following
+                ? "Nothing yet from the people and tags you follow. Follow someone from their page."
+                : "Nothing on the porch yet."
+            }
+          />
         </div>
         <HomeSidebar
           actor={actor}

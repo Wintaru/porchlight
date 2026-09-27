@@ -1,0 +1,13 @@
+/* The tag's name with its Follow button on the same line (#24). */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.head h1 {
+  margin: 0;
+}
