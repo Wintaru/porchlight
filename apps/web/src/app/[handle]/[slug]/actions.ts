@@ -23,7 +23,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
-import { safeNextPath } from "@/lib/safe-next-path";
+import { returnPathOf } from "@/lib/return-path";
 import { signInPathFor } from "@/lib/sign-in-path";
 
 // The post page's Server Functions: comment, delete a comment, toggle a reaction. The
@@ -37,7 +37,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 
 // The comment form and the reply forms. `parentId` is empty for a root comment.
 export async function createComment(formData: FormData): Promise<void> {
-  const returnTo = returnToOf(formData);
+  const returnTo = returnPathOf(formData);
   const actor = await requireMember(returnTo);
   const postId = idOf(formData, "postId");
   const parentId = optionalIdOf(formData.get("parentId"));
@@ -68,7 +68,7 @@ export async function createComment(formData: FormData): Promise<void> {
 }
 
 export async function deleteComment(formData: FormData): Promise<void> {
-  const returnTo = returnToOf(formData);
+  const returnTo = returnPathOf(formData);
   const actor = await requireMember(returnTo);
   const commentId = idOf(formData, "commentId");
   if (commentId === undefined) {
@@ -85,7 +85,7 @@ export async function deleteComment(formData: FormData): Promise<void> {
 }
 
 export async function toggleReaction(formData: FormData): Promise<void> {
-  const returnTo = returnToOf(formData);
+  const returnTo = returnPathOf(formData);
   const actor = await requireMember(returnTo);
   const target = targetOf(formData);
   const kind = formData.get("kind");
@@ -113,14 +113,6 @@ async function requireMember(next: string): Promise<Actor & { kind: "member" }> 
     redirect(signInPathFor(next));
   }
   return actor;
-}
-
-// Only a same-site path is honored, and only the path: a query string from the last
-// redirect would otherwise stack notices.
-function returnToOf(formData: FormData): string {
-  const value = formData.get("returnTo");
-  const path = safeNextPath(typeof value === "string" ? value : undefined);
-  return path.split("?")[0]?.split("#")[0] ?? "/";
 }
 
 function withCode(path: string, key: string, code: string): string {

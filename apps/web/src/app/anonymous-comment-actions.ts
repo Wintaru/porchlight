@@ -16,7 +16,7 @@ import { currentAnonymousSubmission } from "@/lib/anonymous-submission";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { formatClaimCodeForDisplay } from "@/lib/format-claim-code";
 import { isEntityId } from "@/lib/entity-id";
-import { safeNextPath } from "@/lib/safe-next-path";
+import { returnPathOf } from "@/lib/return-path";
 
 // The visitor's half of the comment form, shared by `/@handle/slug` and `/p/slug`
 // (both post pages ask CommentSection to render it when `formState` is `anonymous`).
@@ -26,7 +26,7 @@ import { safeNextPath } from "@/lib/safe-next-path";
 const COMMENT_MAX_LENGTH = 10_000;
 
 export async function createAnonymousComment(formData: FormData): Promise<void> {
-  const returnTo = returnToOf(formData);
+  const returnTo = returnPathOf(formData);
   const postId = idOf(formData, "postId");
   const parentId = optionalIdOf(formData.get("parentId"));
   const bodyMd = formData.get("bodyMd");
@@ -60,12 +60,6 @@ export async function createAnonymousComment(formData: FormData): Promise<void> 
 function turnstileTokenOf(formData: FormData): string | undefined {
   const value = formData.get("cf-turnstile-response");
   return typeof value === "string" && value !== "" ? value : undefined;
-}
-
-function returnToOf(formData: FormData): string {
-  const value = formData.get("returnTo");
-  const path = safeNextPath(typeof value === "string" ? value : undefined);
-  return path.split("?")[0]?.split("#")[0] ?? "/";
 }
 
 function withCode(path: string, key: string, code: string): string {

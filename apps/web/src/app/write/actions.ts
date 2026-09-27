@@ -24,7 +24,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
-import { safeNextPath } from "@/lib/safe-next-path";
+import { returnPathOf } from "@/lib/return-path";
 import type { AutosaveResult, PreviewResult } from "./editor-results";
 import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
 
@@ -114,7 +114,7 @@ export async function previewPost(bodyMd: unknown): Promise<PreviewResult> {
 export async function unpublishPost(formData: FormData): Promise<void> {
   const postId = idOf(formData);
   const editor = `/write/${postId}`;
-  const returnTo = returnToOf(formData) ?? editor;
+  const returnTo = returnPathOf(formData, editor);
   const actor = await requireMember(returnTo);
   const response = await getDependencyContainer().postManager.execute(
     new UnpublishPostRequest(actor, postId),
@@ -161,15 +161,6 @@ async function requireMember(next: string): Promise<Actor & { kind: "member" }> 
     redirect(signInPathFor(next));
   }
   return actor;
-}
-
-// A same-site path with no query or hash, or undefined when the form carried none.
-function returnToOf(formData: FormData): string | undefined {
-  const value = formData.get("returnTo");
-  if (typeof value !== "string" || value === "") {
-    return undefined;
-  }
-  return safeNextPath(value).split("?")[0]?.split("#")[0];
 }
 
 function idOf(formData: FormData): string {
