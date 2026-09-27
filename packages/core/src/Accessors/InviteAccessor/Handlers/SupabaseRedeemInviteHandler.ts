@@ -1,6 +1,7 @@
 import type { DbClient } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
+import { TRUST_LEVELS } from "../../../Common/TrustLevel";
 import type { RedeemInviteRequest } from "../Requests/RedeemInviteRequest";
 import { InviteAccessFailedResponse } from "../Responses/InviteAccessFailedResponse";
 import { InviteNotRedeemableResponse } from "../Responses/InviteNotRedeemableResponse";
@@ -24,8 +25,8 @@ export class SupabaseRedeemInviteHandler implements IHandler<
       return new InviteAccessFailedResponse(request.correlationId, error.message);
     }
     // PostgREST answers null when the update matched no row.
-    const trust: unknown = data;
-    if (trust !== "trusted" && trust !== "probation") {
+    const trust = TRUST_LEVELS.find((level) => level === data);
+    if (trust === undefined) {
       return new InviteNotRedeemableResponse(request.correlationId);
     }
     return new InviteRedeemedResponse(request.correlationId, trust);

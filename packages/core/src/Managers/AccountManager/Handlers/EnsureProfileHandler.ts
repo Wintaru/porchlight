@@ -2,6 +2,8 @@ import type { IInviteAccessor } from "../../../Accessors/InviteAccessor/IInviteA
 import { RedeemInviteRequest } from "../../../Accessors/InviteAccessor/Requests/RedeemInviteRequest";
 import { InviteNotRedeemableResponse } from "../../../Accessors/InviteAccessor/Responses/InviteNotRedeemableResponse";
 import { InviteAccessFailedResponse } from "../../../Accessors/InviteAccessor/Responses/InviteAccessFailedResponse";
+import { ReleaseInviteRequest } from "../../../Accessors/InviteAccessor/Requests/ReleaseInviteRequest";
+import { InviteReleasedResponse } from "../../../Accessors/InviteAccessor/Responses/InviteReleasedResponse";
 import { InviteRedeemedResponse } from "../../../Accessors/InviteAccessor/Responses/InviteRedeemedResponse";
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadSignUpPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
@@ -80,7 +82,7 @@ export class EnsureProfileHandler implements IHandler<
     if (!(counted instanceof ProfileCountResponse)) {
       return unavailable(correlationId, counted, "load");
     }
-    let standing = this.standingFor(counted.count, identity.email);
+    const standing = this.standingFor(counted.count, identity.email);
 
     if (standing === NEW_MEMBER) {
       const signUp = await this.siteConfig.load(new LoadSignUpPolicyRequest(context));
@@ -93,22 +95,64 @@ export class EnsureProfileHandler implements IHandler<
       // Invite-only: a live link lets a friend in at the level the admin chose, and
       // spends one use (#25). `open` ignores invites (SPEC.md §4).
       if (signUp.policy === "invite") {
-        if (request.inviteToken === null) {
-          return new SignUpClosedResponse(correlationId);
-        }
-        const redeemed = await this.invites.store(
-          new RedeemInviteRequest(await inviteTokenHash(request.inviteToken), context),
-        );
-        if (redeemed instanceof InviteNotRedeemableResponse) {
-          return new SignUpClosedResponse(correlationId);
-        }
-        if (!(redeemed instanceof InviteRedeemedResponse)) {
-          return unavailable(correlationId, redeemed, "invites.store");
-        }
-        standing = { role: "member", trustLevel: redeemed.trustLevel };
+        return this.joinByInvite(request, context);
       }
     }
+    return this.storeProfile(identity, standing, correlationId);
+  }
 
+  // Spends the use first, so two friends on a one-use link cannot both get in, and gives
+  // it back if the profile then fails to store. A second request for the same person
+  // (a double submit, a reloaded callback) finds the use gone; it answers the profile
+  // the first request made rather than refusing someone who is already in.
+  private async joinByInvite(
+    request: EnsureProfileRequest,
+    context: RequestContext,
+  ): Promise<ProfileResponse | SignUpClosedResponse | AccountUnavailableResponse> {
+    const { correlationId, identity, inviteToken } = request;
+    if (inviteToken === null) {
+      return new SignUpClosedResponse(correlationId);
+    }
+    const tokenHash = await inviteTokenHash(inviteToken);
+    const redeemed = await this.invites.store(
+      new RedeemInviteRequest(tokenHash, context),
+    );
+    if (redeemed instanceof InviteNotRedeemableResponse) {
+      const made = await this.profiles.load(
+        new LoadProfileByIdRequest(identity.userId, context),
+      );
+      return made instanceof ProfileLoadedResponse
+        ? new ProfileResponse(correlationId, made.profile)
+        : new SignUpClosedResponse(correlationId);
+    }
+    if (!(redeemed instanceof InviteRedeemedResponse)) {
+      return unavailable(correlationId, redeemed, "invites.store");
+    }
+    const created = await this.storeProfile(
+      identity,
+      { role: "member", trustLevel: redeemed.trustLevel },
+      correlationId,
+    );
+    if (!(created instanceof ProfileResponse)) {
+      const released = await this.invites.store(
+        new ReleaseInviteRequest(tokenHash, context),
+      );
+      if (!(released instanceof InviteReleasedResponse)) {
+        console.error(
+          `invite use not given back after a failed sign-in [${correlationId}]`,
+          released,
+        );
+      }
+    }
+    return created;
+  }
+
+  private async storeProfile(
+    identity: EnsureProfileRequest["identity"],
+    standing: Standing,
+    correlationId: string,
+  ): Promise<ProfileResponse | AccountUnavailableResponse> {
+    const context: RequestContext = { correlationId };
     for (let attempt = 1; attempt <= MAX_HANDLE_ATTEMPTS; attempt += 1) {
       const derived = await this.permissions.transform(
         new DeriveHandleRequest(identity.email, identity.displayName, attempt, context),

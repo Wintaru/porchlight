@@ -145,6 +145,25 @@ describe("DependencyContainer: invite links (#25)", () => {
     ).toBeInstanceOf(ActionForbiddenResponse);
   });
 
+  test("a returning member with a leftover link spends nothing, and closed ignores a link", async () => {
+    const { container, admin } = await inviteSite();
+    const { token } = await makeInvite(container, admin, { ...ONE_USE, maxUses: 2 });
+    await container.accountManager.execute(new EnsureProfileRequest(identity(1), token));
+    await container.accountManager.execute(new EnsureProfileRequest(identity(1), token));
+    expect(
+      await container.accountManager.query(new GetInvitesRequest(admin)),
+    ).toMatchObject({ invites: [{ usedCount: 1 }] });
+
+    const closed = new DependencyContainer({
+      ...FAKE_ENV,
+      SITE_CONFIG_FAKE_SIGN_UP: "closed",
+      PORCHLIGHT_ADMIN_EMAIL: "owner@example.com",
+    });
+    expect(
+      await closed.accountManager.execute(new EnsureProfileRequest(identity(2), token)),
+    ).toBeInstanceOf(SignUpClosedResponse);
+  });
+
   test("terms out of bounds are refused", async () => {
     const { container, admin } = await inviteSite();
     for (const terms of [

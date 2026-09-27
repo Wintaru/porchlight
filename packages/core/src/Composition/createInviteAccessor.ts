@@ -1,3 +1,6 @@
+import { FakeReleaseInviteHandler } from "../Accessors/InviteAccessor/Handlers/FakeReleaseInviteHandler";
+import { SupabaseReleaseInviteHandler } from "../Accessors/InviteAccessor/Handlers/SupabaseReleaseInviteHandler";
+import { ReleaseInviteRequest } from "../Accessors/InviteAccessor/Requests/ReleaseInviteRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { FakeInviteState } from "../Accessors/InviteAccessor/FakeInviteState";
@@ -38,6 +41,7 @@ export function createInviteAccessor(
             new SupabaseMarkInviteRevokedHandler(client),
           )
           .register(RedeemInviteRequest, new SupabaseRedeemInviteHandler(client))
+          .register(ReleaseInviteRequest, new SupabaseReleaseInviteHandler(client))
           .build(),
         new HandlerResolverBuilder()
           .register(ListInvitesRequest, new SupabaseListInvitesHandler(client))
@@ -54,6 +58,7 @@ export function createInviteAccessor(
           .register(StoreNewInviteRequest, new FakeStoreNewInviteHandler(state))
           .register(MarkInviteRevokedRequest, new FakeMarkInviteRevokedHandler(state))
           .register(RedeemInviteRequest, new FakeRedeemInviteHandler(state))
+          .register(ReleaseInviteRequest, new FakeReleaseInviteHandler(state))
           .build(),
         new HandlerResolverBuilder()
           .register(ListInvitesRequest, new FakeListInvitesHandler(state))
