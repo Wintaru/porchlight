@@ -26,7 +26,7 @@ export class FakeClaimPostAnnouncementHandler implements IHandler<
     if (this.state.announced.has(postId)) {
       return Promise.resolve(new PostAlreadyAnnouncedResponse(correlationId));
     }
-    this.state.announced.add(postId);
+    this.state.announced.set(postId, request.timestamp);
     return Promise.resolve(new PostAnnouncementClaimedResponse(correlationId));
   }
 }

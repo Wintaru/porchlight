@@ -76,7 +76,7 @@ Copy `.env.example` as the starting point and set these on the host:
 | `PROFILE_PROVIDER`              | Leave unset (`supabase`). `fake` is refused in production. |
 | `POST_PROVIDER`, `COMMENT_PROVIDER`, `REACTION_PROVIDER`, `SITE_CONFIG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. |
 | `MEMBER_BLOCK_PROVIDER`, `FOLLOW_PROVIDER`, `TAG_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. Member mutes and blocks (issue #23), follows and tag descriptions (issue #24). |
-| `EMAIL_PREFERENCE_PROVIDER`     | Leave unset (`supabase`). `fake` is refused in production. Member email settings and the digest sweep (issue #22). |
+| `EMAIL_PREFERENCE_PROVIDER`, `SUBSCRIBER_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. Member email settings, reader subscriptions and the digest sweep (issue #22). |
 | `ANONYMOUS_AUTHOR_PROVIDER`, `BLOCK_PROVIDER`, `RATE_LIMIT_PROVIDER` | Leave unset (`supabase`). `fake` is refused in production. Behind the D15 anonymous guard (issue #8). |
 | `EVIDENCE_IP_HASH_SALT`         | Required to admit any anonymous write. Generate once, never rotate — see `setup/turnstile.md`. |
 | `ANONYMOUS_LIMIT_PER_IP_PER_HOUR`, `ANONYMOUS_LIMIT_PER_TOKEN_PER_HOUR` | Optional. Defaults: 30 and 15. |

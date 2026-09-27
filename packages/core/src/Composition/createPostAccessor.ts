@@ -1,3 +1,6 @@
+import { LoadAnnouncedPostsRequest } from "../Accessors/PostAccessor/Requests/LoadAnnouncedPostsRequest";
+import { SupabaseLoadAnnouncedPostsHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadAnnouncedPostsHandler";
+import { FakeLoadAnnouncedPostsHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadAnnouncedPostsHandler";
 import { FakeLoadVoiceSamplesHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadVoiceSamplesHandler";
 import { SupabaseLoadVoiceSamplesHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadVoiceSamplesHandler";
 import { LoadVoiceSamplesRequest } from "../Accessors/PostAccessor/Requests/LoadVoiceSamplesRequest";
@@ -76,6 +79,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
         new SupabaseLoadPostRevisionsByAuthorHandler(db),
       )
       .register(LoadVoiceSamplesRequest, new SupabaseLoadVoiceSamplesHandler(db))
+      .register(LoadAnnouncedPostsRequest, new SupabaseLoadAnnouncedPostsHandler(db))
       .register(LoadPostsByStatusRequest, new SupabaseLoadPostsByStatusHandler(db))
       .build(),
     new HandlerResolverBuilder()
@@ -102,6 +106,7 @@ export function createFakePostAccessor(state: FakePostState): IPostAccessor {
         new FakeLoadPostRevisionsByAuthorHandler(state),
       )
       .register(LoadVoiceSamplesRequest, new FakeLoadVoiceSamplesHandler(state))
+      .register(LoadAnnouncedPostsRequest, new FakeLoadAnnouncedPostsHandler(state))
       .register(LoadPostsByStatusRequest, new FakeLoadPostsByStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()
