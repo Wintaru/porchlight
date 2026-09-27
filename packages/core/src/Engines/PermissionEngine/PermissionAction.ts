@@ -34,6 +34,7 @@ export const PERMISSION_ACTIONS = [
   "voice.view",
   "voice.edit",
   "member.block",
+  "member.follow",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

@@ -146,6 +146,8 @@ export { UpdateProfileRequest } from "./Managers/AccountManager/Requests/UpdateP
 export { GetVoiceGuideRequest } from "./Managers/AccountManager/Requests/GetVoiceGuideRequest";
 export { UpdateVoiceGuideRequest } from "./Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 export { SetMemberBlockRequest } from "./Managers/AccountManager/Requests/SetMemberBlockRequest";
+export { FollowRequest } from "./Managers/AccountManager/Requests/FollowRequest";
+export { UnfollowRequest } from "./Managers/AccountManager/Requests/UnfollowRequest";
 export { AccountErasedResponse } from "./Managers/AccountManager/Responses/AccountErasedResponse";
 export { AgentActorResponse } from "./Managers/AccountManager/Responses/AgentActorResponse";
 export { NoAgentActorResponse } from "./Managers/AccountManager/Responses/NoAgentActorResponse";
@@ -167,6 +169,9 @@ export { ProfileResponse } from "./Managers/AccountManager/Responses/ProfileResp
 export { VoiceGuideRejectedResponse } from "./Managers/AccountManager/Responses/VoiceGuideRejectedResponse";
 export { MemberBlockSetResponse } from "./Managers/AccountManager/Responses/MemberBlockSetResponse";
 export { MemberBlockRejectedResponse } from "./Managers/AccountManager/Responses/MemberBlockRejectedResponse";
+export { FollowSetResponse } from "./Managers/AccountManager/Responses/FollowSetResponse";
+export { FollowRejectedResponse } from "./Managers/AccountManager/Responses/FollowRejectedResponse";
+export type { FollowTarget } from "./Common/FollowTarget";
 export { VoiceGuideResponse } from "./Managers/AccountManager/Responses/VoiceGuideResponse";
 export { SignUpClosedResponse } from "./Managers/AccountManager/Responses/SignUpClosedResponse";
 

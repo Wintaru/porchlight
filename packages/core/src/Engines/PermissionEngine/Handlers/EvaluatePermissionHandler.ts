@@ -158,6 +158,8 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "voice.edit": mayManageOwnAccount,
   // A member mutes and blocks for themselves (#23), never on another's behalf.
   "member.block": mayManageOwnAccount,
+  // A member follows for themselves (#24).
+  "member.follow": mayManageOwnAccount,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -611,6 +613,7 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "voice.view": agentMayReadVoiceGuide,
   "voice.edit": agentMayWriteVoiceGuide,
   "member.block": deny,
+  "member.follow": deny,
 };
 
 function deny(): Promise<Denial> {

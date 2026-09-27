@@ -18,6 +18,8 @@ import { ResolveAgentTokenHandler } from "../Managers/AccountManager/Handlers/Re
 import { RevokeAgentTokenHandler } from "../Managers/AccountManager/Handlers/RevokeAgentTokenHandler";
 import { UpdateProfileHandler } from "../Managers/AccountManager/Handlers/UpdateProfileHandler";
 import { SetMemberBlockHandler } from "../Managers/AccountManager/Handlers/SetMemberBlockHandler";
+import { FollowHandler } from "../Managers/AccountManager/Handlers/FollowHandler";
+import { UnfollowHandler } from "../Managers/AccountManager/Handlers/UnfollowHandler";
 import type { IAccountManager } from "../Managers/AccountManager/IAccountManager";
 import { ClaimAnonymousPostsRequest } from "../Managers/AccountManager/Requests/ClaimAnonymousPostsRequest";
 import { CreateAgentTokenRequest } from "../Managers/AccountManager/Requests/CreateAgentTokenRequest";
@@ -31,6 +33,8 @@ import { ResolveAgentTokenRequest } from "../Managers/AccountManager/Requests/Re
 import { RevokeAgentTokenRequest } from "../Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
 import { SetMemberBlockRequest } from "../Managers/AccountManager/Requests/SetMemberBlockRequest";
+import { FollowRequest } from "../Managers/AccountManager/Requests/FollowRequest";
+import { UnfollowRequest } from "../Managers/AccountManager/Requests/UnfollowRequest";
 import { CommentManager } from "../Managers/CommentManager/CommentManager";
 import { CheckCanCommentAnonymouslyHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentAnonymouslyHandler";
 import { CheckCanCommentHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentHandler";
@@ -191,6 +195,7 @@ import { createQuotaEngine } from "./createQuotaEngine";
 import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
 import { createMemberBlockAccessor } from "./createMemberBlockAccessor";
+import { createFollowAccessor } from "./createFollowAccessor";
 import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
@@ -223,6 +228,7 @@ export class DependencyContainer {
     const comments = createCommentAccessor(env, db);
     const reactions = createReactionAccessor(env, db);
     const memberBlocks = createMemberBlockAccessor(env, db);
+    const follows = createFollowAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine();
@@ -281,6 +287,8 @@ export class DependencyContainer {
           SetMemberBlockRequest,
           new SetMemberBlockHandler(memberBlocks, profiles, permissions),
         )
+        .register(FollowRequest, new FollowHandler(follows, profiles, permissions))
+        .register(UnfollowRequest, new UnfollowHandler(follows, permissions))
         .register(
           UpdateVoiceGuideRequest,
           new UpdateVoiceGuideHandler(profiles, posts, permissions),
@@ -337,6 +345,7 @@ export class DependencyContainer {
             agentTokens,
             permissions,
             memberBlocks,
+            follows,
           ),
         )
         .build(),

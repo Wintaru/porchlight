@@ -1,6 +1,9 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { ListAgentTokensByOwnerRequest } from "../../../Accessors/AgentTokenAccessor/Requests/ListAgentTokensByOwnerRequest";
 import { AgentTokensLoadedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokensLoadedResponse";
+import type { IFollowAccessor } from "../../../Accessors/FollowAccessor/IFollowAccessor";
+import { LoadFollowsByMemberRequest } from "../../../Accessors/FollowAccessor/Requests/LoadFollowsByMemberRequest";
+import { FollowsLoadedResponse } from "../../../Accessors/FollowAccessor/Responses/FollowsLoadedResponse";
 import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
 import { LoadMemberBlocksByMemberRequest } from "../../../Accessors/MemberBlockAccessor/Requests/LoadMemberBlocksByMemberRequest";
 import { MemberBlocksLoadedResponse } from "../../../Accessors/MemberBlockAccessor/Responses/MemberBlocksLoadedResponse";
@@ -26,6 +29,7 @@ import { ReactionsLoadedResponse } from "../../../Accessors/ReactionAccessor/Res
 import type { Comment } from "../../../Common/Comment";
 import type { IHandler } from "../../../Common/IHandler";
 import type { LiveComment } from "../../../Common/LiveComment";
+import type { Follow } from "../../../Common/Follow";
 import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { MemberBlock } from "../../../Common/MemberBlock";
 import type { Post } from "../../../Common/Post";
@@ -54,6 +58,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     private readonly agentTokens: IAgentTokenAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly memberBlocks: IMemberBlockAccessor,
+    private readonly follows: IFollowAccessor,
   ) {}
 
   async handle(request: ExportAccountRequest): Promise<Result> {
@@ -120,6 +125,12 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     if (!(loadedBlocks instanceof MemberBlocksLoadedResponse)) {
       return unavailable(correlationId, loadedBlocks, "memberBlocks.load");
     }
+    const loadedFollows = await this.follows.load(
+      new LoadFollowsByMemberRequest(profileId, context),
+    );
+    if (!(loadedFollows instanceof FollowsLoadedResponse)) {
+      return unavailable(correlationId, loadedFollows, "follows.load");
+    }
 
     // A tombstone has no words left to export, and cannot be one of this member's own
     // rows anyway: erasure is the only thing that creates one, and this handler always
@@ -148,6 +159,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
           voiceGuide: loadedGuide.guideMd,
           agentTokens: loadedTokens.tokens.map(tokenJson),
           mutesAndBlocks: loadedBlocks.blocks.map(memberBlockJson),
+          follows: loadedFollows.follows.map(followJson),
         },
         null,
         2,
@@ -251,6 +263,11 @@ function memberBlockJson(block: MemberBlock) {
     level: block.level,
     createdAt: block.createdAt.toISOString(),
   };
+}
+
+// What the member follows (#24), by profile id or tag id.
+function followJson(follow: Follow) {
+  return { ...follow.target, createdAt: follow.createdAt.toISOString() };
 }
 
 function mediaJson(asset: MediaAsset) {
