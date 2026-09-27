@@ -63,7 +63,15 @@ The agent reads the guide with `get_voice_guide` before it drafts.
 With the guide, the agent also receives two things you do not write:
 
 - A list of phrases that every guide bans, such as "delve" and "in conclusion". You
-  can add your own to your rules. You cannot remove the default ones.
+  cannot remove the default ones. To add your own, put a heading with the word
+  "banned" in your guide, and list one phrase on each line under it:
+
+  ```markdown
+  ## Banned phrases
+
+  - circle back
+  - super excited
+  ```
 - Your five latest published posts **that you wrote in the editor**, as samples of your
   writing. A post an agent drafted never counts, even after you edit it, so the agent
   does not learn from itself.
@@ -75,7 +83,8 @@ account deletes it.
 
 The server tells every connecting agent the house rules before it writes: draft from
 your notes and your voice guide only, do not pad, do not add a closing summary, do not
-invent facts or opinions, one draft per request, and read the voice guide first.
+invent facts or opinions, one draft per request, read the voice guide first, and run
+`check_draft` before it saves.
 
 ## The tools
 
@@ -85,6 +94,7 @@ invent facts or opinions, one draft per request, and read the voice guide first.
 | `list_posts` | Your own posts, newest first, filtered by status. Titles and status, not bodies — use `get_post` for one. |
 | `get_voice_guide` | Your rules, the default banned phrases, and your latest hand-written posts as samples. |
 | `update_voice_guide` | Replaces your rules with new text. Needs the **Change your voice guide** scope. |
+| `check_draft` | Checks a draft's text for your banned phrases and a few signs of machine writing. It gives warnings only. The editor has the same check as a **Check** button. |
 | `get_post` | One of your own posts, by id or slug. For a post the agent drafted, it also returns the agent's first text. |
 | `create_draft` | Starts a draft. Never publishes. |
 | `update_draft` | Changes a draft of yours. |

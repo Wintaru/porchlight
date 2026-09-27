@@ -5,6 +5,9 @@ import {
   AgentActorResponse,
   AgentLimitsResponse,
   agentsOpenTo,
+  CheckDraftRequest,
+  DraftCheckResponse,
+  draftWarningText,
   CreateDraftRequest,
   DEFAULT_AGENT_LIMITS,
   DeletePostRequest,
@@ -177,6 +180,31 @@ function registerTools(
       }
       const view = toVoiceGuideView(response.guide);
       return ok({ ...view }, voiceGuideText(view));
+    },
+  );
+
+  server.registerTool(
+    "check_draft",
+    {
+      description:
+        "Check a draft's markdown against the member's voice guide and a few tells of generated text: banned phrases, sentences all the same length, many lists of three, a heading on every paragraph, a closing summary. Warnings only. Run it before create_draft or update_draft and fix what it finds.",
+      inputSchema: z.object({ body_md: z.string() }),
+    },
+    async ({ body_md }) => {
+      const response = await accountManager.query(new CheckDraftRequest(actor, body_md));
+      if (!(response instanceof DraftCheckResponse)) {
+        return voiceRefusalFor(response, "check_draft");
+      }
+      const warnings = response.warnings.map((warning) => ({
+        ...warning,
+        text: draftWarningText(warning),
+      }));
+      return ok(
+        { warnings },
+        warnings.length === 0
+          ? "No warnings."
+          : warnings.map((warning) => `- ${warning.text}`).join("\n"),
+      );
     },
   );
 

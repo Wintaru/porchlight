@@ -3,7 +3,7 @@
 import type { Post, TrustLevel } from "@porchlight/core";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
-import { autosavePost, previewPost, submitPost } from "@/app/write/actions";
+import { autosavePost, checkDraft, previewPost, submitPost } from "@/app/write/actions";
 import {
   SUMMARY_MAX_LENGTH,
   TAGS_MAX_COUNT,
@@ -17,6 +17,7 @@ import { CoverPicker } from "./CoverPicker";
 import { classNames } from "@/lib/class-names";
 import { MATURE_TAG } from "@/lib/mature-tag";
 import styles from "./editor.module.css";
+import { CheckDialog, type CheckState } from "./CheckDialog";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
 import { TagInput } from "./TagInput";
 
@@ -79,6 +80,7 @@ export function PostEditor({
   const [edits, setEdits] = useState(0);
   const editsRef = useRef(0);
   const [preview, setPreview] = useState<PreviewState>({ kind: "closed" });
+  const [check, setCheck] = useState<CheckState>({ kind: "closed" });
   // Set by a Save or Publish and never cleared: the redirect remounts the editor. It
   // stops the timer and the buttons, so one draft is never created twice.
   const [submitting, setSubmitting] = useState(false);
@@ -189,6 +191,21 @@ export function PostEditor({
     );
   };
 
+  const openCheck = () => {
+    setCheck({ kind: "loading" });
+    checkDraft(bodyRef.current).then(
+      (result) => {
+        setCheck(
+          result.ok ? { kind: "ready", warnings: result.warnings } : { kind: "failed" },
+        );
+      },
+      (error: unknown) => {
+        console.error("draft check failed", error);
+        setCheck({ kind: "failed" });
+      },
+    );
+  };
+
   const allTags = mature ? [...tags, MATURE_TAG] : tags;
   const locked = submitting || save.kind === "saving";
   const status = statusText(save, isDraft, title);
@@ -223,6 +240,9 @@ export function PostEditor({
           )}
           <button type="button" className={styles.button} onClick={openPreview}>
             Preview
+          </button>
+          <button type="button" className={styles.button} onClick={openCheck}>
+            Check
           </button>
           <button
             type="submit"
@@ -355,6 +375,12 @@ export function PostEditor({
           )}
         </aside>
       </div>
+      <CheckDialog
+        state={check}
+        onClose={() => {
+          setCheck({ kind: "closed" });
+        }}
+      />
       <PreviewDialog
         state={preview}
         title={title}

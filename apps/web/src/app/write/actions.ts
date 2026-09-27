@@ -2,8 +2,11 @@
 
 import {
   type Actor,
+  CheckDraftRequest,
   CreateDraftRequest,
   DeletePostRequest,
+  DraftCheckResponse,
+  draftWarningText,
   type Post,
   PostDeletedResponse,
   PostForbiddenResponse,
@@ -25,7 +28,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
 import { returnPathOf } from "@/lib/return-path";
-import type { AutosaveResult, PreviewResult } from "./editor-results";
+import type { AutosaveResult, CheckResult, PreviewResult } from "./editor-results";
 import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
 
 // The editor's Server Functions. The Manager owns every rule (who may write, what a
@@ -106,6 +109,26 @@ export async function previewPost(bodyMd: unknown): Promise<PreviewResult> {
     return { ok: false };
   }
   return { ok: true, bodyHtml: response.bodyHtml };
+}
+
+// The Check button (#32): the draft check against the member's own voice guide. Warnings
+// only, nothing stored, the same check an agent runs with check_draft.
+export async function checkDraft(bodyMd: unknown): Promise<CheckResult> {
+  if (typeof bodyMd !== "string" || bodyMd.length > BODY_MAX_LENGTH) {
+    return { ok: false };
+  }
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member") {
+    return { ok: false };
+  }
+  const response = await getDependencyContainer().accountManager.query(
+    new CheckDraftRequest(actor, bodyMd),
+  );
+  if (!(response instanceof DraftCheckResponse)) {
+    console.error(`draft check failed [${response.correlationId}]`, response);
+    return { ok: false };
+  }
+  return { ok: true, warnings: response.warnings.map(draftWarningText) };
 }
 
 // From the editor, back to the editor. From the post page, the form carries the post's

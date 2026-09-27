@@ -7,3 +7,7 @@ export type AutosaveResult =
 
 export type PreviewResult =
   { readonly ok: true; readonly bodyHtml: string } | { readonly ok: false };
+
+// The Check button's answer (#32): each warning as its sentence, or a failure.
+export type CheckResult =
+  { readonly ok: true; readonly warnings: readonly string[] } | { readonly ok: false };
