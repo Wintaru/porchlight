@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { type Browser, expect, type Page, test } from "@playwright/test";
+import { type Browser, expect, type Page, test, type Locator } from "@playwright/test";
 
 import { deleteCurrentPost, devSignIn, fillBodyMarkdown, MIRA, THEO } from "./helpers";
 
@@ -104,17 +104,29 @@ test("a cover, a picture and a PDF go into a post, from a re-encoded public copy
 
   // The feed card and the tag page's card show the same cover (#73). A seeded post
   // with no cover has no image on its card.
+  // On each list the cover sits to the right of the text at desktop width, cropped
+  // rather than stretched, and above it at phone width (#76).
   const postUrl = page.url();
-  for (const list of ["/", "/t/making"]) {
+  for (const list of ["/", "/t/making", "/@theo"]) {
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(list);
     const card = page
       .getByTestId("post-card")
       .filter({ hasText: `Sawhorse notes ${stamp}` });
-    await expect(card.getByTestId("post-card-cover").locator("img")).toHaveAttribute(
-      "src",
-      coverUrl,
-    );
+    const coverImage = card.getByTestId("post-card-cover").locator("img");
+    await expect(coverImage).toHaveAttribute("src", coverUrl);
+    await expect(coverImage).toHaveCSS("object-fit", "cover");
+    const title = card.getByRole("heading", { level: 2 });
+    await expect(coverImage).toBeVisible();
+    const [titleBox, coverBox] = [await boxOf(title), await boxOf(coverImage)];
+    expect(coverBox.x).toBeGreaterThanOrEqual(titleBox.x + titleBox.width);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(coverImage).toBeVisible();
+    const [narrowTitle, narrowCover] = [await boxOf(title), await boxOf(coverImage)];
+    expect(narrowCover.y + narrowCover.height).toBeLessThanOrEqual(narrowTitle.y);
   }
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
   await expect(
     page
@@ -213,3 +225,18 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   await deleteCurrentPost(page);
   await removeUploads(page, [cover]);
 });
+
+// A visible element's box. A hidden one has none, and a check against a made-up zero
+// would pass for the wrong reason.
+async function boxOf(locator: Locator): Promise<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}> {
+  const box = await locator.boundingBox();
+  if (box === null) {
+    throw new Error("expected a visible element with a box");
+  }
+  return box;
+}

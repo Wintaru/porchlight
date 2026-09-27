@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { formatDate } from "@/lib/format-date";
 import { shownCover } from "@/lib/post-cover";
@@ -54,7 +55,7 @@ export function PostCardList({ posts, empty, variant = "card" }: PostCardListPro
 function PostCardItem({ post }: { readonly post: PostCard }) {
   const author = post.author;
   return (
-    <>
+    <WithCover post={post}>
       <p className={styles.byline}>
         <Avatar
           src={author?.avatar_url ?? null}
@@ -75,20 +76,44 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
           <Link href={`/@${author.handle}/${post.slug}`}>{post.title}</Link>
         )}
       </h2>
-      <CardCover post={post} />
       {post.summary !== null && <p className={styles.summary}>{post.summary}</p>}
       <TagChips tags={post.post_tags} />
-    </>
+    </WithCover>
   );
 }
 
-// The Main board's cover: under the title, the card's width, a fixed height (#73).
-// The same rule as the post page decides whether it shows and whether it blurs.
-function CardCover({ post }: { readonly post: PostCard }) {
+// The text on the left, the cover on the right as a cropped thumbnail (#76), stacked
+// with the picture on top on a narrow screen. A post with no cover keeps the text at
+// full width.
+function WithCover({
+  post,
+  children,
+}: {
+  readonly post: PostCard;
+  readonly children: ReactNode;
+}) {
   const cover = shownCover(post);
   if (cover === undefined) {
-    return null;
+    return <>{children}</>;
   }
+  return (
+    <div className={styles.withCover}>
+      <div className={styles.text}>{children}</div>
+      <CardCover post={post} cover={cover} />
+    </div>
+  );
+}
+
+// The card's cover (#73, #76): a fixed box, cropped to fill, so a wide or tall picture
+// is never stretched. The same rule as the post page decides whether it shows and
+// whether it blurs.
+function CardCover({
+  post,
+  cover,
+}: {
+  readonly post: PostCard;
+  readonly cover: NonNullable<ReturnType<typeof shownCover>>;
+}) {
   return (
     <div className={styles.cover} data-testid="post-card-cover">
       {cover.mature ? (
@@ -104,7 +129,7 @@ function CardCover({ post }: { readonly post: PostCard }) {
 function PostRow({ post }: { readonly post: PostCard }) {
   const author = post.author;
   return (
-    <>
+    <WithCover post={post}>
       <h2 className={styles.rowTitle}>
         {author === null ? (
           post.title
@@ -116,7 +141,7 @@ function PostRow({ post }: { readonly post: PostCard }) {
         <p className={styles.rowMeta}>{formatDate(post.published_at)}</p>
       )}
       <TagChips tags={post.post_tags} />
-    </>
+    </WithCover>
   );
 }
 
