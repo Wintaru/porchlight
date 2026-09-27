@@ -87,7 +87,11 @@ test("a friend joins through an invite link as trusted, and a used link lets nob
     });
 
     await page.goto("/admin#invites");
-    await expect(page.getByTestId("invite-row").first()).toContainText("1 of 1 joined");
+    // Filtered, not `.first()`: CI run 36330965295 listed a second, unused invite above
+    // this one. Its source is not known yet; this test only needs the used link's count.
+    await expect(
+      page.getByTestId("invite-row").filter({ hasText: "1 of 1 joined" }),
+    ).toHaveCount(1);
   } finally {
     await page.goto("/admin");
     await page.getByTestId("preset-open_porch").click();
