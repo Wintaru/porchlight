@@ -324,6 +324,8 @@ export { EmailSettingsResponse } from "./Managers/NotificationManager/Responses/
 export { DigestsSentResponse } from "./Managers/NotificationManager/Responses/DigestsSentResponse";
 export { UnsubscribedResponse } from "./Managers/NotificationManager/Responses/UnsubscribedResponse";
 export { SubscribeRequest } from "./Managers/NotificationManager/Requests/SubscribeRequest";
+export { GetEmailAvailabilityRequest } from "./Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
+export { EmailAvailabilityResponse } from "./Managers/NotificationManager/Responses/EmailAvailabilityResponse";
 export { ConfirmSubscriptionRequest } from "./Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
 export { SubscriptionRequestedResponse } from "./Managers/NotificationManager/Responses/SubscriptionRequestedResponse";
 export {

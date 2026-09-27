@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { Actor } from "../Common/Actor";
 import type { Profile } from "../Common/Profile";
+import { GetEmailAvailabilityRequest } from "../Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 import { GetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/GetEmailSettingsRequest";
 import { SetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/SetEmailSettingsRequest";
 import { ConfirmSubscriptionRequest } from "../Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
@@ -98,6 +99,9 @@ describe("DependencyContainer: email settings (#22)", () => {
     const container = new DependencyContainer(FAKE_ENV);
     expect(
       await container.notificationManager.query(new GetEmailSettingsRequest(JUNE)),
+    ).toMatchObject({ enabled: false });
+    expect(
+      await container.notificationManager.query(new GetEmailAvailabilityRequest()),
     ).toMatchObject({ enabled: false });
   });
 

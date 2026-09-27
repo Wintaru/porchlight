@@ -77,6 +77,8 @@ import { ConfirmSubscriptionHandler } from "../Managers/NotificationManager/Hand
 import { SubscribeHandler } from "../Managers/NotificationManager/Handlers/SubscribeHandler";
 import { ConfirmSubscriptionRequest } from "../Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
 import { SubscribeRequest } from "../Managers/NotificationManager/Requests/SubscribeRequest";
+import { GetEmailAvailabilityHandler } from "../Managers/NotificationManager/Handlers/GetEmailAvailabilityHandler";
+import { GetEmailAvailabilityRequest } from "../Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -845,6 +847,10 @@ export class DependencyContainer {
         .register(
           GetEmailSettingsRequest,
           new GetEmailSettingsHandler(emailPreferences, permissions, emailOptions),
+        )
+        .register(
+          GetEmailAvailabilityRequest,
+          new GetEmailAvailabilityHandler(emailOptions),
         )
         .build(),
     );
