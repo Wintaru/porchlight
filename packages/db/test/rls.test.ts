@@ -679,3 +679,41 @@ describe("a signed-in member", () => {
     expect(code).toBe(INSUFFICIENT_PRIVILEGE);
   });
 });
+
+// Issue #75: presence channels are for active members only, and a member's choice to
+// be seen stays on the server.
+describe("presence (#75)", () => {
+  test("presence_allowed answers true for an active member and false for an erased one", async () => {
+    const active = await asRole(
+      sql,
+      "authenticated",
+      (tx) => tx<{ ok: boolean }[]>`select public.presence_allowed() as ok`,
+      SEED.trustedMember,
+    );
+    const erased = await asRole(
+      sql,
+      "authenticated",
+      (tx) => tx<{ ok: boolean }[]>`select public.presence_allowed() as ok`,
+      SEED.erasedMember,
+    );
+    expect([active[0]?.ok, erased[0]?.ok]).toEqual([true, false]);
+  });
+
+  test("a visitor cannot ask, and no browser role reads show_presence", async () => {
+    const anonCall = await errorCodeOf(() =>
+      asRole(sql, "anon", (tx) => tx`select public.presence_allowed()`),
+    );
+    expect(anonCall).toBe(INSUFFICIENT_PRIVILEGE);
+    for (const role of BROWSER_ROLES) {
+      const code = await errorCodeOf(() =>
+        asRole(
+          sql,
+          role,
+          (tx) => tx`select show_presence from public.profiles limit 1`,
+          SEED.trustedMember,
+        ),
+      );
+      expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
+    }
+  });
+});

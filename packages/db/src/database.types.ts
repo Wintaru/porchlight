@@ -809,6 +809,7 @@ export type Database = {
           handle: string
           id: string
           role: Database["public"]["Enums"]["user_role"]
+          show_presence: boolean
           status: Database["public"]["Enums"]["profile_status"]
           trust_level: Database["public"]["Enums"]["trust_level"]
           updated_at: string
@@ -822,6 +823,7 @@ export type Database = {
           handle: string
           id: string
           role?: Database["public"]["Enums"]["user_role"]
+          show_presence?: boolean
           status?: Database["public"]["Enums"]["profile_status"]
           trust_level?: Database["public"]["Enums"]["trust_level"]
           updated_at?: string
@@ -835,6 +837,7 @@ export type Database = {
           handle?: string
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
+          show_presence?: boolean
           status?: Database["public"]["Enums"]["profile_status"]
           trust_level?: Database["public"]["Enums"]["trust_level"]
           updated_at?: string
@@ -1354,6 +1357,7 @@ export type Database = {
         Args: { p_body_md: string; p_summary: string; p_title: string }
         Returns: unknown
       }
+      presence_allowed: { Args: never; Returns: boolean }
       published_author_count: { Args: never; Returns: number }
       redeem_invite: {
         Args: { p_token_hash: string }
