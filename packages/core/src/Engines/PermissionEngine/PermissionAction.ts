@@ -33,6 +33,7 @@ export const PERMISSION_ACTIONS = [
   "token.manage",
   "voice.view",
   "voice.edit",
+  "member.block",
 ] as const;
 
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

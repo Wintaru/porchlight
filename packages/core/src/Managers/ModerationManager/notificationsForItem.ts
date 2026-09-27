@@ -1,6 +1,9 @@
 import type { ICommentAccessor } from "../../Accessors/CommentAccessor/ICommentAccessor";
 import { LoadCommentByIdRequest } from "../../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
 import { CommentLoadedResponse } from "../../Accessors/CommentAccessor/Responses/CommentLoadedResponse";
+import type { IMemberBlockAccessor } from "../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
+import { LoadMemberBlocksOfTargetRequest } from "../../Accessors/MemberBlockAccessor/Requests/LoadMemberBlocksOfTargetRequest";
+import { MemberBlocksLoadedResponse } from "../../Accessors/MemberBlockAccessor/Responses/MemberBlocksLoadedResponse";
 import type { NotificationKind } from "../../Common/NotificationKind";
 import type { RequestContext } from "../../Common/RequestContext";
 import type { LoadedItem } from "./LoadedItem";
@@ -29,9 +32,13 @@ export function authorNotice(
 // When the approved item is a reply, the comment it answers gets its own notice
 // (SPEC.md §8): the parent author asked to be told, distinct from `authorNotice`
 // telling the reply's own author their comment is now visible. Silent when the two
-// are the same person (a reply to your own comment) — nobody notifies themself.
+// are the same person (a reply to your own comment) — nobody notifies themself — and
+// when the parent's author muted or blocked the reply's author (#23), the same rule
+// CreateComment applies to a reply that is visible at once. Like a parent that cannot
+// be loaded, a mute check that cannot be read sends no notice: the approval stands.
 export async function replyNotice(
   comments: ICommentAccessor,
+  memberBlocks: IMemberBlockAccessor,
   item: LoadedItem,
   context: Required<Pick<RequestContext, "correlationId">>,
 ): Promise<NotificationToSend[]> {
@@ -48,11 +55,21 @@ export async function replyNotice(
   ) {
     return [];
   }
-  if (
-    item.comment.author.kind === "member" &&
-    item.comment.author.profileId === parent.comment.author.profileId
-  ) {
-    return [];
+  const replier = item.comment.author;
+  if (replier.kind === "member") {
+    if (replier.profileId === parent.comment.author.profileId) {
+      return [];
+    }
+    const held = await memberBlocks.load(
+      new LoadMemberBlocksOfTargetRequest(
+        replier.profileId,
+        [parent.comment.author.profileId],
+        context,
+      ),
+    );
+    if (!(held instanceof MemberBlocksLoadedResponse) || held.blocks.length > 0) {
+      return [];
+    }
   }
   return [
     {

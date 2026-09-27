@@ -320,6 +320,42 @@ export type Database = {
           },
         ]
       }
+      member_blocks: {
+        Row: {
+          created_at: string
+          level: Database["public"]["Enums"]["member_block_level"]
+          member_id: string
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          level: Database["public"]["Enums"]["member_block_level"]
+          member_id: string
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          level?: Database["public"]["Enums"]["member_block_level"]
+          member_id?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_blocks_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_blocks_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mod_actions: {
         Row: {
           action: Database["public"]["Enums"]["mod_action_kind"]
@@ -1053,6 +1089,7 @@ export type Database = {
         | "removed"
         | "tombstone"
       media_kind: "image" | "document" | "model" | "track" | "video"
+      member_block_level: "mute" | "block"
       mod_action_kind:
         | "approve"
         | "approve_mature"
@@ -1243,6 +1280,7 @@ export const Constants = {
         "tombstone",
       ],
       media_kind: ["image", "document", "model", "track", "video"],
+      member_block_level: ["mute", "block"],
       mod_action_kind: [
         "approve",
         "approve_mature",

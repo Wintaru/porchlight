@@ -1,5 +1,6 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
+import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
 import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
@@ -35,6 +36,7 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
     private readonly reports: IReportAccessor,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly memberBlocks: IMemberBlockAccessor,
   ) {}
 
   async handle(request: ApproveItemRequest): Promise<Result> {
@@ -70,7 +72,7 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
 
     const notify = [
       ...authorNotice(item, "item.approved"),
-      ...(await replyNotice(this.comments, item, context)),
+      ...(await replyNotice(this.comments, this.memberBlocks, item, context)),
     ];
     const recorded = await recordModeration(
       this.modActions,

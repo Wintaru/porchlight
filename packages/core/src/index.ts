@@ -120,6 +120,7 @@ export {
   UNTRUSTED_CLIENT_IP,
 } from "./Common/Retention";
 export { REACTION_KINDS, type ReactionKind } from "./Common/ReactionKind";
+export { MEMBER_BLOCK_LEVELS, type MemberBlockLevel } from "./Common/MemberBlockLevel";
 export type { ReactionTarget } from "./Common/ReactionTarget";
 export type { Tag } from "./Common/Tag";
 export type { TombstoneComment } from "./Common/TombstoneComment";
@@ -143,6 +144,7 @@ export { GetProfileRequest } from "./Managers/AccountManager/Requests/GetProfile
 export { UpdateProfileRequest } from "./Managers/AccountManager/Requests/UpdateProfileRequest";
 export { GetVoiceGuideRequest } from "./Managers/AccountManager/Requests/GetVoiceGuideRequest";
 export { UpdateVoiceGuideRequest } from "./Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
+export { SetMemberBlockRequest } from "./Managers/AccountManager/Requests/SetMemberBlockRequest";
 export { AccountErasedResponse } from "./Managers/AccountManager/Responses/AccountErasedResponse";
 export { AgentActorResponse } from "./Managers/AccountManager/Responses/AgentActorResponse";
 export { NoAgentActorResponse } from "./Managers/AccountManager/Responses/NoAgentActorResponse";
@@ -162,6 +164,8 @@ export { HandleRejectedResponse } from "./Managers/AccountManager/Responses/Hand
 export { NoSuchProfileResponse } from "./Managers/AccountManager/Responses/NoSuchProfileResponse";
 export { ProfileResponse } from "./Managers/AccountManager/Responses/ProfileResponse";
 export { VoiceGuideRejectedResponse } from "./Managers/AccountManager/Responses/VoiceGuideRejectedResponse";
+export { MemberBlockSetResponse } from "./Managers/AccountManager/Responses/MemberBlockSetResponse";
+export { MemberBlockRejectedResponse } from "./Managers/AccountManager/Responses/MemberBlockRejectedResponse";
 export { VoiceGuideResponse } from "./Managers/AccountManager/Responses/VoiceGuideResponse";
 export { SignUpClosedResponse } from "./Managers/AccountManager/Responses/SignUpClosedResponse";
 

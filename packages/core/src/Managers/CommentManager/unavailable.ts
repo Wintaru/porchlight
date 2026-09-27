@@ -1,4 +1,5 @@
 import { CommentAccessFailedResponse } from "../../Accessors/CommentAccessor/Responses/CommentAccessFailedResponse";
+import { MemberBlockAccessFailedResponse } from "../../Accessors/MemberBlockAccessor/Responses/MemberBlockAccessFailedResponse";
 import { PostAccessFailedResponse } from "../../Accessors/PostAccessor/Responses/PostAccessFailedResponse";
 import { ProfileAccessFailedResponse } from "../../Accessors/ProfileAccessor/Responses/ProfileAccessFailedResponse";
 import { ReactionAccessFailedResponse } from "../../Accessors/ReactionAccessor/Responses/ReactionAccessFailedResponse";
@@ -16,7 +17,8 @@ export function unavailable(
     response instanceof CommentAccessFailedResponse ||
     response instanceof PostAccessFailedResponse ||
     response instanceof ProfileAccessFailedResponse ||
-    response instanceof ReactionAccessFailedResponse
+    response instanceof ReactionAccessFailedResponse ||
+    response instanceof MemberBlockAccessFailedResponse
       ? response.reason
       : `unexpected ${response.constructor.name} from ${method}`;
   return new CommentUnavailableResponse(correlationId, reason);

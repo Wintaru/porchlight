@@ -1,6 +1,9 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { ListAgentTokensByOwnerRequest } from "../../../Accessors/AgentTokenAccessor/Requests/ListAgentTokensByOwnerRequest";
 import { AgentTokensLoadedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokensLoadedResponse";
+import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
+import { LoadMemberBlocksByMemberRequest } from "../../../Accessors/MemberBlockAccessor/Requests/LoadMemberBlocksByMemberRequest";
+import { MemberBlocksLoadedResponse } from "../../../Accessors/MemberBlockAccessor/Responses/MemberBlocksLoadedResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import { LoadVoiceGuideRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRequest";
 import { VoiceGuideLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/VoiceGuideLoadedResponse";
@@ -22,6 +25,7 @@ import type { Comment } from "../../../Common/Comment";
 import type { IHandler } from "../../../Common/IHandler";
 import type { LiveComment } from "../../../Common/LiveComment";
 import type { MediaAsset } from "../../../Common/MediaAsset";
+import type { MemberBlock } from "../../../Common/MemberBlock";
 import type { Post } from "../../../Common/Post";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { createZipArchive } from "../../../Utilities/export/createZipArchive";
@@ -46,6 +50,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     private readonly profiles: IProfileAccessor,
     private readonly agentTokens: IAgentTokenAccessor,
     private readonly permissions: IPermissionEngine,
+    private readonly memberBlocks: IMemberBlockAccessor,
   ) {}
 
   async handle(request: ExportAccountRequest): Promise<Result> {
@@ -100,6 +105,12 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     if (!(loadedTokens instanceof AgentTokensLoadedResponse)) {
       return unavailable(correlationId, loadedTokens, "agentTokens.load");
     }
+    const loadedBlocks = await this.memberBlocks.load(
+      new LoadMemberBlocksByMemberRequest(profileId, context),
+    );
+    if (!(loadedBlocks instanceof MemberBlocksLoadedResponse)) {
+      return unavailable(correlationId, loadedBlocks, "memberBlocks.load");
+    }
 
     // A tombstone has no words left to export, and cannot be one of this member's own
     // rows anyway: erasure is the only thing that creates one, and this handler always
@@ -126,6 +137,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
           uploads: loadedMedia.assets.map(mediaJson),
           voiceGuide: loadedGuide.guideMd,
           agentTokens: loadedTokens.tokens.map(tokenJson),
+          mutesAndBlocks: loadedBlocks.blocks.map(memberBlockJson),
         },
         null,
         2,
@@ -207,6 +219,15 @@ function tokenJson(token: AgentToken) {
     expiresAt: token.expiresAt?.toISOString() ?? null,
     revokedAt: token.revokedAt?.toISOString() ?? null,
     lastUsedAt: token.lastUsedAt?.toISOString() ?? null,
+  };
+}
+
+// The member's own mutes and blocks (#23), by the other member's profile id.
+function memberBlockJson(block: MemberBlock) {
+  return {
+    profileId: block.targetId,
+    level: block.level,
+    createdAt: block.createdAt.toISOString(),
   };
 }
 

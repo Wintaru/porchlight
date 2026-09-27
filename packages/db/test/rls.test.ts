@@ -59,6 +59,8 @@ const BROWSER_READABLE_TABLES: ReadonlySet<string> = new Set([
   "reactions",
   "media_assets",
   "notifications",
+  // #23: a member reads their own mutes and blocks, to filter their own lists.
+  "member_blocks",
 ]);
 
 async function publicTables(): Promise<string[]> {
@@ -158,6 +160,60 @@ describe("agent_tokens", () => {
       return tx`select name from public.agent_tokens where token_hash = ${"a".repeat(64)}`;
     });
     expect(rows).toEqual([{ name: "laptop" }]);
+  });
+});
+
+// Issue #23: a member's mutes and blocks are private. The member reads their own rows
+// so the read-model can filter their lists; nobody reads who muted or blocked them,
+// a visitor reads nothing, and every write goes through the AccountManager.
+describe("member_blocks", () => {
+  test("a member reads only their own rows, a visitor none, and nobody writes", async () => {
+    await sql`
+      insert into public.member_blocks (member_id, target_id, level) values
+        (${SEED.trustedMember}, ${SEED.probationMember}, 'mute'),
+        (${SEED.probationMember}, ${SEED.trustedMember}, 'block')
+    `;
+    try {
+      const theo = await asRole(
+        sql,
+        "authenticated",
+        (tx) =>
+          tx<
+            { member_id: string; target_id: string; level: string }[]
+          >`select member_id, target_id, level from public.member_blocks`,
+        SEED.trustedMember,
+      );
+      expect(theo).toEqual([
+        {
+          member_id: SEED.trustedMember,
+          target_id: SEED.probationMember,
+          level: "mute",
+        },
+      ]);
+
+      const anonCode = await errorCodeOf(() =>
+        asRole(sql, "anon", (tx) => tx`select 1 from public.member_blocks limit 1`),
+      );
+      expect(anonCode).toBe(INSUFFICIENT_PRIVILEGE);
+
+      const writeCode = await errorCodeOf(() =>
+        asRole(
+          sql,
+          "authenticated",
+          (tx) => tx`
+            insert into public.member_blocks (member_id, target_id, level)
+            values (${SEED.trustedMember}, ${SEED.admin}, 'block')
+          `,
+          SEED.trustedMember,
+        ),
+      );
+      expect(writeCode).toBe(INSUFFICIENT_PRIVILEGE);
+    } finally {
+      await sql`
+        delete from public.member_blocks
+        where member_id in (${SEED.trustedMember}, ${SEED.probationMember})
+      `;
+    }
   });
 });
 

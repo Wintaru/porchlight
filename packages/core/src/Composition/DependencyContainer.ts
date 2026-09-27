@@ -17,6 +17,7 @@ import { ListAgentTokensHandler } from "../Managers/AccountManager/Handlers/List
 import { ResolveAgentTokenHandler } from "../Managers/AccountManager/Handlers/ResolveAgentTokenHandler";
 import { RevokeAgentTokenHandler } from "../Managers/AccountManager/Handlers/RevokeAgentTokenHandler";
 import { UpdateProfileHandler } from "../Managers/AccountManager/Handlers/UpdateProfileHandler";
+import { SetMemberBlockHandler } from "../Managers/AccountManager/Handlers/SetMemberBlockHandler";
 import type { IAccountManager } from "../Managers/AccountManager/IAccountManager";
 import { ClaimAnonymousPostsRequest } from "../Managers/AccountManager/Requests/ClaimAnonymousPostsRequest";
 import { CreateAgentTokenRequest } from "../Managers/AccountManager/Requests/CreateAgentTokenRequest";
@@ -29,6 +30,7 @@ import { ListAgentTokensRequest } from "../Managers/AccountManager/Requests/List
 import { ResolveAgentTokenRequest } from "../Managers/AccountManager/Requests/ResolveAgentTokenRequest";
 import { RevokeAgentTokenRequest } from "../Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
+import { SetMemberBlockRequest } from "../Managers/AccountManager/Requests/SetMemberBlockRequest";
 import { CommentManager } from "../Managers/CommentManager/CommentManager";
 import { CheckCanCommentAnonymouslyHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentAnonymouslyHandler";
 import { CheckCanCommentHandler } from "../Managers/CommentManager/Handlers/CheckCanCommentHandler";
@@ -186,6 +188,7 @@ import { createQuotaAccessor } from "./createQuotaAccessor";
 import { createQuotaEngine } from "./createQuotaEngine";
 import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
+import { createMemberBlockAccessor } from "./createMemberBlockAccessor";
 import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
@@ -217,6 +220,7 @@ export class DependencyContainer {
     const posts = createPostAccessor(env, db);
     const comments = createCommentAccessor(env, db);
     const reactions = createReactionAccessor(env, db);
+    const memberBlocks = createMemberBlockAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine();
@@ -272,6 +276,10 @@ export class DependencyContainer {
         )
         .register(UpdateProfileRequest, new UpdateProfileHandler(profiles, permissions))
         .register(
+          SetMemberBlockRequest,
+          new SetMemberBlockHandler(memberBlocks, profiles, permissions),
+        )
+        .register(
           UpdateVoiceGuideRequest,
           new UpdateVoiceGuideHandler(profiles, posts, permissions),
         )
@@ -326,6 +334,7 @@ export class DependencyContainer {
             profiles,
             agentTokens,
             permissions,
+            memberBlocks,
           ),
         )
         .build(),
@@ -401,6 +410,7 @@ export class DependencyContainer {
             notifications,
             permissions,
             evidence,
+            memberBlocks,
           ),
         )
         .register(
@@ -434,7 +444,10 @@ export class DependencyContainer {
           ListCommentsForPostRequest,
           new ListCommentsForPostHandler(comments, posts, permissions),
         )
-        .register(CheckCanCommentRequest, new CheckCanCommentHandler(posts, permissions))
+        .register(
+          CheckCanCommentRequest,
+          new CheckCanCommentHandler(posts, permissions, memberBlocks),
+        )
         .register(
           CheckCanCommentAnonymouslyRequest,
           new CheckCanCommentAnonymouslyHandler(posts, permissions),
@@ -536,6 +549,7 @@ export class DependencyContainer {
             reports,
             notifications,
             permissions,
+            memberBlocks,
           ),
         )
         .register(

@@ -22,6 +22,7 @@ async function loadRoute(env: Record<string, string> = {}) {
   vi.stubEnv("NOTIFICATION_PROVIDER", "fake");
   vi.stubEnv("AGENT_TOKEN_PROVIDER", "fake");
   vi.stubEnv("EVIDENCE_PROVIDER", "fake");
+  vi.stubEnv("MEMBER_BLOCK_PROVIDER", "fake");
   // Required unconditionally by createAnonymousGuardEngine, even with every store faked.
   vi.stubEnv("EVIDENCE_IP_HASH_SALT", "test-salt");
   for (const [key, value] of Object.entries(env)) {

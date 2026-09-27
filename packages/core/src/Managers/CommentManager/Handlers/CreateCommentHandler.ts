@@ -1,4 +1,5 @@
 import type { ICommentAccessor } from "../../../Accessors/CommentAccessor/ICommentAccessor";
+import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
 import type { NewComment } from "../../../Accessors/CommentAccessor/NewComment";
 import { StoreNewCommentRequest } from "../../../Accessors/CommentAccessor/Requests/StoreNewCommentRequest";
 import { CommentStoredResponse } from "../../../Accessors/CommentAccessor/Responses/CommentStoredResponse";
@@ -9,10 +10,12 @@ import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccesso
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
+import type { MemberBlock } from "../../../Common/MemberBlock";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
 import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
 import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
+import { loadBlocksAgainst } from "../loadBlocksAgainst";
 import { loadPost, postSubjectOf } from "../loadPost";
 import { notifyStaffOfPendingComment } from "../notifyStaff";
 import { permit } from "../permit";
@@ -33,8 +36,9 @@ type CreateCommentResult =
   | CommentUnavailableResponse;
 
 // Permission (the post's switch and the site's `comments` key, D20), then the parent
-// and the depth rule (D10, in `placeComment.ts`, shared with the anonymous flow),
-// then the render, then the write. Trust decides the status (SPEC.md §4).
+// and the depth rule (D10, in `placeComment.ts`, shared with the anonymous flow), then
+// the block check (#23), then the render, then the write. Trust decides the status
+// (SPEC.md §4).
 export class CreateCommentHandler implements IHandler<
   CreateCommentRequest,
   CreateCommentResult
@@ -47,6 +51,7 @@ export class CreateCommentHandler implements IHandler<
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly evidence: IEvidenceEngine,
+    private readonly memberBlocks: IMemberBlockAccessor,
   ) {}
 
   async handle(request: CreateCommentRequest): Promise<CreateCommentResult> {
@@ -93,6 +98,21 @@ export class CreateCommentHandler implements IHandler<
     );
     if (!isPlacement(placed)) {
       return placed;
+    }
+    // A block by the post's author or the answered comment's author stops the comment.
+    // A mute only stops the reply's notification, further down: the muting member
+    // does not see the reply, and the member who wrote it is never told.
+    const against = await loadBlocksAgainst(
+      this.memberBlocks,
+      actor.profile.id,
+      [post.author, placed.parentAuthor],
+      context,
+    );
+    if (against instanceof CommentUnavailableResponse) {
+      return against;
+    }
+    if (against.some((block) => block.level === "block")) {
+      return new CommentRejectedResponse(correlationId, "blocked");
     }
     const bodyHtml = await renderBody(this.content, placed.bodyMd, context);
     if (typeof bodyHtml !== "string") {
@@ -142,7 +162,8 @@ export class CreateCommentHandler implements IHandler<
       }
     } else if (
       placed.parentAuthor?.kind === "member" &&
-      placed.parentAuthor.profileId !== actor.profile.id
+      placed.parentAuthor.profileId !== actor.profile.id &&
+      !heldAgainstBy(against, placed.parentAuthor.profileId)
     ) {
       const notified = await this.notifications.store(
         new RecordNotificationRequest(
@@ -159,6 +180,12 @@ export class CreateCommentHandler implements IHandler<
     }
     return new CommentResponse(correlationId, stored.comment);
   }
+}
+
+// Whether `memberId` muted or blocked the commenting member: either one silences the
+// reply's notification to them.
+function heldAgainstBy(against: readonly MemberBlock[], memberId: string): boolean {
+  return against.some((block) => block.memberId === memberId);
 }
 
 // Trust decides (SPEC.md §4). Staff are trusted by definition.

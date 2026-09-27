@@ -31,6 +31,8 @@ const ERROR_TEXT: Readonly<Record<CommentErrorCode, string>> = {
   "rejected-empty-body": "A comment needs some words.",
   "rejected-no-such-post": "That post is gone.",
   "rejected-no-such-parent": "The comment you answered is gone.",
+  // Says only that the reply cannot go here, never who stopped it (#23).
+  "rejected-blocked": "You cannot reply here.",
   "no-such-comment": "That comment is gone.",
   "no-such-target": "That is gone.",
   "too-long": "That comment is too long.",
