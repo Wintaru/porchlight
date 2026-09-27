@@ -357,6 +357,11 @@ export { type Invite, isInviteLive } from "./Common/Invite";
 export { GetPresenceSettingRequest } from "./Managers/AccountManager/Requests/GetPresenceSettingRequest";
 export { SetPresenceSettingRequest } from "./Managers/AccountManager/Requests/SetPresenceSettingRequest";
 export { PresenceSettingResponse } from "./Managers/AccountManager/Responses/PresenceSettingResponse";
+// Presence through the server (#81, D26): the caller's page reports itself.
+export { AnnouncePresenceRequest } from "./Managers/AccountManager/Requests/AnnouncePresenceRequest";
+export { PresenceAnnouncedResponse } from "./Managers/AccountManager/Responses/PresenceAnnouncedResponse";
+export { parsePresenceTopic, type PresenceTopic } from "./Common/PresenceTopic";
+export { PRESENCE_SIGNALS, type PresenceSignal } from "./Common/PresenceMessage";
 // The one-time re-render of cached HTML after the render pipeline changes (#77).
 export { RerenderPostBodiesRequest } from "./Managers/PostManager/Requests/RerenderPostBodiesRequest";
 export { PostBodiesRerenderedResponse } from "./Managers/PostManager/Responses/PostBodiesRerenderedResponse";

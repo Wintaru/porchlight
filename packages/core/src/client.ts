@@ -9,3 +9,8 @@ export { EMBED_PLAYER_PREFIXES } from "./Common/EmbedPlayers";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export { NOTIFICATION_SENTENCES } from "./Common/NotificationSentences";
 export { draftWarningText, type DraftWarning } from "./Common/DraftWarning";
+export {
+  PRESENCE_EVENT,
+  type PresenceMessage,
+  type PresenceSignal,
+} from "./Common/PresenceMessage";

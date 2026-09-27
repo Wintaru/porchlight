@@ -16,8 +16,10 @@ import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/Ensure
 import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
 import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
+import { AnnouncePresenceHandler } from "../Managers/AccountManager/Handlers/AnnouncePresenceHandler";
 import { GetPresenceSettingHandler } from "../Managers/AccountManager/Handlers/GetPresenceSettingHandler";
 import { SetPresenceSettingHandler } from "../Managers/AccountManager/Handlers/SetPresenceSettingHandler";
+import { AnnouncePresenceRequest } from "../Managers/AccountManager/Requests/AnnouncePresenceRequest";
 import { GetPresenceSettingRequest } from "../Managers/AccountManager/Requests/GetPresenceSettingRequest";
 import { SetPresenceSettingRequest } from "../Managers/AccountManager/Requests/SetPresenceSettingRequest";
 import { CreateInviteHandler } from "../Managers/AccountManager/Handlers/CreateInviteHandler";
@@ -236,6 +238,7 @@ import { createMediaPublishEngine } from "./createMediaPublishEngine";
 import { createMediaStorageAccessor } from "./createMediaStorageAccessor";
 import { createModActionAccessor } from "./createModActionAccessor";
 import { createModerationPolicyEngine } from "./createModerationPolicyEngine";
+import { createPresenceAccessor } from "./createPresenceAccessor";
 import { createNotificationAccessor } from "./createNotificationAccessor";
 import { createPermissionEngine } from "./createPermissionEngine";
 import { createPostAccessor } from "./createPostAccessor";
@@ -286,6 +289,7 @@ export class DependencyContainer {
     const tags = createTagAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const invites = createInviteAccessor(env, db);
+    const presence = createPresenceAccessor(env);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine(env);
     const turnstile = createTurnstileAccessor(env);
@@ -354,6 +358,10 @@ export class DependencyContainer {
         .register(
           SetPresenceSettingRequest,
           new SetPresenceSettingHandler(profiles, permissions),
+        )
+        .register(
+          AnnouncePresenceRequest,
+          new AnnouncePresenceHandler(profiles, presence, permissions),
         )
         .register(RevokeInviteRequest, new RevokeInviteHandler(invites, permissions))
         .register(

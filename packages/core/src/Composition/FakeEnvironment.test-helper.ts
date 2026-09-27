@@ -28,6 +28,7 @@ export const FAKE_ENV: Environment = {
   EMAIL_PREFERENCE_PROVIDER: "fake",
   SUBSCRIBER_PROVIDER: "fake",
   INVITE_PROVIDER: "fake",
+  PRESENCE_PROVIDER: "fake",
   // Required unconditionally by createAnonymousGuardEngine and createEvidenceEngine, even
   // with every store faked.
   EVIDENCE_IP_HASH_SALT: "test-salt",

@@ -12,7 +12,7 @@ export function createServiceDbClient(env: Environment): DbClient {
   return createDbClient(url, key);
 }
 
-function requireEnv(env: Environment, name: string): string {
+export function requireEnv(env: Environment, name: string): string {
   const value = env[name];
   if (value === undefined || value === "") {
     throw new Error(`${name} is not set. See docs/setup/supabase.md.`);
