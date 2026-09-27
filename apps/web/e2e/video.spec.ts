@@ -3,7 +3,13 @@ import { join } from "node:path";
 
 import { expect, type Page, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, fillBodyMarkdown, THEO } from "./helpers";
+import {
+  deleteCurrentPost,
+  devSignIn,
+  fillBodyMarkdown,
+  insertUpload,
+  THEO,
+} from "./helpers";
 
 // Issue #21: an iPhone photo (HEIC) goes up and is published as AVIF; a video is
 // prepared in the browser (its metadata dropped, its movie box moved first), checked,
@@ -45,9 +51,7 @@ test("an iPhone HEIC photo is published as AVIF", async ({ page }) => {
   await devSignIn(page, THEO);
   await page.goto("/write");
   const row = await attach(page, photo, HEIC, "image/heic");
-  await expect(row.getByRole("button", { name: "Insert" })).toBeVisible();
-
-  await row.getByRole("button", { name: "Insert" }).click();
+  await insertUpload(row);
   const bodyMd = page.locator('input[name="bodyMd"]');
   await expect(bodyMd).toHaveValue(/!\[porch [^\]]+\]\(http[^)]+\.avif\)/);
   const url = /\((http[^)]+\.avif)\)/.exec(await bodyMd.inputValue())?.[1] ?? "";
@@ -70,8 +74,7 @@ test("a video is prepared in the browser, checked, and plays in the post", async
   await page.getByRole("button", { name: "Rich text", exact: true }).click();
 
   const row = await attach(page, clip, CLIP, "video/mp4");
-  await expect(row.getByRole("button", { name: "Insert" })).toBeVisible();
-  await row.getByRole("button", { name: "Insert" }).click();
+  await insertUpload(row);
   const bodyMd = page.locator('input[name="bodyMd"]');
   await expect(bodyMd).toHaveValue(/\[clip-[^\]]+\]\(http[^)]+\.mp4\)/);
 

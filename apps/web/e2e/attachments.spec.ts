@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, JUNE, THEO } from "./helpers";
+import { deleteCurrentPost, devSignIn, insertUpload, JUNE, THEO } from "./helpers";
 
 // The issue #9 acceptance test, on the #52 panel: the server checks magic bytes, not
 // extensions (SPEC.md §6), a non-image is served as a download rather than inline, and
@@ -41,7 +41,12 @@ test("a real PNG header is accepted; an SVG renamed to .png is refused", async (
   await expect(row(page, name).getByRole("button", { name: "Remove" })).toBeVisible();
   // Only a signature, not a picture: it cannot be re-encoded, so it has no public copy
   // and nothing to insert.
-  await expect(row(page, name).getByRole("button", { name: "Insert" })).toHaveCount(0);
+  await row(page, name).locator('button[aria-haspopup="dialog"]').click();
+  const preview = page.getByTestId("attachment-preview");
+  await expect(preview).toContainText("could not be read");
+  await expect(preview.getByRole("button", { name: "Insert" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(preview).toBeHidden();
 
   const svgDisguisedAsPng = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
   await attach(page, {
@@ -61,7 +66,7 @@ test("a non-image attachment goes in as a download, not inline", async ({ page }
 
   const pdfBytes = Buffer.from("%PDF-1.7\n%\xe2\xe3\xcf\xd3\n1 0 obj\n<<>>\nendobj\n");
   await attach(page, { name, mimeType: "application/pdf", buffer: pdfBytes });
-  await row(page, name).getByRole("button", { name: "Insert" }).click();
+  await insertUpload(row(page, name));
   await page.getByRole("button", { name: "Markdown", exact: true }).click();
   const body = await page.getByLabel("Body (markdown)").inputValue();
   const href = /\]\((?<url>[^)]+)\)/.exec(body)?.groups?.url ?? "";

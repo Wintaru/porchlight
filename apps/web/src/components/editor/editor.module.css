@@ -387,6 +387,39 @@
   overflow-wrap: anywhere;
 }
 
+/* The row's name is the button that opens its preview (#80). */
+.attachmentOpen {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attachmentOpen:hover strong {
+  text-decoration: underline;
+}
+
+.previewName {
+  overflow-wrap: anywhere;
+}
+
+/* Fits the dialog without scrolling it: the Insert button stays in view. */
+.previewMedia {
+  display: block;
+  max-width: 100%;
+  max-height: 55vh;
+  border-radius: 10px;
+}
+
+/* A mature image's wrapper takes the class; the image inside keeps its shape. */
+.previewMedia img {
+  max-height: 55vh;
+  object-fit: contain;
+}
+
 .attachmentList li {
   padding: 10px 12px;
   border: 1px solid var(--line);

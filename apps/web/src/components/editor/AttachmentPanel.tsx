@@ -9,7 +9,9 @@ import {
   listUploads,
   republishUpload,
 } from "@/app/write/media-actions";
+import { classNames } from "@/lib/class-names";
 import type { UploadView } from "@/lib/upload-view";
+import { AttachmentPreview } from "./AttachmentPreview";
 import type { BodyInsert } from "./BodyEditor";
 import { DropZone } from "./DropZone";
 import styles from "./editor.module.css";
@@ -34,9 +36,10 @@ type Row =
 // refused with why, put it into the post, or remove it. Only this post's uploads are
 // listed (#80), again after a reload. An upload made before a new post has an id joins
 // the post once autosave gives it one. Uploads in no post at all sit apart, folded, so
-// the member can still put one in or remove it. An image goes in as a picture, a video as a player
-// (#21), any other file as a download card. A file with no public copy yet (a flagged
-// image) cannot go in.
+// the member can still put one in or remove it. Pressing a row opens a preview, and the
+// preview puts it in (#80): an image goes in as a picture, a video as a player (#21), any
+// other file as a download card. A file with no public copy yet (a flagged image) cannot
+// go in.
 export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const [rows, setRows] = useState<readonly Row[]>([]);
   const [busy, setBusy] = useState(false);
@@ -46,6 +49,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const unattached = useRef<string[]>([]);
   const currentPostId = useRef(postId);
   const [loose, setLoose] = useState<readonly UploadView[]>([]);
+  const [previewing, setPreviewing] = useState<UploadView | null>(null);
 
   useEffect(() => {
     currentPostId.current = postId;
@@ -167,6 +171,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const shownLoose = loose.filter(
     (upload) => !rows.some((row) => row.id === upload.mediaId),
   );
+  const previewInsert = previewing === null ? null : insertOf(previewing);
 
   return (
     <div className={styles.field}>
@@ -195,7 +200,9 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
               ) : (
                 <AttachmentRow
                   upload={row.upload}
-                  onInsert={onInsert}
+                  onPreview={() => {
+                    setPreviewing(row.upload);
+                  }}
                   onRetry={() => {
                     void retry(row.upload);
                   }}
@@ -218,7 +225,9 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
               <li key={upload.mediaId} data-testid="unattached-upload">
                 <AttachmentRow
                   upload={upload}
-                  onInsert={onInsert}
+                  onPreview={() => {
+                    setPreviewing(upload);
+                  }}
                   onRetry={() => {
                     void retry(upload);
                   }}
@@ -231,19 +240,32 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
           </ul>
         </details>
       )}
+      <AttachmentPreview
+        upload={previewing}
+        onInsert={
+          previewInsert === null
+            ? null
+            : () => {
+                onInsert(previewInsert);
+                setPreviewing(null);
+              }
+        }
+        onClose={() => {
+          setPreviewing(null);
+        }}
+      />
     </div>
   );
 }
 
 interface AttachmentRowProps {
   readonly upload: UploadView;
-  readonly onInsert: (item: BodyInsert) => void;
+  readonly onPreview: () => void;
   readonly onRetry: () => void;
   readonly onRemove: () => void;
 }
 
-function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowProps) {
-  const { publicUrl } = upload;
+function AttachmentRow({ upload, onPreview, onRetry, onRemove }: AttachmentRowProps) {
   const note = upload.awaitingReview
     ? " · a moderator looks at it first"
     : upload.mature
@@ -255,39 +277,21 @@ function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowPro
           : "";
   return (
     <div className={styles.attachmentRow}>
-      <span className={styles.attachmentName}>
+      <button
+        type="button"
+        className={classNames(styles.attachmentName, styles.attachmentOpen)}
+        aria-haspopup="dialog"
+        onClick={onPreview}
+      >
         <strong>{upload.originalFilename}</strong>
         <span className={styles.hint}>
           {formatBytes(upload.bytes)}
           {note}
         </span>
-      </span>
+      </button>
       {upload.retryable && (
         <button type="button" className={styles.linkButton} onClick={onRetry}>
           Try again
-        </button>
-      )}
-      {publicUrl !== null && !upload.mature && (
-        <button
-          type="button"
-          className={styles.linkButton}
-          onClick={() => {
-            onInsert(
-              upload.kind === "image"
-                ? { kind: "image", url: publicUrl, alt: altOf(upload.originalFilename) }
-                : {
-                    // A video's link alone on its line plays in the post (#21).
-                    kind: "file",
-                    url: publicUrl,
-                    label:
-                      upload.kind === "video"
-                        ? upload.originalFilename
-                        : `${upload.originalFilename} · ${formatBytes(upload.bytes)}`,
-                  },
-            );
-          }}
-        >
-          Insert
         </button>
       )}
       <button type="button" className={styles.linkButton} onClick={onRemove}>
@@ -295,6 +299,26 @@ function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowPro
       </button>
     </div>
   );
+}
+
+// What an upload puts in the body, or null when it cannot go in: no public copy yet, or
+// a mature image, which is only ever a cover.
+function insertOf(upload: UploadView): BodyInsert | null {
+  const { publicUrl } = upload;
+  if (publicUrl === null || upload.mature) {
+    return null;
+  }
+  return upload.kind === "image"
+    ? { kind: "image", url: publicUrl, alt: altOf(upload.originalFilename) }
+    : {
+        // A video's link alone on its line plays in the post (#21).
+        kind: "file",
+        url: publicUrl,
+        label:
+          upload.kind === "video"
+            ? upload.originalFilename
+            : `${upload.originalFilename} · ${formatBytes(upload.bytes)}`,
+      };
 }
 
 // A first guess at alt text from the file's name; the author can edit it in the body.

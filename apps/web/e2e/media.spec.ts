@@ -3,7 +3,14 @@ import { join } from "node:path";
 
 import { type Browser, expect, type Page, test, type Locator } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, fillBodyMarkdown, MIRA, THEO } from "./helpers";
+import {
+  deleteCurrentPost,
+  devSignIn,
+  fillBodyMarkdown,
+  insertUpload,
+  MIRA,
+  THEO,
+} from "./helpers";
 
 // Issues #36 and #52: an image goes up, gets a re-encoded public copy with its metadata
 // stripped, and goes into a post as its cover and in its body; a PDF goes in as a
@@ -72,17 +79,9 @@ test("a cover, a picture and a PDF go into a post, from a re-encoded public copy
 
   // The hidden field is the sync point: it changes once the editor has the insert.
   const bodyMd = page.locator('input[name="bodyMd"]');
-  await (
-    await attach(page, picture, PHOTO, "image/jpeg")
-  )
-    .getByRole("button", { name: "Insert" })
-    .click();
+  await insertUpload(await attach(page, picture, PHOTO, "image/jpeg"));
   await expect(bodyMd).toHaveValue(/!\[inside [^\]]+\]\(http/);
-  await (
-    await attach(page, pdf, PDF, "application/pdf")
-  )
-    .getByRole("button", { name: "Insert" })
-    .click();
+  await insertUpload(await attach(page, pdf, PDF, "application/pdf"));
   // The second insert goes after the first, not over it.
   await expect(bodyMd).toHaveValue(/!\[inside .+\n\n\[cutlist-.+download=/s);
   await page.getByRole("button", { name: "Publish" }).click();

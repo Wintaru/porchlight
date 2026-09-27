@@ -1,6 +1,12 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, fillBodyMarkdown, THEO } from "./helpers";
+import {
+  deleteCurrentPost,
+  devSignIn,
+  fillBodyMarkdown,
+  insertUpload,
+  THEO,
+} from "./helpers";
 
 // Issue #80: an upload belongs to one post, and the editor lists only that post's. One
 // taken out of the post is deleted when the author presses Save; autosave never
@@ -18,7 +24,7 @@ async function upload(page: Page, name: string): Promise<void> {
     .getByTestId("attachment-drop")
     .locator('input[type="file"]')
     .setInputFiles({ name, mimeType: "application/pdf", buffer: PDF });
-  await expect(row(page, name).getByRole("button", { name: "Insert" })).toBeVisible();
+  await expect(row(page, name).getByRole("button", { name: "Remove" })).toBeVisible();
 }
 
 // A new post with a title, saved by autosave so the editor has its id.
@@ -35,7 +41,7 @@ test("an upload taken out of a post goes on Save, not on autosave", async ({ pag
   await newPost(page, `Porch notes ${stamp}`);
 
   await upload(page, name);
-  await row(page, name).getByRole("button", { name: "Insert" }).click();
+  await insertUpload(row(page, name));
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page).toHaveURL(/\?saved=draft$/);
   await expect(row(page, name)).toBeVisible();

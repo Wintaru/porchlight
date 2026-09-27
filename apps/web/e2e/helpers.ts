@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 // Shared by every spec that signs in or writes a post. The members are the seeded ones
 // (supabase/seed.sql): every one signs in locally with <handle>@porchlight.local and the
@@ -49,4 +49,13 @@ export async function deleteCurrentPost(page: Page): Promise<void> {
 export async function signOut(page: Page): Promise<void> {
   await page.getByTestId("account-menu").click();
   await page.getByRole("button", { name: "Sign out" }).click();
+}
+
+// An upload goes into the body from its preview (#80): the row's name opens the
+// preview, and Insert is there.
+export async function insertUpload(row: Locator): Promise<void> {
+  await row.locator('button[aria-haspopup="dialog"]').click();
+  const preview = row.page().getByTestId("attachment-preview");
+  await preview.getByRole("button", { name: "Insert" }).click();
+  await expect(preview).toBeHidden();
 }
