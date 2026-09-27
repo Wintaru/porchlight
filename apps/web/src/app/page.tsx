@@ -4,6 +4,9 @@ import Link from "next/link";
 import { PostCardList } from "@/components/PostCardList";
 import { HomeSidebar } from "@/components/HomeSidebar";
 import { SubscribeCard } from "@/components/SubscribeCard";
+import { OnlineNow } from "@/components/presence/OnlineNow";
+import { presenceFor } from "@/lib/presence";
+import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { createSessionClient } from "@/auth/session-client";
 import { canPostAnonymously } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -59,10 +62,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const authorCount = viewerId === undefined ? 0 : await loadPublishedAuthorCount(db);
   const showTabs = authorCount >= 2;
   const following = showTabs && feed === "following";
-  const [posts, tags, mayWriteAnonymously] = await Promise.all([
+  const [posts, tags, mayWriteAnonymously, presence, hidden] = await Promise.all([
     following ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
     loadTagCloud(db),
     canPostAnonymously(actor),
+    presenceFor(actor),
+    loadViewerBlocks(db, viewerId),
   ]);
   return (
     <main>
@@ -105,6 +110,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           />
         </div>
         <HomeSidebar actor={actor} mayWriteAnonymously={mayWriteAnonymously} tags={tags}>
+          {presence !== undefined && (
+            <OnlineNow
+              selfId={presence.selfId}
+              visible={presence.visible}
+              hiddenIds={[...hidden.keys()]}
+            />
+          )}
           <SubscribeCard
             authorId={null}
             label={siteName}

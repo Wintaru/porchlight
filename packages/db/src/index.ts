@@ -21,3 +21,5 @@ export {
   type SessionCookieStore,
   type SessionCookieToSet,
 } from "./createSessionDbClient";
+// A Realtime channel's subscribe status, for the browser code that joins one (#75).
+export { REALTIME_SUBSCRIBE_STATES } from "@supabase/supabase-js";

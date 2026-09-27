@@ -8,6 +8,8 @@ import { Toast } from "@/components/toast/Toast";
 import type { CommentFormState } from "@/lib/can-comment";
 import type { CommentPageNode } from "@/read-model/comments";
 import type { ItemReactions } from "@/read-model/reactions";
+import { PostPresence } from "@/components/presence/PostPresence";
+import type { PresenceProps } from "@/lib/presence";
 import { AnonymousCommentForm } from "./AnonymousCommentForm";
 import { CommentForm } from "./CommentForm";
 import styles from "./comments.module.css";
@@ -24,6 +26,8 @@ interface CommentSectionProps {
   readonly returnTo: string;
   readonly noticeCode: string | undefined;
   readonly errorCode: string | undefined;
+  // A signed-in member's presence on this post (#75); a visitor has none.
+  readonly presence: PresenceProps | undefined;
 }
 
 // The comments block of the Post board: the count, the form (or the reason there is
@@ -40,15 +44,13 @@ export function CommentSection({
   returnTo,
   noticeCode,
   errorCode,
+  presence,
 }: CommentSectionProps) {
   const count = countLive(comments);
   const notice = commentNoticeTextFor(noticeCode);
   const error = commentErrorTextFor(errorCode);
-  return (
-    <section id="comments" className={styles.section} aria-labelledby="comments-heading">
-      <h2 id="comments-heading" className={styles.heading} data-testid="comment-count">
-        {count === 1 ? "1 comment" : `${String(count)} comments`}
-      </h2>
+  const content = (
+    <>
       {notice !== undefined && (
         <Toast message={notice} param="comment" testId="comment-notice" />
       )}
@@ -76,6 +78,25 @@ export function CommentSection({
         viewer={{ ...viewer, replyAs: replyAsFor(formState) }}
         returnTo={returnTo}
       />
+    </>
+  );
+  return (
+    <section id="comments" className={styles.section} aria-labelledby="comments-heading">
+      <h2 id="comments-heading" className={styles.heading} data-testid="comment-count">
+        {count === 1 ? "1 comment" : `${String(count)} comments`}
+      </h2>
+      {presence === undefined ? (
+        content
+      ) : (
+        <PostPresence
+          postId={postId}
+          selfId={presence.selfId}
+          visible={presence.visible}
+          hiddenIds={[...viewer.hiddenAuthorIds]}
+        >
+          {content}
+        </PostPresence>
+      )}
     </section>
   );
 }

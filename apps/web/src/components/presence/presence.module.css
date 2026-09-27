@@ -1,0 +1,22 @@
+.typing {
+  min-height: 1.5em;
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--label);
+}
+
+.avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

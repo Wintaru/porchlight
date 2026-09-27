@@ -8,6 +8,7 @@ import { PostArticle } from "@/components/post/PostArticle";
 import postStyles from "@/components/post/post.module.css";
 import { commentFormStateFor } from "@/lib/can-comment";
 import { getCurrentActor } from "@/lib/current-actor";
+import { presenceFor } from "@/lib/presence";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
@@ -105,6 +106,7 @@ export default async function AnonymousPostPage({
         }}
         signInPath={signInPathFor(returnTo)}
         returnTo={returnTo}
+        presence={await presenceFor(actor)}
         noticeCode={noticeCode}
         errorCode={errorCode}
       />

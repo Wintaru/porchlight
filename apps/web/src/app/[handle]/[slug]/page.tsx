@@ -12,6 +12,7 @@ import { getAgentDisclosure } from "@/lib/agent-disclosure";
 import { getCurrentActor } from "@/lib/current-actor";
 import { parseHandleParam } from "@/lib/handle-param";
 import { publicMediaUrl } from "@/lib/media-url";
+import { presenceFor } from "@/lib/presence";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
@@ -164,6 +165,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         }}
         signInPath={signInPathFor(returnTo)}
         returnTo={returnTo}
+        presence={await presenceFor(actor)}
         noticeCode={noticeCode}
         errorCode={errorCode}
       />

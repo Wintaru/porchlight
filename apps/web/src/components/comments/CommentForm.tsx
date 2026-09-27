@@ -1,4 +1,5 @@
 import { createComment } from "@/app/[handle]/[slug]/actions";
+import { TypingTextarea } from "@/components/presence/TypingTextarea";
 import styles from "./comments.module.css";
 
 interface CommentFormProps {
@@ -20,7 +21,7 @@ export function CommentForm({ postId, parentId, returnTo }: CommentFormProps) {
       <input type="hidden" name="postId" value={postId} />
       {isReply && <input type="hidden" name="parentId" value={parentId} />}
       <input type="hidden" name="returnTo" value={returnTo} />
-      <textarea
+      <TypingTextarea
         name="bodyMd"
         aria-label={isReply ? "Your reply" : "Your comment"}
         className={styles.textarea}
