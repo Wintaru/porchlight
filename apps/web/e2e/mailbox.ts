@@ -95,3 +95,14 @@ async function newestLink(to: string, since: Date): Promise<string | undefined> 
   const href = /href="([^"]*\/auth\/confirm\?token_hash=[^"]+)"/.exec(HTML)?.[1];
   return href?.replaceAll("&amp;", "&");
 }
+
+// Waits long enough for a message to arrive, then checks none did for `to` after
+// `since`. Auth mail leaves a moment after the form's redirect, so a check made at once
+// would pass for the wrong reason.
+export async function expectNoEmail(to: string, since: Date): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  const query = encodeURIComponent(`to:"${to}"`);
+  const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}&limit=5`);
+  const { messages } = (await search.json()) as { messages: readonly MailpitSummary[] };
+  expect(messages.filter((message) => new Date(message.Created) >= since)).toEqual([]);
+}

@@ -1,8 +1,8 @@
 import { type Browser, expect, type Page, test } from "@playwright/test";
 
-import { deleteAuthUser } from "./auth-admin";
-import { devSignIn, JUNE, LAMPLIGHTER, THEO } from "./helpers";
-import { signInLinkFor } from "./mailbox";
+import { authUserExists, deleteAuthUser } from "./auth-admin";
+import { devSignIn, JUNE, LAMPLIGHTER, MIRA, THEO } from "./helpers";
+import { expectNoEmail, signInLinkFor } from "./mailbox";
 
 // Issue #67: sign-in by a one-time email link, beside Google. The local stack sends the
 // email to Mailpit, where the test reads the link.
@@ -103,7 +103,7 @@ test("a link opened in another browser signs in and lands on the home page", asy
   });
 });
 
-test("a closed site refuses a new address the same as a new Google account", async ({
+test("a closed site mails no new address, and the form still says it sent", async ({
   page,
   browser,
 }) => {
@@ -114,18 +114,23 @@ test("a closed site refuses a new address the same as a new Google account", asy
     await expect(page).toHaveURL(/\/admin\?done=saved$/);
 
     await inFreshBrowser(browser, async (visitor) => {
-      // A new address gets the Confirm signup email (enable_confirmations is on).
+      // The same answer as for a member, so the form tells nobody who has an account
+      // (#68). But no email goes out and no auth user is made.
       const since = await askForLink(visitor, NEWCOMER, "/");
-      await finishSigningIn(visitor, await signInLinkFor(NEWCOMER, since));
-
-      await expect(visitor).toHaveURL(/\/auth\/sign-in-failed\?reason=sign-up-closed$/);
-      await expect(visitor.getByTestId("session-handle")).toHaveCount(0);
+      await expect(visitor.getByTestId("sign-in-link-sent")).toBeVisible();
+      await expectNoEmail(NEWCOMER, since);
+      expect(await authUserExists(NEWCOMER)).toBe(false);
     });
+
+    // A member of the closed site still gets a link. Mira, since every test asks for
+    // its own address (see the top of this file).
+    const since = await askForLink(page, MIRA.email, "/");
+    await signInLinkFor(MIRA.email, since);
   } finally {
+    await page.goto("/admin");
     await page.getByTestId("preset-open_porch").click();
     await expect(page).toHaveURL(/\/admin\?done=saved$/);
-    // The refused address still has an auth user with no profile. Remove it, so the
-    // next run takes the new-address path again.
+    // Only if the check above failed: so the next run takes the new-address path.
     await deleteAuthUser(NEWCOMER);
   }
 });

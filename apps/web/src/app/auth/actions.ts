@@ -3,6 +3,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { CheckNewAccountRequest, NewAccountCheckedResponse } from "@porchlight/core";
+
 import { isDevSignInEnabled } from "@/auth/dev-sign-in";
 import {
   EMAIL_LINK_PATH,
@@ -15,6 +17,7 @@ import { safeNextPath } from "@/lib/safe-next-path";
 import { createSessionClient } from "@/auth/session-client";
 import { toSessionUser } from "@/auth/session-user";
 import { ensureProfileFor } from "@/lib/ensure-profile";
+import { getDependencyContainer } from "@/lib/dependency-container";
 import { finishSignIn, SIGN_IN_FAILED_PATH } from "@/lib/finish-sign-in";
 import { SITE_URL } from "@/lib/site";
 
@@ -55,9 +58,9 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
 
 // The magic link (#67). Supabase Auth mails a one-time link from the templates in
 // `supabase/templates/`. The same page answers whether or not the address has an
-// account, so the form does not tell a stranger who is a member. A new address gets an
-// account only through the callback, where `sign_up` and the admin email apply the same
-// as for Google.
+// account, so the form does not tell a stranger who is a member. A new address gets a
+// link only when `sign_up` and the admin email would let it in (#68); the callback
+// applies the same rule again, as it does for Google.
 export async function sendSignInLink(formData: FormData): Promise<void> {
   const next = safeNextPath(formValue(formData, "next"));
   const email = formValue(formData, "email");
@@ -66,22 +69,38 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
   if (!LOOKS_LIKE_EMAIL.test(email) || email.length > MAX_EMAIL_LENGTH) {
     back("error=email");
   }
+  // A new address gets an account only where the first sign-in would let it in (#68):
+  // on a closed or invite-only site Supabase Auth then mails nobody new and makes no
+  // user, and a member's address still gets its link.
+  const checked = await getDependencyContainer().accountManager.query(
+    new CheckNewAccountRequest(email),
+  );
+  if (!(checked instanceof NewAccountCheckedResponse)) {
+    console.error(`sign-up check failed [${checked.correlationId}]`, checked);
+    back("error=failed");
+  }
   const client = await createSessionClient();
   const { error } = await client.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true },
+    options: { shouldCreateUser: checked.allowed },
   });
   if (error !== null) {
     if (error.status === HTTP_TOO_MANY_REQUESTS) {
-      back("error=wait");
+      // On a site that refused new addresses, only a member's address can reach the
+      // send limit: "wait" would tell a stranger the address has an account (#68).
+      back(checked.allowed ? "error=wait" : "sent=1");
     }
     if (error.status === HTTP_BAD_REQUEST) {
       back("error=email");
     }
     if (error.code !== undefined && NEW_ACCOUNTS_REFUSED.has(error.code)) {
-      console.warn(
-        "Supabase Auth refuses new accounts by email: turn on 'Allow new users to sign up'",
-      );
+      // Expected when this site refused the new address itself; a hint for the
+      // operator only when Supabase refused one this site would have let in.
+      if (checked.allowed) {
+        console.warn(
+          "Supabase Auth refuses new accounts by email: turn on 'Allow new users to sign up'",
+        );
+      }
       back("sent=1");
     }
     console.error("sign-in link could not be sent", error);

@@ -21,6 +21,21 @@ export function localValue(name: string): string {
   return value;
 }
 
+// Whether the local stack has an auth user with this address.
+export async function authUserExists(email: string): Promise<boolean> {
+  const url = localValue("NEXT_PUBLIC_SUPABASE_URL");
+  const key = localValue("SUPABASE_SERVICE_ROLE_KEY");
+  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  const listed = await fetch(`${url}/auth/v1/admin/users?per_page=1000`, { headers });
+  if (!listed.ok) {
+    throw new Error(`could not list auth users: ${String(listed.status)}`);
+  }
+  const { users } = (await listed.json()) as {
+    users: readonly { email?: string }[];
+  };
+  return users.some((candidate) => candidate.email === email);
+}
+
 // Deletes the auth user with this address, if there is one. Only for addresses with no
 // profile: a profile row refers to its auth user.
 export async function deleteAuthUser(email: string): Promise<void> {
