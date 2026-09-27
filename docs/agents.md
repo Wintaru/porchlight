@@ -93,7 +93,7 @@ invent facts or opinions, one draft per request, read the voice guide first, and
 | Tool | What it does |
 | ---- | ------------ |
 | `get_me` | Who the agent is writing as: your handle, your trust level, the token's scopes. |
-| `list_posts` | Your own posts, newest first, filtered by status. Titles and status, not bodies — use `get_post` for one. |
+| `list_posts` | Your own posts, newest first, filtered by status: the 50 newest unless it asks for up to 200, and it says when there are more. Titles and status, not bodies — use `get_post` for one. |
 | `get_voice_guide` | Your rules, the default banned phrases, and your latest hand-written posts as samples. |
 | `update_voice_guide` | Replaces your rules with new text. Needs the **Change your voice guide** scope. |
 | `check_draft` | Checks a draft's text for your banned phrases and a few signs of machine writing. It gives warnings only. The editor has the same check as a **Check** button. |

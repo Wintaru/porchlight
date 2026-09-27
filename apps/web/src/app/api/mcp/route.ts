@@ -75,6 +75,9 @@ const BEARER = /^Bearer\s+(\S+)\s*$/i;
 // Derived from the domain unions, so a status or a visibility added there needs no edit
 // here — and an agent can ask for `rejected`, the status it most needs to find.
 const POST_STATUS_FILTERS = ["all", ...POST_STATUSES] as const;
+// How many posts list_posts returns unless asked for more, and the most it will.
+const LIST_POSTS_DEFAULT = 50;
+const LIST_POSTS_MAX = 200;
 
 // `authInfo` is strictly pass-through: the SDK never fills it from the request, and
 // `serve` below is its only caller, so the actor here is the one `authorize` resolved.
@@ -310,14 +313,20 @@ function registerTools(
   server.registerTool(
     "list_posts",
     {
-      description: "The member's own posts, newest first. Filter by status.",
+      description: `The member's own posts, newest first. Filter by status. At most limit posts (default ${String(LIST_POSTS_DEFAULT)}, up to ${String(LIST_POSTS_MAX)}).`,
       inputSchema: z.object({
         status: z.enum(POST_STATUS_FILTERS).default("all"),
+        limit: z.number().int().min(1).max(LIST_POSTS_MAX).default(LIST_POSTS_DEFAULT),
       }),
     },
-    async ({ status }) => {
+    async ({ status, limit }) => {
+      // The store filters and caps (#44), so a long shelf is never read whole.
       const response = await postManager.query(
-        new ListPostsForAuthorRequest(actor, actor.profile.id),
+        // One past the cap, to tell the agent the list goes on.
+        new ListPostsForAuthorRequest(actor, actor.profile.id, {
+          status: status === "all" ? null : status,
+          limit: limit + 1,
+        }),
       );
       if (!isPosts(response)) {
         return refusalFor(response, "list_posts");
@@ -325,9 +334,9 @@ function registerTools(
       // The list is an index, not a read: bodies stay out of it, so a member with a
       // long shelf does not pay context tokens for every word they have written.
       const posts = response.posts
-        .filter((post) => status === "all" || post.status === status)
+        .slice(0, limit)
         .map((post) => toPostIndexView(post, handle, SITE_URL));
-      return ok({ posts });
+      return ok({ posts, truncated: response.posts.length > limit });
     },
   );
 

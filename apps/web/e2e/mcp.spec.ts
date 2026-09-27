@@ -43,6 +43,14 @@ test("an agent drafts through the door and the draft waits in the editor", async
     const mine = listed.find((entry) => entry.id === post.id);
     expect(mine).toMatchObject({ title, status: "draft" });
     expect(mine).not.toHaveProperty("bodyMd");
+    // The status filter and the cap reach the store (#44).
+    expect(listed.every((entry) => entry.status === "draft")).toBe(true);
+    const capped = structured(
+      await client.callTool({ name: "list_posts", arguments: { limit: 1 } }),
+    );
+    expect(capped.posts).toEqual([expect.objectContaining({ id: post.id })]);
+    // Theo's seeded posts are older, so the list goes on past the cap.
+    expect(capped.truncated).toBe(true);
 
     // The member sees it in the editor, badged as an agent draft nobody has read.
     await page.goto("/write");
