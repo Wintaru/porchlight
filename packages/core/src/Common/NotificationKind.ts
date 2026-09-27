@@ -7,6 +7,8 @@ export const NOTIFICATION_KINDS = [
   "item.rejected",
   "report.filed",
   "mod.action",
+  // A followed author or tag has a new post out (#24, D20).
+  "post.published",
 ] as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];

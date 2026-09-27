@@ -248,6 +248,52 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          follower_id: string
+          id: string
+          tag_id: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          follower_id: string
+          id?: string
+          tag_id?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          follower_id?: string
+          id?: string
+          tag_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_assets: {
         Row: {
           anonymous_author_id: string | null
@@ -1011,18 +1057,21 @@ export type Database = {
       tags: {
         Row: {
           created_at: string
+          description_md: string | null
           id: string
           name: string
           slug: string
         }
         Insert: {
           created_at?: string
+          description_md?: string | null
           id?: string
           name: string
           slug: string
         }
         Update: {
           created_at?: string
+          description_md?: string | null
           id?: string
           name?: string
           slug?: string
@@ -1169,6 +1218,7 @@ export type Database = {
         | "item.rejected"
         | "report.filed"
         | "mod.action"
+        | "post.published"
       post_origin: "editor" | "agent"
       post_status:
         | "draft"
@@ -1361,6 +1411,7 @@ export const Constants = {
         "item.rejected",
         "report.filed",
         "mod.action",
+        "post.published",
       ],
       post_origin: ["editor", "agent"],
       post_status: [

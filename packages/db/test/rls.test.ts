@@ -61,6 +61,8 @@ const BROWSER_READABLE_TABLES: ReadonlySet<string> = new Set([
   "notifications",
   // #23: a member reads their own mutes and blocks, to filter their own lists.
   "member_blocks",
+  // #24: a member reads their own follows, for the Following feed and the buttons.
+  "follows",
 ]);
 
 async function publicTables(): Promise<string[]> {
@@ -243,6 +245,54 @@ describe("search_site", () => {
         tx<{ post_id: string }[]>`select post_id from public.search_site('porch', 200)`,
     );
     expect(found.map((row) => row.post_id)).toContain(SEED.publicPost);
+  });
+});
+
+// Issue #24: follows are private to the follower, like mutes and blocks. Nobody reads
+// who follows them (no follower counts, D9), a visitor reads nothing, and every write
+// goes through the AccountManager.
+describe("follows", () => {
+  test("a member reads only their own follows, a visitor none, and nobody writes", async () => {
+    await sql`
+      insert into public.follows (follower_id, author_id) values
+        (${SEED.probationMember}, ${SEED.trustedMember}),
+        (${SEED.trustedMember}, ${SEED.probationMember})
+    `;
+    try {
+      const june = await asRole(
+        sql,
+        "authenticated",
+        (tx) =>
+          tx<{ follower_id: string; author_id: string | null }[]>`
+            select follower_id, author_id from public.follows`,
+        SEED.probationMember,
+      );
+      expect(june).toEqual([
+        { follower_id: SEED.probationMember, author_id: SEED.trustedMember },
+      ]);
+
+      const anonCode = await errorCodeOf(() =>
+        asRole(sql, "anon", (tx) => tx`select 1 from public.follows limit 1`),
+      );
+      expect(anonCode).toBe(INSUFFICIENT_PRIVILEGE);
+
+      const writeCode = await errorCodeOf(() =>
+        asRole(
+          sql,
+          "authenticated",
+          (tx) => tx`
+            insert into public.follows (follower_id, author_id)
+            values (${SEED.probationMember}, ${SEED.admin})`,
+          SEED.probationMember,
+        ),
+      );
+      expect(writeCode).toBe(INSUFFICIENT_PRIVILEGE);
+    } finally {
+      await sql`
+        delete from public.follows
+        where follower_id in (${SEED.trustedMember}, ${SEED.probationMember})
+      `;
+    }
   });
 });
 

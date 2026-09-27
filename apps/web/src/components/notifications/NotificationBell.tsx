@@ -28,6 +28,7 @@ const LABELS: Readonly<Record<NotificationKind, string>> = {
   "item.rejected": "Your post or comment was rejected",
   "report.filed": "A new report was filed",
   "mod.action": "A moderator took action on your account",
+  "post.published": "Someone you follow published a post",
 };
 
 // The bell (SPEC.md §8): the server-rendered `initial` list is what a member sees on
