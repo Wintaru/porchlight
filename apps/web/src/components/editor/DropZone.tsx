@@ -10,6 +10,8 @@ interface DropZoneProps {
   readonly label: string;
   readonly accept?: string;
   readonly busy: boolean;
+  // What the button says while busy; "Uploading…" when unset.
+  readonly busyLabel?: string;
   readonly onFile: (file: File) => void;
   readonly children?: ReactNode;
   readonly testId: string;
@@ -22,6 +24,7 @@ export function DropZone({
   label,
   accept,
   busy,
+  busyLabel = "Uploading…",
   onFile,
   children,
   testId,
@@ -55,7 +58,7 @@ export function DropZone({
         disabled={busy}
         onClick={() => inputRef.current?.click()}
       >
-        {busy ? "Uploading…" : label}
+        {busy ? busyLabel : label}
       </button>
       <input
         ref={inputRef}

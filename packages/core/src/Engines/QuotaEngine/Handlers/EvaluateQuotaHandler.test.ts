@@ -7,8 +7,16 @@ import { QuotaExceededResponse } from "../Responses/QuotaExceededResponse";
 import { EvaluateQuotaHandler } from "./EvaluateQuotaHandler";
 
 const QUOTA_BY_TRUST: AttachmentQuotaByTrust = {
-  probation: { maxFileBytes: 1_000_000, maxAccountBytes: 2_000_000 },
-  trusted: { maxFileBytes: 10_000_000, maxAccountBytes: 100_000_000 },
+  probation: {
+    maxFileBytes: 1_000_000,
+    maxAccountBytes: 2_000_000,
+    maxVideoFileBytes: 0,
+  },
+  trusted: {
+    maxFileBytes: 10_000_000,
+    maxAccountBytes: 100_000_000,
+    maxVideoFileBytes: 50_000_000,
+  },
 };
 
 describe("EvaluateQuotaHandler", () => {
@@ -18,6 +26,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "member", trustLevel: "probation", quotaByTrust: QUOTA_BY_TRUST },
+        "image",
         500_000,
         { bytesUsed: 0, filesCount: 0 },
       ),
@@ -32,6 +41,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "member", trustLevel: "probation", quotaByTrust: QUOTA_BY_TRUST },
+        "image",
         1_500_000,
         { bytesUsed: 0, filesCount: 0 },
       ),
@@ -47,6 +57,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "member", trustLevel: "probation", quotaByTrust: QUOTA_BY_TRUST },
+        "image",
         900_000,
         { bytesUsed: 1_500_000, filesCount: 3 },
       ),
@@ -61,6 +72,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "member", trustLevel: "trusted", quotaByTrust: QUOTA_BY_TRUST },
+        "image",
         1_500_000,
         { bytesUsed: 0, filesCount: 0 },
       ),
@@ -75,6 +87,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "anonymous", cap: { files: 3, bytesPerFile: 2_097_152 } },
+        "image",
         500_000,
         { bytesUsed: 0, filesCount: 3 },
       ),
@@ -89,6 +102,7 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "anonymous", cap: { files: 3, bytesPerFile: 2_097_152 } },
+        "image",
         3_000_000,
         { bytesUsed: 0, filesCount: 0 },
       ),
@@ -103,11 +117,61 @@ describe("EvaluateQuotaHandler", () => {
     const result = await handler.handle(
       new EvaluateQuotaRequest(
         { kind: "anonymous", cap: { files: 3, bytesPerFile: 2_097_152 } },
+        "image",
         500_000,
         { bytesUsed: 0, filesCount: 1 },
       ),
     );
 
     expect(result).toBeInstanceOf(QuotaAllowedResponse);
+  });
+
+  test("a video checks the video cap, not the per-file cap (#21)", async () => {
+    const handler = new EvaluateQuotaHandler();
+    const check = {
+      kind: "member",
+      trustLevel: "trusted",
+      quotaByTrust: QUOTA_BY_TRUST,
+    } as const;
+
+    const allowed = await handler.handle(
+      new EvaluateQuotaRequest(check, "video", 40_000_000, {
+        bytesUsed: 0,
+        filesCount: 0,
+      }),
+    );
+    const tooLarge = await handler.handle(
+      new EvaluateQuotaRequest(check, "video", 60_000_000, {
+        bytesUsed: 0,
+        filesCount: 0,
+      }),
+    );
+
+    expect(allowed).toBeInstanceOf(QuotaAllowedResponse);
+    expect(tooLarge).toMatchObject({ reason: "file-too-large", limit: 50_000_000 });
+  });
+
+  test("a video cap of 0, or an anonymous author, allows no video", async () => {
+    const handler = new EvaluateQuotaHandler();
+
+    const probation = await handler.handle(
+      new EvaluateQuotaRequest(
+        { kind: "member", trustLevel: "probation", quotaByTrust: QUOTA_BY_TRUST },
+        "video",
+        1,
+        { bytesUsed: 0, filesCount: 0 },
+      ),
+    );
+    const anonymous = await handler.handle(
+      new EvaluateQuotaRequest(
+        { kind: "anonymous", cap: { files: 3, bytesPerFile: 5_000_000 } },
+        "video",
+        1,
+        { bytesUsed: 0, filesCount: 0 },
+      ),
+    );
+
+    expect(probation).toMatchObject({ reason: "video-not-allowed" });
+    expect(anonymous).toMatchObject({ reason: "video-not-allowed" });
   });
 });

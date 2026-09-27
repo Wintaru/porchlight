@@ -3,9 +3,11 @@ import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAcce
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
 import { MediaAssetStoredResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetStoredResponse";
 import type { IMediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
+import { CopyStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/CopyStorageObjectRequest";
 import { DownloadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
 import { RemoveStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
 import { UploadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
+import { StorageObjectCopiedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectCopiedResponse";
 import { StorageObjectDownloadedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectDownloadedResponse";
 import { StorageObjectRemovedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectRemovedResponse";
 import { StorageObjectUploadedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectUploadedResponse";
@@ -27,8 +29,9 @@ type Result =
 
 // The publish sequence (SPEC.md §6, §7, #36): only a cleared or approved upload. An
 // image is re-encoded from its quarantine bytes (SPEC.md §7: published image copies are
-// re-encoded, metadata stripped); any other file is copied as it is, since it is only
-// ever linked as a download from the storage origin (SPEC.md §6). The copy is written
+// re-encoded, metadata stripped); a video is copied in storage as it is (#21); any other
+// file is copied as it is, since it is only ever linked as a download from the storage
+// origin (SPEC.md §6). The copy is written
 // under the asset's own id in the public bucket, and only then recorded on the row — so
 // `publishedPath` never names an object that is not there. Publishing an asset that
 // already has a copy is a no-op.
@@ -53,6 +56,66 @@ export class TransformPublishMediaHandler implements IHandler<
     }
     if (asset.publishedPath !== null) {
       return new MediaPublishedResponse(correlationId, asset);
+    }
+
+    const key = await this.writeCopy(asset, originalBytes, context);
+    if (typeof key !== "string") {
+      return key;
+    }
+
+    const stored = await this.mediaAssets.store(
+      new StoreMediaAssetChangesRequest(
+        asset.id,
+        { publishedPath: `${this.options.publicBucket}/${key}` },
+        context,
+      ),
+    );
+    // A DeleteMedia that ran since the upload removed the row: take the copy back down,
+    // so no public object outlives its row (#60). Only on not-found: a failed write may
+    // still have committed (a lost reply), or a concurrent publish of the same asset
+    // may own the key, and a row naming a missing object cannot be retried. An orphan
+    // object is harmless; a dangling path is a broken image for good.
+    if (stored instanceof MediaAssetNotFoundResponse) {
+      const removed = await this.storage.remove(
+        new RemoveStorageObjectRequest(this.options.publicBucket, key, context),
+      );
+      if (!(removed instanceof StorageObjectRemovedResponse)) {
+        console.error(
+          `public copy ${key} left without a row [${correlationId}]`,
+          removed.constructor.name,
+        );
+      }
+    }
+    if (!(stored instanceof MediaAssetStoredResponse)) {
+      return unavailable(correlationId, stored, "mediaAssets.store");
+    }
+    return new MediaPublishedResponse(correlationId, stored.asset);
+  }
+
+  // Writes the public copy and answers its key in the public bucket.
+  private async writeCopy(
+    asset: MediaAsset,
+    originalBytes: Uint8Array | undefined,
+    context: { readonly correlationId: string; readonly timestamp: Date },
+  ): Promise<string | MediaUnpublishableResponse | MediaPublishUnavailableResponse> {
+    const { correlationId } = context;
+    // A video is served as it is: finalize accepted only an MP4 with no metadata that
+    // every browser plays (#21). Storage copies it, so it never passes through here.
+    if (asset.kind === "video") {
+      const key = `${asset.id}.mp4`;
+      const copied = await this.storage.store(
+        new CopyStorageObjectRequest(
+          this.options.quarantineBucket,
+          asset.storagePath,
+          this.options.publicBucket,
+          key,
+          context,
+        ),
+      );
+      if (!(copied instanceof StorageObjectCopiedResponse)) {
+        return unavailable(correlationId, copied, "storage.store");
+      }
+      return key;
     }
 
     let bytes = originalBytes;
@@ -88,34 +151,7 @@ export class TransformPublishMediaHandler implements IHandler<
     if (!(uploaded instanceof StorageObjectUploadedResponse)) {
       return unavailable(correlationId, uploaded, "storage.store");
     }
-
-    const stored = await this.mediaAssets.store(
-      new StoreMediaAssetChangesRequest(
-        asset.id,
-        { publishedPath: `${this.options.publicBucket}/${key}` },
-        context,
-      ),
-    );
-    // A DeleteMedia that ran since the upload removed the row: take the copy back down,
-    // so no public object outlives its row (#60). Only on not-found: a failed write may
-    // still have committed (a lost reply), or a concurrent publish of the same asset
-    // may own the key, and a row naming a missing object cannot be retried. An orphan
-    // object is harmless; a dangling path is a broken image for good.
-    if (stored instanceof MediaAssetNotFoundResponse) {
-      const removed = await this.storage.remove(
-        new RemoveStorageObjectRequest(this.options.publicBucket, key, context),
-      );
-      if (!(removed instanceof StorageObjectRemovedResponse)) {
-        console.error(
-          `public copy ${key} left without a row [${correlationId}]`,
-          removed.constructor.name,
-        );
-      }
-    }
-    if (!(stored instanceof MediaAssetStoredResponse)) {
-      return unavailable(correlationId, stored, "mediaAssets.store");
-    }
-    return new MediaPublishedResponse(correlationId, stored.asset);
+    return key;
   }
 }
 

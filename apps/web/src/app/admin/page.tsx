@@ -346,6 +346,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   name={`${level}MaxAccountBytes`}
                   value={config.attachmentQuotaByTrust[level].maxAccountBytes}
                 />
+                <NumberField
+                  label="Max video bytes (0 for none)"
+                  name={`${level}MaxVideoFileBytes`}
+                  value={config.attachmentQuotaByTrust[level].maxVideoFileBytes}
+                  min={0}
+                />
               </div>
             </fieldset>
           ))}

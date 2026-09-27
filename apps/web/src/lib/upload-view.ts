@@ -42,12 +42,13 @@ export function uploadViewOf(
   };
 }
 
-// An image is shown inline. Any other file is a download from the storage origin,
-// never opened in the page (SPEC.md §6): `download` makes Supabase Storage answer with
-// `Content-Disposition: attachment` under the original name.
+// An image is shown inline, and a video plays in the post (#21). Any other file is a
+// download from the storage origin, never opened in the page (SPEC.md §6): `download`
+// makes Supabase Storage answer with `Content-Disposition: attachment` under the
+// original name.
 function publicUrlOf(asset: MediaAsset, publishedPath: string): string {
   const url = publicMediaUrl(publishedPath);
-  if (asset.kind === "image") {
+  if (asset.kind === "image" || asset.kind === "video") {
     return url;
   }
   return `${url}?${new URLSearchParams({ download: asset.originalFilename }).toString()}`;

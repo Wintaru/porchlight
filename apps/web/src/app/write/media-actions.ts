@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  type ConvertedSource,
   DeleteMediaRequest,
   FinalizeUploadRequest,
   GetMediaRequest,
@@ -32,6 +33,25 @@ import type {
 } from "./media-results";
 
 const FILENAME_MAX_LENGTH = 255;
+
+// A server action's arguments arrive from the browser unchecked.
+function isConvertedSource(value: unknown): value is ConvertedSource | null {
+  if (value === null) {
+    return true;
+  }
+  if (typeof value !== "object") {
+    return false;
+  }
+  const { filename, bytes } = value as Record<string, unknown>;
+  return (
+    typeof filename === "string" &&
+    filename.length > 0 &&
+    filename.length <= FILENAME_MAX_LENGTH &&
+    typeof bytes === "number" &&
+    Number.isSafeInteger(bytes) &&
+    bytes > 0
+  );
+}
 
 // The editor's own attachment panel: request a place to put a file, confirm what the
 // browser already put there, list or look up the member's uploads, or remove one
@@ -65,15 +85,18 @@ export async function requestUpload(
   return { ok: true, mediaId: response.mediaId, uploadUrl: response.uploadUrl };
 }
 
+// `convertedFrom` is the phone's file a video was converted from in the browser (#21),
+// for the evidence envelope.
 export async function finalizeUpload(
   mediaId: string,
   originalFilename: string,
+  convertedFrom: ConvertedSource | null = null,
 ): Promise<FinalizeUploadResult> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     return { ok: false, error: mediaErrorTextFor("signed-out") };
   }
-  if (!isEntityId(mediaId)) {
+  if (!isEntityId(mediaId) || !isConvertedSource(convertedFrom)) {
     return { ok: false, error: mediaErrorTextFor("unavailable") };
   }
 
@@ -85,6 +108,7 @@ export async function finalizeUpload(
       originalFilename,
       meta.clientIp,
       meta.userAgent,
+      convertedFrom,
     ),
   );
   if (!(finalized instanceof MediaFinalizedResponse)) {

@@ -27,8 +27,16 @@ import { RequestUploadUrlHandler } from "./RequestUploadUrlHandler";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 const QUOTA_BY_TRUST: AttachmentQuotaByTrust = {
-  probation: { maxFileBytes: 1_000_000, maxAccountBytes: 2_000_000 },
-  trusted: { maxFileBytes: 10_000_000, maxAccountBytes: 100_000_000 },
+  probation: {
+    maxFileBytes: 1_000_000,
+    maxAccountBytes: 2_000_000,
+    maxVideoFileBytes: 0,
+  },
+  trusted: {
+    maxFileBytes: 10_000_000,
+    maxAccountBytes: 100_000_000,
+    maxVideoFileBytes: 0,
+  },
 };
 
 function member(trustLevel: "probation" | "trusted"): Actor {

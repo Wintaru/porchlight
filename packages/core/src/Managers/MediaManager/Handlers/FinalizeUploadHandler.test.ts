@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { FakeStoreMediaAssetChangesHandler } from "../../../Accessors/MediaAssetAccessor/Handlers/FakeStoreMediaAssetChangesHandler";
 import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
 import { FakeUploadStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeUploadStorageObjectHandler";
@@ -51,6 +54,21 @@ import { createAttachmentEngine } from "../../../Composition/createAttachmentEng
 import { createModerationPolicyEngine } from "../../../Composition/createModerationPolicyEngine";
 import { createPermissionEngine } from "../../../Composition/createPermissionEngine";
 import { createQuotaEngine } from "../../../Composition/createQuotaEngine";
+import { FakeCopyStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeCopyStorageObjectHandler";
+import { FakeCreateSignedDownloadUrlHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeCreateSignedDownloadUrlHandler";
+import { FakeDigestStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeDigestStorageObjectHandler";
+import { FakeDownloadStorageObjectRangeHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeDownloadStorageObjectRangeHandler";
+import { FakeLoadStorageObjectInfoHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeLoadStorageObjectInfoHandler";
+import { CopyStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/CopyStorageObjectRequest";
+import { CreateSignedDownloadUrlRequest } from "../../../Accessors/MediaStorageAccessor/Requests/CreateSignedDownloadUrlRequest";
+import { DigestStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DigestStorageObjectRequest";
+import { DownloadStorageObjectRangeRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRangeRequest";
+import { LoadStorageObjectInfoRequest } from "../../../Accessors/MediaStorageAccessor/Requests/LoadStorageObjectInfoRequest";
+import { MatchMediaUrlRequest } from "../../../Accessors/HashMatchAccessor/Requests/MatchMediaUrlRequest";
+import { FakeClassifyVideoHandler } from "../../../Accessors/ImageClassifierAccessor/Handlers/FakeClassifyVideoHandler";
+import { ClassifyVideoRequest } from "../../../Accessors/ImageClassifierAccessor/Requests/ClassifyVideoRequest";
+import { sha256HexOfBytes } from "../../../Utilities/media/sha256HexOfBytes";
+import type { ConvertedSource } from "../ConvertedSource";
 import { mediaStoragePath } from "../mediaStoragePath";
 import { FinalizeUploadRequest } from "../Requests/FinalizeUploadRequest";
 import { MediaFinalizedResponse } from "../Responses/MediaFinalizedResponse";
@@ -82,9 +100,23 @@ const CLIENT_IP = "203.0.113.5";
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]);
 
 const QUOTA_BY_TRUST: AttachmentQuotaByTrust = {
-  probation: { maxFileBytes: 1_000_000, maxAccountBytes: 2_000_000 },
-  trusted: { maxFileBytes: 10_000_000, maxAccountBytes: 100_000_000 },
+  probation: {
+    maxFileBytes: 1_000_000,
+    maxAccountBytes: 2_000_000,
+    maxVideoFileBytes: 0,
+  },
+  trusted: {
+    maxFileBytes: 10_000_000,
+    maxAccountBytes: 100_000_000,
+    maxVideoFileBytes: 50_000_000,
+  },
 };
+
+function fixture(name: string): Uint8Array {
+  return new Uint8Array(
+    readFileSync(join(import.meta.dirname, "../../../../test/fixtures/media", name)),
+  );
+}
 
 function ascii(text: string): Uint8Array {
   return new TextEncoder().encode(text);
@@ -102,11 +134,28 @@ function harness(
         UploadStorageObjectRequest,
         new FakeUploadStorageObjectHandler(storageState),
       )
+      .register(CopyStorageObjectRequest, new FakeCopyStorageObjectHandler(storageState))
       .build(),
     new HandlerResolverBuilder()
       .register(
         DownloadStorageObjectRequest,
         new FakeDownloadStorageObjectHandler(storageState),
+      )
+      .register(
+        LoadStorageObjectInfoRequest,
+        new FakeLoadStorageObjectInfoHandler(storageState),
+      )
+      .register(
+        DownloadStorageObjectRangeRequest,
+        new FakeDownloadStorageObjectRangeHandler(storageState),
+      )
+      .register(
+        DigestStorageObjectRequest,
+        new FakeDigestStorageObjectHandler(storageState),
+      )
+      .register(
+        CreateSignedDownloadUrlRequest,
+        new FakeCreateSignedDownloadUrlHandler(storageState),
       )
       .build(),
     new HandlerResolverBuilder()
@@ -172,20 +221,18 @@ function harness(
       .build(),
   );
 
+  const fakeHashMatch = new FakeMatchImageHashHandler(new FakeHashMatchState(hashResult));
   const hashMatch = new HashMatchAccessor(
     new HandlerResolverBuilder()
-      .register(
-        MatchImageHashRequest,
-        new FakeMatchImageHashHandler(new FakeHashMatchState(hashResult)),
-      )
+      .register(MatchImageHashRequest, fakeHashMatch)
+      .register(MatchMediaUrlRequest, fakeHashMatch)
       .build(),
   );
+  const classifierState = new FakeImageClassifierState(classifierResult);
   const imageClassifier = new ImageClassifierAccessor(
     new HandlerResolverBuilder()
-      .register(
-        ClassifyImageRequest,
-        new FakeClassifyImageHandler(new FakeImageClassifierState(classifierResult)),
-      )
+      .register(ClassifyImageRequest, new FakeClassifyImageHandler(classifierState))
+      .register(ClassifyVideoRequest, new FakeClassifyVideoHandler(classifierState))
       .build(),
   );
 
@@ -215,18 +262,39 @@ function harness(
     { quarantineBucket: QUARANTINE_BUCKET, ipHashSalt: IP_HASH_SALT },
   );
 
-  function seed(mediaId: string, filename: string, bytes: Uint8Array): void {
+  function seed(
+    mediaId: string,
+    filename: string,
+    bytes: Uint8Array,
+    contentType?: string,
+  ): void {
     const path = mediaStoragePath(
       { kind: "member", profileId: "u-theo" },
       mediaId,
       filename,
     );
-    storageState.objects.set(storageState.key(QUARANTINE_BUCKET, path), bytes);
+    const key = storageState.key(QUARANTINE_BUCKET, path);
+    storageState.objects.set(key, bytes);
+    if (contentType !== undefined) {
+      storageState.contentTypes.set(key, contentType);
+    }
   }
 
-  function finalize(mediaId: string, filename: string) {
+  function finalize(
+    mediaId: string,
+    filename: string,
+    actor: Actor = THEO,
+    convertedFrom: ConvertedSource | null = null,
+  ) {
     return handler.handle(
-      new FinalizeUploadRequest(THEO, mediaId, filename, CLIENT_IP, "test-agent"),
+      new FinalizeUploadRequest(
+        actor,
+        mediaId,
+        filename,
+        CLIENT_IP,
+        "test-agent",
+        convertedFrom,
+      ),
     );
   }
 
@@ -291,6 +359,7 @@ describe("FinalizeUploadHandler", () => {
         "porch.png",
         CLIENT_IP,
         "claude-code",
+        null,
       ),
     );
     expect(finalized).toBeInstanceOf(MediaFinalizedResponse);
@@ -309,6 +378,7 @@ describe("FinalizeUploadHandler", () => {
         "porch.png",
         CLIENT_IP,
         "claude-code",
+        null,
       ),
     );
     expect(refused).toBeInstanceOf(MediaRefusedResponse);
@@ -320,6 +390,7 @@ describe("FinalizeUploadHandler", () => {
         "porch.png",
         CLIENT_IP,
         undefined,
+        null,
       ),
     );
     expect(unscoped).toMatchObject({ reason: "not-allowed" });
@@ -457,6 +528,7 @@ describe("FinalizeUploadHandler", () => {
         "porch.png",
         `${CLIENT_IP}:51234`,
         "test-agent",
+        null,
       ),
     );
 
@@ -478,6 +550,7 @@ describe("FinalizeUploadHandler", () => {
         "porch.png",
         CLIENT_IP,
         undefined,
+        null,
       ),
     );
 
@@ -507,5 +580,100 @@ describe("FinalizeUploadHandler", () => {
     expect(storageState.objects.has(storageState.key(QUARANTINE_BUCKET, path))).toBe(
       false,
     );
+  });
+
+  describe("a video (#21)", () => {
+    const PREPARED = fixture("prepared.mp4");
+    // Straight from a camera app: a location in `udta`, the movie box after the media.
+    const UNPREPARED = fixture("unprepared.mp4");
+    const VIDEO_ID = "99999999-9999-4999-8999-999999999991";
+
+    test("an MP4 the editor prepared is scanned by link and published by a storage copy", async () => {
+      const { assetState, quotaState, storageState, seed, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4", THEO, {
+        filename: "IMG_0001.MOV",
+        bytes: 5_000_000,
+      });
+
+      expect(result).toBeInstanceOf(MediaFinalizedResponse);
+      expect(result).toMatchObject({
+        asset: {
+          kind: "video",
+          mimeType: "video/mp4",
+          scanStatus: "clear",
+          bytes: PREPARED.length,
+          sha256: await sha256HexOfBytes(PREPARED),
+          publishedPath: `${PUBLIC_BUCKET}/${VIDEO_ID}.mp4`,
+        },
+      });
+      expect(storageState.objects.get(`${PUBLIC_BUCKET}/${VIDEO_ID}.mp4`)).toEqual(
+        PREPARED,
+      );
+      // The evidence names the phone's file, as the browser reported it.
+      expect(assetState.evidence[0]).toMatchObject({
+        originalFilename: "IMG_0001.MOV",
+        originalBytes: 5_000_000,
+      });
+      expect(quotaState.usage.get(THEO.profile.id)).toMatchObject({
+        bytesUsed: PREPARED.length,
+      });
+    });
+
+    test("a video that keeps its metadata is refused and removed", async () => {
+      const { assetState, storageState, seed, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", UNPREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4");
+
+      expect(result).toMatchObject({ reason: "video-not-prepared" });
+      expect(assetState.assets.size).toBe(0);
+      expect(storageState.objects.size).toBe(0);
+    });
+
+    test("a video stored under another type is refused", async () => {
+      const { seed, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "text/html");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4");
+
+      expect(result).toMatchObject({ reason: "type-mismatch" });
+    });
+
+    test("a probation member cannot upload video", async () => {
+      const { seed, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4", {
+        kind: "member",
+        profile: { ...THEO.profile, trustLevel: "probation" },
+      });
+
+      expect(result).toMatchObject({ reason: "video-not-allowed" });
+    });
+
+    test("an admin has no quota, so a probation-level cap does not apply (D16)", async () => {
+      const { seed, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4", {
+        kind: "member",
+        profile: { ...THEO.profile, role: "admin", trustLevel: "probation" },
+      });
+
+      expect(result).toBeInstanceOf(MediaFinalizedResponse);
+    });
+
+    test("a flagged video is held with no public copy", async () => {
+      const { seed, finalize } = harness("clear", "flagged");
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4");
+
+      expect(result).toMatchObject({
+        asset: { scanStatus: "flagged", publishedPath: null },
+      });
+    });
   });
 });

@@ -6,28 +6,37 @@ import {
   type AttachmentQuotaByTrust,
 } from "../../../Common/AttachmentQuota";
 import type { IHandler } from "../../../Common/IHandler";
-import { TRUST_LEVELS } from "../../../Common/TrustLevel";
+import { TRUST_LEVELS, type TrustLevel } from "../../../Common/TrustLevel";
 import type { LoadAttachmentQuotaByTrustRequest } from "../Requests/LoadAttachmentQuotaByTrustRequest";
 import { AttachmentQuotaByTrustLoadedResponse } from "../Responses/AttachmentQuotaByTrustLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
 
 const QUOTA_KEY = "attachment_quota_by_trust";
 
-function toQuota(value: unknown): AttachmentQuota | undefined {
+// `max_video_file_bytes` came with video (#21). A row saved before it has none, and
+// reads that trust level's default.
+function toQuota(value: unknown, level: TrustLevel): AttachmentQuota | undefined {
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  const { max_file_bytes: maxFileBytes, max_account_bytes: maxAccountBytes } =
-    value as Record<string, unknown>;
+  const {
+    max_file_bytes: maxFileBytes,
+    max_account_bytes: maxAccountBytes,
+    max_video_file_bytes: storedVideoBytes,
+  } = value as Record<string, unknown>;
+  const maxVideoFileBytes =
+    storedVideoBytes ?? DEFAULT_ATTACHMENT_QUOTA_BY_TRUST[level].maxVideoFileBytes;
   if (
     typeof maxFileBytes !== "number" ||
     typeof maxAccountBytes !== "number" ||
+    typeof maxVideoFileBytes !== "number" ||
     maxFileBytes <= 0 ||
-    maxAccountBytes <= 0
+    maxAccountBytes <= 0 ||
+    maxVideoFileBytes < 0
   ) {
     return undefined;
   }
-  return { maxFileBytes, maxAccountBytes };
+  return { maxFileBytes, maxAccountBytes, maxVideoFileBytes };
 }
 
 function toQuotaByTrust(value: unknown): AttachmentQuotaByTrust | undefined {
@@ -35,7 +44,9 @@ function toQuotaByTrust(value: unknown): AttachmentQuotaByTrust | undefined {
     return undefined;
   }
   const record = value as Record<string, unknown>;
-  const entries = TRUST_LEVELS.map((level) => [level, toQuota(record[level])] as const);
+  const entries = TRUST_LEVELS.map(
+    (level) => [level, toQuota(record[level], level)] as const,
+  );
   if (entries.some(([, quota]) => quota === undefined)) {
     return undefined;
   }

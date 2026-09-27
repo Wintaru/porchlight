@@ -34,6 +34,7 @@ catalog:
   heic-decode: ^2.1.0
   jsdom: ^30.0.1
   jszip: ^3.10.1
+  mediabunny: ^1.60.0
   next: ^16.3.4
   postgres: ^3.4.9
   prettier: ^3.9.6

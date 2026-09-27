@@ -17,6 +17,8 @@ export const KNOWN_ATTACHMENT_TYPES: readonly AttachmentType[] = [
   { extension: "gif", kind: "image", mimeTypes: ["image/gif"] },
   { extension: "webp", kind: "image", mimeTypes: ["image/webp"] },
   { extension: "avif", kind: "image", mimeTypes: ["image/avif"] },
+  { extension: "heic", kind: "image", mimeTypes: ["image/heic", "image/heif"] },
+  { extension: "mp4", kind: "video", mimeTypes: ["video/mp4"] },
   { extension: "pdf", kind: "document", mimeTypes: ["application/pdf"] },
   {
     extension: "docx",

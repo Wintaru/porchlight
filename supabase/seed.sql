@@ -195,7 +195,7 @@ insert into public.site_config (key, value) values
   ('site_name', '"Porchlight"'),
   ('site_tagline', '""'),
   ('about_md', '""'),
-  ('attachment_allowlist', '["png","jpeg","gif","webp","avif","pdf","docx","xlsx","pptx","odt","ods","odp","txt","md","csv","stl","gpx"]'),
+  ('attachment_allowlist', '["png","jpeg","gif","webp","avif","heic","mp4","pdf","docx","xlsx","pptx","odt","ods","odp","txt","md","csv","stl","gpx"]'),
   ('anonymous_upload_cap', '{"files":3,"bytes_per_file":2097152}'),
   ('attachment_quota_by_trust', '{"probation":{"max_file_bytes":5242880,"max_account_bytes":26214400},"trusted":{"max_file_bytes":20971520,"max_account_bytes":209715200}}'),
   ('moderation_thresholds', '{"flag_at":0.5,"lock_at":0.9}'),

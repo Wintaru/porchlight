@@ -10,10 +10,15 @@ type Result = QuotaAllowedResponse | QuotaExceededResponse;
 // big the incoming file is — arrives on the request. A member checks the per-file cap
 // and the running account total for their trust level; an anonymous author checks the
 // D15 fixed per-file cap and the fixed file count, never a byte total (SPEC.md §4, §6).
+// A video checks the trust level's video cap instead of the per-file cap (#21).
 export class EvaluateQuotaHandler implements IHandler<EvaluateQuotaRequest, Result> {
   handle(request: EvaluateQuotaRequest): Promise<Result> {
-    const { correlationId, check, incomingBytes, usage } = request;
+    const { correlationId, check, incomingKind, incomingBytes, usage } = request;
+    const isVideo = incomingKind === "video";
     if (check.kind === "anonymous") {
+      if (isVideo) {
+        return this.exceeded(correlationId, "video-not-allowed", 0);
+      }
       const { files, bytesPerFile } = check.cap;
       if (incomingBytes > bytesPerFile) {
         return this.exceeded(correlationId, "file-too-large", bytesPerFile);
@@ -24,8 +29,12 @@ export class EvaluateQuotaHandler implements IHandler<EvaluateQuotaRequest, Resu
       return this.allowed(correlationId);
     }
     const quota = check.quotaByTrust[check.trustLevel];
-    if (incomingBytes > quota.maxFileBytes) {
-      return this.exceeded(correlationId, "file-too-large", quota.maxFileBytes);
+    const maxFileBytes = isVideo ? quota.maxVideoFileBytes : quota.maxFileBytes;
+    if (isVideo && maxFileBytes === 0) {
+      return this.exceeded(correlationId, "video-not-allowed", 0);
+    }
+    if (incomingBytes > maxFileBytes) {
+      return this.exceeded(correlationId, "file-too-large", maxFileBytes);
     }
     if (usage.bytesUsed + incomingBytes > quota.maxAccountBytes) {
       return this.exceeded(correlationId, "account-cap", quota.maxAccountBytes);

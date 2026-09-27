@@ -56,6 +56,12 @@ describe("sniffAttachmentExtension", () => {
     expect(sniffAttachmentExtension(ftyp("mif1", "avif", "heic"))).toBeUndefined();
   });
 
+  test("recognizes an MP4 by its brand, and not a QuickTime .mov (#21)", () => {
+    expect(sniffAttachmentExtension(ftyp("isom", "isom", "avc1"))).toBe("mp4");
+    expect(sniffAttachmentExtension(ftyp("mp42", "isom"))).toBe("mp4");
+    expect(sniffAttachmentExtension(ftyp("qt  ", "qt  "))).toBeUndefined();
+  });
+
   test("an SVG renamed to .png sniffs to nothing this catalog recognizes", () => {
     const svg = ascii(
       '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',

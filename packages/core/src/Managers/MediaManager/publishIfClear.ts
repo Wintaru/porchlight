@@ -12,11 +12,12 @@ import { unavailable } from "./unavailable";
 // failed attempt does not fail the upload: the row and the quota are already written,
 // so the upload comes back without a copy and its owner can try again
 // (RepublishMediaRequest). `unpublishable` says why an attempt made no copy, so the
-// editor does not offer a retry that cannot work (#60).
+// editor does not offer a retry that cannot work (#60). `originalBytes` is undefined
+// for a video, which is copied in storage rather than read (#21).
 export async function publishIfClear(
   publisher: IMediaPublishEngine,
   asset: MediaAsset,
-  originalBytes: Uint8Array,
+  originalBytes: Uint8Array | undefined,
   context: { readonly correlationId: string; readonly timestamp: Date },
 ): Promise<{
   readonly asset: MediaAsset;

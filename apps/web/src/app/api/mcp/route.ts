@@ -275,6 +275,7 @@ function registerTools(
           filename,
           origin.clientIp,
           origin.userAgent,
+          null,
         ),
       );
       if (!(response instanceof MediaFinalizedResponse)) {

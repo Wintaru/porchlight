@@ -9,6 +9,8 @@ export const DEFAULT_ATTACHMENT_ALLOWLIST: readonly string[] = [
   "gif",
   "webp",
   "avif",
+  "heic",
+  "mp4",
   "pdf",
   "docx",
   "xlsx",

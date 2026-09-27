@@ -8,20 +8,41 @@ import { requireBrowserAnonKey } from "@/read-model/browser-client";
 // than importing that package: only packages/db may import `@supabase/*` (the boundary
 // policy in eslint.boundaries.js), and the browser needs no session for a URL that is
 // already scoped to one upload.
-export async function uploadToSignedUrl(signedUrl: string, file: File): Promise<void> {
+//
+// XMLHttpRequest rather than fetch: only it reports upload progress, which a video of
+// a few hundred megabytes needs (#21).
+export function uploadToSignedUrl(
+  signedUrl: string,
+  file: File,
+  onProgress?: (fraction: number) => void,
+): Promise<void> {
   const anonKey = requireBrowserAnonKey();
-  const response = await fetch(signedUrl, {
-    method: "PUT",
-    headers: {
-      apikey: anonKey,
-      authorization: `Bearer ${anonKey}`,
-      "content-type": file.type || "application/octet-stream",
-      "cache-control": "max-age=3600",
-      "x-upsert": "false",
-    },
-    body: file,
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("PUT", signedUrl);
+    request.setRequestHeader("apikey", anonKey);
+    request.setRequestHeader("authorization", `Bearer ${anonKey}`);
+    request.setRequestHeader("content-type", file.type || "application/octet-stream");
+    request.setRequestHeader("cache-control", "max-age=3600");
+    request.setRequestHeader("x-upsert", "false");
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.(event.loaded / event.total);
+      }
+    };
+    request.onload = () => {
+      if (request.status >= 200 && request.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`upload to signed URL failed: ${String(request.status)}`));
+      }
+    };
+    request.onerror = () => {
+      reject(new Error("upload to signed URL failed: network error"));
+    };
+    request.onabort = () => {
+      reject(new Error("upload to signed URL failed: aborted"));
+    };
+    request.send(file);
   });
-  if (!response.ok) {
-    throw new Error(`upload to signed URL failed: ${String(response.status)}`);
-  }
 }

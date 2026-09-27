@@ -12,6 +12,7 @@ export function sniffAttachmentExtension(bytes: Uint8Array): string | undefined 
   if (isRiffContainer(bytes, "WEBP")) return "webp";
   if (isIsobmffBrand(bytes, ["avif", "avis"])) return "avif";
   if (isHeifImage(bytes)) return "heic";
+  if (isIsobmffBrand(bytes, MP4_BRANDS)) return "mp4";
   if (startsWith(bytes, asciiBytes("%PDF-"))) return "pdf";
   if (isZipContainer(bytes)) return sniffZipBasedExtension();
   if (isStlFile(bytes)) return "stl";
@@ -44,6 +45,20 @@ function isIsobmffBrand(bytes: Uint8Array, brands: readonly string[]): boolean {
     brands.includes(asciiOf(bytes, 8, 12))
   );
 }
+
+// The major brands of an MP4 file (#21). QuickTime's own `qt  ` is not among them: a
+// phone's .mov is converted in the browser before it is uploaded.
+const MP4_BRANDS = [
+  "isom",
+  "iso2",
+  "iso4",
+  "iso5",
+  "iso6",
+  "mp41",
+  "mp42",
+  "avc1",
+  "M4V ",
+];
 
 // HEIC is what an iPhone saves a photo as: an ISO-BMFF file like AVIF, with an HEVC
 // picture inside. The major brand names it outright, or it is the generic `mif1`/`msf1`

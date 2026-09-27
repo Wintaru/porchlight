@@ -78,10 +78,15 @@ export function parseSiteConfigForm(
     level,
     maxFileBytes: positiveInt(formData, `${level}MaxFileBytes`),
     maxAccountBytes: positiveInt(formData, `${level}MaxAccountBytes`),
+    // Zero allowed: that trust level uploads no video (#21).
+    maxVideoFileBytes: wholeNumber(formData, `${level}MaxVideoFileBytes`),
   }));
   if (
     quotaEntries.some(
-      (entry) => entry.maxFileBytes === undefined || entry.maxAccountBytes === undefined,
+      (entry) =>
+        entry.maxFileBytes === undefined ||
+        entry.maxAccountBytes === undefined ||
+        entry.maxVideoFileBytes === undefined,
     )
   ) {
     return { ok: false, field: "attachmentQuotaByTrust" };
@@ -89,7 +94,11 @@ export function parseSiteConfigForm(
   const attachmentQuotaByTrust = Object.fromEntries(
     quotaEntries.map((entry) => [
       entry.level,
-      { maxFileBytes: entry.maxFileBytes, maxAccountBytes: entry.maxAccountBytes },
+      {
+        maxFileBytes: entry.maxFileBytes,
+        maxAccountBytes: entry.maxAccountBytes,
+        maxVideoFileBytes: entry.maxVideoFileBytes,
+      },
     ]),
   );
   const flagAt = fraction(formData, "moderationFlagAt");

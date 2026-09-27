@@ -190,8 +190,8 @@ describe("SaveSiteConfigHandler", () => {
   test("a quota with maxFileBytes above maxAccountBytes is invalid", async () => {
     const { handler } = handlerAndState();
     const bad: SiteConfigSnapshot["attachmentQuotaByTrust"] = {
-      probation: { maxFileBytes: 100, maxAccountBytes: 100 },
-      trusted: { maxFileBytes: 500, maxAccountBytes: 100 },
+      probation: { maxFileBytes: 100, maxAccountBytes: 100, maxVideoFileBytes: 0 },
+      trusted: { maxFileBytes: 500, maxAccountBytes: 100, maxVideoFileBytes: 0 },
     };
 
     const response = await handler.handle(
@@ -200,6 +200,41 @@ describe("SaveSiteConfigHandler", () => {
 
     expect(response).toBeInstanceOf(SiteConfigInvalidResponse);
     expect(response).toMatchObject({ field: "attachmentQuotaByTrust" });
+  });
+
+  test("a video cap is stored, and a negative one is invalid (#21)", async () => {
+    const { handler, state } = handlerAndState();
+    const quota = (
+      maxVideoFileBytes: number,
+    ): SiteConfigSnapshot["attachmentQuotaByTrust"] => ({
+      probation: { maxFileBytes: 100, maxAccountBytes: 1000, maxVideoFileBytes: 0 },
+      trusted: { maxFileBytes: 100, maxAccountBytes: 1000, maxVideoFileBytes },
+    });
+
+    const bad = await handler.handle(
+      new SaveSiteConfigRequest(ADMIN, { attachmentQuotaByTrust: quota(-1) }),
+    );
+    const good = await handler.handle(
+      new SaveSiteConfigRequest(ADMIN, { attachmentQuotaByTrust: quota(5000) }),
+    );
+
+    expect(bad).toMatchObject({ field: "attachmentQuotaByTrust" });
+    expect(good).not.toBeInstanceOf(SiteConfigInvalidResponse);
+    expect(state.stored).toContainEqual({
+      key: "attachment_quota_by_trust",
+      value: {
+        probation: {
+          max_file_bytes: 100,
+          max_account_bytes: 1000,
+          max_video_file_bytes: 0,
+        },
+        trusted: {
+          max_file_bytes: 100,
+          max_account_bytes: 1000,
+          max_video_file_bytes: 5000,
+        },
+      },
+    });
   });
 
   test("a plain member may not save", async () => {

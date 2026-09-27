@@ -13,8 +13,8 @@
     "test:e2e:headed": "playwright test --project=headed"
   },
   "dependencies": {
-    "@porchlight/core": "workspace:*",
     "@modelcontextprotocol/server": "catalog:",
+    "@porchlight/core": "workspace:*",
     "@porchlight/db": "workspace:*",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-image": "catalog:",
@@ -23,6 +23,7 @@
     "@tiptap/pm": "catalog:",
     "@tiptap/react": "catalog:",
     "@tiptap/starter-kit": "catalog:",
+    "mediabunny": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

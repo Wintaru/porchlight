@@ -10,6 +10,7 @@ import { LoadAttachmentQuotaByTrustRequest } from "../../../Accessors/SiteConfig
 import { AttachmentAllowlistLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentAllowlistLoadedResponse";
 import { AttachmentQuotaByTrustLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentQuotaByTrustLoadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
+import type { Profile } from "../../../Common/Profile";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
 import { EvaluateQuotaRequest } from "../../../Engines/QuotaEngine/Requests/EvaluateQuotaRequest";
@@ -26,6 +27,7 @@ import { MediaRejectedResponse } from "../Responses/MediaRejectedResponse";
 import { MediaUnavailableResponse } from "../Responses/MediaUnavailableResponse";
 import { UploadUrlIssuedResponse } from "../Responses/UploadUrlIssuedResponse";
 import { unavailable } from "../unavailable";
+import { claimedKindOf } from "../claimedKindOf";
 
 type Result =
   | UploadUrlIssuedResponse
@@ -84,39 +86,17 @@ export class RequestUploadUrlHandler implements IHandler<
       return new MediaRejectedResponse(correlationId, "extension-not-allowed");
     }
 
-    const quotaByTrust = await this.siteConfig.load(
-      new LoadAttachmentQuotaByTrustRequest(context),
-    );
-    if (!(quotaByTrust instanceof AttachmentQuotaByTrustLoadedResponse)) {
-      return unavailable(correlationId, quotaByTrust, "siteConfig.load");
-    }
-    const usage = await this.quotas.load(
-      new LoadQuotaUsageRequest(actor.profile.id, context),
-    );
-    if (!(usage instanceof QuotaUsageLoadedResponse)) {
-      return unavailable(correlationId, usage, "quotas.load");
-    }
-    const evaluated = await this.quotaEngine.evaluate(
-      new EvaluateQuotaRequest(
-        {
-          kind: "member",
-          trustLevel: actor.profile.trustLevel,
-          quotaByTrust: quotaByTrust.quotaByTrust,
-        },
+    // An admin has no quota (D16), so a video past the trusted cap still goes up (#21).
+    if (actor.profile.role !== "admin") {
+      const overQuota = await this.checkQuota(
+        actor.profile,
+        extension,
         declaredBytes,
-        { bytesUsed: usage.bytesUsed, filesCount: usage.filesCount },
         context,
-      ),
-    );
-    if (evaluated instanceof QuotaExceededResponse) {
-      return new MediaQuotaExceededResponse(
-        correlationId,
-        evaluated.reason,
-        evaluated.limit,
       );
-    }
-    if (!(evaluated instanceof QuotaAllowedResponse)) {
-      return unavailable(correlationId, evaluated, "quotaEngine.evaluate");
+      if (overQuota !== undefined) {
+        return overQuota;
+      }
     }
 
     const mediaId = globalThis.crypto.randomUUID();
@@ -132,5 +112,48 @@ export class RequestUploadUrlHandler implements IHandler<
       return unavailable(correlationId, signed, "storage.store");
     }
     return new UploadUrlIssuedResponse(correlationId, mediaId, path, signed.signedUrl);
+  }
+
+  private async checkQuota(
+    profile: Profile,
+    extension: string,
+    declaredBytes: number,
+    context: { readonly correlationId: string },
+  ): Promise<MediaQuotaExceededResponse | MediaUnavailableResponse | undefined> {
+    const { correlationId } = context;
+    const quotaByTrust = await this.siteConfig.load(
+      new LoadAttachmentQuotaByTrustRequest(context),
+    );
+    if (!(quotaByTrust instanceof AttachmentQuotaByTrustLoadedResponse)) {
+      return unavailable(correlationId, quotaByTrust, "siteConfig.load");
+    }
+    const usage = await this.quotas.load(new LoadQuotaUsageRequest(profile.id, context));
+    if (!(usage instanceof QuotaUsageLoadedResponse)) {
+      return unavailable(correlationId, usage, "quotas.load");
+    }
+    const evaluated = await this.quotaEngine.evaluate(
+      new EvaluateQuotaRequest(
+        {
+          kind: "member",
+          trustLevel: profile.trustLevel,
+          quotaByTrust: quotaByTrust.quotaByTrust,
+        },
+        claimedKindOf(extension),
+        declaredBytes,
+        { bytesUsed: usage.bytesUsed, filesCount: usage.filesCount },
+        context,
+      ),
+    );
+    if (evaluated instanceof QuotaExceededResponse) {
+      return new MediaQuotaExceededResponse(
+        correlationId,
+        evaluated.reason,
+        evaluated.limit,
+      );
+    }
+    if (!(evaluated instanceof QuotaAllowedResponse)) {
+      return unavailable(correlationId, evaluated, "quotaEngine.evaluate");
+    }
+    return undefined;
   }
 }

@@ -212,6 +212,7 @@ function entriesFor(update: Partial<SiteConfigSnapshot>): SiteConfigEntry[] | Fi
           {
             max_file_bytes: quota.maxFileBytes,
             max_account_bytes: quota.maxAccountBytes,
+            max_video_file_bytes: quota.maxVideoFileBytes,
           },
         ];
       }),
@@ -318,6 +319,15 @@ function quotaByTrustError(
       return {
         field: "attachmentQuotaByTrust",
         message: `${level}: maxFileBytes and maxAccountBytes must be positive integers, and maxFileBytes may not exceed maxAccountBytes`,
+      };
+    }
+    // 0 is allowed: that trust level uploads no video (#21). A cap above the account
+    // total is allowed too: the account total still applies to every upload, and a
+    // list saved before video had a 200 MB account total below the video default.
+    if (!Number.isInteger(quota.maxVideoFileBytes) || quota.maxVideoFileBytes < 0) {
+      return {
+        field: "attachmentQuotaByTrust",
+        message: `${level}: maxVideoFileBytes must be a whole number, 0 or more`,
       };
     }
   }

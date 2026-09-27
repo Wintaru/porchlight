@@ -31,6 +31,7 @@ import { MediaQuotaExceededResponse } from "../Responses/MediaQuotaExceededRespo
 import { MediaRejectedResponse } from "../Responses/MediaRejectedResponse";
 import type { MediaUnavailableResponse } from "../Responses/MediaUnavailableResponse";
 import { unavailable } from "../unavailable";
+import { claimedKindOf } from "../claimedKindOf";
 
 type Result =
   | AnonymousUploadUrlIssuedResponse
@@ -106,6 +107,7 @@ export class RequestUploadUrlAnonymouslyHandler implements IHandler<
     const evaluated = await this.quotaEngine.evaluate(
       new EvaluateQuotaRequest(
         { kind: "anonymous", cap: cap.cap },
+        claimedKindOf(extension),
         declaredBytes,
         { bytesUsed: 0, filesCount: count.count },
         context,

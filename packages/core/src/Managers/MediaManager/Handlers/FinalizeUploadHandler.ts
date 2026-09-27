@@ -1,17 +1,14 @@
 import type { IHashMatchAccessor } from "../../../Accessors/HashMatchAccessor/IHashMatchAccessor";
-import { MatchImageHashRequest } from "../../../Accessors/HashMatchAccessor/Requests/MatchImageHashRequest";
-import { HashMatchResultResponse } from "../../../Accessors/HashMatchAccessor/Responses/HashMatchResultResponse";
 import type { IImageClassifierAccessor } from "../../../Accessors/ImageClassifierAccessor/IImageClassifierAccessor";
-import { ClassifyImageRequest } from "../../../Accessors/ImageClassifierAccessor/Requests/ClassifyImageRequest";
-import { ImageClassifiedResponse } from "../../../Accessors/ImageClassifierAccessor/Responses/ImageClassifiedResponse";
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
-import type { MediaAuditEvent } from "../../../Accessors/MediaAssetAccessor/MediaAuditEvent";
 import { StoreNewMediaAssetRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreNewMediaAssetRequest";
 import { MediaAssetStoredResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetStoredResponse";
 import type { IMediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
 import { DownloadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
+import { LoadStorageObjectInfoRequest } from "../../../Accessors/MediaStorageAccessor/Requests/LoadStorageObjectInfoRequest";
 import { RemoveStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
 import { StorageObjectDownloadedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectDownloadedResponse";
+import { StorageObjectInfoResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectInfoResponse";
 import type { IQuotaAccessor } from "../../../Accessors/QuotaAccessor/IQuotaAccessor";
 import { AdjustQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/AdjustQuotaUsageRequest";
 import { LoadQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/LoadQuotaUsageRequest";
@@ -20,16 +17,14 @@ import { QuotaUsageStoredResponse } from "../../../Accessors/QuotaAccessor/Respo
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadAttachmentAllowlistRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
 import { LoadAttachmentQuotaByTrustRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentQuotaByTrustRequest";
-import { LoadModerationThresholdsRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadModerationThresholdsRequest";
 import { LoadRawIpRetentionDaysRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadRawIpRetentionDaysRequest";
 import { AttachmentAllowlistLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentAllowlistLoadedResponse";
 import { AttachmentQuotaByTrustLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/AttachmentQuotaByTrustLoadedResponse";
-import { ModerationThresholdsLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/ModerationThresholdsLoadedResponse";
 import { RawIpRetentionDaysLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/RawIpRetentionDaysLoadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
-import type { ImageClassification } from "../../../Common/ImageClassification";
-import { LOCKED_RETENTION_DAYS } from "../../../Common/Retention";
-import type { ScanStatus } from "../../../Common/ScanStatus";
+import type { MediaKind } from "../../../Common/MediaKind";
+import type { Profile } from "../../../Common/Profile";
+import { extensionOf } from "../../../Utilities/media/extensionOf";
 import { hashIp } from "../../../Utilities/anonymous/hashIp";
 import { parseClientAddress } from "../../../Utilities/anonymous/parseClientAddress";
 import type { IAttachmentEngine } from "../../../Engines/AttachmentEngine/IAttachmentEngine";
@@ -37,10 +32,6 @@ import { ClassifyAttachmentRequest } from "../../../Engines/AttachmentEngine/Req
 import { AttachmentClassifiedResponse } from "../../../Engines/AttachmentEngine/Responses/AttachmentClassifiedResponse";
 import { AttachmentRejectedResponse } from "../../../Engines/AttachmentEngine/Responses/AttachmentRejectedResponse";
 import type { IModerationPolicyEngine } from "../../../Engines/ModerationPolicyEngine/IModerationPolicyEngine";
-import { EvaluateModerationRequest } from "../../../Engines/ModerationPolicyEngine/Requests/EvaluateModerationRequest";
-import { ContentClearResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentClearResponse";
-import { ContentFlaggedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentFlaggedResponse";
-import { ContentLockedResponse } from "../../../Engines/ModerationPolicyEngine/Responses/ContentLockedResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { IMediaPublishEngine } from "../../../Engines/MediaPublishEngine/IMediaPublishEngine";
 import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
@@ -51,6 +42,9 @@ import { sha256HexOfBytes } from "../../../Utilities/media/sha256HexOfBytes";
 import { mediaStoragePath } from "../mediaStoragePath";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
 import { publishIfClear } from "../publishIfClear";
+import { claimedKindOf } from "../claimedKindOf";
+import { inspectVideoUpload, sealVideoUpload } from "../readVideoUpload";
+import { type ScanSubject, scanUpload } from "../scanUpload";
 import { permit } from "../permit";
 import type { FinalizeUploadRequest } from "../Requests/FinalizeUploadRequest";
 import { MediaFinalizedResponse } from "../Responses/MediaFinalizedResponse";
@@ -71,13 +65,27 @@ type Result =
 
 const MS_PER_DAY = 86_400_000;
 
+// What was read back from quarantine and checked, ready to scan. `originalBytes` is the
+// whole file where it was read whole, so the publish step need not read it again.
+interface ReadUpload {
+  readonly classified: AttachmentClassifiedResponse;
+  readonly bytes: number;
+  readonly sha256: string;
+  readonly subject: ScanSubject;
+  readonly originalBytes: Uint8Array | undefined;
+}
+
+type ReadRefusal =
+  MediaRejectedResponse | MediaQuotaExceededResponse | MediaUnavailableResponse;
+
 // Confirms a member's own upload (SPEC.md §6): recompute the storage path from the
-// actor's own identity (never trust the client's), download the object that is
+// actor's own identity (never trust the client's), read back the object that is
 // actually sitting there, sniff it, re-check the quota against its REAL size (the
 // request-time check only ever saw what the browser claimed the file would be), run it
 // through #10's scan pipeline, and only then write the row, its evidence envelope and
 // (for a locked verdict) the escalation record — all in one transaction. There is no
-// "pending, not yet confirmed" row for this table to carry.
+// "pending, not yet confirmed" row for this table to carry. A video is read in parts
+// rather than whole (#21, readVideoUpload.ts).
 export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Result> {
   constructor(
     private readonly storage: IMediaStorageAccessor,
@@ -120,13 +128,12 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
 
     const owner = { kind: "member" as const, profileId: actor.profile.id };
     const path = mediaStoragePath(owner, mediaId, originalFilename);
-
-    const downloaded = await this.storage.load(
-      new DownloadStorageObjectRequest(this.options.quarantineBucket, path, context),
-    );
-    if (!(downloaded instanceof StorageObjectDownloadedResponse)) {
-      return unavailable(correlationId, downloaded, "storage.load");
-    }
+    const where = {
+      storage: this.storage,
+      attachments: this.attachments,
+      bucket: this.options.quarantineBucket,
+      path,
+    };
 
     const allowlist = await this.siteConfig.load(
       new LoadAttachmentAllowlistRequest(context),
@@ -134,76 +141,46 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     if (!(allowlist instanceof AttachmentAllowlistLoadedResponse)) {
       return unavailable(correlationId, allowlist, "siteConfig.load");
     }
-    const classified = await this.attachments.evaluate(
-      new ClassifyAttachmentRequest(
-        originalFilename,
-        downloaded.bytes,
-        allowlist.allowlist,
-        context,
-      ),
-    );
-    if (classified instanceof AttachmentRejectedResponse) {
-      // Best-effort: quarantine still gets swept by retention regardless, so a failure
-      // here does not need to fail the rejection itself.
-      await this.storage.remove(
-        new RemoveStorageObjectRequest(this.options.quarantineBucket, path, context),
-      );
-      return new MediaRejectedResponse(correlationId, classified.reason);
-    }
-    if (!(classified instanceof AttachmentClassifiedResponse)) {
-      return unavailable(correlationId, classified, "attachments.evaluate");
-    }
 
-    // The request-time check only ever saw the browser's own claim about the file's
-    // size; only now, with the real bytes downloaded, is there a size worth trusting.
-    const quotaByTrust = await this.siteConfig.load(
-      new LoadAttachmentQuotaByTrustRequest(context),
-    );
-    if (!(quotaByTrust instanceof AttachmentQuotaByTrustLoadedResponse)) {
-      return unavailable(correlationId, quotaByTrust, "siteConfig.load");
+    // A video is checked in parts and scanned by link (#21); every other file is read
+    // whole, as before.
+    const claimed = extensionOf(originalFilename);
+    const read =
+      claimed !== undefined && claimedKindOf(claimed) === "video"
+        ? await this.readVideo(where, actor.profile, originalFilename, allowlist, context)
+        : await this.readFile(where, actor.profile, originalFilename, allowlist, context);
+    if (!("sha256" in read)) {
+      if (
+        read instanceof MediaRejectedResponse ||
+        read instanceof MediaQuotaExceededResponse
+      ) {
+        // Best-effort: quarantine still gets swept by retention regardless, so a failure
+        // here does not need to fail the rejection itself.
+        await this.storage.remove(
+          new RemoveStorageObjectRequest(this.options.quarantineBucket, path, context),
+        );
+      }
+      return read;
     }
-    const usage = await this.quotas.load(
-      new LoadQuotaUsageRequest(actor.profile.id, context),
-    );
-    if (!(usage instanceof QuotaUsageLoadedResponse)) {
-      return unavailable(correlationId, usage, "quotas.load");
-    }
-    const evaluated = await this.quotaEngine.evaluate(
-      new EvaluateQuotaRequest(
-        {
-          kind: "member",
-          trustLevel: actor.profile.trustLevel,
-          quotaByTrust: quotaByTrust.quotaByTrust,
-        },
-        downloaded.bytes.length,
-        { bytesUsed: usage.bytesUsed, filesCount: usage.filesCount },
-        context,
-      ),
-    );
-    if (evaluated instanceof QuotaExceededResponse) {
-      await this.storage.remove(
-        new RemoveStorageObjectRequest(this.options.quarantineBucket, path, context),
-      );
-      return new MediaQuotaExceededResponse(
-        correlationId,
-        evaluated.reason,
-        evaluated.limit,
-      );
-    }
-    if (!(evaluated instanceof QuotaAllowedResponse)) {
-      return unavailable(correlationId, evaluated, "quotaEngine.evaluate");
-    }
+    const { classified, bytes, sha256, subject, originalBytes } = read;
 
-    const sha256 = await sha256HexOfBytes(downloaded.bytes);
-
-    const verdict = await this.scan(
-      classified.kind === "image",
-      downloaded.bytes,
-      classified.mimeType,
-      sha256,
+    const verdict = await scanUpload(
+      {
+        hashMatch: this.hashMatch,
+        imageClassifier: this.imageClassifier,
+        siteConfig: this.siteConfig,
+        moderationPolicy: this.moderationPolicy,
+      },
+      subject,
       request.timestamp,
       context,
     );
+    if (verdict instanceof MediaRejectedResponse) {
+      await this.storage.remove(
+        new RemoveStorageObjectRequest(this.options.quarantineBucket, path, context),
+      );
+      return verdict;
+    }
     if (!("scanStatus" in verdict)) {
       return verdict;
     }
@@ -217,6 +194,13 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     // A proxy may append a port, or send text that is no address at all (#64).
     const address = parseClientAddress(clientIp);
     const ipHash = await hashIp(this.options.ipHashSalt, address.ip ?? clientIp);
+    // A video the browser converted (#21): the file it came from is on the evidence,
+    // as the browser reported it. The converted file is the one that was checked. No
+    // other kind is converted, so no other kind takes the browser's word for its source.
+    const source =
+      classified.kind === "video" && request.convertedFrom !== null
+        ? request.convertedFrom
+        : { filename: originalFilename, bytes };
 
     const stored = await this.mediaAssets.store(
       new StoreNewMediaAssetRequest(
@@ -227,7 +211,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
           kind: classified.kind,
           mimeType: classified.mimeType,
           originalFilename,
-          bytes: downloaded.bytes.length,
+          bytes,
           sha256,
           scanStatus: verdict.scanStatus,
           retainUntil: verdict.retainUntil,
@@ -241,8 +225,8 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
           ),
           userAgent,
           turnstileResult: "not_required",
-          originalFilename,
-          originalBytes: downloaded.bytes.length,
+          originalFilename: source.filename,
+          originalBytes: source.bytes,
           sha256,
           perceptualHash: null,
           requestId: correlationId,
@@ -257,7 +241,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     }
 
     const adjusted = await this.quotas.store(
-      new AdjustQuotaUsageRequest(actor.profile.id, downloaded.bytes.length, 1, context),
+      new AdjustQuotaUsageRequest(actor.profile.id, bytes, 1, context),
     );
     if (!(adjusted instanceof QuotaUsageStoredResponse)) {
       return unavailable(correlationId, adjusted, "quotas.store");
@@ -269,7 +253,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     const { asset, unpublishable } = await publishIfClear(
       this.publisher,
       stored.asset,
-      downloaded.bytes,
+      originalBytes,
       {
         correlationId,
         timestamp: request.timestamp,
@@ -278,73 +262,161 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     return new MediaFinalizedResponse(correlationId, asset, unpublishable);
   }
 
-  // The fixed order (SPEC.md §7, WAYFINDER D17): hash match, then the purpose-built
-  // image classifier. A non-image attachment has nothing visual to score and clears
-  // without touching either accessor.
-  private async scan(
-    isImage: boolean,
-    bytes: Uint8Array,
-    mimeType: string,
-    sha256: string,
-    timestamp: Date,
-    context: { correlationId: string },
-  ): Promise<
-    | {
-        scanStatus: Exclude<ScanStatus, "pending">;
-        retainUntil: Date | null;
-        auditEvent: MediaAuditEvent | undefined;
-      }
-    | Result
-  > {
-    let hashMatched = false;
-    let imageClassification: ImageClassification | undefined;
-
-    if (isImage) {
-      const hashResult = await this.hashMatch.load(
-        new MatchImageHashRequest(bytes, sha256, mimeType, context),
-      );
-      if (!(hashResult instanceof HashMatchResultResponse)) {
-        return unavailable(context.correlationId, hashResult, "hashMatch.load");
-      }
-      hashMatched = hashResult.matched;
-
-      const classifyResult = await this.imageClassifier.load(
-        new ClassifyImageRequest(bytes, mimeType, context),
-      );
-      if (!(classifyResult instanceof ImageClassifiedResponse)) {
-        return unavailable(context.correlationId, classifyResult, "imageClassifier.load");
-      }
-      imageClassification = classifyResult.classification;
-    }
-
-    const thresholds = await this.siteConfig.load(
-      new LoadModerationThresholdsRequest(context),
+  // Any file but a video: the whole object, sniffed, sized, hashed. The quota is
+  // checked against the stored size before the download: the bucket takes files as
+  // large as a video, and the request-time check only saw the browser's own claim.
+  private async readFile(
+    where: { readonly bucket: string; readonly path: string },
+    profile: Profile,
+    originalFilename: string,
+    allowlist: AttachmentAllowlistLoadedResponse,
+    context: { readonly correlationId: string },
+  ): Promise<ReadUpload | ReadRefusal> {
+    const { correlationId } = context;
+    const info = await this.storage.load(
+      new LoadStorageObjectInfoRequest(where.bucket, where.path, context),
     );
-    if (!(thresholds instanceof ModerationThresholdsLoadedResponse)) {
-      return unavailable(context.correlationId, thresholds, "siteConfig.load");
+    if (!(info instanceof StorageObjectInfoResponse)) {
+      return unavailable(correlationId, info, "storage.load");
     }
-
-    const verdict = await this.moderationPolicy.evaluate(
-      new EvaluateModerationRequest(
-        hashMatched,
-        imageClassification,
-        thresholds.thresholds,
+    // The kind the name claims; the sniff below holds the bytes to that same kind.
+    const overQuota = await this.checkQuota(
+      profile,
+      claimedKindOf(extensionOf(originalFilename) ?? ""),
+      info.bytes,
+      context,
+    );
+    if (overQuota !== undefined) {
+      return overQuota;
+    }
+    const downloaded = await this.storage.load(
+      new DownloadStorageObjectRequest(where.bucket, where.path, context),
+    );
+    if (!(downloaded instanceof StorageObjectDownloadedResponse)) {
+      return unavailable(correlationId, downloaded, "storage.load");
+    }
+    if (downloaded.bytes.length !== info.bytes) {
+      return new MediaUnavailableResponse(
+        correlationId,
+        `${where.path} changed size while it was checked`,
+      );
+    }
+    const classified = await this.attachments.evaluate(
+      new ClassifyAttachmentRequest(
+        originalFilename,
+        downloaded.bytes,
+        allowlist.allowlist,
         context,
       ),
     );
-    if (verdict instanceof ContentLockedResponse) {
-      return {
-        scanStatus: "locked",
-        retainUntil: new Date(timestamp.getTime() + LOCKED_RETENTION_DAYS * MS_PER_DAY),
-        auditEvent: { event: "media.locked", details: { reason: verdict.reason } },
-      };
+    if (classified instanceof AttachmentRejectedResponse) {
+      return new MediaRejectedResponse(correlationId, classified.reason);
     }
-    if (verdict instanceof ContentFlaggedResponse) {
-      return { scanStatus: "flagged", retainUntil: null, auditEvent: undefined };
+    if (!(classified instanceof AttachmentClassifiedResponse)) {
+      return unavailable(correlationId, classified, "attachments.evaluate");
     }
-    if (verdict instanceof ContentClearResponse) {
-      return { scanStatus: "clear", retainUntil: null, auditEvent: undefined };
+    const sha256 = await sha256HexOfBytes(downloaded.bytes);
+    return {
+      classified,
+      bytes: downloaded.bytes.length,
+      sha256,
+      subject:
+        classified.kind === "image"
+          ? {
+              kind: "image",
+              bytes: downloaded.bytes,
+              mimeType: classified.mimeType,
+              sha256,
+            }
+          : { kind: "none" },
+      originalBytes: downloaded.bytes,
+    };
+  }
+
+  // A video (#21): header and movie box first, then the quota against the stored size,
+  // and only then the streamed hash of the whole file.
+  private async readVideo(
+    where: Parameters<typeof inspectVideoUpload>[0],
+    profile: Profile,
+    originalFilename: string,
+    allowlist: AttachmentAllowlistLoadedResponse,
+    context: { readonly correlationId: string },
+  ): Promise<ReadUpload | ReadRefusal> {
+    const inspected = await inspectVideoUpload(
+      where,
+      originalFilename,
+      allowlist.allowlist,
+      context,
+    );
+    if (!("classified" in inspected)) {
+      return inspected;
     }
-    return unavailable(context.correlationId, verdict, "moderationPolicy.evaluate");
+    const overQuota = await this.checkQuota(
+      profile,
+      inspected.classified.kind,
+      inspected.bytes,
+      context,
+    );
+    if (overQuota !== undefined) {
+      return overQuota;
+    }
+    const sealed = await sealVideoUpload(where, inspected.bytes, context);
+    if (!("sha256" in sealed)) {
+      return sealed;
+    }
+    return {
+      classified: inspected.classified,
+      bytes: inspected.bytes,
+      sha256: sealed.sha256,
+      subject: { kind: "video", url: sealed.scanUrl },
+      originalBytes: undefined,
+    };
+  }
+
+  // An admin has no quota (D16).
+  private async checkQuota(
+    profile: Profile,
+    kind: MediaKind,
+    bytes: number,
+    context: { readonly correlationId: string },
+  ): Promise<MediaQuotaExceededResponse | MediaUnavailableResponse | undefined> {
+    if (profile.role === "admin") {
+      return undefined;
+    }
+    const { correlationId } = context;
+    const quotaByTrust = await this.siteConfig.load(
+      new LoadAttachmentQuotaByTrustRequest(context),
+    );
+    if (!(quotaByTrust instanceof AttachmentQuotaByTrustLoadedResponse)) {
+      return unavailable(correlationId, quotaByTrust, "siteConfig.load");
+    }
+    const usage = await this.quotas.load(new LoadQuotaUsageRequest(profile.id, context));
+    if (!(usage instanceof QuotaUsageLoadedResponse)) {
+      return unavailable(correlationId, usage, "quotas.load");
+    }
+    const evaluated = await this.quotaEngine.evaluate(
+      new EvaluateQuotaRequest(
+        {
+          kind: "member",
+          trustLevel: profile.trustLevel,
+          quotaByTrust: quotaByTrust.quotaByTrust,
+        },
+        kind,
+        bytes,
+        { bytesUsed: usage.bytesUsed, filesCount: usage.filesCount },
+        context,
+      ),
+    );
+    if (evaluated instanceof QuotaExceededResponse) {
+      return new MediaQuotaExceededResponse(
+        correlationId,
+        evaluated.reason,
+        evaluated.limit,
+      );
+    }
+    if (!(evaluated instanceof QuotaAllowedResponse)) {
+      return unavailable(correlationId, evaluated, "quotaEngine.evaluate");
+    }
+    return undefined;
   }
 }

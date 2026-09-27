@@ -7,7 +7,7 @@ import type { UploadView } from "@/lib/upload-view";
 import type { BodyInsert } from "./BodyEditor";
 import { DropZone } from "./DropZone";
 import styles from "./editor.module.css";
-import { formatBytes, uploadFile } from "./upload-file";
+import { formatBytes, type UploadProgress, uploadFile } from "./upload-file";
 
 interface AttachmentPanelProps {
   readonly onInsert: (item: BodyInsert) => void;
@@ -24,11 +24,13 @@ type Row =
 
 // The editor's uploads (SPEC.md §6, #52): drop or choose a file, see it accepted or
 // refused with why, put it into the post, or remove it. The member's recent uploads
-// are listed again after a reload. An image goes in as a picture; any other file as a
-// download card. A file with no public copy yet (a flagged image) cannot go in.
+// are listed again after a reload. An image goes in as a picture, a video as a player
+// (#21), any other file as a download card. A file with no public copy yet (a flagged
+// image) cannot go in.
 export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
   const [rows, setRows] = useState<readonly Row[]>([]);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -51,8 +53,9 @@ export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
 
   const attach = async (file: File) => {
     setBusy(true);
-    const outcome = await uploadFile(file);
+    const outcome = await uploadFile(file, setProgress);
     setBusy(false);
+    setProgress(null);
     const row: Row = outcome.ok
       ? { id: outcome.upload.mediaId, kind: "done", upload: outcome.upload }
       : {
@@ -106,12 +109,15 @@ export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
       <DropZone
         label="Choose a file"
         busy={busy}
+        busyLabel={progressLabel(progress)}
         onFile={(file) => {
           void attach(file);
         }}
         testId="attachment-drop"
       >
-        <span className={styles.hint}>Drop a file here: images, PDFs, documents</span>
+        <span className={styles.hint}>
+          Drop a file here: images, videos, PDFs, documents
+        </span>
       </DropZone>
       {rows.length > 0 && (
         <ul className={styles.attachmentList} data-testid="attachment-list">
@@ -182,9 +188,13 @@ function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowPro
               upload.kind === "image"
                 ? { kind: "image", url: publicUrl, alt: altOf(upload.originalFilename) }
                 : {
+                    // A video's link alone on its line plays in the post (#21).
                     kind: "file",
                     url: publicUrl,
-                    label: `${upload.originalFilename} · ${formatBytes(upload.bytes)}`,
+                    label:
+                      upload.kind === "video"
+                        ? upload.originalFilename
+                        : `${upload.originalFilename} · ${formatBytes(upload.bytes)}`,
                   },
             );
           }}
@@ -203,4 +213,15 @@ function AttachmentRow({ upload, onInsert, onRetry, onRemove }: AttachmentRowPro
 function altOf(filename: string): string {
   const dot = filename.lastIndexOf(".");
   return (dot > 0 ? filename.slice(0, dot) : filename).replace(/[-_]+/g, " ").trim();
+}
+
+// A video can take a while: say which step it is on and how far along.
+function progressLabel(progress: UploadProgress | null): string {
+  if (progress === null) {
+    return "Uploading…";
+  }
+  const percent = `${String(Math.round(progress.fraction * 100))}%`;
+  return progress.stage === "preparing"
+    ? `Preparing video… ${percent}`
+    : `Uploading… ${percent}`;
 }
