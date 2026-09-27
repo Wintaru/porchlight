@@ -97,7 +97,7 @@ describe("DependencyContainer: post revisions (#23)", () => {
     expect(before).toMatchObject({ revisions: [] });
 
     await expectPost(
-      container.postManager.execute(new PublishPostRequest(THEO, post.id)),
+      container.postManager.execute(new PublishPostRequest(THEO, post.id, TEST_ORIGIN)),
     );
     await edit(container, post.id, "Four weekends, as it turned out.");
     await edit(container, post.id, "Four weekends and a lot of sanding.");
@@ -123,7 +123,7 @@ describe("DependencyContainer: post revisions (#23)", () => {
     const container = new DependencyContainer(FAKE_ENV);
     const post = await draft(container);
     await expectPost(
-      container.postManager.execute(new PublishPostRequest(THEO, post.id)),
+      container.postManager.execute(new PublishPostRequest(THEO, post.id, TEST_ORIGIN)),
     );
     await expectPost(
       container.postManager.execute(new UnpublishPostRequest(THEO, post.id)),
@@ -139,7 +139,7 @@ describe("DependencyContainer: post revisions (#23)", () => {
     const container = new DependencyContainer(FAKE_ENV);
     const post = await draft(container);
     await expectPost(
-      container.postManager.execute(new PublishPostRequest(THEO, post.id)),
+      container.postManager.execute(new PublishPostRequest(THEO, post.id, TEST_ORIGIN)),
     );
 
     await expect(history(container, JUNE, post.id)).resolves.toBeInstanceOf(

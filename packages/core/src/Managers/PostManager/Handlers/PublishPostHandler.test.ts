@@ -27,6 +27,8 @@ import { PostResponse } from "../Responses/PostResponse";
 import { PublishPostHandler } from "./PublishPostHandler";
 import { FollowersNotifiedResponse } from "../../../Engines/FollowerNoticeEngine/Responses/FollowersNotifiedResponse";
 import { UnpublishPostHandler } from "./UnpublishPostHandler";
+import { TEST_ORIGIN } from "../../../Composition/FakeEnvironment.test-helper";
+import { TextEvidenceRecordedResponse } from "../../../Engines/EvidenceEngine/Responses/TextEvidenceRecordedResponse";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 const THEO: Actor = {
@@ -128,6 +130,11 @@ function wire(state: FakePostState) {
         transform: (request) =>
           Promise.resolve(new FollowersNotifiedResponse(request.correlationId, 0)),
       },
+      // No test here reaches a publish, the only step that writes evidence.
+      {
+        transform: (request) =>
+          Promise.resolve(new TextEvidenceRecordedResponse(request.correlationId)),
+      },
     ),
     unpublish: new UnpublishPostHandler(posts, permissions),
   };
@@ -139,7 +146,9 @@ describe("Publish and Unpublish on a post a moderator acted on", () => {
   test.each(TAKEN_DOWN)("publish of a %s post is NotPublishable", async (status) => {
     const { publish } = wire(stateWith(status));
 
-    const response = await publish.handle(new PublishPostRequest(THEO, "p1"));
+    const response = await publish.handle(
+      new PublishPostRequest(THEO, "p1", TEST_ORIGIN),
+    );
 
     expect(response).toBeInstanceOf(PostNotPublishableResponse);
     expect(response).toMatchObject({ status });

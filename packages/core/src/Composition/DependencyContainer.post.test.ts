@@ -194,7 +194,7 @@ describe("DependencyContainer: PostManager", () => {
     const post = await draft(container, THEO);
 
     const response = await container.postManager.execute(
-      new PublishPostRequest(THEO, post.id, { timestamp: AT }),
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN, { timestamp: AT }),
     );
 
     expect(response).toBeInstanceOf(PostResponse);
@@ -206,7 +206,7 @@ describe("DependencyContainer: PostManager", () => {
     const post = await draft(container, JUNE);
 
     const response = await container.postManager.execute(
-      new PublishPostRequest(JUNE, post.id),
+      new PublishPostRequest(JUNE, post.id, TEST_ORIGIN),
     );
 
     expect(response).toMatchObject({ post: { status: "pending", publishedAt: null } });
@@ -216,11 +216,13 @@ describe("DependencyContainer: PostManager", () => {
     const container = new DependencyContainer(FAKE_ENV);
     const post = await draft(container, THEO);
     await container.postManager.execute(
-      new PublishPostRequest(THEO, post.id, { timestamp: AT }),
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN, { timestamp: AT }),
     );
 
     const again = await container.postManager.execute(
-      new PublishPostRequest(THEO, post.id, { timestamp: new Date("2027-01-01") }),
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN, {
+        timestamp: new Date("2027-01-01"),
+      }),
     );
 
     expect(again).toMatchObject({ post: { status: "published", publishedAt: AT } });
@@ -231,7 +233,7 @@ describe("DependencyContainer: PostManager", () => {
     const post = await draft(container, THEO);
 
     const publishAsOther = await container.postManager.execute(
-      new PublishPostRequest(JUNE, post.id),
+      new PublishPostRequest(JUNE, post.id, TEST_ORIGIN),
     );
     const editAsOther = await container.postManager.execute(
       new UpdateDraftRequest(JUNE, post.id, { title: "Mine now" }),
@@ -296,9 +298,13 @@ describe("DependencyContainer: PostManager", () => {
   test("Unpublish sends a published or pending post back to draft", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const published = await draft(container, THEO);
-    await container.postManager.execute(new PublishPostRequest(THEO, published.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, published.id, TEST_ORIGIN),
+    );
     const pending = await draft(container, JUNE, { title: "Pending one" });
-    await container.postManager.execute(new PublishPostRequest(JUNE, pending.id));
+    await container.postManager.execute(
+      new PublishPostRequest(JUNE, pending.id, TEST_ORIGIN),
+    );
 
     const fromPublished = await container.postManager.execute(
       new UnpublishPostRequest(THEO, published.id),
@@ -346,7 +352,9 @@ describe("DependencyContainer: PostManager", () => {
     const draftAsAdmin = await container.postManager.query(
       new GetPostRequest(ADMIN, { by: "slug", slug: post.slug }),
     );
-    await container.postManager.execute(new PublishPostRequest(THEO, post.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN),
+    );
     const publishedAsVisitor = await container.postManager.query(
       new GetPostRequest(VISITOR, { by: "slug", slug: post.slug }),
     );
@@ -365,7 +373,9 @@ describe("DependencyContainer: PostManager", () => {
   test("the editor's load answers only someone who may edit the post (#66)", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const post = await draft(container, THEO, { title: "Edit gate" });
-    await container.postManager.execute(new PublishPostRequest(THEO, post.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN),
+    );
     const asEditor = (actor: Actor) =>
       container.postManager.query(
         new GetPostRequest(actor, { by: "id", id: post.id }, "edit"),
@@ -389,7 +399,9 @@ describe("DependencyContainer: PostManager", () => {
         timestamp: new Date(Date.now() + 60_000),
       }),
     );
-    await container.postManager.execute(new PublishPostRequest(THEO, older.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, older.id, TEST_ORIGIN),
+    );
     await draft(container, JUNE, { title: "Not Theo's" });
 
     const mine = await container.postManager.query(
@@ -417,7 +429,9 @@ describe("DependencyContainer: PostManager", () => {
   test("ListPostsForAuthor narrows to one status and caps the count (#44)", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const published = await draft(container, THEO, { title: "Out" });
-    await container.postManager.execute(new PublishPostRequest(THEO, published.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, published.id, TEST_ORIGIN),
+    );
     for (const title of ["Draft one", "Draft two"]) {
       await draft(container, THEO, { title });
     }

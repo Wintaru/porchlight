@@ -167,7 +167,7 @@ export async function deletePost(formData: FormData): Promise<void> {
 // with a note when it went to the queue (D7). Never returns: every path redirects.
 async function publish(actor: Actor & { kind: "member" }, post: Post): Promise<never> {
   const response = await getDependencyContainer().postManager.execute(
-    new PublishPostRequest(actor, post.id),
+    new PublishPostRequest(actor, post.id, await currentRequestMeta()),
   );
   if (!(response instanceof PostResponse)) {
     redirect(`/write/${post.id}?error=${errorCode(response)}`);

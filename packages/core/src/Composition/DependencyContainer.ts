@@ -427,6 +427,7 @@ export class DependencyContainer {
             agentGuard,
             mediaAssets,
             followerNotice,
+            evidence,
           ),
         )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))

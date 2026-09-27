@@ -9,6 +9,10 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import type { IHandler } from "../../../Common/IHandler";
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
+import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
+import { evidenceTextOf } from "../evidenceTextOf";
+import { recordEvidence } from "../recordEvidence";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
@@ -52,10 +56,11 @@ export class PublishPostHandler implements IHandler<
     private readonly agentGuard: IAgentGuardEngine,
     private readonly mediaAssets: IMediaAssetAccessor,
     private readonly followerNotice: IFollowerNoticeEngine,
+    private readonly evidence: IEvidenceEngine,
   ) {}
 
   async handle(request: PublishPostRequest): Promise<PublishPostResult> {
-    const { correlationId, actor, postId, timestamp } = request;
+    const { correlationId, actor, postId, origin, timestamp } = request;
     // One clock for the whole call: the store stamps the row with the request's time.
     const context = { correlationId, timestamp };
 
@@ -106,6 +111,21 @@ export class PublishPostHandler implements IHandler<
     if (!(stored instanceof PostStoredResponse)) {
       return unavailable(correlationId, stored, "store");
     }
+    // The row written when the draft was created hashed its first autosave; this one
+    // hashes the text that goes out (#65). Right after the store, before anything that
+    // can return early: a retry finds the post out already and writes nothing.
+    await recordEvidence(
+      this.evidence,
+      new RecordTextEvidenceRequest(
+        { kind: "post", id: stored.post.id },
+        stored.post.author,
+        stored.post.agentTokenId,
+        origin,
+        "not_required",
+        evidenceTextOf(stored.post),
+        context,
+      ),
+    );
     if (changes.status === "pending") {
       const notified = await notifyStaffOfPendingPost(
         this.profiles,

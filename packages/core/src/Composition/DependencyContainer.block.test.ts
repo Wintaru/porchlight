@@ -129,7 +129,7 @@ async function publishedPostBy(
     throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
   }
   const published = await container.postManager.execute(
-    new PublishPostRequest(actor, drafted.post.id),
+    new PublishPostRequest(actor, drafted.post.id, TEST_ORIGIN),
   );
   if (!(published instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${published.constructor.name}`);

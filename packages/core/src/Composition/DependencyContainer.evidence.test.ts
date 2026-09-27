@@ -39,10 +39,10 @@ afterEach(() => {
 });
 
 // The row's fields are TransformRecordTextEvidenceHandler's test. This one shows that
-// every way to create a post or a comment reaches the engine, and that a failed
-// evidence write is logged without failing the item that is already stored.
+// every way to create a post or a comment, and publishing a draft, reaches the engine,
+// and that a failed evidence write is logged without failing the item already stored.
 describe("DependencyContainer: evidence for posts and comments (#61)", () => {
-  test("all four creates record evidence, and a failed record keeps the item", async () => {
+  test("all four creates and a publish record evidence, and a failed record keeps the item", async () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const container = new DependencyContainer({
       ...FAKE_ENV,
@@ -66,7 +66,9 @@ describe("DependencyContainer: evidence for posts and comments (#61)", () => {
     if (!(drafted instanceof PostResponse)) {
       throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
     }
-    await container.postManager.execute(new PublishPostRequest(THEO, drafted.post.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, drafted.post.id, TEST_ORIGIN),
+    );
 
     const anonymousPost = await container.postManager.execute(
       new CreateAnonymousPostRequest(
@@ -99,6 +101,8 @@ describe("DependencyContainer: evidence for posts and comments (#61)", () => {
     }
     const messages = logged.mock.calls.map(([message]) => String(message));
     expect(messages).toEqual([
+      expect.stringContaining(`evidence for post ${drafted.post.id} not recorded`),
+      // The publish writes its own row for the text that went out (#65).
       expect.stringContaining(`evidence for post ${drafted.post.id} not recorded`),
       expect.stringContaining(`evidence for post ${anonymousPost.post.id} not recorded`),
       expect.stringContaining(`evidence for comment ${comment.comment.id} not recorded`),

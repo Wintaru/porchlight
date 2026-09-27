@@ -96,7 +96,9 @@ describe("DependencyContainer: the voice guide (#29)", () => {
   test("samples are the member's own published editor posts, never an agent's", async () => {
     const container = await setUp();
     const byHand = await write(container, THEO, "By hand", "Written at the bench.");
-    await container.postManager.execute(new PublishPostRequest(THEO, byHand.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, byHand.id, TEST_ORIGIN),
+    );
     const byAgent = await write(
       container,
       agent(["posts:draft", "posts:publish"]),
@@ -104,7 +106,11 @@ describe("DependencyContainer: the voice guide (#29)", () => {
       "Drafted for Theo.",
     );
     await container.postManager.execute(
-      new PublishPostRequest(agent(["posts:draft", "posts:publish"]), byAgent.id),
+      new PublishPostRequest(
+        agent(["posts:draft", "posts:publish"]),
+        byAgent.id,
+        TEST_ORIGIN,
+      ),
     );
     await write(container, THEO, "Still a draft", "Not out yet.");
 
@@ -175,7 +181,9 @@ describe("DependencyContainer: the voice guide (#29)", () => {
         bodyMd: "The agent's rewrite.",
       }),
     );
-    await container.postManager.execute(new PublishPostRequest(THEO, started.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, started.id, TEST_ORIGIN),
+    );
     expect((await guideFor(container, THEO)).samples).toEqual([]);
   });
 });

@@ -160,7 +160,9 @@ describe("DependencyContainer: follows (#24)", () => {
     await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
     const post = await publish(container, THEO, [], "public");
     await container.postManager.execute(new UnpublishPostRequest(THEO, post.id));
-    await container.postManager.execute(new PublishPostRequest(THEO, post.id));
+    await container.postManager.execute(
+      new PublishPostRequest(THEO, post.id, TEST_ORIGIN),
+    );
     expect(await publishedNotices(container, JUNE)).toEqual([post.id]);
   });
 });
@@ -189,7 +191,7 @@ async function publish(
     throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
   }
   const published = await container.postManager.execute(
-    new PublishPostRequest(actor, drafted.post.id),
+    new PublishPostRequest(actor, drafted.post.id, TEST_ORIGIN),
   );
   if (!(published instanceof PostResponse)) {
     throw new Error(`expected PostResponse, got ${published.constructor.name}`);
