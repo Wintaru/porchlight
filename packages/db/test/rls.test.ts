@@ -217,6 +217,35 @@ describe("member_blocks", () => {
   });
 });
 
+// Issue #23: search runs as the caller (SECURITY INVOKER), then keeps to public
+// published posts and visible comments. Each word below is only in a post or comment a
+// search must never return: unlisted, a draft (Theo's own, which RLS lets him read), a
+// pending post, an anonymous pending post, and a pending comment.
+describe("search_site", () => {
+  test("finds only public published posts and visible comments", async () => {
+    const hiddenOnly = ["unlisted", "thought", "hike", "account", "sometime"];
+    for (const role of BROWSER_ROLES) {
+      for (const word of hiddenOnly) {
+        const rows = await asRole(
+          sql,
+          role,
+          (tx) => tx<{ post_id: string }[]>`
+            select post_id from public.search_site(${word}, 200)`,
+          SEED.trustedMember,
+        );
+        expect({ role, word, rows }).toEqual({ role, word, rows: [] });
+      }
+    }
+    const found = await asRole(
+      sql,
+      "anon",
+      (tx) =>
+        tx<{ post_id: string }[]>`select post_id from public.search_site('porch', 200)`,
+    );
+    expect(found.map((row) => row.post_id)).toContain(SEED.publicPost);
+  });
+});
+
 describe("anon", () => {
   test("reads published posts, unlisted included, and nothing else", async () => {
     // Unlisted is a listing rule the read-model applies, not a read wall: anyone with

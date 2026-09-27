@@ -1017,6 +1017,7 @@ export type Database = {
         Args: { p_anonymous_author_id: string; p_profile_id: string }
         Returns: string
       }
+      comment_search_document: { Args: { p_body_md: string }; Returns: unknown }
       erase_account: { Args: { p_profile_id: string }; Returns: string }
       finalize_media_scan: {
         Args: {
@@ -1070,10 +1071,30 @@ export type Database = {
         }
       }
       null_expired_raw_ips: { Args: never; Returns: number }
+      post_search_document: {
+        Args: { p_body_md: string; p_summary: string; p_title: string }
+        Returns: unknown
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
       }
+      search_query: { Args: { p_query: string }; Returns: unknown }
+      search_site: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          author_handle: string
+          comment_id: string
+          kind: string
+          post_id: string
+          published_at: string
+          rank: number
+          slug: string
+          snippet: string
+          title: string
+        }[]
+      }
+      viewer_hidden_authors: { Args: never; Returns: string[] }
     }
     Enums: {
       agent_scope:
