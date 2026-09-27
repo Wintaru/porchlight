@@ -18,7 +18,10 @@ export function safeNextPath(value: string | null | undefined): string {
   }
   const site = new URL(SITE_URL);
   const resolved = new URL(value, site);
-  if (resolved.origin !== site.origin) {
+  // A dot segment collapses during resolution: `/.//evil.example` resolves on the site
+  // with the path `//evil.example`, which a redirect then follows off the site (#78).
+  // A backslash needs no check of its own here: the parser turns each one into `/`.
+  if (resolved.origin !== site.origin || resolved.pathname.startsWith("//")) {
     return DEFAULT_NEXT_PATH;
   }
   return `${resolved.pathname}${resolved.search}${resolved.hash}`;

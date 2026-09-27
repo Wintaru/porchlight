@@ -22,6 +22,12 @@ describe("safeNextPath", () => {
       "/\n//evil.example",
       "/\r//evil.example",
       "/ //evil.example",
+      // Dot segments that collapse to `//evil.example` once resolved (#78).
+      "/.//evil.example",
+      "/a/..//evil.example",
+      "/./\\evil.example",
+      "/..//evil.example",
+      "/%2e//evil.example",
     ]) {
       expect(safeNextPath(bad)).toBe("/");
     }
