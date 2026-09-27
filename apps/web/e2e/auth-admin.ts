@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 // packages/db/test uses.
 const ENV_EXAMPLE = new URL("../../../.env.example", import.meta.url);
 
-function localValue(name: string): string {
+export function localValue(name: string): string {
   const fromEnv = process.env[name];
   if (fromEnv !== undefined && fromEnv !== "") {
     return fromEnv;

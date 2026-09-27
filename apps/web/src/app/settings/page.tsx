@@ -12,6 +12,7 @@ import { blockTextFor } from "@/components/member-block/block-messages";
 import { AnonymousClaimCard } from "./AnonymousClaimCard";
 import { MutedMembersSection } from "./MutedMembersSection";
 import { AgentsSection } from "./AgentsSection";
+import { EmailSection } from "./EmailSection";
 import styles from "./settings.module.css";
 import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "./parse-profile-form";
 
@@ -23,6 +24,8 @@ interface SettingsPageProps {
     readonly agentError?: string;
     readonly voiceSaved?: string;
     readonly block?: string;
+    readonly emailSaved?: string;
+    readonly emailError?: string;
   }>;
 }
 
@@ -44,22 +47,35 @@ const AGENT_ERROR_TEXT: Readonly<Record<string, string>> = {
   "voice-too-long": `A voice guide is at most ${VOICE_GUIDE_MAX_LENGTH.toLocaleString("en-US")} characters.`,
 };
 
+const EMAIL_ERROR_TEXT: Readonly<Record<string, string>> = {
+  forbidden: "Only admins and moderators can get the moderation queue by email.",
+  unavailable: "The email settings could not be saved. Try again in a moment.",
+};
+
 const TRUST_TEXT = {
   probation: "On probation: posts and comments wait for approval.",
   trusted: "Trusted member: posts and comments publish at once.",
 } as const;
 
 // The Settings board: a side menu and one card per section — profile, agents (when
-// the site's `agents` key allows them, D22), anonymous posts to claim, muted and
-// blocked members (#23), export, erase.
+// the site's `agents` key allows them, D22), email (#22), anonymous posts to claim,
+// muted and blocked members (#23), export, erase.
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     redirect(signInPathFor("/settings"));
   }
   const { profile } = actor;
-  const { saved, error, agentRevoked, agentError, voiceSaved, block } =
-    await searchParams;
+  const {
+    saved,
+    error,
+    agentRevoked,
+    agentError,
+    voiceSaved,
+    block,
+    emailSaved,
+    emailError,
+  } = await searchParams;
   const errorText =
     error === undefined ? undefined : (ERROR_TEXT[error] ?? ERROR_TEXT.unavailable);
   const agentErrorText =
@@ -71,6 +87,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const sections = [
     { id: "profile", label: "Profile" },
     ...(agentsOpen ? [{ id: "agents", label: "Agents" }] : []),
+    { id: "email", label: "Email" },
     { id: "anonymous", label: "Anonymous posts" },
     { id: "muted", label: "Muted and blocked" },
     { id: "data", label: "Your data" },
@@ -151,6 +168,15 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             errorText={agentErrorText}
           />
         )}
+        <EmailSection
+          actor={actor}
+          saved={emailSaved !== undefined}
+          errorText={
+            emailError === undefined
+              ? undefined
+              : (EMAIL_ERROR_TEXT[emailError] ?? EMAIL_ERROR_TEXT.unavailable)
+          }
+        />
         <AnonymousClaimCard handle={profile.handle} />
         <MutedMembersSection profileId={profile.id} blockText={blockTextFor(block)} />
         <section id="data" className={styles.card} aria-labelledby="data-heading">
