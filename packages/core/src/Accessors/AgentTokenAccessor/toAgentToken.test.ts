@@ -23,6 +23,7 @@ test("toAgentToken maps a live token", () => {
       expires_at: null,
       revoked_at: null,
       last_used_at: "2026-09-21T11:00:00.000Z",
+      oauth_client_id: null,
     }),
   ).toEqual({
     id: "t1",
@@ -33,5 +34,6 @@ test("toAgentToken maps a live token", () => {
     expiresAt: null,
     revokedAt: null,
     lastUsedAt: new Date("2026-09-21T11:00:00.000Z"),
+    oauthClientId: null,
   });
 });

@@ -137,6 +137,8 @@ export { ClaimAnonymousPostsRequest } from "./Managers/AccountManager/Requests/C
 export { CreateAgentTokenRequest } from "./Managers/AccountManager/Requests/CreateAgentTokenRequest";
 export { ListAgentTokensRequest } from "./Managers/AccountManager/Requests/ListAgentTokensRequest";
 export { ResolveAgentTokenRequest } from "./Managers/AccountManager/Requests/ResolveAgentTokenRequest";
+export { GrantOAuthClientRequest } from "./Managers/AccountManager/Requests/GrantOAuthClientRequest";
+export { ResolveOAuthAgentRequest } from "./Managers/AccountManager/Requests/ResolveOAuthAgentRequest";
 export { RevokeAgentTokenRequest } from "./Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 export { EnsureProfileRequest } from "./Managers/AccountManager/Requests/EnsureProfileRequest";
 export { EraseAccountRequest } from "./Managers/AccountManager/Requests/EraseAccountRequest";
@@ -155,6 +157,8 @@ export { NoAgentActorResponse } from "./Managers/AccountManager/Responses/NoAgen
 export { NoSuchTokenResponse } from "./Managers/AccountManager/Responses/NoSuchTokenResponse";
 export { TokenMintedResponse } from "./Managers/AccountManager/Responses/TokenMintedResponse";
 export { TokenRejectedResponse } from "./Managers/AccountManager/Responses/TokenRejectedResponse";
+export { GrantRejectedResponse } from "./Managers/AccountManager/Responses/GrantRejectedResponse";
+export { OAuthClientGrantedResponse } from "./Managers/AccountManager/Responses/OAuthClientGrantedResponse";
 export { TokenRevokedResponse } from "./Managers/AccountManager/Responses/TokenRevokedResponse";
 export { TokensResponse } from "./Managers/AccountManager/Responses/TokensResponse";
 export { AccountUnavailableResponse } from "./Managers/AccountManager/Responses/AccountUnavailableResponse";

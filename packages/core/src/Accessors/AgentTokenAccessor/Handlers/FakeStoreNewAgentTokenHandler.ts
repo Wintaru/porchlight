@@ -29,9 +29,21 @@ export class FakeStoreNewAgentTokenHandler implements IHandler<
       expiresAt: token.expiresAt,
       revokedAt: null,
       lastUsedAt: null,
+      oauthClientId: token.credential.kind === "oauth" ? token.credential.clientId : null,
     };
+    if (token.credential.kind === "oauth" && this.state.liveGrant(stored) !== undefined) {
+      // The schema's partial unique index: one live grant per member and client.
+      return Promise.resolve(
+        new AgentTokenAccessFailedResponse(
+          correlationId,
+          "duplicate key value violates unique constraint",
+        ),
+      );
+    }
     this.state.tokens.set(stored.id, stored);
-    this.state.hashes.set(token.tokenHash, stored.id);
+    if (token.credential.kind === "hash") {
+      this.state.hashes.set(token.credential.tokenHash, stored.id);
+    }
     return Promise.resolve(new AgentTokenStoredResponse(correlationId, stored));
   }
 }

@@ -19,7 +19,9 @@ export class SupabaseStoreNewAgentTokenHandler implements IHandler<
     const row: TablesInsert<"agent_tokens"> = {
       owner_id: token.ownerId,
       name: token.name,
-      token_hash: token.tokenHash,
+      token_hash: token.credential.kind === "hash" ? token.credential.tokenHash : null,
+      oauth_client_id:
+        token.credential.kind === "oauth" ? token.credential.clientId : null,
       scopes: [...token.scopes],
       expires_at: token.expiresAt === null ? null : token.expiresAt.toISOString(),
     };

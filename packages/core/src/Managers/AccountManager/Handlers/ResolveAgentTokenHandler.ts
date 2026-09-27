@@ -1,34 +1,25 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { LoadAgentTokenByHashRequest } from "../../../Accessors/AgentTokenAccessor/Requests/LoadAgentTokenByHashRequest";
-import { TouchAgentTokenRequest } from "../../../Accessors/AgentTokenAccessor/Requests/TouchAgentTokenRequest";
 import { AgentTokenLoadedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenLoadedResponse";
 import { AgentTokenNotFoundResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenNotFoundResponse";
-import { AgentTokenTouchedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenTouchedResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
-import { LoadProfileByIdRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
-import { ProfileLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileLoadedResponse";
-import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
-import { AGENT_TOKEN_PREFIX, isAgentTokenLive } from "../../../Common/AgentToken";
+import { AGENT_TOKEN_PREFIX } from "../../../Common/AgentToken";
 import type { IHandler } from "../../../Common/IHandler";
 import { hashAgentToken } from "../../../Utilities/agent/hashAgentToken";
+import { agentActorFor } from "../agentActorFor";
 import type { ResolveAgentTokenRequest } from "../Requests/ResolveAgentTokenRequest";
 import type { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
-import { AgentActorResponse } from "../Responses/AgentActorResponse";
+import type { AgentActorResponse } from "../Responses/AgentActorResponse";
 import { NoAgentActorResponse } from "../Responses/NoAgentActorResponse";
 import { unavailable } from "../unavailable";
 
 type Result = AgentActorResponse | NoAgentActorResponse | AccountUnavailableResponse;
 
-// `last_used_at` is stamped at most this often: the settings page shows the day, not
-// the second, and an agent's session is many tool calls, not one.
-export const LAST_USED_STAMP_INTERVAL_MS = 5 * 60 * 1000;
-
-// Hash, find, check it is live, load its member, check they are active, stamp
-// last_used_at. No permission check: this is how an actor comes to exist, and it takes
-// no actor. Every "no" is the same NoAgentActorResponse, so a caller probing tokens
-// learns nothing from the shape of the refusal. A failed stamp is a failed resolve, on
-// purpose: the store that could not take a write is the store the next tool call
-// needs, and a door that half-works is harder to reason about than one that is shut.
+// Hash, find, then the shared live/active/stamp checks (agentActorFor). No permission
+// check: this is how an actor comes to exist, and it takes no actor. Every "no" is the
+// same NoAgentActorResponse, so a caller probing tokens learns nothing from the shape
+// of the refusal. Only a personal token's row has a hash, so an OAuth grant can never
+// be reached through this door.
 export class ResolveAgentTokenHandler implements IHandler<
   ResolveAgentTokenRequest,
   Result
@@ -54,39 +45,6 @@ export class ResolveAgentTokenHandler implements IHandler<
     if (!(loaded instanceof AgentTokenLoadedResponse)) {
       return unavailable(correlationId, loaded, "load");
     }
-    const { token } = loaded;
-    if (!isAgentTokenLive(token, timestamp)) {
-      return new NoAgentActorResponse(correlationId);
-    }
-
-    const owner = await this.profiles.load(
-      new LoadProfileByIdRequest(token.ownerId, context),
-    );
-    if (owner instanceof ProfileNotFoundResponse) {
-      return new NoAgentActorResponse(correlationId);
-    }
-    if (!(owner instanceof ProfileLoadedResponse)) {
-      return unavailable(correlationId, owner, "load");
-    }
-    if (owner.profile.status !== "active") {
-      return new NoAgentActorResponse(correlationId);
-    }
-
-    if (
-      token.lastUsedAt === null ||
-      timestamp.getTime() - token.lastUsedAt.getTime() >= LAST_USED_STAMP_INTERVAL_MS
-    ) {
-      const touched = await this.agentTokens.store(
-        new TouchAgentTokenRequest(token.id, context),
-      );
-      if (!(touched instanceof AgentTokenTouchedResponse)) {
-        return unavailable(correlationId, touched, "store");
-      }
-    }
-    return new AgentActorResponse(correlationId, {
-      kind: "agent",
-      profile: owner.profile,
-      grant: { tokenId: token.id, scopes: token.scopes },
-    });
+    return agentActorFor(loaded.token, this.agentTokens, this.profiles, context);
   }
 }

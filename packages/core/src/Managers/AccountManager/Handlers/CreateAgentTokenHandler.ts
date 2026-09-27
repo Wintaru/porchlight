@@ -1,11 +1,7 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { StoreNewAgentTokenRequest } from "../../../Accessors/AgentTokenAccessor/Requests/StoreNewAgentTokenRequest";
 import { AgentTokenStoredResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenStoredResponse";
-import {
-  type AgentScope,
-  DEFAULT_AGENT_SCOPES,
-  isAgentScope,
-} from "../../../Common/AgentScope";
+import { isAgentScope } from "../../../Common/AgentScope";
 import { AGENT_TOKEN_NAME_MAX_LENGTH } from "../../../Common/AgentToken";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
@@ -13,6 +9,7 @@ import { generateAgentToken } from "../../../Utilities/agent/generateAgentToken"
 import { hashAgentToken } from "../../../Utilities/agent/hashAgentToken";
 import { ownProfileSubject } from "../ownProfileSubject";
 import { permit } from "../permit";
+import { withDraftScope } from "../withDraftScope";
 import type { CreateAgentTokenRequest } from "../Requests/CreateAgentTokenRequest";
 import { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
 import type { ActionForbiddenResponse } from "../Responses/ActionForbiddenResponse";
@@ -71,8 +68,8 @@ export class CreateAgentTokenHandler implements IHandler<
         {
           ownerId: actor.profile.id,
           name: request.name.trim(),
-          tokenHash: await hashAgentToken(rawToken),
-          scopes: uniqueScopes(request.scopes),
+          credential: { kind: "hash", tokenHash: await hashAgentToken(rawToken) },
+          scopes: withDraftScope(request.scopes),
           expiresAt: request.expiresAt,
         },
         context,
@@ -108,10 +105,4 @@ function validate(request: CreateAgentTokenRequest): FieldError | undefined {
     return { field: "expiresAt", message: "must be in the future" };
   }
   return undefined;
-}
-
-// The draft scope is the floor every token stands on (SPEC.md §17): a token that may
-// publish or upload must be able to see and write the drafts it acts on.
-function uniqueScopes(scopes: readonly AgentScope[]): readonly AgentScope[] {
-  return [...new Set([...DEFAULT_AGENT_SCOPES, ...scopes])];
 }

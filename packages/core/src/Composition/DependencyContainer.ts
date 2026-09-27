@@ -30,7 +30,9 @@ import { CheckNewAccountHandler } from "../Managers/AccountManager/Handlers/Chec
 import { CheckNewAccountRequest } from "../Managers/AccountManager/Requests/CheckNewAccountRequest";
 import { GetProfileHandler } from "../Managers/AccountManager/Handlers/GetProfileHandler";
 import { ListAgentTokensHandler } from "../Managers/AccountManager/Handlers/ListAgentTokensHandler";
+import { GrantOAuthClientHandler } from "../Managers/AccountManager/Handlers/GrantOAuthClientHandler";
 import { ResolveAgentTokenHandler } from "../Managers/AccountManager/Handlers/ResolveAgentTokenHandler";
+import { ResolveOAuthAgentHandler } from "../Managers/AccountManager/Handlers/ResolveOAuthAgentHandler";
 import { RevokeAgentTokenHandler } from "../Managers/AccountManager/Handlers/RevokeAgentTokenHandler";
 import { UpdateProfileHandler } from "../Managers/AccountManager/Handlers/UpdateProfileHandler";
 import { SetMemberBlockHandler } from "../Managers/AccountManager/Handlers/SetMemberBlockHandler";
@@ -45,7 +47,9 @@ import { ExportAccountRequest } from "../Managers/AccountManager/Requests/Export
 import { GetAnonymousStatusRequest } from "../Managers/AccountManager/Requests/GetAnonymousStatusRequest";
 import { GetProfileRequest } from "../Managers/AccountManager/Requests/GetProfileRequest";
 import { ListAgentTokensRequest } from "../Managers/AccountManager/Requests/ListAgentTokensRequest";
+import { GrantOAuthClientRequest } from "../Managers/AccountManager/Requests/GrantOAuthClientRequest";
 import { ResolveAgentTokenRequest } from "../Managers/AccountManager/Requests/ResolveAgentTokenRequest";
+import { ResolveOAuthAgentRequest } from "../Managers/AccountManager/Requests/ResolveOAuthAgentRequest";
 import { RevokeAgentTokenRequest } from "../Managers/AccountManager/Requests/RevokeAgentTokenRequest";
 import { UpdateProfileRequest } from "../Managers/AccountManager/Requests/UpdateProfileRequest";
 import { SetMemberBlockRequest } from "../Managers/AccountManager/Requests/SetMemberBlockRequest";
@@ -387,6 +391,14 @@ export class DependencyContainer {
         .register(
           ResolveAgentTokenRequest,
           new ResolveAgentTokenHandler(agentTokens, profiles),
+        )
+        .register(
+          GrantOAuthClientRequest,
+          new GrantOAuthClientHandler(agentTokens, permissions),
+        )
+        .register(
+          ResolveOAuthAgentRequest,
+          new ResolveOAuthAgentHandler(agentTokens, profiles),
         )
         .build(),
       new HandlerResolverBuilder()

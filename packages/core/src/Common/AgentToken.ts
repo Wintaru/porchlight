@@ -11,6 +11,9 @@ export interface AgentToken {
   readonly expiresAt: Date | null;
   readonly revokedAt: Date | null;
   readonly lastUsedAt: Date | null;
+  // Set for an OAuth grant (D25): the OAuth client the member approved on the consent
+  // page. Null for a personal `plt_` token.
+  readonly oauthClientId: string | null;
 }
 
 // The schema's check on `agent_tokens.name`.

@@ -14,6 +14,22 @@ export class FakeAgentTokenState {
     return id === undefined ? undefined : this.tokens.get(id);
   }
 
+  // The owner's live (not revoked) grant for the same OAuth client as `like`, if any.
+  liveGrant(like: {
+    readonly ownerId: string;
+    readonly oauthClientId: string | null;
+  }): AgentToken | undefined {
+    if (like.oauthClientId === null) {
+      return undefined;
+    }
+    return [...this.tokens.values()].find(
+      (token) =>
+        token.ownerId === like.ownerId &&
+        token.oauthClientId === like.oauthClientId &&
+        token.revokedAt === null,
+    );
+  }
+
   forOwner(ownerId: string): AgentToken[] {
     return [...this.tokens.values()]
       .filter((token) => token.ownerId === ownerId)

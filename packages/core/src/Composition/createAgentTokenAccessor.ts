@@ -4,17 +4,20 @@ import { AgentTokenAccessor } from "../Accessors/AgentTokenAccessor/AgentTokenAc
 import { FakeAgentTokenState } from "../Accessors/AgentTokenAccessor/FakeAgentTokenState";
 import { FakeListAgentTokensByOwnerHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeListAgentTokensByOwnerHandler";
 import { FakeLoadAgentTokenByHashHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeLoadAgentTokenByHashHandler";
+import { FakeLoadLiveOAuthGrantHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeLoadLiveOAuthGrantHandler";
 import { FakeMarkAgentTokenRevokedHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeMarkAgentTokenRevokedHandler";
 import { FakeStoreNewAgentTokenHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeStoreNewAgentTokenHandler";
 import { FakeTouchAgentTokenHandler } from "../Accessors/AgentTokenAccessor/Handlers/FakeTouchAgentTokenHandler";
 import { SupabaseListAgentTokensByOwnerHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseListAgentTokensByOwnerHandler";
 import { SupabaseLoadAgentTokenByHashHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseLoadAgentTokenByHashHandler";
+import { SupabaseLoadLiveOAuthGrantHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseLoadLiveOAuthGrantHandler";
 import { SupabaseMarkAgentTokenRevokedHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseMarkAgentTokenRevokedHandler";
 import { SupabaseStoreNewAgentTokenHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseStoreNewAgentTokenHandler";
 import { SupabaseTouchAgentTokenHandler } from "../Accessors/AgentTokenAccessor/Handlers/SupabaseTouchAgentTokenHandler";
 import type { IAgentTokenAccessor } from "../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
 import { ListAgentTokensByOwnerRequest } from "../Accessors/AgentTokenAccessor/Requests/ListAgentTokensByOwnerRequest";
 import { LoadAgentTokenByHashRequest } from "../Accessors/AgentTokenAccessor/Requests/LoadAgentTokenByHashRequest";
+import { LoadLiveOAuthGrantRequest } from "../Accessors/AgentTokenAccessor/Requests/LoadLiveOAuthGrantRequest";
 import { MarkAgentTokenRevokedRequest } from "../Accessors/AgentTokenAccessor/Requests/MarkAgentTokenRevokedRequest";
 import { StoreNewAgentTokenRequest } from "../Accessors/AgentTokenAccessor/Requests/StoreNewAgentTokenRequest";
 import { TouchAgentTokenRequest } from "../Accessors/AgentTokenAccessor/Requests/TouchAgentTokenRequest";
@@ -51,6 +54,7 @@ function createSupabaseAgentTokenAccessor(db: DbClient): IAgentTokenAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadAgentTokenByHashRequest, new SupabaseLoadAgentTokenByHashHandler(db))
+      .register(LoadLiveOAuthGrantRequest, new SupabaseLoadLiveOAuthGrantHandler(db))
       .register(
         ListAgentTokensByOwnerRequest,
         new SupabaseListAgentTokensByOwnerHandler(db),
@@ -71,6 +75,7 @@ export function createFakeAgentTokenAccessor(
       .build(),
     new HandlerResolverBuilder()
       .register(LoadAgentTokenByHashRequest, new FakeLoadAgentTokenByHashHandler(state))
+      .register(LoadLiveOAuthGrantRequest, new FakeLoadLiveOAuthGrantHandler(state))
       .register(
         ListAgentTokensByOwnerRequest,
         new FakeListAgentTokensByOwnerHandler(state),

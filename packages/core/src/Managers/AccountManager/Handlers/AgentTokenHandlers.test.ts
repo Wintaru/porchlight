@@ -27,10 +27,8 @@ import { TokenRevokedResponse } from "../Responses/TokenRevokedResponse";
 import { TokensResponse } from "../Responses/TokensResponse";
 import { CreateAgentTokenHandler } from "./CreateAgentTokenHandler";
 import { ListAgentTokensHandler } from "./ListAgentTokensHandler";
-import {
-  LAST_USED_STAMP_INTERVAL_MS,
-  ResolveAgentTokenHandler,
-} from "./ResolveAgentTokenHandler";
+import { LAST_USED_STAMP_INTERVAL_MS } from "../agentActorFor";
+import { ResolveAgentTokenHandler } from "./ResolveAgentTokenHandler";
 import { RevokeAgentTokenHandler } from "./RevokeAgentTokenHandler";
 
 // Issue #27's Done-when, end to end through the Manager handlers on the fakes: mint,
