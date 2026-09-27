@@ -348,6 +348,11 @@ export { type Invite, isInviteLive } from "./Common/Invite";
 export { GetPresenceSettingRequest } from "./Managers/AccountManager/Requests/GetPresenceSettingRequest";
 export { SetPresenceSettingRequest } from "./Managers/AccountManager/Requests/SetPresenceSettingRequest";
 export { PresenceSettingResponse } from "./Managers/AccountManager/Responses/PresenceSettingResponse";
+// The one-time re-render of cached HTML after the render pipeline changes (#77).
+export { RerenderPostBodiesRequest } from "./Managers/PostManager/Requests/RerenderPostBodiesRequest";
+export { PostBodiesRerenderedResponse } from "./Managers/PostManager/Responses/PostBodiesRerenderedResponse";
+export { RerenderCommentBodiesRequest } from "./Managers/CommentManager/Requests/RerenderCommentBodiesRequest";
+export { CommentBodiesRerenderedResponse } from "./Managers/CommentManager/Responses/CommentBodiesRerenderedResponse";
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";

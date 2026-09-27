@@ -1,3 +1,9 @@
+import { FakeLoadPostBodiesHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostBodiesHandler";
+import { FakeStorePostBodyHtmlHandler } from "../Accessors/PostAccessor/Handlers/FakeStorePostBodyHtmlHandler";
+import { SupabaseLoadPostBodiesHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostBodiesHandler";
+import { SupabaseStorePostBodyHtmlHandler } from "../Accessors/PostAccessor/Handlers/SupabaseStorePostBodyHtmlHandler";
+import { LoadPostBodiesRequest } from "../Accessors/PostAccessor/Requests/LoadPostBodiesRequest";
+import { StorePostBodyHtmlRequest } from "../Accessors/PostAccessor/Requests/StorePostBodyHtmlRequest";
 import { LoadAnnouncedPostsRequest } from "../Accessors/PostAccessor/Requests/LoadAnnouncedPostsRequest";
 import { SupabaseLoadAnnouncedPostsHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadAnnouncedPostsHandler";
 import { FakeLoadAnnouncedPostsHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadAnnouncedPostsHandler";
@@ -62,6 +68,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
   return new PostAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new SupabaseStoreNewPostHandler(db))
+      .register(StorePostBodyHtmlRequest, new SupabaseStorePostBodyHtmlHandler(db))
       .register(StorePostChangesRequest, new SupabaseStorePostChangesHandler(db))
       .register(
         ClaimPostAnnouncementRequest,
@@ -70,6 +77,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
+      .register(LoadPostBodiesRequest, new SupabaseLoadPostBodiesHandler(db))
       .register(LoadPostsByIdsRequest, new SupabaseLoadPostsByIdsHandler(db))
       .register(LoadPostBySlugRequest, new SupabaseLoadPostBySlugHandler(db))
       .register(LoadPostsByAuthorRequest, new SupabaseLoadPostsByAuthorHandler(db))
@@ -92,11 +100,13 @@ export function createFakePostAccessor(state: FakePostState): IPostAccessor {
   return new PostAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new FakeStoreNewPostHandler(state))
+      .register(StorePostBodyHtmlRequest, new FakeStorePostBodyHtmlHandler(state))
       .register(StorePostChangesRequest, new FakeStorePostChangesHandler(state))
       .register(ClaimPostAnnouncementRequest, new FakeClaimPostAnnouncementHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))
+      .register(LoadPostBodiesRequest, new FakeLoadPostBodiesHandler(state))
       .register(LoadPostsByIdsRequest, new FakeLoadPostsByIdsHandler(state))
       .register(LoadPostBySlugRequest, new FakeLoadPostBySlugHandler(state))
       .register(LoadPostsByAuthorRequest, new FakeLoadPostsByAuthorHandler(state))

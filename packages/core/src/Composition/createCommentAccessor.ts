@@ -1,3 +1,9 @@
+import { FakeLoadCommentBodiesHandler } from "../Accessors/CommentAccessor/Handlers/FakeLoadCommentBodiesHandler";
+import { FakeStoreCommentBodyHtmlHandler } from "../Accessors/CommentAccessor/Handlers/FakeStoreCommentBodyHtmlHandler";
+import { SupabaseLoadCommentBodiesHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseLoadCommentBodiesHandler";
+import { SupabaseStoreCommentBodyHtmlHandler } from "../Accessors/CommentAccessor/Handlers/SupabaseStoreCommentBodyHtmlHandler";
+import { LoadCommentBodiesRequest } from "../Accessors/CommentAccessor/Requests/LoadCommentBodiesRequest";
+import { StoreCommentBodyHtmlRequest } from "../Accessors/CommentAccessor/Requests/StoreCommentBodyHtmlRequest";
 import type { DbClient } from "@porchlight/db";
 
 import { CommentAccessor } from "../Accessors/CommentAccessor/CommentAccessor";
@@ -56,6 +62,7 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
   return new CommentAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewCommentRequest, new SupabaseStoreNewCommentHandler(db))
+      .register(StoreCommentBodyHtmlRequest, new SupabaseStoreCommentBodyHtmlHandler(db))
       .register(StoreCommentChangesRequest, new SupabaseStoreCommentChangesHandler(db))
       .register(
         StoreCommentTombstoneRequest,
@@ -65,6 +72,7 @@ function createSupabaseCommentAccessor(db: DbClient): ICommentAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new SupabaseLoadCommentByIdHandler(db))
+      .register(LoadCommentBodiesRequest, new SupabaseLoadCommentBodiesHandler(db))
       .register(LoadCommentsByIdsRequest, new SupabaseLoadCommentsByIdsHandler(db))
       .register(LoadCommentsForPostRequest, new SupabaseLoadCommentsForPostHandler(db))
       .register(LoadCommentsByStatusRequest, new SupabaseLoadCommentsByStatusHandler(db))
@@ -80,12 +88,14 @@ export function createFakeCommentAccessor(state: FakeCommentState): ICommentAcce
   return new CommentAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewCommentRequest, new FakeStoreNewCommentHandler(state))
+      .register(StoreCommentBodyHtmlRequest, new FakeStoreCommentBodyHtmlHandler(state))
       .register(StoreCommentChangesRequest, new FakeStoreCommentChangesHandler(state))
       .register(StoreCommentTombstoneRequest, new FakeStoreCommentTombstoneHandler(state))
       .register(StoreCommentStatusRequest, new FakeStoreCommentStatusHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadCommentByIdRequest, new FakeLoadCommentByIdHandler(state))
+      .register(LoadCommentBodiesRequest, new FakeLoadCommentBodiesHandler(state))
       .register(LoadCommentsByIdsRequest, new FakeLoadCommentsByIdsHandler(state))
       .register(LoadCommentsForPostRequest, new FakeLoadCommentsForPostHandler(state))
       .register(LoadCommentsByStatusRequest, new FakeLoadCommentsByStatusHandler(state))

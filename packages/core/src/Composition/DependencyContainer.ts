@@ -137,6 +137,10 @@ import { ListPostRevisionsRequest } from "../Managers/PostManager/Requests/ListP
 import { ListPostsForAuthorRequest } from "../Managers/PostManager/Requests/ListPostsForAuthorRequest";
 import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPostRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
+import { RerenderPostBodiesHandler } from "../Managers/PostManager/Handlers/RerenderPostBodiesHandler";
+import { RerenderPostBodiesRequest } from "../Managers/PostManager/Requests/RerenderPostBodiesRequest";
+import { RerenderCommentBodiesHandler } from "../Managers/CommentManager/Handlers/RerenderCommentBodiesHandler";
+import { RerenderCommentBodiesRequest } from "../Managers/CommentManager/Requests/RerenderCommentBodiesRequest";
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
 import { ApproveAsMatureHandler } from "../Managers/ModerationManager/Handlers/ApproveAsMatureHandler";
@@ -462,6 +466,10 @@ export class DependencyContainer {
           ),
         )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))
+        .register(
+          RerenderPostBodiesRequest,
+          new RerenderPostBodiesHandler(posts, content, permissions),
+        )
         .register(DeletePostRequest, new DeletePostHandler(posts, permissions))
         .register(
           CreateAnonymousPostRequest,
@@ -517,6 +525,10 @@ export class DependencyContainer {
         .register(
           DeleteCommentRequest,
           new DeleteCommentHandler(comments, posts, permissions),
+        )
+        .register(
+          RerenderCommentBodiesRequest,
+          new RerenderCommentBodiesHandler(comments, content, permissions),
         )
         .register(
           ToggleReactionRequest,
