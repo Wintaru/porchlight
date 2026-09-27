@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// The Main board's Home / Tags / About, with the current section marked. A client
+// The Main board's Home / Tags / About, plus Search (#23), with the current section
+// marked. A client
 // component only for the path: the header is in the root layout, so it cannot read the
 // page it is on from the server.
 const LINKS = [
@@ -14,6 +15,7 @@ const LINKS = [
     matches: (path: string) => path === "/tags" || path.startsWith("/t/"),
   },
   { href: "/about", label: "About", matches: (path: string) => path === "/about" },
+  { href: "/search", label: "Search", matches: (path: string) => path === "/search" },
 ] as const;
 
 interface SiteLinksProps {

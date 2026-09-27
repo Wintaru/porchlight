@@ -1,0 +1,50 @@
+.form {
+  display: flex;
+  gap: 8px;
+}
+
+.heading {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hit {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.hit:last-child {
+  border-bottom: none;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+}
+
+.snippet {
+  margin: 6px 0 4px;
+  color: var(--label);
+  overflow-wrap: anywhere;
+}
+
+.snippet mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--chip-warm);
+  color: var(--chip-warm-ink);
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
