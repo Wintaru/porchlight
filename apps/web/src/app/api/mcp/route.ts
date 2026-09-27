@@ -41,6 +41,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
 import { MCP_INSTRUCTIONS } from "./instructions";
+import { listenRefusal } from "./listen-refusal";
 import {
   curlLineFor,
   mediaLookupRefusalFor,
@@ -116,7 +117,8 @@ const handler = createMcpHandler(({ authInfo }) => {
   const origin = originFrom(authInfo?.extra);
   const server = new McpServer(
     { name: "porchlight", version: "1.0.0" },
-    { instructions: MCP_INSTRUCTIONS },
+    // The tool list never changes during a session (listen-refusal.ts).
+    { instructions: MCP_INSTRUCTIONS, capabilities: { tools: { listChanged: false } } },
   );
   if (actor === undefined || origin === undefined) {
     // `fetch` below refuses an unauthenticated request before it reaches here, so this
@@ -538,6 +540,10 @@ async function serve(request: Request): Promise<Response> {
   const verdict = await authorize(request);
   if ("response" in verdict) {
     return verdict.response;
+  }
+  const refusal = await listenRefusal(request);
+  if (refusal !== undefined) {
+    return refusal;
   }
   return handler.fetch(request, {
     authInfo: {
