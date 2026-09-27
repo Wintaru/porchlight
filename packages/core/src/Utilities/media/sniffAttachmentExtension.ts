@@ -11,6 +11,7 @@ export function sniffAttachmentExtension(bytes: Uint8Array): string | undefined 
     return "gif";
   if (isRiffContainer(bytes, "WEBP")) return "webp";
   if (isIsobmffBrand(bytes, ["avif", "avis"])) return "avif";
+  if (isHeifImage(bytes)) return "heic";
   if (startsWith(bytes, asciiBytes("%PDF-"))) return "pdf";
   if (isZipContainer(bytes)) return sniffZipBasedExtension();
   if (isStlFile(bytes)) return "stl";
@@ -42,6 +43,39 @@ function isIsobmffBrand(bytes: Uint8Array, brands: readonly string[]): boolean {
     asciiOf(bytes, 4, 8) === "ftyp" &&
     brands.includes(asciiOf(bytes, 8, 12))
   );
+}
+
+// HEIC is what an iPhone saves a photo as: an ISO-BMFF file like AVIF, with an HEVC
+// picture inside. The major brand names it outright, or it is the generic `mif1`/`msf1`
+// and a compatible brand names it. A generic file that lists `avif` is not HEIC.
+const HEIC_BRANDS = ["heic", "heix", "heim", "heis", "hevc", "hevx"];
+const GENERIC_HEIF_BRANDS = ["mif1", "msf1"];
+
+function isHeifImage(bytes: Uint8Array): boolean {
+  if (bytes.length < 16 || asciiOf(bytes, 4, 8) !== "ftyp") {
+    return false;
+  }
+  const major = asciiOf(bytes, 8, 12);
+  if (HEIC_BRANDS.includes(major)) {
+    return true;
+  }
+  if (!GENERIC_HEIF_BRANDS.includes(major)) {
+    return false;
+  }
+  const compatible = compatibleBrands(bytes);
+  return !compatible.includes("avif") && compatible.some((b) => HEIC_BRANDS.includes(b));
+}
+
+// The `ftyp` box: size, "ftyp", major brand, minor version, then four-byte brands up to
+// the box's end.
+function compatibleBrands(bytes: Uint8Array): readonly string[] {
+  const boxSize = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0);
+  const end = Math.min(boxSize, bytes.length);
+  const brands: string[] = [];
+  for (let offset = 16; offset + 4 <= end; offset += 4) {
+    brands.push(asciiOf(bytes, offset, offset + 4));
+  }
+  return brands;
 }
 
 function asciiOf(bytes: Uint8Array, start: number, end: number): string {

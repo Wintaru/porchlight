@@ -1,9 +1,11 @@
 // Other spellings of an allowlisted extension, folded into the one the allowlist and
 // the type catalog use. Phones and cameras name photos `.jpg`; the catalog's key is
-// `jpeg`, so without this every such photo was refused as "not allowed".
+// `jpeg`, so without this every such photo was refused as "not allowed". The same holds
+// for `.heif`, the generic name of the format an iPhone saves as `.heic`.
 const ALIASES: Readonly<Record<string, string>> = {
   jpg: "jpeg",
   jpe: "jpeg",
+  heif: "heic",
 };
 
 // The lowercase suffix after a filename's last dot, with any alias folded into its

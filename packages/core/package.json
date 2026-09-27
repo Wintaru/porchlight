@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@porchlight/db": "workspace:*",
+    "heic-decode": "catalog:",
     "jszip": "catalog:",
     "rehype-highlight": "catalog:",
     "rehype-sanitize": "catalog:",

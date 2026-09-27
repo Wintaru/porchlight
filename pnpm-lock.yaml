@@ -72,6 +72,9 @@ catalogs:
     eslint-plugin-boundaries:
       specifier: ^7.2.0
       version: 7.2.0
+    heic-decode:
+      specifier: ^2.1.0
+      version: 2.1.0
     jsdom:
       specifier: ^30.0.1
       version: 30.0.1
@@ -243,6 +246,9 @@ importers:
       '@porchlight/db':
         specifier: workspace:*
         version: link:../db
+      heic-decode:
+        specifier: 'catalog:'
+        version: 2.1.0
       jszip:
         specifier: 'catalog:'
         version: 3.10.2
@@ -1663,6 +1669,10 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution: {integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw==}
 
+  heic-decode@2.1.0:
+    resolution: {integrity: sha512-0fB3O3WMk38+PScbHLVp66jcNhsZ/ErtQ6u2lMYu/YxXgbBtl+oKOhGQHa4RpvE68k8IzbWkABzHnyAIjR758A==}
+    engines: {node: '>=8.0.0'}
+
   highlight.js@11.11.2:
     resolution: {integrity: sha512-oaXMACAU0kzOMXBjWpNcX+vlwSBCIAiZ9BHa7gA15NOTtT2L/l8OSZDuqS2XppOhZBPJ7hm4o8ep2kyuip2uEQ==}
     engines: {node: '>=12.0.0'}
@@ -1765,6 +1775,10 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libheif-js@1.23.2:
+    resolution: {integrity: sha512-qvHIXtggEsw1lCNCWBYKloL2Z36DJBm0R9ThGiH2JnhKYdeZFLPFkP30Lw4yMskxxhx0bKg1gLrBHX1D2w2pSw==}
+    engines: {node: '>=8.0.0'}
 
   lie@3.3.0:
     resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
@@ -3775,6 +3789,10 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.5
 
+  heic-decode@2.1.0:
+    dependencies:
+      libheif-js: 1.23.2
+
   highlight.js@11.11.2: {}
 
   hookified@1.15.1: {}
@@ -3876,6 +3894,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libheif-js@1.23.2: {}
 
   lie@3.3.0:
     dependencies:

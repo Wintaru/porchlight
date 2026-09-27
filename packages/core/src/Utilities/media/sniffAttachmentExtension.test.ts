@@ -10,6 +10,19 @@ function ascii(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
+// An ISO-BMFF `ftyp` box: size, "ftyp", the major brand, a minor version, then the
+// compatible brands.
+function ftyp(major: string, ...compatible: readonly string[]): Uint8Array {
+  const size = 16 + 4 * compatible.length;
+  const box = new Uint8Array(size);
+  new DataView(box.buffer).setUint32(0, size);
+  box.set(ascii(`ftyp${major}`), 4);
+  compatible.forEach((brand, index) => {
+    box.set(ascii(brand), 16 + 4 * index);
+  });
+  return box;
+}
+
 describe("sniffAttachmentExtension", () => {
   test("recognizes a real PNG by its magic bytes", () => {
     expect(
@@ -29,6 +42,18 @@ describe("sniffAttachmentExtension", () => {
 
   test("recognizes a ZIP-based container (docx/xlsx/pptx/odt/ods/odp)", () => {
     expect(sniffAttachmentExtension(bytes(0x50, 0x4b, 0x03, 0x04, 0, 0))).toBe("docx");
+  });
+
+  test("recognizes an iPhone HEIC by its major brand (#21)", () => {
+    expect(sniffAttachmentExtension(ftyp("heic", "mif1", "heic"))).toBe("heic");
+  });
+
+  test("recognizes a generic HEIF whose compatible brands name HEIC", () => {
+    expect(sniffAttachmentExtension(ftyp("mif1", "mif1", "heic"))).toBe("heic");
+  });
+
+  test("a generic HEIF that lists AVIF is not HEIC", () => {
+    expect(sniffAttachmentExtension(ftyp("mif1", "avif", "heic"))).toBeUndefined();
   });
 
   test("an SVG renamed to .png sniffs to nothing this catalog recognizes", () => {
