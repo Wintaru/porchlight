@@ -24,7 +24,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { currentRequestMeta } from "@/lib/request-meta";
 import { type UploadView, uploadViewOf } from "@/lib/upload-view";
-import { mediaErrorTextFor } from "./media-messages";
+import { isMediaErrorCode, mediaErrorTextFor } from "./media-messages";
 import type {
   DeleteUploadResult,
   FinalizeUploadResult,
@@ -189,7 +189,14 @@ function errorTextFor(response: object & { readonly correlationId: string }): st
   if (response instanceof MediaRefusedResponse) {
     return mediaErrorTextFor("refused");
   }
-  if ("reason" in response && typeof response.reason === "string") {
+  // A reason with a sentence of its own is the uploader's to fix. Any other reason,
+  // such as a scanner that did not answer, is logged: the uploader sees only "try
+  // again", so the log is the only place the cause shows.
+  if (
+    "reason" in response &&
+    typeof response.reason === "string" &&
+    isMediaErrorCode(response.reason)
+  ) {
     return mediaErrorTextFor(response.reason);
   }
   console.error(`media action failed [${response.correlationId}]`, response);

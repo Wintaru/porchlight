@@ -38,7 +38,7 @@ export const MEDIA_ERROR_TEXT: Readonly<Record<MediaErrorCode, string>> = {
   refused: "That file was not accepted.",
 };
 
-function isMediaErrorCode(code: string): code is MediaErrorCode {
+export function isMediaErrorCode(code: string): code is MediaErrorCode {
   return Object.hasOwn(MEDIA_ERROR_TEXT, code);
 }
 
