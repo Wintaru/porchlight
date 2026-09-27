@@ -18,6 +18,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { BodyEditor } from "@/components/editor/BodyEditor";
 import { StaffShell } from "@/components/staff/StaffShell";
 import { Toast } from "@/components/toast/Toast";
 import { signInPathFor } from "@/lib/sign-in-path";
@@ -161,14 +162,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               />
             </label>
           </div>
-          <label className="field">
-            <span className="field-label">About (markdown)</span>
-            <textarea
-              className="text-input"
-              name="aboutMd"
-              defaultValue={config.siteIdentity.aboutMd}
-            />
-          </label>
+          {/* The post editor, so an admin need not know markdown (#74). It still
+              writes markdown to `aboutMd`, the same field /about renders. */}
+          <div className="field">
+            <span className="field-label">About</span>
+            <div className={styles.about}>
+              <BodyEditor
+                name="aboutMd"
+                label="About"
+                allowImages={false}
+                initialMarkdown={config.siteIdentity.aboutMd}
+              />
+            </div>
+          </div>
         </section>
 
         <section className={styles.card} aria-labelledby="access-heading">

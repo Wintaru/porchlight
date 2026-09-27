@@ -119,3 +119,10 @@
   padding: 12px 0;
   background: linear-gradient(to top, var(--cream) 70%, transparent);
 }
+
+/* The About editor (#74): the post editor's toolbar and body in a bordered box. */
+.about {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 12px;
+}
