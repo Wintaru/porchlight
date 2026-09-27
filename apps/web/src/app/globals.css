@@ -405,6 +405,52 @@ textarea.text-input {
   border-radius: 8px;
 }
 
+/* A video in a post (#21): an upload or an Imgur file in the browser's own player, or a
+   YouTube or Vimeo card that becomes the service's player when pressed
+   (EmbedPlayers.tsx). All keep a 16:9 box, so the page does not jump when one loads. */
+.prose [data-embed] {
+  margin: 0 0 1em;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.prose [data-embed] video,
+.prose [data-embed] iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.prose [data-embed] a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.prose [data-embed] a:hover,
+.prose [data-embed] a:focus-visible {
+  text-decoration: underline;
+}
+
+.prose [data-embed-play] {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--amber);
+  /* A play triangle, cut from the circle's fill. */
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transform: scale(0.55) translateX(8%);
+}
+
 /* An attachment in a post (#52): a download link on a line of its own, drawn as the
    Editor board's card. Only a published file's link carries `?download=`, so a link a
    writer typed never turns into one. */

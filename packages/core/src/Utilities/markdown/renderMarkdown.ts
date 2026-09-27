@@ -6,6 +6,14 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 
 import { inertLinks } from "./inertLinks";
+import { type HastNode, loneLinks } from "./loneLinks";
+
+export interface RenderOptions {
+  readonly inert: boolean;
+  // What a link alone on its line becomes (loneLinks.ts). Ignored for an inert body,
+  // whose links are text.
+  readonly loneLink?: (href: string) => HastNode | undefined;
+}
 
 // Markdown in, HTML out, through unified: remark parses CommonMark to mdast,
 // remark-rehype turns it into hast, rehype-sanitize drops every node and attribute the
@@ -23,15 +31,20 @@ import { inertLinks } from "./inertLinks";
 export async function renderMarkdown(
   markdown: string,
   schema: SanitizeSchema,
-  options: { readonly inert: boolean } = { inert: false },
+  options: RenderOptions = { inert: false },
 ): Promise<string> {
   const pipeline = unified().use(remarkParse).use(remarkRehype);
-  const file = await (options.inert ? pipeline.use(inertLinks) : pipeline)
+  const sanitized = (options.inert ? pipeline.use(inertLinks) : pipeline)
     .use(rehypeSanitize, schema)
-    .use(rehypeHighlight, { detect: false })
+    .use(rehypeHighlight, { detect: false });
+  const file = await (
+    !options.inert && options.loneLink !== undefined
+      ? sanitized.use(loneLinks(options.loneLink))
+      : sanitized
+  )
     .use(rehypeStringify)
     .process(markdown);
   return String(file);
 }
 
-export type { SanitizeSchema };
+export type { HastNode, SanitizeSchema };

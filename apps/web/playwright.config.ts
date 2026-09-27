@@ -12,9 +12,14 @@ const IS_CI = Boolean(process.env.CI);
 // changes an author's count. One worker at a time is the only order in which the
 // cleanup discipline holds, and it costs about a minute. Zero retries, in CI and
 // locally (#19): a test that needs a second try is a bug, not a flake.
+// fullyParallel lets `--shard` split a file by test instead of keeping it whole.
+// Without it, design.spec.ts (about half the suite) fills its shard and leaves another
+// empty. CI runs each shard on its own database. Order is unchanged on one worker, but
+// a file-scope beforeAll/afterAll now runs once per test: a file that needs a
+// once-per-file hook must use test.describe.configure({ mode: "serial" }).
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: false,
+  fullyParallel: true,
   workers: 1,
   retries: 0,
   // A CI runner compiles each route cold on its first hit, and with no retries one slow

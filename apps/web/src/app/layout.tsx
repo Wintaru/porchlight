@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { EmbedPlayers } from "@/components/post/EmbedPlayers";
 import { SessionBar } from "@/components/SessionBar";
 import { newsreader, sourceSans } from "@/fonts/fonts";
 import { getSiteIdentity } from "@/lib/site-identity";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
       <body>
         <SessionBar />
         {children}
+        <EmbedPlayers />
       </body>
     </html>
   );

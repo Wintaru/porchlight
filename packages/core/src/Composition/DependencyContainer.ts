@@ -279,7 +279,7 @@ export class DependencyContainer {
     const siteConfig = createSiteConfigAccessor(env, db);
     const invites = createInviteAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
-    const content = createContentRenderEngine();
+    const content = createContentRenderEngine(env);
     const turnstile = createTurnstileAccessor(env);
     const anonymousAuthors = createAnonymousAuthorAccessor(env, db);
     const blocks = createBlockAccessor(env, db);

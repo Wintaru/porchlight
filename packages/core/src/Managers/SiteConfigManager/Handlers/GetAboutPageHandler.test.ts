@@ -14,7 +14,7 @@ function handlerFor(aboutMd: string): GetAboutPageHandler {
   state.siteIdentity = { siteName: "The Wren House", siteTagline: "", aboutMd };
   return new GetAboutPageHandler(
     fakeSiteConfigAccessor(state),
-    createContentRenderEngine(),
+    createContentRenderEngine({}),
   );
 }
 

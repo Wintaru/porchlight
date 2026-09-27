@@ -1,5 +1,5 @@
 # Issue #19: the whole verify gate on every push and pull request, against a real local
-# Supabase stack in the runner. The packages/db tests are the RLS suite, so a broken
+# Supabase stack in each runner. The packages/db tests are the RLS suite, so a broken
 # policy fails this run. Playwright runs with zero retries (apps/web/playwright.config.ts).
 # On a push to main, push-migrations then applies new migrations to production.
 name: CI
@@ -21,11 +21,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # A Vercel Deployment Check requires this job by name (docs/setup/supabase.md). Rename it
-  # there too, or production deploys wait forever.
-  verify:
+  # Everything but Playwright: lint, types, the Vitest suites and the build.
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -64,19 +63,68 @@ jobs:
       # still exits 0 and is the compile check; the e2e step is the behavior check.
       - run: pnpm build
 
+  # The Playwright suite, split by test across parallel runners. The suite must run on
+  # one worker because its tests share one seeded database (apps/web/playwright.config.ts),
+  # so each shard gets its own runner and its own fresh Supabase stack instead. Actions
+  # minutes are free for a public repository.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      # One failing shard must not cancel the others: the run should report every
+      # failing test, not only the first shard's.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - run: supabase start -x studio
+
+      - run: cp .env.example apps/web/.env.local
+
       - run: pnpm --filter @porchlight/web exec playwright install --with-deps chromium
 
-      - run: pnpm test:e2e
+      - run: pnpm test:e2e --shard=${{ matrix.shard }}/4
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             apps/web/playwright-report/
             apps/web/test-results/
           retention-days: 14
           if-no-files-found: ignore
+
+  # A Vercel Deployment Check requires this job by name (docs/setup/supabase.md). Rename it
+  # there too, or production deploys wait forever. It passes only when every job above
+  # passed. It runs even after a failure or a cancel, so the check reports "failed":
+  # a job skipped by its `if` counts as a pass for a required check.
+  verify:
+    needs: [checks, e2e]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - if: needs.checks.result != 'success' || needs.e2e.result != 'success'
+        run: |
+          echo "checks: ${{ needs.checks.result }}, e2e: ${{ needs.e2e.result }}"
+          exit 1
+      - run: echo "All checks and every e2e shard passed."
 
   # Applies supabase/migrations/ to the production database. It is a job here, not a
   # separate workflow, so its check lands on the commit CI tested: a Vercel Deployment
@@ -99,7 +147,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # Same CLI version as the verify job, so production gets what CI tested. The action
+      # Same CLI version as the checks and e2e jobs, so production gets what CI tested. The action
       # is pinned to a commit (v1.7.3) because this job holds production secrets.
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
         with:
