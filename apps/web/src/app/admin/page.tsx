@@ -22,6 +22,7 @@ import { StaffShell } from "@/components/staff/StaffShell";
 import { Toast } from "@/components/toast/Toast";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { applyPreset, saveSiteConfig } from "./actions";
+import { InvitesSection } from "./InvitesSection";
 import styles from "./admin.module.css";
 
 interface AdminPageProps {
@@ -83,6 +84,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     <StaffShell current="admin" isAdmin>
       <h1 className={styles.title}>Site settings</h1>
       {done === "saved" && <Toast message="Saved." param="done" testId="form-status" />}
+      {done === "revoked" && (
+        <Toast message="Link revoked." param="done" testId="form-status" />
+      )}
       {errorText !== undefined && (
         <p role="alert" className="form-alert" data-testid="form-error">
           {errorText}
@@ -130,6 +134,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           ))}
         </div>
       </section>
+
+      <InvitesSection actor={actor} signUp={config.signUp} />
 
       <form action={saveSiteConfig} className={styles.form}>
         <section className={styles.card} aria-labelledby="identity-heading">
@@ -215,8 +221,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
           {config.signUp === "invite" && (
             <p className="form-hint">
-              Invite links are not active yet (issue #25). Sign-up behaves as closed until
-              then.
+              Sign-up by invite: make the links in Invite links, above.
             </p>
           )}
           <p className="form-hint">

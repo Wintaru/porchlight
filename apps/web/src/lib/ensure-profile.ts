@@ -15,15 +15,22 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 export type EnsureProfileOutcome = Profile | "sign-up-closed" | undefined;
 
 // Runs after every sign-in, whichever path minted the session: creates the profile on
-// the first one and finds it on every later one.
-export async function ensureProfileFor(user: SessionUser): Promise<EnsureProfileOutcome> {
+// the first one and finds it on every later one. `inviteToken` is the invite link the
+// person came in through, if any (#25).
+export async function ensureProfileFor(
+  user: SessionUser,
+  inviteToken: string | null = null,
+): Promise<EnsureProfileOutcome> {
   const response = await getDependencyContainer().accountManager.execute(
-    new EnsureProfileRequest({
-      userId: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      avatarUrl: user.avatarUrl,
-    }),
+    new EnsureProfileRequest(
+      {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+      },
+      inviteToken,
+    ),
   );
   if (response instanceof ProfileResponse) {
     return response.profile;

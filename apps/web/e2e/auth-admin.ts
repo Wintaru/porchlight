@@ -21,8 +21,8 @@ export function localValue(name: string): string {
   return value;
 }
 
-// Whether the local stack has an auth user with this address.
-export async function authUserExists(email: string): Promise<boolean> {
+// The id of the local stack's auth user with this address, if there is one.
+export async function authUserId(email: string): Promise<string | undefined> {
   const url = localValue("NEXT_PUBLIC_SUPABASE_URL");
   const key = localValue("SUPABASE_SERVICE_ROLE_KEY");
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
@@ -31,9 +31,14 @@ export async function authUserExists(email: string): Promise<boolean> {
     throw new Error(`could not list auth users: ${String(listed.status)}`);
   }
   const { users } = (await listed.json()) as {
-    users: readonly { email?: string }[];
+    users: readonly { id: string; email?: string }[];
   };
-  return users.some((candidate) => candidate.email === email);
+  return users.find((candidate) => candidate.email === email)?.id;
+}
+
+// Whether the local stack has an auth user with this address.
+export async function authUserExists(email: string): Promise<boolean> {
+  return (await authUserId(email)) !== undefined;
 }
 
 // Deletes the auth user with this address, if there is one. Only for addresses with no

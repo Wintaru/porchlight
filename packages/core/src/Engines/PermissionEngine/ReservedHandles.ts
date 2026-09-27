@@ -33,6 +33,8 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
   "report",
   // Email confirmation and unsubscribe pages (#22).
   "email",
+  // Invite links (#25): /invite/<token>.
+  "invite",
   // Where the proxy sends an erased author's pages (D11); a 404 when opened directly.
   "erased-author",
   // Common guesses that would confuse a reader even before a route exists.

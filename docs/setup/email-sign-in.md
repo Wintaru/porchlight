@@ -17,8 +17,9 @@ http://127.0.0.1:58324. Open it to click a link by hand. The Playwright spec
 
 1. The sign-in page posts the address to a Server Function. It calls Supabase Auth
    `signInWithOtp` and puts the page to return to in a short-lived cookie. A new
-   address may get an account only when `sign_up` on `/admin` is `open` or the address
-   is `PORCHLIGHT_ADMIN_EMAIL`. Otherwise Supabase Auth mails a link only to an address
+   address may get an account only when `sign_up` on `/admin` is `open`, when it is
+   `invite` and the person opened a live invite link first, or when the address is
+   `PORCHLIGHT_ADMIN_EMAIL`. Otherwise Supabase Auth mails a link only to an address
    that has an account, and makes no new user. The form says "Check your email" either
    way, so it does not show who is a member.
 2. Supabase Auth sends the email from the template. The link is
@@ -106,4 +107,5 @@ when an address is confirmed, any password on the account is removed.
    expired or was used already".
 3. With `sign_up` set to `open` on `/admin`, ask for a link for an address that has
    never signed in. It must get the Confirm signup email, and the link must sign it
-   in. With `sign_up` set to `invite` or `closed`, the same address must get no email.
+   in. With `sign_up` set to `closed`, the same address must get no email. With
+   `invite`, it gets no email unless it first opened an invite link from `/admin`.

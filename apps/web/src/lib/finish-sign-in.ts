@@ -1,3 +1,4 @@
+import { clearInviteToken, currentInviteToken } from "@/lib/invite-cookie";
 import { type IdentityFields, toSessionUser } from "@/auth/session-user";
 import { ensureProfileFor } from "@/lib/ensure-profile";
 
@@ -9,7 +10,7 @@ interface SignOutClient {
 }
 
 // The step every sign-in method shares once Supabase Auth has a session: create the
-// profile on the first visit under the `sign_up` rule, or drop the session when the
+// profile on the first visit under the `sign_up` rule (with the invite cookie, #25), or drop the session when the
 // profile is refused, so nobody is left signed in with no profile. Answers the failure
 // page to go to, or `undefined` when the member is signed in.
 export async function finishSignIn(
@@ -18,8 +19,14 @@ export async function finishSignIn(
   fields: IdentityFields,
 ): Promise<string | undefined> {
   const user = toSessionUser(id, fields);
-  const outcome = user === undefined ? undefined : await ensureProfileFor(user);
+  const outcome =
+    user === undefined
+      ? undefined
+      : await ensureProfileFor(user, await currentInviteToken());
   if (outcome !== undefined && outcome !== "sign-up-closed") {
+    // Signed in: an invite that let them in is spent, and one that was not needed has
+    // done its job either way.
+    await clearInviteToken();
     return undefined;
   }
   await client.auth.signOut();

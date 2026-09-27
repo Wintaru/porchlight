@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { CheckNewAccountRequest, NewAccountCheckedResponse } from "@porchlight/core";
 
 import { isDevSignInEnabled } from "@/auth/dev-sign-in";
+import { currentInviteToken } from "@/lib/invite-cookie";
 import {
   EMAIL_LINK_PATH,
   EMAIL_LINK_TYPE,
@@ -73,7 +74,7 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
   // on a closed or invite-only site Supabase Auth then mails nobody new and makes no
   // user, and a member's address still gets its link.
   const checked = await getDependencyContainer().accountManager.query(
-    new CheckNewAccountRequest(email),
+    new CheckNewAccountRequest(email, await currentInviteToken()),
   );
   if (!(checked instanceof NewAccountCheckedResponse)) {
     console.error(`sign-up check failed [${checked.correlationId}]`, checked);

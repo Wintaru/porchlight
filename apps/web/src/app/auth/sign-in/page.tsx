@@ -10,6 +10,7 @@ interface SignInPageProps {
     readonly error?: string;
     readonly next?: string;
     readonly sent?: string;
+    readonly invited?: string;
   }>;
 }
 
@@ -22,7 +23,7 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
 // The two ways in (SPEC.md §4, #67): Google, or a one-time link by email. Neither has a
 // password. New accounts follow `sign_up` either way; the callback decides that.
 export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const { error, next: rawNext, sent } = await searchParams;
+  const { error, next: rawNext, sent, invited } = await searchParams;
   const next = safeNextPath(rawNext);
   const message = error === undefined ? undefined : ERROR_TEXT[error];
 
@@ -39,7 +40,14 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   }
 
   return (
-    <SimplePage title="Sign in" lead="No password. Pick Google, or get a link by email.">
+    <SimplePage
+      title={invited === undefined ? "Sign in" : "You are invited"}
+      lead={
+        invited === undefined
+          ? "No password. Pick Google, or get a link by email."
+          : "Sign in to join. No password: pick Google, or get a link by email and open it on this device."
+      }
+    >
       <form action={signInWithGoogle} className="card form-stack">
         <input type="hidden" name="next" value={next} />
         <div>
