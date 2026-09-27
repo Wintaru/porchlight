@@ -94,7 +94,11 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   ]);
   const posts = await loadTagPosts(db, tag.id, blocks.keys());
   const followText = followTextFor(follow);
-  const describedText = DESCRIBED_TEXT[described ?? ""];
+  // Own keys only: `?described=constructor` must not find Object.prototype's function.
+  const describedText =
+    described !== undefined && Object.hasOwn(DESCRIBED_TEXT, described)
+      ? DESCRIBED_TEXT[described]
+      : undefined;
   return (
     <main
       className="container"

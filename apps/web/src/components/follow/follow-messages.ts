@@ -6,5 +6,8 @@ const FOLLOW_TEXT: Readonly<Record<string, string>> = {
 };
 
 export function followTextFor(code: string | undefined): string | undefined {
-  return code === undefined ? undefined : FOLLOW_TEXT[code];
+  // Own keys only: `?…=constructor` must not find Object.prototype's function.
+  return code !== undefined && Object.hasOwn(FOLLOW_TEXT, code)
+    ? FOLLOW_TEXT[code]
+    : undefined;
 }

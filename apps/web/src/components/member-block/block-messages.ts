@@ -7,5 +7,8 @@ const BLOCK_TEXT: Readonly<Record<string, string>> = {
 };
 
 export function blockTextFor(code: string | undefined): string | undefined {
-  return code === undefined ? undefined : BLOCK_TEXT[code];
+  // Own keys only: `?…=constructor` must not find Object.prototype's function.
+  return code !== undefined && Object.hasOwn(BLOCK_TEXT, code)
+    ? BLOCK_TEXT[code]
+    : undefined;
 }
