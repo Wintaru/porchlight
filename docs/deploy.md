@@ -132,6 +132,52 @@ disclosure: `footer` (the default) puts a line under every post an agent drafted
 `off` shows nothing. If you leave agents on, read [agents.md](agents.md) so you can
 answer a member who asks what their assistant may do.
 
-## 10. Email — phase 2, issue #22
+## 10. Email — digests and the moderation queue (issue #22)
 
-Guide: `setup/email.md`. Digest email through `EmailAccessor` (D14).
+Guide: [`setup/email.md`](setup/email.md). Without these steps the site sends no email,
+and Settings says so. Nothing else breaks.
+
+1. Verify a sending domain at Resend and create an API key. Follow
+   [`setup/email.md`](setup/email.md), Get the credentials.
+2. Set these on the host, then redeploy:
+
+   | Variable         | Production value                                                  |
+   | ---------------- | ----------------------------------------------------------------- |
+   | `EMAIL_PROVIDER` | `resend`                                                          |
+   | `EMAIL_API_KEY`  | The Resend API key.                                               |
+   | `EMAIL_FROM`     | An address on the verified domain, for example `Porchlight <mail@blog.example.com>`. |
+   | `CRON_SECRET`    | A long random string, for example the output of `openssl rand -hex 32`. |
+
+3. Make a scheduler call the sweep every five minutes. Supabase can do it on any plan.
+   In the Supabase dashboard, open Database, then Extensions, and turn on `pg_cron` and
+   `pg_net`. Then run this in the SQL editor, with your secret and your site's address:
+
+   ```sql
+   select vault.create_secret('<CRON_SECRET>', 'porchlight_cron_secret');
+
+   select cron.schedule(
+     'porchlight-email-sweep',
+     '*/5 * * * *',
+     $$
+     select net.http_post(
+       url := 'https://blog.example.com/api/email/digest',
+       body := '{}'::jsonb,
+       headers := jsonb_build_object(
+         'Authorization',
+         'Bearer ' || (
+           select decrypted_secret from vault.decrypted_secrets
+           where name = 'porchlight_cron_secret'
+         )
+       )
+     );
+     $$
+   );
+   ```
+
+   Any other scheduler works too: it sends `POST` (or `GET`) to `/api/email/digest` with
+   the header `Authorization: Bearer <CRON_SECRET>`. Vercel Cron sends that header on its
+   own, but the Hobby plan runs a job at most once a day, which is too slow for hourly
+   digests.
+4. Check it. Turn on an hourly digest in Settings. In the Supabase SQL editor,
+   `select * from cron.job_run_details order by start_time desc limit 5;` shows each
+   run. The Resend dashboard shows each email.

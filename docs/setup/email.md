@@ -52,3 +52,17 @@ an address on the verified domain, for example `Porchlight <mail@blog.example.co
 
 Email is not a row on the `/admin` checklist. With no provider the site sends no email.
 That is a missing feature, not an unsafe fake, so it shows no red row.
+
+## The sweep
+
+Email leaves the site in one place: `/api/email/digest`. A scheduler calls it every few
+minutes with the header `Authorization: Bearer <CRON_SECRET>`, and each call sends what
+is due. An empty `CRON_SECRET` turns the route off. [deploy.md](../deploy.md), step 10,
+sets up the schedule. Locally, run it by hand:
+
+```sh
+curl -X POST -H "Authorization: Bearer local-cron-secret" http://localhost:3000/api/email/digest
+```
+
+A digest is due when its hour or day has passed since the last one and the bell holds
+something unread from that time. The queue email is due when a new item waits.
