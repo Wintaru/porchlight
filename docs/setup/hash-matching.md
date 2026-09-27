@@ -32,10 +32,11 @@ will accept them once they are built.
 
 Porchlight calls `POST https://shield.projectarachnid.com/v1/media/` with the image
 bytes, the same call as the official SDK's `scanMediaFromBytes`
-(https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). A video is
-too large to send that way, so Porchlight calls `POST /v1/url/` with a short-lived
-signed link to it, the SDK's `scanMediaFromUrl`. Shield fetches the video and checks
-its frames. Any classification other than `no-known-match` counts as a match.
+(https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). A video goes
+to the same endpoint: Porchlight streams it from a short-lived signed link, so the
+server never holds it in memory, and Shield checks its frames. `POST /v1/url/` is not
+used: it takes only links on a host verified for the account, and a signed link is on
+the storage host. Any classification other than `no-known-match` counts as a match.
 
 ## Where the values go
 
@@ -50,7 +51,7 @@ deployment's environment.
 1. `FinalizeUploadHandler` (or its anonymous mirror) downloads the real bytes from
    quarantine and sniffs them, exactly as SPEC.md §6 already required.
 2. For an image, the bytes go to `HashMatchAccessor.load`, then to the image classifier.
-   A HEIC photo goes as a JPEG of the same pixels. A video goes to both as a signed
+   A HEIC photo goes as a JPEG of the same pixels. A video goes to both by a signed
    link that works for one hour. A non-image attachment (PDF, text, markdown, and so
    on) has nothing visual to match and skips both stages.
 3. `ModerationPolicyEngine` turns a match into a **locked** verdict: frozen, hashed,

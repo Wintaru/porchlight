@@ -18,8 +18,8 @@ function isShieldMediaBody(value: unknown): value is ShieldMediaBody {
   return classification === null || typeof classification === "string";
 }
 
-// Shield answers the same body for bytes (/v1/media/) and for a link (/v1/url/). A video
-// takes the most severe classification of any frame, so one reading serves both.
+// Shield answers the same body for an image and for a video, both sent to /v1/media/. A
+// video takes the most severe classification of any frame, so one reading serves both.
 export function shieldVerdict(
   correlationId: string,
   body: unknown,
