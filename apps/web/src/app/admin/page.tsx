@@ -24,10 +24,15 @@ import { Toast } from "@/components/toast/Toast";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { applyPreset, saveSiteConfig } from "./actions";
 import { InvitesSection } from "./InvitesSection";
+import { rerenderBodies } from "./rerender-actions";
 import styles from "./admin.module.css";
 
 interface AdminPageProps {
-  readonly searchParams: Promise<{ readonly done?: string; readonly error?: string }>;
+  readonly searchParams: Promise<{
+    readonly done?: string;
+    readonly error?: string;
+    readonly changed?: string;
+  }>;
 }
 
 const PRESET_LABEL: Record<(typeof SITE_CONFIG_PRESETS)[number], string> = {
@@ -78,7 +83,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const { config, regionProfile, dutyChecklist } = response;
-  const { done, error } = await searchParams;
+  const { done, error, changed } = await searchParams;
   const errorText = error === undefined ? undefined : (ERROR_TEXT[error] ?? `${error}.`);
 
   return (
@@ -87,6 +92,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       {done === "saved" && <Toast message="Saved." param="done" testId="form-status" />}
       {done === "revoked" && (
         <Toast message="Link revoked." param="done" testId="form-status" />
+      )}
+      {done === "rerendered" && (
+        <Toast
+          message={`Re-rendered. ${changed ?? "0"} changed.`}
+          param="done"
+          testId="form-status"
+        />
       )}
       {errorText !== undefined && (
         <p role="alert" className="form-alert" data-testid="form-error">
@@ -137,6 +149,24 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </section>
 
       <InvitesSection actor={actor} signUp={config.signUp} />
+
+      <section
+        id="maintenance"
+        className={styles.card}
+        aria-labelledby="maintenance-heading"
+      >
+        <h2 id="maintenance-heading">Maintenance</h2>
+        <p className="form-hint">
+          Posts and comments keep the HTML made when they were saved. After an update that
+          changes how they render (code colours, for one), render them all again once. A
+          body that is already current is left as it is.
+        </p>
+        <form action={rerenderBodies}>
+          <button type="submit" className="pill-button">
+            Re-render posts and comments
+          </button>
+        </form>
+      </section>
 
       <form action={saveSiteConfig} className={styles.form}>
         <section className={styles.card} aria-labelledby="identity-heading">

@@ -187,3 +187,10 @@ and Settings says so. Nothing else breaks.
    `select status_code, content from net._http_response order by created desc limit 5;`
    shows what the route answered: `200` and a count of emails sent. The Resend dashboard
    shows each email.
+
+## 11. After an update that changes how posts render
+
+Posts and comments keep the HTML made when they were saved. After an update that
+changes the render, such as code colours (issue #77), open `/admin`, go to
+Maintenance, and press **Re-render posts and comments** once. It is safe to press
+again: a body that is already current is left as it is.
