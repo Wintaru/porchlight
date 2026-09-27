@@ -123,6 +123,12 @@ export const boundariesRules = {
           allow: { to: { element: { type: LAYER.common } } },
         },
         allow(LAYER.readModel, [LAYER.readModel, LAYER.db, LAYER.common]),
+        // The browser-safe entry too: a channel's message shape lives in Common, and the
+        // read-model is the browser code that reads it (#81).
+        {
+          from: { element: { type: LAYER.readModel } },
+          allow: { to: CORE_CLIENT_ENTRY_FILE },
+        },
         // The session client over @supabase/ssr lives in packages/db; auth adapts the
         // Next.js cookie jar to it and knows nothing of the core.
         allow(LAYER.auth, [LAYER.auth, LAYER.db]),

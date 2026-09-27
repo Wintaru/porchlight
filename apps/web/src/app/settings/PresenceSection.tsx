@@ -11,8 +11,8 @@ interface PresenceSectionProps {
   readonly saved: boolean;
 }
 
-// Whether other members see you online and typing (#75). Off: your browser sends
-// nothing, and you still see others.
+// Whether other members see you online and typing (#75, #81). Off: nothing that names
+// you goes out, and you still see others.
 export async function PresenceSection({ actor, saved }: PresenceSectionProps) {
   const presence = await presenceFor(actor);
   return (

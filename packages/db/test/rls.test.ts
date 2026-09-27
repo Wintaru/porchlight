@@ -716,4 +716,21 @@ describe("presence (#75)", () => {
       expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
     }
   });
+
+  // Issue #81 (D26): only the server sends on presence channels, so a browser cannot
+  // appear as another member. Realtime checks these policies at join and cannot see a
+  // presence key, so the guard is that no policy lets a browser send at all. A future
+  // send policy for another channel must leave out `presence:` topics, and change this.
+  test("a member's browser may only listen on presence channels", async () => {
+    const sendPolicies = await sql<{ policyname: string }[]>`
+      select policyname from pg_policies
+      where schemaname = 'realtime' and tablename = 'messages'
+        and cmd in ('INSERT', 'UPDATE', 'ALL')`;
+    expect(sendPolicies).toEqual([]);
+    const listen = await sql<{ cmd: string }[]>`
+      select cmd from pg_policies
+      where schemaname = 'realtime' and tablename = 'messages'
+        and policyname = 'presence_members_receive'`;
+    expect(listen).toEqual([{ cmd: "SELECT" }]);
+  });
 });

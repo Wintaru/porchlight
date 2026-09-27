@@ -1,3 +1,6 @@
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+
 import {
   type Browser,
   type BrowserContext,
@@ -6,15 +9,31 @@ import {
   test,
 } from "@playwright/test";
 
+import { localValue } from "./auth-admin";
 import { devSignIn, JUNE, type SeedMember, THEO } from "./helpers";
 import { rest } from "./service-rest";
 
-// Issue #75: typing indicators and who is online, over Realtime Presence, seen from a
-// second signed-in browser.
+// Issue #75: typing indicators and who is online, seen from a second signed-in browser.
+// Issue #81 (D26): the server vouches for who that is.
 
 const POST = "/@theo/hello-from-the-porch";
 const THEO_ID = "00000000-0000-4000-8000-000000000003";
 const JUNE_ID = "00000000-0000-4000-8000-000000000004";
+const MIRA_ID = "00000000-0000-4000-8000-000000000002";
+// The seeded post at POST.
+const POST_ID = "00000000-0000-4000-8000-0000000000b2";
+
+// supabase-js's browser build, for a test page to talk to Realtime directly, the way a
+// modified browser could. The web app has no direct dependency on it; the db package
+// does.
+const SUPABASE_UMD = join(
+  dirname(
+    createRequire(new URL("../../../packages/db/package.json", import.meta.url)).resolve(
+      "@supabase/supabase-js",
+    ),
+  ),
+  "umd/supabase.js",
+);
 
 async function signedIn(
   browser: Browser,
@@ -116,6 +135,121 @@ test.describe("presence", () => {
       await rest(`member_blocks?member_id=eq.${THEO_ID}&target_id=eq.${JUNE_ID}`, {
         method: "DELETE",
       });
+      await theo.context.close();
+      await june.context.close();
+    }
+  });
+
+  test("a member cannot appear as another member, typing or online", async ({
+    browser,
+  }) => {
+    const theo = await signedIn(browser, THEO);
+    const june = await signedIn(browser, JUNE);
+    try {
+      await theo.page.goto(POST);
+      const theoHome = await theo.context.newPage();
+      await theoHome.goto("/");
+      await expect(theoHome.getByTestId("online-member")).toHaveCount(1, {
+        timeout: 10_000,
+      });
+
+      // June's browser, signed in as June, goes around the app and tells both
+      // channels that Mira is here and typing, every way Realtime offers.
+      await june.page.goto("/");
+      await june.page.addScriptTag({ path: SUPABASE_UMD });
+      const attempts = await june.page.evaluate(
+        async ({ url, anonKey, email, forgedId, topics }) => {
+          interface Channel {
+            on: (type: string, filter: object, callback: () => void) => Channel;
+            subscribe: (callback: (status: string) => void) => Channel;
+            track: (payload: object) => Promise<string>;
+            send: (message: object) => Promise<string>;
+          }
+          interface Client {
+            auth: {
+              signInWithPassword: (credentials: object) => Promise<{ error: unknown }>;
+            };
+            realtime: { setAuth: () => Promise<void> };
+            channel: (topic: string, options: object) => Channel;
+          }
+          const { createClient } = (
+            window as unknown as {
+              supabase: {
+                createClient: (url: string, key: string, options: object) => Client;
+              };
+            }
+          ).supabase;
+          const client = createClient(url, anonKey, {
+            auth: { persistSession: false },
+          });
+          const { error } = await client.auth.signInWithPassword({
+            email,
+            password: "porchlight",
+          });
+          if (error !== null) {
+            throw new Error("June could not sign in");
+          }
+          await client.realtime.setAuth();
+          const results: Record<string, string> = {};
+          for (const topic of topics) {
+            const channel = client.channel(topic, {
+              config: { private: true, presence: { key: forgedId } },
+            });
+            const joined = await new Promise<string>((resolve) => {
+              channel
+                .on("presence", { event: "sync" }, () => undefined)
+                .subscribe((status) => {
+                  if (status !== "CLOSED") {
+                    resolve(status);
+                  }
+                });
+            });
+            results[`${topic} join`] = joined;
+            results[`${topic} track`] = await channel.track({ typing: true });
+            results[`${topic} send`] = await channel.send({
+              type: "broadcast",
+              event: "presence",
+              payload: {
+                kind: "here",
+                memberId: forgedId,
+                typing: true,
+                rollCall: false,
+              },
+            });
+          }
+          return results;
+        },
+        {
+          url: localValue("NEXT_PUBLIC_SUPABASE_URL"),
+          anonKey: localValue("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+          email: JUNE.email,
+          forgedId: MIRA_ID,
+          topics: [`presence:post:${POST_ID}`, "presence:site"],
+        },
+      );
+      // Realtime refuses the presence track outright. A broadcast from a member's
+      // browser is dropped without a word, so what Theo sees is the proof.
+      expect(attempts[`presence:post:${POST_ID} track`]).toBe("error");
+      expect(attempts["presence:site track"]).toBe("error");
+
+      // Longer than a real report takes to show (the checks below).
+      await theo.page.waitForTimeout(3000);
+      await expect(theo.page.getByTestId("typing-indicator")).toHaveText("");
+      await expect(theoHome.getByTestId("online-member")).toHaveCount(2);
+      await expect(theoHome.getByTestId("online-now")).not.toContainText("@mira");
+      await expect(theoHome.getByTestId("online-now")).toContainText("@june");
+
+      // The channel is live: June, as herself, does show.
+      await june.page.goto(POST);
+      await june.page
+        .getByTestId("comment-form")
+        .getByLabel("Your comment")
+        .pressSequentially("Hi");
+      await expect(theo.page.getByTestId("typing-indicator")).toHaveText(
+        "@june is replying…",
+        { timeout: 10_000 },
+      );
+    } finally {
       await theo.context.close();
       await june.context.close();
     }
