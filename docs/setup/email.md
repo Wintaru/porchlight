@@ -1,52 +1,54 @@
-# Email (phase 2 placeholder)
+# Email
 
-Digest email through one `EmailAccessor` (SPEC.md §8, WAYFINDER D14) — issue #22 builds
-it. The in-app bell is the only channel in phase 1; this guide exists early because
-`.env.example` already declares the variables, the same "declared ahead of the issue
-that builds it" pattern `TEXT_MODERATION_*` follows in `docs/setup/classifiers.md`.
+Porchlight sends email through one `EmailAccessor` (SPEC.md §8, WAYFINDER D14, issue
+#22). This is the site's own mail. The sign-in links are Supabase Auth's mail and have
+their own guide, [email-sign-in.md](email-sign-in.md).
 
-## What it will be for
+## What it is for
 
-D14 keeps notifications immediate in-app and moves email to a digest: a member sets a
-schedule (for example daily or weekly) and `EmailAccessor` bundles what happened since
-the last send into one message, plus an immediate option reserved for the moderator
-queue. There is no email-on-every-event mode — that was rejected as noisy once a porch
-grows past a handful of members.
+- **Digests.** A member picks hourly or daily in Settings. Unread bell notifications are
+  bundled into one message. The in-app bell stays immediate.
+- **The moderation queue.** An admin or moderator can ask for an email as soon as an
+  item waits for review.
+- **Reader subscriptions.** A reader with no account subscribes by email to the whole
+  site or to one author, and gets the new posts on the schedule they picked.
 
-## What you do not need it for
+There is no email for every event. D14 rejected that as too noisy.
 
-Nothing yet. `EMAIL_PROVIDER=fake` is the only working value until #22 lands: the fake
-provider writes each message to the server log instead of sending it, so local work and
-the Playwright suite never need real credentials.
+## Providers
 
-## Get the credentials (once #22 lands)
+`EMAIL_PROVIDER` takes one of three values.
 
-The reserved providers are Resend and Amazon SES — both support sending from a verified
-domain without a dedicated mail server.
+| Value    | What happens                                                                                                                                                                       |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `none`   | The default when the variable is unset. The site sends no email and shows no email settings or subscribe forms.                                                                    |
+| `fake`   | Local work and tests. Each subject goes to the server log. With `EMAIL_FAKE_MAILPIT_URL`, each message also goes to the local stack's mail catcher. Refused in a production build. |
+| `resend` | Sends through Resend. Needs `EMAIL_API_KEY` and `EMAIL_FROM`.                                                                                                                      |
 
-- **Resend.** Create an account at https://resend.com, verify the sending domain (DNS
-  records: SPF, DKIM), and create an API key.
-- **SES.** Verify the sending domain in the Amazon SES console, move the account out of
-  the SES sandbox for production volume, and create an IAM user scoped to
-  `ses:SendEmail` with an access key.
+## Local
+
+The `.env.example` values select the fake and the local mail catcher. Open
+`http://127.0.0.1:58324` to read what the site sent. `EMAIL_FAKE_RESULT=fail` makes
+every send fail, for the error path.
+
+## Get the credentials
+
+1. Create an account at https://resend.com.
+2. Add the sending domain and put its DNS records (SPF and DKIM) at your DNS host. Wait
+   until Resend shows the domain as verified.
+3. Create an API key with the "Sending access" permission for that domain.
+
+If Supabase Auth already sends the sign-in links through Resend, use the same verified
+domain.
 
 ## Where the values go
 
-**Hosted.** Set `EMAIL_PROVIDER` to `resend` or `ses`, `EMAIL_API_KEY` to the key from
-above, and `EMAIL_FROM` to an address on the verified domain.
+**Hosted.** Set `EMAIL_PROVIDER=resend`, `EMAIL_API_KEY` to the key, and `EMAIL_FROM` to
+an address on the verified domain, for example `Porchlight <mail@blog.example.com>`.
 
-**Local.** Leave `EMAIL_PROVIDER` unset (or `fake`) in `apps/web/.env.local`, the
-`.env.example` default.
+**Local.** Keep the `.env.example` values.
 
 ## Admin checklist
 
-Email is not one of `computeDutyChecklist`'s rows (`packages/core/src/Composition/computeDutyChecklist.ts`):
-unlike hash matching, the image classifier, Turnstile and media storage, a missing
-`EmailAccessor` degrades gracefully to no digests rather than to an unsafe fake running
-in production, so it carries no red "not yet active" row on `/admin`. `docs/deploy.md`
-step 9 covers it as a phase 2 deploy step instead.
-
-## Not built here
-
-`EmailAccessor`, the digest scheduler, and the member-facing schedule setting are all
-issue #22. Nothing in this repo reads `EMAIL_PROVIDER` yet.
+Email is not a row on the `/admin` checklist. With no provider the site sends no email.
+That is a missing feature, not an unsafe fake, so it shows no red row.
