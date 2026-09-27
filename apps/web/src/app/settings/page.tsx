@@ -13,6 +13,7 @@ import { AnonymousClaimCard } from "./AnonymousClaimCard";
 import { MutedMembersSection } from "./MutedMembersSection";
 import { AgentsSection } from "./AgentsSection";
 import { EmailSection } from "./EmailSection";
+import { PresenceSection } from "./PresenceSection";
 import styles from "./settings.module.css";
 import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "./parse-profile-form";
 
@@ -26,6 +27,7 @@ interface SettingsPageProps {
     readonly block?: string;
     readonly emailSaved?: string;
     readonly emailError?: string;
+    readonly presenceSaved?: string;
   }>;
 }
 
@@ -75,6 +77,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     block,
     emailSaved,
     emailError,
+    presenceSaved,
   } = await searchParams;
   const errorText =
     error === undefined ? undefined : (ERROR_TEXT[error] ?? ERROR_TEXT.unavailable);
@@ -88,6 +91,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { id: "profile", label: "Profile" },
     ...(agentsOpen ? [{ id: "agents", label: "Agents" }] : []),
     { id: "email", label: "Email" },
+    { id: "presence", label: "Presence" },
     { id: "anonymous", label: "Anonymous posts" },
     { id: "muted", label: "Muted and blocked" },
     { id: "data", label: "Your data" },
@@ -177,6 +181,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               : (EMAIL_ERROR_TEXT[emailError] ?? EMAIL_ERROR_TEXT.unavailable)
           }
         />
+        <PresenceSection actor={actor} saved={presenceSaved !== undefined} />
         <AnonymousClaimCard handle={profile.handle} />
         <MutedMembersSection profileId={profile.id} blockText={blockTextFor(block)} />
         <section id="data" className={styles.card} aria-labelledby="data-heading">
