@@ -85,6 +85,7 @@ import { CreateAnonymousPostHandler } from "../Managers/PostManager/Handlers/Cre
 import { CreateDraftHandler } from "../Managers/PostManager/Handlers/CreateDraftHandler";
 import { DeletePostHandler } from "../Managers/PostManager/Handlers/DeletePostHandler";
 import { GetPostHandler } from "../Managers/PostManager/Handlers/GetPostHandler";
+import { ListPostRevisionsHandler } from "../Managers/PostManager/Handlers/ListPostRevisionsHandler";
 import { ListPostsForAuthorHandler } from "../Managers/PostManager/Handlers/ListPostsForAuthorHandler";
 import { PreviewPostHandler } from "../Managers/PostManager/Handlers/PreviewPostHandler";
 import { PublishPostHandler } from "../Managers/PostManager/Handlers/PublishPostHandler";
@@ -98,6 +99,7 @@ import { CreateAnonymousPostRequest } from "../Managers/PostManager/Requests/Cre
 import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
 import { DeletePostRequest } from "../Managers/PostManager/Requests/DeletePostRequest";
 import { GetPostRequest } from "../Managers/PostManager/Requests/GetPostRequest";
+import { ListPostRevisionsRequest } from "../Managers/PostManager/Requests/ListPostRevisionsRequest";
 import { ListPostsForAuthorRequest } from "../Managers/PostManager/Requests/ListPostsForAuthorRequest";
 import { PreviewPostRequest } from "../Managers/PostManager/Requests/PreviewPostRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
@@ -385,6 +387,10 @@ export class DependencyContainer {
         .build(),
       new HandlerResolverBuilder()
         .register(GetPostRequest, new GetPostHandler(posts, permissions))
+        .register(
+          ListPostRevisionsRequest,
+          new ListPostRevisionsHandler(posts, permissions),
+        )
         .register(
           ListPostsForAuthorRequest,
           new ListPostsForAuthorHandler(posts, permissions),

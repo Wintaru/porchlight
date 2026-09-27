@@ -503,6 +503,44 @@ export type Database = {
           },
         ]
       }
+      post_revisions: {
+        Row: {
+          body_md: string
+          id: string
+          post_id: string
+          replaced_at: string
+          saved_at: string
+          summary: string | null
+          title: string
+        }
+        Insert: {
+          body_md: string
+          id?: string
+          post_id: string
+          replaced_at?: string
+          saved_at: string
+          summary?: string | null
+          title: string
+        }
+        Update: {
+          body_md?: string
+          id?: string
+          post_id?: string
+          replaced_at?: string
+          saved_at?: string
+          summary?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_revisions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_tags: {
         Row: {
           post_id: string

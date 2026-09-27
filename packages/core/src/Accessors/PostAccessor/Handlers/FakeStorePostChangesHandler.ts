@@ -57,6 +57,24 @@ export class FakeStorePostChangesHandler implements IHandler<
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,
     };
+    // The store's `posts_keep_revision` trigger: a post that is out keeps the version
+    // readers saw when its words change.
+    if (
+      current.publishedAt !== null &&
+      (stored.title !== current.title ||
+        stored.summary !== current.summary ||
+        stored.bodyMd !== current.bodyMd)
+    ) {
+      this.state.revisions.push({
+        id: globalThis.crypto.randomUUID(),
+        postId: id,
+        title: current.title,
+        summary: current.summary,
+        bodyMd: current.bodyMd,
+        savedAt: current.updatedAt,
+        replacedAt: timestamp,
+      });
+    }
     this.state.posts.set(id, stored);
     return Promise.resolve(new PostStoredResponse(correlationId, stored));
   }

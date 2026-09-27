@@ -15,7 +15,9 @@ import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/
 import { LoadMediaAssetsByOwnerRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByOwnerRequest";
 import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
+import { LoadPostRevisionsByAuthorRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostRevisionsByAuthorRequest";
 import { LoadPostsByAuthorRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
+import { PostRevisionsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostRevisionsLoadedResponse";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
 import type { Reaction } from "../../../Accessors/ReactionAccessor/Reaction";
 import type { IReactionAccessor } from "../../../Accessors/ReactionAccessor/IReactionAccessor";
@@ -27,6 +29,7 @@ import type { LiveComment } from "../../../Common/LiveComment";
 import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { MemberBlock } from "../../../Common/MemberBlock";
 import type { Post } from "../../../Common/Post";
+import type { PostRevision } from "../../../Common/PostRevision";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { createZipArchive } from "../../../Utilities/export/createZipArchive";
 import { permit } from "../permit";
@@ -73,6 +76,12 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     );
     if (!(loadedPosts instanceof PostsLoadedResponse)) {
       return unavailable(correlationId, loadedPosts, "posts.load");
+    }
+    const loadedRevisions = await this.posts.load(
+      new LoadPostRevisionsByAuthorRequest(profileId, context),
+    );
+    if (!(loadedRevisions instanceof PostRevisionsLoadedResponse)) {
+      return unavailable(correlationId, loadedRevisions, "posts.load revisions");
     }
     const loadedComments = await this.comments.load(
       new LoadCommentsByAuthorRequest(profileId, context),
@@ -132,6 +141,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
       JSON.stringify(
         {
           posts: loadedPosts.posts.map(postJson),
+          postRevisions: loadedRevisions.revisions.map(revisionJson),
           comments: liveComments.map(commentJson),
           reactions: loadedReactions.reactions.map(reactionJson),
           uploads: loadedMedia.assets.map(mediaJson),
@@ -192,6 +202,18 @@ function postJson(post: Post) {
     agentDraftMd: post.agentDraftMd,
     publishedAt: post.publishedAt?.toISOString() ?? null,
     createdAt: post.createdAt.toISOString(),
+  };
+}
+
+// An earlier version of a published post (#23): the member's own words, like the post.
+function revisionJson(revision: PostRevision) {
+  return {
+    postId: revision.postId,
+    title: revision.title,
+    summary: revision.summary,
+    bodyMd: revision.bodyMd,
+    savedAt: revision.savedAt.toISOString(),
+    replacedAt: revision.replacedAt.toISOString(),
   };
 }
 

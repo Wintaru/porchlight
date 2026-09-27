@@ -26,6 +26,12 @@ import { FakeLoadPostsByIdsHandler } from "../Accessors/PostAccessor/Handlers/Fa
 import { SupabaseLoadPostsByIdsHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostsByIdsHandler";
 import { LoadPostBySlugRequest } from "../Accessors/PostAccessor/Requests/LoadPostBySlugRequest";
 import { LoadPostsByAuthorRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
+import { FakeLoadPostRevisionsByAuthorHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostRevisionsByAuthorHandler";
+import { FakeLoadPostRevisionsHandler } from "../Accessors/PostAccessor/Handlers/FakeLoadPostRevisionsHandler";
+import { SupabaseLoadPostRevisionsByAuthorHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostRevisionsByAuthorHandler";
+import { SupabaseLoadPostRevisionsHandler } from "../Accessors/PostAccessor/Handlers/SupabaseLoadPostRevisionsHandler";
+import { LoadPostRevisionsByAuthorRequest } from "../Accessors/PostAccessor/Requests/LoadPostRevisionsByAuthorRequest";
+import { LoadPostRevisionsRequest } from "../Accessors/PostAccessor/Requests/LoadPostRevisionsRequest";
 import { LoadPostsByStatusRequest } from "../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
 import { RemovePostRequest } from "../Accessors/PostAccessor/Requests/RemovePostRequest";
 import { StoreNewPostRequest } from "../Accessors/PostAccessor/Requests/StoreNewPostRequest";
@@ -57,6 +63,11 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .register(LoadPostsByIdsRequest, new SupabaseLoadPostsByIdsHandler(db))
       .register(LoadPostBySlugRequest, new SupabaseLoadPostBySlugHandler(db))
       .register(LoadPostsByAuthorRequest, new SupabaseLoadPostsByAuthorHandler(db))
+      .register(LoadPostRevisionsRequest, new SupabaseLoadPostRevisionsHandler(db))
+      .register(
+        LoadPostRevisionsByAuthorRequest,
+        new SupabaseLoadPostRevisionsByAuthorHandler(db),
+      )
       .register(LoadVoiceSamplesRequest, new SupabaseLoadVoiceSamplesHandler(db))
       .register(LoadPostsByStatusRequest, new SupabaseLoadPostsByStatusHandler(db))
       .build(),
@@ -77,6 +88,11 @@ export function createFakePostAccessor(state: FakePostState): IPostAccessor {
       .register(LoadPostsByIdsRequest, new FakeLoadPostsByIdsHandler(state))
       .register(LoadPostBySlugRequest, new FakeLoadPostBySlugHandler(state))
       .register(LoadPostsByAuthorRequest, new FakeLoadPostsByAuthorHandler(state))
+      .register(LoadPostRevisionsRequest, new FakeLoadPostRevisionsHandler(state))
+      .register(
+        LoadPostRevisionsByAuthorRequest,
+        new FakeLoadPostRevisionsByAuthorHandler(state),
+      )
       .register(LoadVoiceSamplesRequest, new FakeLoadVoiceSamplesHandler(state))
       .register(LoadPostsByStatusRequest, new FakeLoadPostsByStatusHandler(state))
       .build(),

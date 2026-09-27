@@ -65,6 +65,7 @@ export type { ModerationTarget } from "./Common/ModerationTarget";
 export type { Notification } from "./Common/Notification";
 export { NOTIFICATION_KINDS, type NotificationKind } from "./Common/NotificationKind";
 export type { Post } from "./Common/Post";
+export type { PostRevision } from "./Common/PostRevision";
 export { POST_ORIGINS, DEFAULT_POST_ORIGIN, type PostOrigin } from "./Common/PostOrigin";
 export { POST_STATUSES, type PostStatus } from "./Common/PostStatus";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
@@ -183,6 +184,7 @@ export { publishesAtOnce } from "./Managers/PostManager/publishesAtOnce";
 export { CreateDraftRequest } from "./Managers/PostManager/Requests/CreateDraftRequest";
 export { DeletePostRequest } from "./Managers/PostManager/Requests/DeletePostRequest";
 export { GetPostRequest } from "./Managers/PostManager/Requests/GetPostRequest";
+export { ListPostRevisionsRequest } from "./Managers/PostManager/Requests/ListPostRevisionsRequest";
 export { ListPostsForAuthorRequest } from "./Managers/PostManager/Requests/ListPostsForAuthorRequest";
 export { PreviewPostRequest } from "./Managers/PostManager/Requests/PreviewPostRequest";
 export { PublishPostRequest } from "./Managers/PostManager/Requests/PublishPostRequest";
@@ -200,6 +202,7 @@ export { PostPreviewResponse } from "./Managers/PostManager/Responses/PostPrevie
 export { PostRejectedResponse } from "./Managers/PostManager/Responses/PostRejectedResponse";
 export { PostRateLimitedResponse } from "./Managers/PostManager/Responses/PostRateLimitedResponse";
 export { PostResponse } from "./Managers/PostManager/Responses/PostResponse";
+export { PostRevisionsResponse } from "./Managers/PostManager/Responses/PostRevisionsResponse";
 export { PostsResponse } from "./Managers/PostManager/Responses/PostsResponse";
 export { PostUnavailableResponse } from "./Managers/PostManager/Responses/PostUnavailableResponse";
 
