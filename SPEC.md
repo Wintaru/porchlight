@@ -331,7 +331,7 @@ constant. The guide exports and erases with the account (section 10).
 | `agent_limits` | `{"drafts_per_day": n, "publishes_per_day": n}`, per token, through `rate_limits` | 5 and 2 |
 | `agent_disclosure` | `off` · `footer` ("Drafted with an assistant, edited by @handle", or "Posted by an assistant for @handle" when unreviewed) | `footer` |
 
-**Tools.** `get_me`, `get_voice_guide`, `update_voice_guide`, `list_posts`, `get_post`,
+**Tools.** `get_me`, `get_voice_guide`, `update_voice_guide`, `check_draft`, `list_posts`, `get_post`,
 `create_draft`, `update_draft`, `delete_draft`, `publish_post`, `request_upload`,
 `finalize_upload`, `get_media`. Uploads reuse the section 6 signed-URL flow: the agent's
 client sends the bytes to storage itself, so they never pass through the model.
@@ -340,5 +340,11 @@ client sends the bytes to storage itself, so they never pass through the model.
 line, the notes-to-draft workflow, and the fake mode. No production step: tokens are
 minted in the app.
 
-**Later.** OAuth 2.1 for claude.ai connectors. A `check_draft` heuristic tool. A local
-stdio wrapper. Voice guide revisions with phase 2 post revisions.
+**Draft check** (#32). `check_draft(body_md)` and the editor's Check button run the same
+deterministic heuristics against the writer's own guide: banned phrases (the default list
+plus the list under a "banned" heading in the guide), sentences all one length, many lists
+of three, a heading over nearly every paragraph, a closing summary. Warnings, never a
+block. **Voice guide revisions** (#32): each change keeps the text it replaced, up to 50,
+shown under the guide in Settings, exported and erased with the account.
+
+**Later.** OAuth 2.1 for claude.ai connectors (#79). A local stdio wrapper.
