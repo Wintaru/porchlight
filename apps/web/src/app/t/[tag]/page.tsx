@@ -1,3 +1,8 @@
+import {
+  GetTagDescriptionRequest,
+  TAG_DESCRIPTION_MAX_LENGTH,
+  TagDescriptionResponse,
+} from "@porchlight/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -10,15 +15,25 @@ import { Toast } from "@/components/toast/Toast";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { getCurrentActor } from "@/lib/current-actor";
+import { getDependencyContainer } from "@/lib/dependency-container";
 import { loadViewerFollows } from "@/read-model/follows";
 import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
+import { saveTagDescription } from "./actions";
 import styles from "./tag.module.css";
+
+const DESCRIBED_TEXT: Readonly<Record<string, string>> = {
+  saved: "Description saved.",
+  failed: "The description could not be saved. Try again in a moment.",
+};
 
 interface TagPageProps {
   readonly params: Promise<{ readonly tag: string }>;
-  readonly searchParams: Promise<{ readonly follow?: string }>;
+  readonly searchParams: Promise<{
+    readonly follow?: string;
+    readonly described?: string;
+  }>;
 }
 
 const getTag = cache(async (slug: string) => loadTag(await createSessionClient(), slug));
@@ -46,17 +61,32 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 
 // The tag page, /t/slug: the public posts under one tag, newest first. Unlisted posts
 // never appear (SPEC.md §5), and neither do the viewer's muted and blocked members'
-// posts (#23). A signed-in member can follow the tag (#24).
+// posts (#23). A signed-in member can follow the tag, and an admin can say what it is
+// for (#24).
 export default async function TagPage({ params, searchParams }: TagPageProps) {
   const tag = await getTag((await params).tag);
   if (tag === undefined) {
     notFound();
   }
-  const [db, actor, { follow }] = await Promise.all([
+  const [db, actor, { follow, described }, description] = await Promise.all([
     createSessionClient(),
     getCurrentActor(),
     searchParams,
+    getDependencyContainer().siteConfigManager.query(
+      new GetTagDescriptionRequest(tag.slug),
+    ),
   ]);
+  const isAdmin = actor.kind === "member" && actor.profile.role === "admin";
+  const descriptionMd =
+    description instanceof TagDescriptionResponse ? description.descriptionMd : "";
+  const descriptionHtml =
+    description instanceof TagDescriptionResponse ? description.html : "";
+  if (!(description instanceof TagDescriptionResponse)) {
+    console.error(
+      `tag description load failed [${description.correlationId}]`,
+      description,
+    );
+  }
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   const [blocks, follows] = await Promise.all([
     loadViewerBlocks(db, viewerId),
@@ -64,6 +94,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   ]);
   const posts = await loadTagPosts(db, tag.id, blocks.keys());
   const followText = followTextFor(follow);
+  const describedText = DESCRIBED_TEXT[described ?? ""];
   return (
     <main
       className="container"
@@ -71,6 +102,9 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
     >
       {followText !== undefined && (
         <Toast message={followText} param="follow" testId="follow-status" />
+      )}
+      {describedText !== undefined && (
+        <Toast message={describedText} param="described" testId="described-status" />
       )}
       <div className={styles.head}>
         <h1>{tag.name}</h1>
@@ -83,6 +117,38 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
           />
         )}
       </div>
+      {descriptionHtml !== "" && (
+        <div
+          className={`prose ${styles.description ?? ""}`}
+          data-testid="tag-description"
+          // Rendered by the ContentRenderEngine with the post body's allowlist (D3).
+          dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+        />
+      )}
+      {isAdmin && (
+        <details className={styles.edit}>
+          <summary>
+            {descriptionMd === "" ? "Add a description" : "Edit the description"}
+          </summary>
+          <form action={saveTagDescription} className="form-stack">
+            <input type="hidden" name="slug" value={tag.slug} />
+            <label className="field">
+              <span className="field-label">Description (markdown)</span>
+              <textarea
+                name="descriptionMd"
+                className="text-input"
+                defaultValue={descriptionMd}
+                maxLength={TAG_DESCRIPTION_MAX_LENGTH}
+              />
+            </label>
+            <div>
+              <button type="submit" className="pill-button pill-button--amber">
+                Save description
+              </button>
+            </div>
+          </form>
+        </details>
+      )}
       <PostCardList posts={posts} empty="No posts with this tag yet." />
     </main>
   );

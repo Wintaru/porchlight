@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, fillBodyMarkdown, JUNE, THEO } from "./helpers";
+import {
+  deleteCurrentPost,
+  devSignIn,
+  fillBodyMarkdown,
+  JUNE,
+  LAMPLIGHTER,
+  THEO,
+} from "./helpers";
 
 // Issue #24's acceptance test: with two authors, June follows Theo, and Theo's next
 // published post shows in June's Following tab and lights her bell. The seed has two
@@ -64,4 +71,32 @@ test("a tag can be followed from its page, and a visitor sees no Follow", async 
   await page.getByTestId("follow-button").click();
   await expect(page.getByTestId("follow-status")).toHaveText("Unfollowed.");
   await expect(page.getByTestId("follow-button")).toHaveText("Follow");
+});
+
+test("an admin describes a tag, a reader sees it, and a member gets no form", async ({
+  page,
+  browser,
+}) => {
+  await devSignIn(page, LAMPLIGHTER);
+  await page.goto("/t/making");
+  await page.getByText("Add a description").click();
+  await page.getByLabel("Description (markdown)").fill("Things made **by hand**.");
+  await page.getByRole("button", { name: "Save description" }).click();
+  await expect(page.getByTestId("described-status")).toHaveText("Description saved.");
+
+  const reader = await browser.newPage();
+  await reader.goto("/t/making");
+  await expect(reader.getByTestId("tag-description").locator("strong")).toHaveText(
+    "by hand",
+  );
+  await devSignIn(reader, JUNE);
+  await reader.goto("/t/making");
+  await expect(reader.getByText("Edit the description")).toHaveCount(0);
+  await reader.close();
+
+  // Put the seed back: an empty description clears it.
+  await page.getByText("Edit the description").click();
+  await page.getByLabel("Description (markdown)").fill("");
+  await page.getByRole("button", { name: "Save description" }).click();
+  await expect(page.getByTestId("tag-description")).toHaveCount(0);
 });
