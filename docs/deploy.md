@@ -106,7 +106,17 @@ the rest of the anonymous-guard variables).
 ## 6. Storage buckets
 
 Guide: [`setup/storage.md`](setup/storage.md). The quarantine and public buckets
-behind `MediaStorageAccessor` (D4) are created by a migration; no dashboard step.
+behind `MediaStorageAccessor` (D4) are created by a migration.
+
+For video (D4b) the project must be on the Pro plan:
+
+1. In the dashboard, open Storage, Settings. Set "Upload file size limit" to at least
+   500 MB, then save.
+2. Open `/admin`. In the attachment allowlist, check that `heic` and `mp4` are ticked.
+   The migration adds both to a saved list.
+3. Check the byte caps for trusted members. A video can be 250 MiB, so the account cap
+   must be larger. The default is 2 GiB. A list saved before video has the old 200 MB
+   cap: raise it.
 
 ## 7. Hash matching and classifiers
 
@@ -195,7 +205,8 @@ and Settings says so. Nothing else breaks.
 ## 11. After an update that changes how posts render
 
 Posts and comments keep the HTML made when they were saved. After an update that
-changes the render, such as code colours (issue #77), open `/admin`, go to
+changes the render, such as code colours (issue #77) or video links (issue #21), open
+`/admin`, go to
 Maintenance, and press **Re-render posts and comments** once. It is safe to press
 again: a body that is already current is left as it is. A post it changes gets a new
 "last updated" time, which the sitemap shows.

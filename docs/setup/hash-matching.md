@@ -32,8 +32,10 @@ will accept them once they are built.
 
 Porchlight calls `POST https://shield.projectarachnid.com/v1/media/` with the image
 bytes, the same call as the official SDK's `scanMediaFromBytes`
-(https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). Any
-classification other than `no-known-match` counts as a match.
+(https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). A video is
+too large to send that way, so Porchlight calls `POST /v1/url/` with a short-lived
+signed link to it, the SDK's `scanMediaFromUrl`. Shield fetches the video and checks
+its frames. Any classification other than `no-known-match` counts as a match.
 
 ## Where the values go
 
@@ -48,8 +50,9 @@ deployment's environment.
 1. `FinalizeUploadHandler` (or its anonymous mirror) downloads the real bytes from
    quarantine and sniffs them, exactly as SPEC.md §6 already required.
 2. For an image, the bytes go to `HashMatchAccessor.load`, then to the image classifier.
-   A non-image attachment (PDF, text, markdown, and so on) has nothing visual to match
-   and skips both stages.
+   A HEIC photo goes as a JPEG of the same pixels. A video goes to both as a signed
+   link that works for one hour. A non-image attachment (PDF, text, markdown, and so
+   on) has nothing visual to match and skips both stages.
 3. `ModerationPolicyEngine` turns a match into a **locked** verdict: frozen, hashed,
    audit-logged, retained for at least a year, and refused with no detail beyond
    "refused" (SPEC.md §7) — an uploader can never tell a hash match from any other
@@ -57,9 +60,9 @@ deployment's environment.
 
 ## Production checklist
 
-- After you set the key, upload one ordinary image. It must pass. A wrong username or
-  password makes every image upload fail with "try again". The failure reason includes
-  `Shield answered 401`.
+- After you set the key, upload one ordinary image and one short video. Both must pass.
+  A wrong username or password makes every upload fail with "try again". The failure
+  reason includes `Shield answered 401`.
 - Set `HASH_MATCH_API_KEY` before opening uploads to anyone the site does not fully
   trust (`site_config.posting` or the attachment allowlist matters more than this
   alone — a hash match only ever catches what is already fingerprinted elsewhere).

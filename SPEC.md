@@ -130,14 +130,24 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 ## 6. Attachments
 
 Allowlist, admin-extendable in site config. Default set: images (png, jpeg, gif, webp,
-avif), PDF, Office without macros (docx, xlsx, pptx), OpenDocument, text, markdown, csv,
-STL, GPX. Audio is off by default (DMCA exposure) and can be added in config. Denied
-outright: executables, scripts, HTML, SVG, archives, macro-enabled Office.
+avif, heic), video (mp4), PDF, Office without macros (docx, xlsx, pptx), OpenDocument,
+text, markdown, csv, STL, GPX. Audio is off by default (DMCA exposure) and can be added
+in config. Denied outright: executables, scripts, HTML, SVG, archives, macro-enabled
+Office.
 
 The server checks magic bytes, not extensions. Non-image files are served as downloads
 (`Content-Disposition: attachment`) from the storage origin, never inline on the site
-origin. Per-file and per-account byte caps by trust level. Admin has no quota. Phase 1
-stores in Supabase Storage behind `MediaStorageAccessor`. Video upload is phase 2.
+origin; a video plays in the post. Per-file and per-account byte caps by trust level,
+and a per-file video cap (probation none, trusted 250 MiB). Admin has no quota. Media
+lives in Supabase Storage behind `MediaStorageAccessor`.
+
+**Video (D4b).** The server never converts video. The editor converts it in the
+browser to H.264 MP4 of at most 1080p with AAC sound, movie box first, no metadata. The
+server reads the header and movie box and refuses anything else. The public copy is a
+storage copy of the checked file. **HEIC** photos are decoded on the server and
+published as AVIF. **Video links:** a YouTube, Vimeo or Imgur video link alone on its
+line renders as a player; YouTube and Vimeo stay a card that loads nothing from the
+service until the reader presses it. Linked videos are not scanned.
 
 ## 7. Moderation and safety
 
@@ -151,6 +161,10 @@ Pipeline order is fixed inside `MediaManager`:
    violence, gore, sexual content, self-harm, and minors.
 3. General classifier for text only (OpenAI Moderation or Claude). **A general LLM API
    never receives an image.**
+
+A video goes to the first two by a short-lived signed link, and each checks its frames.
+A provider with no video scan fails the upload rather than let it through. A HEIC photo
+goes as a JPEG of the same pixels.
 
 `ModerationPolicyEngine` maps results to `media_assets.scan_status`:
 
@@ -264,7 +278,7 @@ code of conduct and `/about` are phase 1 pages.
 **Phase 1** — everything in sections 3 through 13 except where marked phase 2, plus the
 agent door in section 17 (tokens and post tools after posts land, upload tools after the
 scan pipeline lands).
-**Phase 2** — video upload (storage choice D4b, research favors R2), email
+**Phase 2** — video upload (D4b: Supabase Storage, browser conversion), email
 notifications, block and mute per member, full-text search, post revisions, presence.
 Plus the social layer (D20): follow an author, follow a tag, a "Following" feed beside
 "Everything" (shown only with two or more authors), `post.published` to followers,
@@ -284,7 +298,6 @@ service. Realtime features in phase 1 beyond the notification bell.
 
 - **D17b** — Josh applies to Shield by Project Arachnid. Until approved, the fake hash
   provider runs and the admin checklist shows "hash matching: not yet active" in red.
-- **D4b** — phase 2 video storage. Research done, decision parked.
 - **Launch checklist** — domain and trademark check for the name Porchlight.
 
 ## 17. Agents (D22)

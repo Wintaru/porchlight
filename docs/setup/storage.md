@@ -12,13 +12,17 @@ stack `supabase start` already runs.
   pipeline and #11's approval queue clear it. `MediaAssetAccessor`'s own RLS policies
   let a member read their own row's metadata, never a locked one, and never the object
   itself directly (SPEC.md §7).
-- **`public-media`** — public. Where #10/#11 later copy an approved, re-encoded file.
-  This issue creates the bucket but never writes to it: nothing #9 builds gets far
-  enough in the pipeline to publish, since scanning (#10) does not exist yet.
+- **`public-media`** — public. Where an approved file's public copy goes: a re-encoded
+  image, a video copied as it is, or any other file as a download.
 
 Both are created by `supabase/migrations/20260912215700_storage_buckets.sql`, which
 runs the same way every other migration does (`supabase db reset` locally, or the
-platform's own migration step in production). There is no dashboard step.
+platform's own migration step in production). `20260927070000_video_uploads.sql` sets
+each bucket's limit to 500 MiB for video.
+
+**Video needs the Pro plan.** The free plan takes files of 50 MB at most and 1 GB in
+total. On Pro, open Storage, Settings in the dashboard and set "Upload file size limit"
+to at least 500 MB: that project-wide limit applies before the bucket's own.
 
 ## What you do not need for local work
 
@@ -36,13 +40,15 @@ Both live in `site_config`, not in `.env.example`: they are admin-editable data,
 deployment secrets.
 
 - `attachment_allowlist` — the file extensions an upload may claim. Default set:
-  png, jpeg, gif, webp, avif, pdf, docx, xlsx, pptx, odt, ods, odp, txt, md, csv, stl,
-  gpx (D16). An admin can narrow or widen this list once #12's settings page exists,
+  png, jpeg, gif, webp, avif, heic, mp4, pdf, docx, xlsx, pptx, odt, ods, odp, txt, md,
+  csv, stl, gpx (D16, D4b). An admin can narrow or widen this list once #12's settings page exists,
   but only to extensions the server already knows the magic bytes and kind for
   (`Common/AttachmentTypeCatalog.ts`) — adding a wholly new file type needs a code
   change, not a config edit.
-- `attachment_quota_by_trust` — per-file and per-account byte caps, one pair per trust
-  level (probation, trusted). An admin has no quota (D16).
+- `attachment_quota_by_trust` — per-file, per-account and per-video byte caps for each
+  trust level (probation, trusted). By default probation uploads no video, and a
+  trusted member uploads videos up to 250 MiB in an account of 2 GiB. An admin has no
+  quota (D16).
 - `anonymous_upload_cap` — the D15 fixed cap for a visitor's own upload: 3 files, 2 MB
   each. Not trust-level based, since an anonymous author has no trust level.
 
@@ -66,8 +72,36 @@ default" rule `site_config.posting` and `site_config.comments` already follow.
    own — so a PDF downloads instead of rendering inline, from the storage origin, never
    the site origin (SPEC.md §6).
 
-## Not built here
+## Photos from an iPhone (HEIC)
 
-Scanning (#10), the moderation queue's "approve" action moving a file into the public
-bucket (#11), and video (#21) are separate issues. A file this issue creates stays in
-quarantine, `scan_status = 'pending'`, until one of those exists.
+An iPhone saves photos as HEIC, which few browsers show. Safari usually converts a photo
+to JPEG as it uploads it, but a HEIC file still arrives from a Mac, a file app or some
+Android phones. The server decodes it with `heic-decode` (libheif as WebAssembly: the
+standard `sharp` build leaves HEIC out for patent reasons) and publishes an AVIF copy.
+The scanners get a JPEG of the same pixels. The quarantine keeps the HEIC file. HEVC
+patents cover the decoder; a self-hoster in a strict jurisdiction can untick `heic` in
+the allowlist.
+
+## Video (D4b)
+
+The server never converts video. The editor converts it in the member's browser first
+(Mediabunny, with the browser's own video hardware): H.264 MP4 of at most 1080p with
+AAC sound, the movie box first, and no metadata such as a location. Then it uploads.
+
+`FinalizeUploadHandler` never reads a video whole. It reads the first 64 KiB (the type
+and where the movie box is), then the movie box, and refuses a file with metadata, a
+codec other than H.264 and AAC, or its movie box after the media
+(`video-not-prepared`). Only then does it hash the whole file as a stream and give the
+scanners a signed link. The public copy is a storage copy of the checked file.
+
+An agent that uploads a video through `request_upload` must send a file in that same
+shape, with the `video/mp4` type.
+
+## Video links
+
+A YouTube, Vimeo or Imgur video link alone on its line renders as a player. YouTube and
+Vimeo show a card first, and the page asks the service for nothing until the reader
+presses it; then it loads `youtube-nocookie.com` or Vimeo with "do not track". An Imgur
+video plays in the browser's own player. A link inside a sentence stays a link. The
+site does not scan a linked video: it stays on that service, under its rules. A post
+saved before this change shows the card after **Re-render** on `/admin`.
