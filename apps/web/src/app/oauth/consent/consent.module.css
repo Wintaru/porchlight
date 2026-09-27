@@ -1,0 +1,25 @@
+/* The consent page (D25): the settings page's scope list and muted note, and the two
+   answers side by side. */
+.muted {
+  color: var(--muted);
+}
+
+.scopes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.scopes legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

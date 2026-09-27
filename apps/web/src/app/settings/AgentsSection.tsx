@@ -56,7 +56,8 @@ export async function AgentsSection({
       <h2 id="agents-heading">Agents</h2>
       <p>
         A personal token lets your own writing agent draft posts here as you. Drafts wait
-        for you in the editor unless you also grant publishing.
+        for you in the editor unless you also grant publishing. An app you connect, such
+        as a claude.ai connector, is listed here too.
       </p>
       {revoked && (
         <Toast message="Token revoked." param="agentRevoked" testId="agent-status" />
@@ -82,6 +83,11 @@ export async function AgentsSection({
             <li key={token.id} className={styles.token} data-testid="token-row">
               <span>
                 <strong data-testid="token-name">{token.name}</strong>{" "}
+                {token.oauthClientId !== null && (
+                  <span className={styles.muted} data-testid="token-connected-app">
+                    (connected app){" "}
+                  </span>
+                )}
                 <span className={styles.muted}>
                   · {token.scopes.join(", ")} · {describe(token, now)}
                 </span>
@@ -89,6 +95,13 @@ export async function AgentsSection({
               {isAgentTokenLive(token, now) && (
                 <form action={revokeAgentToken}>
                   <input type="hidden" name="tokenId" value={token.id} />
+                  {token.oauthClientId !== null && (
+                    <input
+                      type="hidden"
+                      name="oauthClientId"
+                      value={token.oauthClientId}
+                    />
+                  )}
                   <button
                     type="submit"
                     className="pill-button"

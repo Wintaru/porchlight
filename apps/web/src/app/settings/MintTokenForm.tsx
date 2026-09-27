@@ -3,16 +3,10 @@
 import type { AgentScope } from "@porchlight/core";
 import { useActionState } from "react";
 
+import { AGENT_SCOPE_TEXT } from "@/lib/agent-scopes";
 import { EXPIRY_CHOICES, type ExpiryChoice } from "./parse-agent-token-form";
 import { type MintState, mintAgentToken } from "./agent-actions";
 import styles from "./settings.module.css";
-
-const SCOPE_TEXT: Readonly<Record<AgentScope, string>> = {
-  "posts:draft": "Write drafts (you publish from the editor)",
-  "posts:publish": "Publish without you",
-  "media:upload": "Upload images and files",
-  "voice:write": "Change your voice guide",
-};
 
 const EXPIRY_TEXT: Readonly<Record<ExpiryChoice, string>> = {
   never: "Never",
@@ -81,7 +75,7 @@ export function MintTokenForm({ scopes }: MintTokenFormProps) {
               defaultChecked={scope === "posts:draft"}
               disabled={scope === "posts:draft"}
             />
-            {SCOPE_TEXT[scope]}
+            {AGENT_SCOPE_TEXT[scope]}
           </label>
         ))}
       </fieldset>

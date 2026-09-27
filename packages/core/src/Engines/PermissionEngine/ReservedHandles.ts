@@ -35,6 +35,8 @@ export const RESERVED_HANDLES: ReadonlySet<string> = new Set([
   "email",
   // Invite links (#25): /invite/<token>.
   "invite",
+  // The OAuth consent page for connectors such as claude.ai's (#79, D25).
+  "oauth",
   // Where the proxy sends an erased author's pages (D11); a 404 when opened directly.
   "erased-author",
   // Common guesses that would confuse a reader even before a route exists.

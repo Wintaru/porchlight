@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
   // RFC 9728's well-known path for the MCP door's metadata (#79, D25). The route lives
   // under /api because a folder whose name starts with a dot is skipped by the
   // TypeScript and lint globs, so a route there would go unchecked.
+  // The OAuth consent page (#79) must never render inside another site's frame, where a
+  // hidden overlay could trick a member into pressing Allow.
+  headers: () =>
+    Promise.resolve([
+      {
+        source: "/oauth/consent",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
+    ]),
   rewrites: () =>
     Promise.resolve([
       {

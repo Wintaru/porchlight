@@ -14,6 +14,7 @@ import {
 } from "@porchlight/core";
 import { redirect } from "next/navigation";
 
+import { withdrawOAuthConsent } from "@/auth/oauth-consent";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
@@ -90,6 +91,14 @@ export async function revokeAgentToken(formData: FormData): Promise<void> {
     new RevokeAgentTokenRequest(actor, tokenId),
   );
   if (response instanceof TokenRevokedResponse) {
+    // A connected app's grant (D25): withdraw the consent at Auth too, or Auth would
+    // approve the app again without asking and its tokens would meet a revoked grant.
+    // The id only ever reaches the member's own consents at Auth, so a tampered one
+    // can do no harm.
+    const oauthClientId = formData.get("oauthClientId");
+    if (typeof oauthClientId === "string" && isEntityId(oauthClientId)) {
+      await withdrawOAuthConsent(oauthClientId);
+    }
     redirect("/settings?agentRevoked=1");
   }
   if (response instanceof NoSuchTokenResponse) {

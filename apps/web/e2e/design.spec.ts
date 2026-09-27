@@ -59,6 +59,9 @@ const PAGES: readonly PageCase[] = [
   { path: "/write", as: THEO },
   { path: "/settings", as: THEO },
   { path: "/settings/erase", as: THEO },
+  // The OAuth consent page (#79) with an authorization Auth does not know: the live
+  // form needs a registered client, so mcp-oauth.spec.ts runs axe on that one.
+  { path: "/oauth/consent?authorization_id=notreal", as: THEO },
   { path: "/mod/queue", as: MIRA },
   { path: "/mod/queue", as: LAMPLIGHTER },
   { path: "/mod/reports", as: MIRA },
