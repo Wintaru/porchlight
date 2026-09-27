@@ -30,7 +30,7 @@ will accept them once they are built.
    `/robots.txt`. Open `https://<your site>/robots.txt`, confirm the line is there, then
    start the check in the dashboard. The token is public once served, so it is not a secret.
 
-Porchlight calls `POST https://shield.projectarachnid.ca/v1/media/` with the image
+Porchlight calls `POST https://shield.projectarachnid.com/v1/media/` with the image
 bytes, the same call as the official SDK's `scanMediaFromBytes`
 (https://github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts). Any
 classification other than `no-known-match` counts as a match.

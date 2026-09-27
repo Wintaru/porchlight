@@ -8,7 +8,7 @@ import { HashMatchResultResponse } from "../Responses/HashMatchResultResponse";
 // (github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts, `scanMediaFromBytes`):
 // POST the raw bytes to /v1/media/ with the image's Content-Type and HTTP Basic auth,
 // and read `classification` from the answer.
-const SHIELD_MEDIA_URL = "https://shield.projectarachnid.ca/v1/media/";
+const SHIELD_MEDIA_URL = "https://shield.projectarachnid.com/v1/media/";
 
 // The one classification that means "no match". Any other value is a match, the same
 // as in the SDK: a classification Shield adds later holds the item rather

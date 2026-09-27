@@ -30,7 +30,7 @@ describe("ArachnidShieldMatchImageHashHandler", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://shield.projectarachnid.ca/v1/media/");
+    expect(url).toBe("https://shield.projectarachnid.com/v1/media/");
     expect(init.method).toBe("POST");
     expect(init.headers).toMatchObject({
       authorization: `Basic ${btoa("porch-user:s3cret")}`,
