@@ -22,7 +22,11 @@ export class FakeStoreCommentBodyHtmlHandler implements IHandler<
       );
     }
     const comment = this.state.comments.get(request.id);
-    if (comment !== undefined && comment.status !== "tombstone") {
+    if (
+      comment !== undefined &&
+      comment.status !== "tombstone" &&
+      comment.bodyMd === request.renderedFrom
+    ) {
       this.state.comments.set(comment.id, { ...comment, bodyHtml: request.bodyHtml });
     }
     return Promise.resolve(new CommentBodyHtmlStoredResponse(request.correlationId));

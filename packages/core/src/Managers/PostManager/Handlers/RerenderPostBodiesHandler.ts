@@ -66,7 +66,7 @@ export class RerenderPostBodiesHandler implements IHandler<
         }
         if (html !== body.bodyHtml) {
           const stored = await this.posts.store(
-            new StorePostBodyHtmlRequest(body.id, html, context),
+            new StorePostBodyHtmlRequest(body.id, html, body.bodyMd, context),
           );
           if (!(stored instanceof PostBodyHtmlStoredResponse)) {
             return unavailable(correlationId, stored, "posts.store");

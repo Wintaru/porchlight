@@ -66,7 +66,7 @@ export class RerenderCommentBodiesHandler implements IHandler<
         }
         if (html !== body.bodyHtml) {
           const stored = await this.comments.store(
-            new StoreCommentBodyHtmlRequest(body.id, html, context),
+            new StoreCommentBodyHtmlRequest(body.id, html, body.bodyMd, context),
           );
           if (!(stored instanceof CommentBodyHtmlStoredResponse)) {
             return unavailable(correlationId, stored, "comments.store");

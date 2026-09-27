@@ -17,7 +17,8 @@ export class SupabaseStoreCommentBodyHtmlHandler implements IHandler<
     const { error } = await this.db
       .from("comments")
       .update({ body_html: request.bodyHtml })
-      .eq("id", request.id);
+      .eq("id", request.id)
+      .eq("body_md", request.renderedFrom);
     if (error) {
       return new CommentAccessFailedResponse(request.correlationId, error.message);
     }

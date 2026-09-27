@@ -193,4 +193,5 @@ and Settings says so. Nothing else breaks.
 Posts and comments keep the HTML made when they were saved. After an update that
 changes the render, such as code colours (issue #77), open `/admin`, go to
 Maintenance, and press **Re-render posts and comments** once. It is safe to press
-again: a body that is already current is left as it is.
+again: a body that is already current is left as it is. A post it changes gets a new
+"last updated" time, which the sitemap shows.

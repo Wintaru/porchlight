@@ -19,7 +19,7 @@ export class FakeStorePostBodyHtmlHandler implements IHandler<
       );
     }
     const post = this.state.posts.get(request.id);
-    if (post !== undefined) {
+    if (post?.bodyMd === request.renderedFrom) {
       this.state.posts.set(post.id, { ...post, bodyHtml: request.bodyHtml });
     }
     return Promise.resolve(new PostBodyHtmlStoredResponse(request.correlationId));

@@ -157,9 +157,11 @@ describe("RenderMarkdownHandler highlights code that names its language (#77)", 
     expect(await render("```\nconst x = 1;\n```")).toBe(
       "<pre><code>const x = 1;\n</code></pre>",
     );
-    const unknown = await render("```klingon\nqapla'\n```");
-    expect(unknown).not.toContain("<span");
-    expect(unknown).toContain("qapla'");
+    // rehype-highlight names the block `hljs` before it finds the language unknown;
+    // with no `.hljs` style that reads the same as before.
+    expect(await render("```klingon\nqapla'\n```")).toBe(
+      '<pre><code class="hljs language-klingon">qapla\'\n</code></pre>',
+    );
   });
 
   test("HTML in a highlighted block is still escaped", async () => {
