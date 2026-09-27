@@ -15,7 +15,7 @@ export class FakeLoadAnnouncedPostsHandler implements IHandler<
   handle(
     request: LoadAnnouncedPostsRequest,
   ): Promise<AnnouncedPostsLoadedResponse | PostAccessFailedResponse> {
-    const { since, until, limit, correlationId } = request;
+    const { since, until, authorId: scope, limit, correlationId } = request;
     if (this.state.failing) {
       return Promise.resolve(
         new PostAccessFailedResponse(correlationId, "POST_FAKE_RESULT=fail"),
@@ -33,6 +33,9 @@ export class FakeLoadAnnouncedPostsHandler implements IHandler<
         continue;
       }
       const authorId = post.author.kind === "member" ? post.author.profileId : null;
+      if (scope !== null && authorId !== scope) {
+        continue;
+      }
       posts.push({
         id: post.id,
         title: post.title,

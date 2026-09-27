@@ -14,13 +14,11 @@ import { ClaimSubscriberEmailsRequest } from "../../../Accessors/SubscriberAcces
 import { ReleaseSubscriberEmailRequest } from "../../../Accessors/SubscriberAccessor/Requests/ReleaseSubscriberEmailRequest";
 import { SubscriberEmailReleasedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberEmailReleasedResponse";
 import { SubscriberEmailsClaimedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberEmailsClaimedResponse";
-import type { AnnouncedPost } from "../../../Common/AnnouncedPost";
 import type { EmailMessage } from "../../../Common/EmailMessage";
 import type { EmailSite } from "../../../Common/EmailSite";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
 import type { ResponseBase } from "../../../Common/ResponseBase";
-import type { SubscriberEmailClaim } from "../../../Common/SubscriberEmailClaim";
 import type { IEmailComposeEngine } from "../../../Engines/EmailComposeEngine/IEmailComposeEngine";
 import { ComposeMemberEmailRequest } from "../../../Engines/EmailComposeEngine/Requests/ComposeMemberEmailRequest";
 import { ComposeSubscriberDigestRequest } from "../../../Engines/EmailComposeEngine/Requests/ComposeSubscriberDigestRequest";
@@ -43,9 +41,9 @@ const SETTLE_MS = 2 * 60 * 1000;
 // waits for the next run, a few minutes later.
 const BATCH = 100;
 const MAX_BATCHES = 5;
-// The most posts one batch of reader emails can list. A site that announces more than
-// this between two runs of a daily digest sends the oldest ones.
-const MAX_POSTS = 200;
+// The most posts one reader email lists, oldest first. A window with more ends with a
+// link to the site for the rest.
+const POSTS_PER_EMAIL = 20;
 
 // One batch's outcome: how many went out, or the failure that stops the run. A failed
 // send has already put its windows back.
@@ -164,26 +162,44 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
         }
       }
     };
-    // One read for the whole batch: the posts from the earliest window's start.
-    const since = new Date(
-      Math.min(...claims.map((claim) => claim.windowStart.getTime())),
-    );
-    const loaded = await this.posts.load(
-      new LoadAnnouncedPostsRequest(since, until, MAX_POSTS, context),
-    );
-    if (!(loaded instanceof AnnouncedPostsLoadedResponse)) {
-      await release();
-      return failure(context, loaded, "posts.load");
-    }
+    // One read per scope and window, not one for the whole batch: a reader of a quiet
+    // author can have a window months long, and a site-wide read from its start would
+    // crowd out every other reader's posts. Readers who share a scope and a window
+    // share the read.
+    const loads = new Map<string, Promise<ResponseBase>>();
     const messages: EmailMessage[] = [];
     for (const claim of claims) {
-      const posts = postsFor(claim, loaded.posts);
-      // The claim saw a post, but it is past MAX_POSTS: nothing to list this time.
-      if (posts.length === 0) {
+      const key = `${claim.authorId ?? "site"}|${claim.windowStart.toISOString()}`;
+      let load = loads.get(key);
+      if (load === undefined) {
+        load = this.posts.load(
+          new LoadAnnouncedPostsRequest(
+            claim.windowStart,
+            claim.windowEnd,
+            claim.authorId,
+            POSTS_PER_EMAIL + 1,
+            context,
+          ),
+        );
+        loads.set(key, load);
+      }
+      const loaded = await load;
+      if (!(loaded instanceof AnnouncedPostsLoadedResponse)) {
+        await release();
+        return failure(context, loaded, "posts.load");
+      }
+      // The claim saw a post; one unpublished since leaves nothing to say.
+      if (loaded.posts.length === 0) {
         continue;
       }
       const composed = await this.compose.transform(
-        new ComposeSubscriberDigestRequest(claim, posts, site, context),
+        new ComposeSubscriberDigestRequest(
+          claim,
+          loaded.posts.slice(0, POSTS_PER_EMAIL),
+          loaded.posts.length > POSTS_PER_EMAIL,
+          site,
+          context,
+        ),
       );
       if (!(composed instanceof EmailComposedResponse)) {
         await release();
@@ -214,18 +230,6 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
     }
     return { kind: "sent", count: delivered.count };
   }
-}
-
-function postsFor(
-  claim: SubscriberEmailClaim,
-  posts: readonly AnnouncedPost[],
-): AnnouncedPost[] {
-  return posts.filter(
-    (post) =>
-      post.announcedAt > claim.windowStart &&
-      post.announcedAt <= claim.windowEnd &&
-      (claim.authorId === null || post.authorId === claim.authorId),
-  );
 }
 
 function failure(context: Ctx, response: ResponseBase, method: string): BatchOutcome {

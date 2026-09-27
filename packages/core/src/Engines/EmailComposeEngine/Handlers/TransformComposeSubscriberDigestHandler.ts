@@ -26,7 +26,7 @@ export class TransformComposeSubscriberDigestHandler implements IHandler<
   EmailComposedResponse
 > {
   handle(request: ComposeSubscriberDigestRequest): Promise<EmailComposedResponse> {
-    const { claim, posts, site, correlationId } = request;
+    const { claim, posts, more, site, correlationId } = request;
     const author = claim.authorId === null ? null : authorLabelOf(posts[0]);
     const subject =
       author === null ? `New on ${site.name}` : `New from ${author} on ${site.name}`;
@@ -34,6 +34,16 @@ export class TransformComposeSubscriberDigestHandler implements IHandler<
       { text: post.title, href: postUrl(site, post) },
       ...(post.summary === null || post.summary === "" ? [] : [{ text: post.summary }]),
     ]);
+    if (more) {
+      const firstHandle = posts[0]?.authorHandle ?? null;
+      blocks.push({
+        text: `More new posts on ${site.name}`,
+        href:
+          claim.authorId === null || firstHandle === null
+            ? site.url
+            : `${site.url}/@${firstHandle}`,
+      });
+    }
     const links = unsubscribeLinks(site, claim.unsubscribeToken);
     const scope = author === null ? site.name : `${author} on ${site.name}`;
     const { text, html } = renderEmail(blocks, [

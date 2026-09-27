@@ -139,6 +139,27 @@ describe("SendDigestsHandler", () => {
     expect(readers.due).toEqual([]);
   });
 
+  test("a reader with a months-old window does not crowd out the others", async () => {
+    const { readers, posts, handler } = wire();
+    // 250 posts from June long before today's windows, then one new post each.
+    for (let i = 0; i < 250; i += 1) {
+      addPost(posts, `old${String(i)}`, "june", new Date(Date.UTC(2026, 2, 1, 0, i)));
+    }
+    addPost(posts, "new-june", "june", new Date("2026-09-27T10:30:00.000Z"));
+    addPost(posts, "new-theo", "theo", new Date("2026-09-27T10:40:00.000Z"));
+    readers.due = [
+      {
+        ...reader("quiet-theo", "theo"),
+        windowStart: new Date("2026-01-01T00:00:00.000Z"),
+      },
+      reader("site", null),
+    ];
+
+    const sent = await handler.handle(new SendDigestsRequest(SITE, { timestamp: AT }));
+
+    expect(sent).toEqual(new DigestsSentResponse(sent.correlationId, 2, 0));
+  });
+
   test("works through more than one batch", async () => {
     const { state, handler } = wire();
     state.due = Array.from({ length: 150 }, (_, i) => claim(`u${String(i)}`));

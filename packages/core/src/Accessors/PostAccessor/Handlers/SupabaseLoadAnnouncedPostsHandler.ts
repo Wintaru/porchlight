@@ -14,8 +14,8 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
   async handle(
     request: LoadAnnouncedPostsRequest,
   ): Promise<AnnouncedPostsLoadedResponse | PostAccessFailedResponse> {
-    const { since, until, limit, correlationId } = request;
-    const { data, error } = await this.db
+    const { since, until, authorId, limit, correlationId } = request;
+    const query = this.db
       .from("posts")
       .select(
         "id, title, summary, slug, author_id, announced_at, author:profiles!posts_author_id_fkey(handle, display_name)",
@@ -23,7 +23,10 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
       .eq("status", "published")
       .eq("visibility", "public")
       .gt("announced_at", since.toISOString())
-      .lte("announced_at", until.toISOString())
+      .lte("announced_at", until.toISOString());
+    const { data, error } = await (
+      authorId === null ? query : query.eq("author_id", authorId)
+    )
       .order("announced_at", { ascending: true })
       .limit(limit);
     if (error) {

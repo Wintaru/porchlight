@@ -33,10 +33,14 @@ function post(overrides: Partial<AnnouncedPost>): AnnouncedPost {
 }
 
 describe("TransformComposeSubscriberDigestHandler", () => {
-  const compose = async (claim: SubscriberEmailClaim, posts: readonly AnnouncedPost[]) =>
+  const compose = async (
+    claim: SubscriberEmailClaim,
+    posts: readonly AnnouncedPost[],
+    more = false,
+  ) =>
     (
       await new TransformComposeSubscriberDigestHandler().handle(
-        new ComposeSubscriberDigestRequest(claim, posts, SITE),
+        new ComposeSubscriberDigestRequest(claim, posts, more, SITE),
       )
     ).message;
 
@@ -54,6 +58,13 @@ describe("TransformComposeSubscriberDigestHandler", () => {
       "https://porch.test/api/email/unsubscribe?token=u1",
     );
     expect(message.text).toContain("https://porch.test/email/unsubscribe?token=u1");
+  });
+
+  test("a window with more posts than one email lists points to the rest", async () => {
+    const site = await compose(CLAIM, [post({})], true);
+    const author = await compose({ ...CLAIM, authorId: "a1" }, [post({})], true);
+    expect(site.text).toContain("More new posts on Porch\nhttps://porch.test\n");
+    expect(author.text).toContain("More new posts on Porch\nhttps://porch.test/@theo");
   });
 
   test("an author subscription names the author", async () => {
