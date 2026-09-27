@@ -11,7 +11,10 @@ their own guide, [email-sign-in.md](email-sign-in.md).
 - **The moderation queue.** An admin or moderator can ask for an email as soon as an
   item waits for review.
 - **Reader subscriptions.** A reader with no account subscribes by email to the whole
-  site or to one author, and gets the new posts on the schedule they picked.
+  site (the form on the home page) or to one author (the form on their page). The
+  first email asks them to confirm, and nothing else is sent until they do. After
+  that, new public posts arrive on the schedule they picked. The form uses Turnstile
+  ([turnstile.md](turnstile.md)) and allows five tries an hour for one address.
 
 There is no email for every event. D14 rejected that as too noisy.
 
@@ -55,14 +58,23 @@ That is a missing feature, not an unsafe fake, so it shows no red row.
 
 ## The sweep
 
-Email leaves the site in one place: `/api/email/digest`. A scheduler calls it every few
-minutes with the header `Authorization: Bearer <CRON_SECRET>`, and each call sends what
-is due. An empty `CRON_SECRET` turns the route off. [deploy.md](../deploy.md), step 10,
-sets up the schedule. Locally, run it by hand:
+Digests and reader emails leave the site from one route, `/api/email/digest`. The
+subscription confirmation is the only email sent at once, from the subscribe form. A
+scheduler calls the route every few minutes with the header
+`Authorization: Bearer <CRON_SECRET>`, and each call sends what is due. An empty
+`CRON_SECRET` turns the route off. [deploy.md](../deploy.md), step 10, sets up the
+schedule. Locally, run it by hand:
 
 ```sh
 curl -X POST -H "Authorization: Bearer local-cron-secret" http://localhost:3000/api/email/digest
 ```
 
 A digest is due when its hour or day has passed since the last one and the bell holds
-something unread from that time. The queue email is due when a new item waits.
+something unread from that time. The queue email is due when a new item waits. A
+reader's email is due when its hour or day has passed and a post they follow went out.
+The sweep also deletes subscriptions nobody confirmed within seven days.
+
+Every digest and reader email has a one-click unsubscribe header and an "unsubscribe"
+link. The confirmation email has neither, since there is nothing to stop yet. The link
+opens a page with a button, so a mail scanner that opens links cannot unsubscribe
+anyone.

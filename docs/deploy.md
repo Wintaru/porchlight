@@ -162,6 +162,7 @@ and Settings says so. Nothing else breaks.
      select net.http_post(
        url := 'https://blog.example.com/api/email/digest',
        body := '{}'::jsonb,
+       timeout_milliseconds := 60000,
        headers := jsonb_build_object(
          'Authorization',
          'Bearer ' || (
@@ -179,5 +180,6 @@ and Settings says so. Nothing else breaks.
    own, but the Hobby plan runs a job at most once a day, which is too slow for hourly
    digests.
 4. Check it. Turn on an hourly digest in Settings. In the Supabase SQL editor,
-   `select * from cron.job_run_details order by start_time desc limit 5;` shows each
-   run. The Resend dashboard shows each email.
+   `select status_code, content from net._http_response order by created desc limit 5;`
+   shows what the route answered: `200` and a count of emails sent. The Resend dashboard
+   shows each email.
