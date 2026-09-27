@@ -1,5 +1,6 @@
 import type { DbClient } from "@porchlight/db";
 
+import { notByAuthors } from "./member-blocks";
 import { type PostCard, POST_CARD_COLUMNS, PAGE_SIZE } from "./post-card";
 
 export interface TagPage {
@@ -65,16 +66,20 @@ export async function loadTag(db: DbClient, slug: string): Promise<TagPage | und
 // aliased embed of post_tags that acts as a join: the filter on `matched.tag_id` keeps
 // only posts that carry the tag, while the card's own `post_tags` embed still lists
 // every tag on each post.
+// A signed-in viewer's muted and blocked members are left out (#23).
 export async function loadTagPosts(
   db: DbClient,
   tagId: string,
+  hiddenAuthors: Iterable<string> = [],
 ): Promise<readonly PostCard[]> {
-  const { data, error } = await db
+  const query = db
     .from("posts")
     .select(`${POST_CARD_COLUMNS}, matched:post_tags!inner(tag_id)`)
     .eq("matched.tag_id", tagId)
     .eq("status", "published")
-    .eq("visibility", "public")
+    .eq("visibility", "public");
+  const hidden = notByAuthors(hiddenAuthors);
+  const { data, error } = await (hidden === undefined ? query : query.or(hidden))
     .order("published_at", { ascending: false })
     .limit(PAGE_SIZE);
   if (error) {

@@ -8,7 +8,9 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { classNames } from "@/lib/class-names";
 import { saveProfile } from "./actions";
+import { blockTextFor } from "@/components/member-block/block-messages";
 import { AnonymousClaimCard } from "./AnonymousClaimCard";
+import { MutedMembersSection } from "./MutedMembersSection";
 import { AgentsSection } from "./AgentsSection";
 import styles from "./settings.module.css";
 import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "./parse-profile-form";
@@ -20,6 +22,7 @@ interface SettingsPageProps {
     readonly agentRevoked?: string;
     readonly agentError?: string;
     readonly voiceSaved?: string;
+    readonly block?: string;
   }>;
 }
 
@@ -47,14 +50,16 @@ const TRUST_TEXT = {
 } as const;
 
 // The Settings board: a side menu and one card per section — profile, agents (when
-// the site's `agents` key allows them, D22), anonymous posts to claim, export, erase.
+// the site's `agents` key allows them, D22), anonymous posts to claim, muted and
+// blocked members (#23), export, erase.
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     redirect(signInPathFor("/settings"));
   }
   const { profile } = actor;
-  const { saved, error, agentRevoked, agentError, voiceSaved } = await searchParams;
+  const { saved, error, agentRevoked, agentError, voiceSaved, block } =
+    await searchParams;
   const errorText =
     error === undefined ? undefined : (ERROR_TEXT[error] ?? ERROR_TEXT.unavailable);
   const agentErrorText =
@@ -67,6 +72,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     { id: "profile", label: "Profile" },
     ...(agentsOpen ? [{ id: "agents", label: "Agents" }] : []),
     { id: "anonymous", label: "Anonymous posts" },
+    { id: "muted", label: "Muted and blocked" },
     { id: "data", label: "Your data" },
     { id: "erase", label: "Erase everything" },
   ];
@@ -146,6 +152,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           />
         )}
         <AnonymousClaimCard handle={profile.handle} />
+        <MutedMembersSection profileId={profile.id} blockText={blockTextFor(block)} />
         <section id="data" className={styles.card} aria-labelledby="data-heading">
           <h2 id="data-heading">Your data</h2>
           <p>Everything you have written is yours. Take a copy any time.</p>
@@ -155,8 +162,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </Link>
           </div>
           <p className="form-hint">
-            Includes your posts, comments, reactions, uploads, voice guide and the names
-            of your agent tokens. Ready in a minute. No waiting period, no support ticket.
+            Includes your posts, comments, reactions, uploads, voice guide, the names of
+            your agent tokens, and who you muted or blocked. Ready in a minute. No waiting
+            period, no support ticket.
           </p>
         </section>
         <section

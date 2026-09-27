@@ -16,6 +16,9 @@ import { ReactionBar } from "./ReactionBar";
 export interface CommentViewer {
   readonly profileId: string | undefined;
   readonly isAdmin: boolean;
+  // Members the viewer muted or blocked (#23): their comments show as a placeholder,
+  // with no body, so the replies under them keep their place.
+  readonly hiddenAuthorIds: ReadonlySet<string>;
   // Who may reply here, and through which form: a member's or a visitor's (#33).
   readonly replyAs: "member" | "visitor" | null;
 }
@@ -85,6 +88,23 @@ function CommentRow({
           </p>
           <p className={classNames(styles.body, styles.tombstone)}>
             This comment was erased by its author.
+          </p>
+        </div>
+      </article>
+    );
+  }
+  if (comment.author_id !== null && viewer.hiddenAuthorIds.has(comment.author_id)) {
+    return (
+      <article
+        id={anchor}
+        className={styles.comment}
+        data-testid="comment-muted"
+        data-depth={comment.depth}
+      >
+        <span className={classNames("avatar", styles.emptyAvatar)} aria-hidden="true" />
+        <div className={styles.main}>
+          <p className={classNames(styles.body, styles.tombstone)}>
+            A comment from a member you muted or blocked.
           </p>
         </div>
       </article>

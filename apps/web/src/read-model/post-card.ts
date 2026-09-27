@@ -1,5 +1,7 @@
 import type { DbClient } from "@porchlight/db";
 
+import { notByAuthors } from "./member-blocks";
+
 // The shape every list on the site shows for one post: the feed, an author's page, a
 // tag page. Names its columns (never `select *`, the grants are column lists) and the
 // three embeds: the author through the posts→profiles key, the tags through post_tags,
@@ -41,12 +43,16 @@ export const PAGE_SIZE = 20;
 // Every public list starts here: published, public, newest first (SPEC.md §5). RLS
 // already hides anything unpublished; `visibility` is the listing rule this module
 // applies on top, so an unlisted post is reachable by link and appears in no list.
-export function publicPostCards(db: DbClient) {
-  return db
+// `hiddenAuthors` is the viewer's mutes and blocks (#23), dropped at the source so a
+// page still holds PAGE_SIZE cards.
+export function publicPostCards(db: DbClient, hiddenAuthors: Iterable<string> = []) {
+  const query = db
     .from("posts")
     .select(POST_CARD_COLUMNS)
     .eq("status", "published")
-    .eq("visibility", "public")
+    .eq("visibility", "public");
+  const hidden = notByAuthors(hiddenAuthors);
+  return (hidden === undefined ? query : query.or(hidden))
     .order("published_at", { ascending: false })
     .limit(PAGE_SIZE);
 }

@@ -1,0 +1,64 @@
+import type { DbClient, Enums } from "@porchlight/db";
+
+import type { PostCardAuthor } from "./post-card";
+
+type MemberBlockLevel = Enums<"member_block_level">;
+
+// The viewer's own mutes and blocks (#23), by the other member's profile id. Read under
+// RLS, which returns only the viewer's own rows. A visitor has none and costs no query.
+export type ViewerBlocks = ReadonlyMap<string, MemberBlockLevel>;
+
+export const NO_BLOCKS: ViewerBlocks = new Map();
+
+export async function loadViewerBlocks(
+  db: DbClient,
+  viewerId: string | undefined,
+): Promise<ViewerBlocks> {
+  if (viewerId === undefined) {
+    return NO_BLOCKS;
+  }
+  const { data, error } = await db
+    .from("member_blocks")
+    .select("target_id, level")
+    .eq("member_id", viewerId);
+  if (error) {
+    throw new Error(`member blocks for ${viewerId}: ${error.message}`);
+  }
+  return new Map(data.map((row) => [row.target_id, row.level]));
+}
+
+// The PostgREST filter that drops posts by these authors from a list. Anonymous posts
+// have a null `author_id`, and `not.in` alone would drop them too (NULL NOT IN (…) is
+// not true), so the filter keeps a null author explicitly. Ids are profile uuids from
+// the viewer's own rows, never user text.
+export function notByAuthors(authorIds: Iterable<string>): string | undefined {
+  const ids = [...authorIds];
+  return ids.length === 0
+    ? undefined
+    : `author_id.is.null,author_id.not.in.(${ids.join(",")})`;
+}
+
+// The settings page's list: each muted or blocked member with the level, newest first.
+export interface BlockedMember {
+  readonly level: MemberBlockLevel;
+  readonly created_at: string;
+  readonly target_id: string;
+  readonly target: PostCardAuthor | null;
+}
+
+export async function loadBlockedMembers(
+  db: DbClient,
+  viewerId: string,
+): Promise<readonly BlockedMember[]> {
+  const { data, error } = await db
+    .from("member_blocks")
+    .select(
+      "level, created_at, target_id, target:profiles!member_blocks_target_id_fkey(handle, display_name, avatar_url)",
+    )
+    .eq("member_id", viewerId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(`blocked members for ${viewerId}: ${error.message}`);
+  }
+  return data;
+}

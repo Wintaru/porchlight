@@ -6,6 +6,8 @@ import { createSessionClient } from "@/auth/session-client";
 import { PostCardList } from "@/components/PostCardList";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
+import { getCurrentActor } from "@/lib/current-actor";
+import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
 interface TagPageProps {
@@ -36,13 +38,19 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 }
 
 // The tag page, /t/slug: the public posts under one tag, newest first. Unlisted posts
-// never appear (SPEC.md §5).
+// never appear (SPEC.md §5), and neither do the viewer's muted and blocked members'
+// posts (#23).
 export default async function TagPage({ params }: TagPageProps) {
   const tag = await getTag((await params).tag);
   if (tag === undefined) {
     notFound();
   }
-  const posts = await loadTagPosts(await createSessionClient(), tag.id);
+  const [db, actor] = await Promise.all([createSessionClient(), getCurrentActor()]);
+  const blocks = await loadViewerBlocks(
+    db,
+    actor.kind === "member" ? actor.profile.id : undefined,
+  );
+  const posts = await loadTagPosts(db, tag.id, blocks.keys());
   return (
     <main
       className="container"

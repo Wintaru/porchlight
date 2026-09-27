@@ -16,6 +16,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
+import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { loadPostPage, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
 import { savedTextFor } from "../../write/post-form-messages";
@@ -105,10 +106,11 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
     post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
   ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [formState, comments, reactions] = await Promise.all([
+  const [formState, comments, reactions, blocks] = await Promise.all([
     commentFormStateFor(actor, post.id),
     loadCommentsForPost(db, post.id),
     loadReactionsForPost(db, post.id, viewerId),
+    loadViewerBlocks(db, viewerId),
   ]);
 
   const url = `${SITE_URL}${returnTo}`;
@@ -158,6 +160,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         viewer={{
           profileId: viewerId,
           isAdmin: actor.kind === "member" && actor.profile.role === "admin",
+          hiddenAuthorIds: new Set(blocks.keys()),
         }}
         signInPath={signInPathFor(returnTo)}
         returnTo={returnTo}

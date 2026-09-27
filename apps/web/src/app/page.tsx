@@ -8,6 +8,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadFeed } from "@/read-model/feed";
+import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { loadTagCloud } from "@/read-model/tag";
 
 import styles from "./home.module.css";
@@ -49,8 +50,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     searchParams,
   ]);
   const db = await createSessionClient();
+  // The viewer's mutes and blocks first: the feed leaves those members out at the
+  // source (#23).
+  const blocks = await loadViewerBlocks(
+    db,
+    actor.kind === "member" ? actor.profile.id : undefined,
+  );
   const [posts, tags, mayWriteAnonymously] = await Promise.all([
-    loadFeed(db),
+    loadFeed(db, blocks.keys()),
     loadTagCloud(db),
     canPostAnonymously(actor),
   ]);
