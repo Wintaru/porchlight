@@ -136,6 +136,7 @@ function AuthorControls({
               <button type="submit">Unpublish</button>
             </form>
           )}
+          <Link href={`/write/${post.id}/history`}>History</Link>
           <Link
             href={`/write/${post.id}/delete?from=${encodeURIComponent(returnTo)}`}
             className={styles.dangerItem}

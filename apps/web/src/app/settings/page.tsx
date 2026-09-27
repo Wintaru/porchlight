@@ -162,9 +162,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </Link>
           </div>
           <p className="form-hint">
-            Includes your posts, comments, reactions, uploads, voice guide, the names of
-            your agent tokens, and who you muted or blocked. Ready in a minute. No waiting
-            period, no support ticket.
+            Includes your posts and their earlier versions, comments, reactions, uploads,
+            voice guide, the names of your agent tokens, and who you muted or blocked.
+            Ready in a minute. No waiting period, no support ticket.
           </p>
         </section>
         <section

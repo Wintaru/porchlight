@@ -78,7 +78,8 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
       )}
       {authorHandle !== undefined && (
         <p>
-          <Link href={`/@${authorHandle}/${post.slug}`}>View</Link>
+          <Link href={`/@${authorHandle}/${post.slug}`}>View</Link> ·{" "}
+          <Link href={`/write/${post.id}/history`}>History</Link>
         </p>
       )}
       {savedText !== undefined && (

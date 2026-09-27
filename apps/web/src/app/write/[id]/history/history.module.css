@@ -1,0 +1,58 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.when {
+  margin: 0;
+  font-size: 18px;
+}
+
+.current {
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.diff {
+  margin: 0;
+  padding: 12px 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.diff > span {
+  display: block;
+  padding: 0 12px;
+}
+
+.added {
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+}
+
+.removed {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--danger) 50%, transparent);
+}
+
+.fold {
+  color: var(--muted);
+  font-style: italic;
+}
