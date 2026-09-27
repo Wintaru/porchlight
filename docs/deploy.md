@@ -27,13 +27,15 @@ Guide: [`setup/supabase.md`](setup/supabase.md).
 
    Do not load `supabase/seed.sql` on a hosted project. It holds local test members.
 
-4. Open Integrations, Cron in the dashboard. Make sure the job `null-expired-raw-ips`
-   is there and active. The schema adds it. Once a day it clears raw addresses whose
-   retention window has closed (SPEC.md §7, issue #62). If the job is not there, the
-   migration `20260925170000_null_expired_raw_ips` did not apply: read the output of
-   `supabase db push`. On a self-hosted stack, pg_cron schedules jobs only in the
-   database that `cron.database_name` names (`postgres` by default), so run the schema
-   there.
+4. Open Integrations, Cron in the dashboard. Make sure the jobs `null-expired-raw-ips`
+   and `sweep-rate-limits` are there and active. The schema adds both, so there is
+   nothing to turn on. Once a day the first clears raw addresses whose retention window
+   has closed (SPEC.md §7, issue #62). Once an hour the second deletes rate-limit
+   counters older than two days (issue #43). If a job is not there, its migration
+   (`20260925170000_null_expired_raw_ips` or `20260927030000_sweep_rate_limits`) did
+   not apply: read the output of `supabase db push`. On a self-hosted stack, pg_cron
+   schedules jobs only in the database that `cron.database_name` names (`postgres` by
+   default), so run the schema there.
 
 5. Let GitHub apply later migrations. The `push-migrations` job in
    `.github/workflows/ci.yml` runs `supabase db push` after the `verify` job passes on
@@ -149,8 +151,9 @@ and Settings says so. Nothing else breaks.
    | `CRON_SECRET`    | A long random string, for example the output of `openssl rand -hex 32`. |
 
 3. Make a scheduler call the sweep every five minutes. Supabase can do it on any plan.
-   In the Supabase dashboard, open Database, then Extensions, and turn on `pg_cron` and
-   `pg_net`. Then run this in the SQL editor, with your secret and your site's address:
+   In the Supabase dashboard, open Database, then Extensions, and turn on `pg_net`.
+   `pg_cron` is on already (section 1, step 4). Then run this in the SQL editor, with your secret
+   and your site's address:
 
    ```sql
    select vault.create_secret('<CRON_SECRET>', 'porchlight_cron_secret');

@@ -677,3 +677,42 @@ describe("voice_guide_revisions (#32)", () => {
     expect(kept).toEqual([]);
   });
 });
+
+// Issue #43: rate-limit counters go once no window can count them.
+describe("sweep_rate_limits (#43)", () => {
+  test("removes rows older than two days and keeps the rest", async () => {
+    const left = await asService(async (tx) => {
+      await tx`
+        insert into public.rate_limits (subject, action, window_start, count) values
+          ('test:old', 'probe', now() - interval '49 hours', 1),
+          ('test:day', 'probe', now() - interval '47 hours', 1),
+          ('test:now', 'probe', date_trunc('hour', now()), 1)
+      `;
+      const [{ removed } = { removed: -1 }] = await tx<{ removed: number }[]>`
+        select public.sweep_rate_limits() as removed
+      `;
+      const rows = await tx<{ subject: string }[]>`
+        select subject from public.rate_limits where subject like 'test:%' order by subject
+      `;
+      return { removed, subjects: rows.map((row) => row.subject) };
+    });
+    expect(left.removed).toBeGreaterThanOrEqual(1);
+    expect(left.subjects).toEqual(["test:day", "test:now"]);
+  });
+
+  test("is scheduled hourly, and browser roles cannot run it", async () => {
+    const [job] = await sql<{ schedule: string; command: string }[]>`
+      select schedule, command from cron.job where jobname = 'sweep-rate-limits'
+    `;
+    expect(job).toEqual({
+      schedule: "23 * * * *",
+      command: "select public.sweep_rate_limits()",
+    });
+    for (const role of ["anon", "authenticated"] as const) {
+      const code = await errorCodeOf(() =>
+        asRole(sql, role, (tx) => tx`select public.sweep_rate_limits()`),
+      );
+      expect({ role, code }).toEqual({ role, code: INSUFFICIENT_PRIVILEGE });
+    }
+  });
+});

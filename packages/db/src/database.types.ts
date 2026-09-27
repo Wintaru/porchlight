@@ -1364,6 +1364,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      sweep_rate_limits: { Args: never; Returns: number }
       viewer_hidden_authors: { Args: never; Returns: string[] }
     }
     Enums: {
