@@ -152,6 +152,8 @@ import { GetAgentsPolicyHandler } from "../Managers/SiteConfigManager/Handlers/G
 import { GetRegionHandler } from "../Managers/SiteConfigManager/Handlers/GetRegionHandler";
 import { GetSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteConfigHandler";
 import { GetAboutPageHandler } from "../Managers/SiteConfigManager/Handlers/GetAboutPageHandler";
+import { GetTagDescriptionHandler } from "../Managers/SiteConfigManager/Handlers/GetTagDescriptionHandler";
+import { SetTagDescriptionHandler } from "../Managers/SiteConfigManager/Handlers/SetTagDescriptionHandler";
 import { GetSiteIdentityHandler } from "../Managers/SiteConfigManager/Handlers/GetSiteIdentityHandler";
 import { SaveSiteConfigHandler } from "../Managers/SiteConfigManager/Handlers/SaveSiteConfigHandler";
 import type { ISiteConfigManager } from "../Managers/SiteConfigManager/ISiteConfigManager";
@@ -162,6 +164,8 @@ import { GetAgentsPolicyRequest } from "../Managers/SiteConfigManager/Requests/G
 import { GetRegionRequest } from "../Managers/SiteConfigManager/Requests/GetRegionRequest";
 import { GetSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 import { GetAboutPageRequest } from "../Managers/SiteConfigManager/Requests/GetAboutPageRequest";
+import { GetTagDescriptionRequest } from "../Managers/SiteConfigManager/Requests/GetTagDescriptionRequest";
+import { SetTagDescriptionRequest } from "../Managers/SiteConfigManager/Requests/SetTagDescriptionRequest";
 import { GetSiteIdentityRequest } from "../Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 import { SaveSiteConfigRequest } from "../Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 import { SiteConfigManager } from "../Managers/SiteConfigManager/SiteConfigManager";
@@ -196,6 +200,7 @@ import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
 import { createMemberBlockAccessor } from "./createMemberBlockAccessor";
 import { createFollowAccessor } from "./createFollowAccessor";
+import { createTagAccessor } from "./createTagAccessor";
 import { createFollowerNoticeEngine } from "./createFollowerNoticeEngine";
 import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
@@ -230,6 +235,7 @@ export class DependencyContainer {
     const reactions = createReactionAccessor(env, db);
     const memberBlocks = createMemberBlockAccessor(env, db);
     const follows = createFollowAccessor(env, db);
+    const tags = createTagAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine();
@@ -753,6 +759,10 @@ export class DependencyContainer {
           new SaveSiteConfigHandler(siteConfig, permissions),
         )
         .register(ApplyPresetRequest, new ApplyPresetHandler(siteConfig, permissions))
+        .register(
+          SetTagDescriptionRequest,
+          new SetTagDescriptionHandler(tags, permissions),
+        )
         .build(),
       new HandlerResolverBuilder()
         .register(
@@ -761,6 +771,7 @@ export class DependencyContainer {
         )
         .register(GetSiteIdentityRequest, new GetSiteIdentityHandler(siteConfig))
         .register(GetAboutPageRequest, new GetAboutPageHandler(siteConfig, content))
+        .register(GetTagDescriptionRequest, new GetTagDescriptionHandler(tags, content))
         .register(GetRegionRequest, new GetRegionHandler(siteConfig))
         .register(GetAgentsPolicyRequest, new GetAgentsPolicyHandler(siteConfig))
         .register(GetAgentDisclosureRequest, new GetAgentDisclosureHandler(siteConfig))

@@ -331,6 +331,11 @@ export { GetAgentsPolicyRequest } from "./Managers/SiteConfigManager/Requests/Ge
 export { GetRegionRequest } from "./Managers/SiteConfigManager/Requests/GetRegionRequest";
 export { GetSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/GetSiteConfigRequest";
 export { GetAboutPageRequest } from "./Managers/SiteConfigManager/Requests/GetAboutPageRequest";
+export { GetTagDescriptionRequest } from "./Managers/SiteConfigManager/Requests/GetTagDescriptionRequest";
+export { SetTagDescriptionRequest } from "./Managers/SiteConfigManager/Requests/SetTagDescriptionRequest";
+export { TagDescriptionResponse } from "./Managers/SiteConfigManager/Responses/TagDescriptionResponse";
+export { NoSuchTagResponse } from "./Managers/SiteConfigManager/Responses/NoSuchTagResponse";
+export { TAG_DESCRIPTION_MAX_LENGTH } from "./Managers/SiteConfigManager/tagDescription";
 export { GetSiteIdentityRequest } from "./Managers/SiteConfigManager/Requests/GetSiteIdentityRequest";
 export { SaveSiteConfigRequest } from "./Managers/SiteConfigManager/Requests/SaveSiteConfigRequest";
 export { AboutPageResponse } from "./Managers/SiteConfigManager/Responses/AboutPageResponse";

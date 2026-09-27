@@ -24,6 +24,7 @@ export const FAKE_ENV: Environment = {
   EVIDENCE_PROVIDER: "fake",
   MEMBER_BLOCK_PROVIDER: "fake",
   FOLLOW_PROVIDER: "fake",
+  TAG_PROVIDER: "fake",
   // Required unconditionally by createAnonymousGuardEngine and createEvidenceEngine, even
   // with every store faked.
   EVIDENCE_IP_HASH_SALT: "test-salt",
