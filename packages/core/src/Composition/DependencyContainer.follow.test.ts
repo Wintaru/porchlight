@@ -4,6 +4,7 @@ import type { Actor } from "../Common/Actor";
 import type { Profile } from "../Common/Profile";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
 import { FollowRequest } from "../Managers/AccountManager/Requests/FollowRequest";
+import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { SetMemberBlockRequest } from "../Managers/AccountManager/Requests/SetMemberBlockRequest";
 import { UnfollowRequest } from "../Managers/AccountManager/Requests/UnfollowRequest";
 import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/ActionForbiddenResponse";
@@ -152,6 +153,15 @@ describe("DependencyContainer: follows (#24)", () => {
       new ApproveItemRequest(MIRA, { kind: "post", id: pending.id }),
     );
     expect(await publishedNotices(container, JUNE)).toEqual([pending.id]);
+  });
+
+  test("a post is announced once, however often it goes out", async () => {
+    const container = await withProfiles();
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    const post = await publish(container, THEO, [], "public");
+    await container.postManager.execute(new UnpublishPostRequest(THEO, post.id));
+    await container.postManager.execute(new PublishPostRequest(THEO, post.id));
+    expect(await publishedNotices(container, JUNE)).toEqual([post.id]);
   });
 });
 

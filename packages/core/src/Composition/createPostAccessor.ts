@@ -36,6 +36,9 @@ import { LoadPostsByStatusRequest } from "../Accessors/PostAccessor/Requests/Loa
 import { RemovePostRequest } from "../Accessors/PostAccessor/Requests/RemovePostRequest";
 import { StoreNewPostRequest } from "../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { StorePostChangesRequest } from "../Accessors/PostAccessor/Requests/StorePostChangesRequest";
+import { ClaimPostAnnouncementRequest } from "../Accessors/PostAccessor/Requests/ClaimPostAnnouncementRequest";
+import { FakeClaimPostAnnouncementHandler } from "../Accessors/PostAccessor/Handlers/FakeClaimPostAnnouncementHandler";
+import { SupabaseClaimPostAnnouncementHandler } from "../Accessors/PostAccessor/Handlers/SupabaseClaimPostAnnouncementHandler";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
 import { readFakeResult, readStoreProvider } from "./readStoreProvider";
@@ -57,6 +60,10 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new SupabaseStoreNewPostHandler(db))
       .register(StorePostChangesRequest, new SupabaseStorePostChangesHandler(db))
+      .register(
+        ClaimPostAnnouncementRequest,
+        new SupabaseClaimPostAnnouncementHandler(db),
+      )
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
@@ -82,6 +89,7 @@ export function createFakePostAccessor(state: FakePostState): IPostAccessor {
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new FakeStoreNewPostHandler(state))
       .register(StorePostChangesRequest, new FakeStorePostChangesHandler(state))
+      .register(ClaimPostAnnouncementRequest, new FakeClaimPostAnnouncementHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))

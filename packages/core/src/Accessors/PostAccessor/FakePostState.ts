@@ -7,6 +7,8 @@ import type { PostRevision } from "../../Common/PostRevision";
 export class FakePostState {
   readonly posts = new Map<string, Post>();
   readonly revisions: PostRevision[] = [];
+  // Posts whose followers were told they are out (`announced_at` is set).
+  readonly announced = new Set<string>();
 
   constructor(readonly failing = false) {}
 

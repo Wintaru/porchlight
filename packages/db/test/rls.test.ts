@@ -402,7 +402,8 @@ describe("anon", () => {
   // the grant names it. This fails when the table and the list drift, so the choice is
   // made on purpose — grant it, or add it to the private set here.
   test("may read every posts column except the private ones", async () => {
-    const PRIVATE_POST_COLUMNS = ["agent_draft_md"];
+    // `announced_at` (#24) is bookkeeping for the follower notice, not content.
+    const PRIVATE_POST_COLUMNS = ["agent_draft_md", "announced_at"];
     const all = await sql<{ column_name: string }[]>`
       select column_name from information_schema.columns
       where table_schema = 'public' and table_name = 'posts'

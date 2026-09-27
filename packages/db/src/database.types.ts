@@ -621,6 +621,7 @@ export type Database = {
         Row: {
           agent_draft_md: string | null
           agent_token_id: string | null
+          announced_at: string | null
           anonymous_author_id: string | null
           author_id: string | null
           body_html: string
@@ -643,6 +644,7 @@ export type Database = {
         Insert: {
           agent_draft_md?: string | null
           agent_token_id?: string | null
+          announced_at?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           body_html?: string
@@ -665,6 +667,7 @@ export type Database = {
         Update: {
           agent_draft_md?: string | null
           agent_token_id?: string | null
+          announced_at?: string | null
           anonymous_author_id?: string | null
           author_id?: string | null
           body_html?: string

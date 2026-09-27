@@ -265,6 +265,7 @@ export class DependencyContainer {
     const auditLog = createAuditAccessor(env, db);
     const notifications = createNotificationAccessor(env, db);
     const followerNotice = createFollowerNoticeEngine(
+      posts,
       follows,
       memberBlocks,
       notifications,

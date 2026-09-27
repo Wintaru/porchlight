@@ -7,6 +7,10 @@ import { MemberBlocksLoadedResponse } from "../../../Accessors/MemberBlockAccess
 import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import { RecordNotificationsRequest } from "../../../Accessors/NotificationAccessor/Requests/RecordNotificationsRequest";
 import { NotificationsRecordedResponse } from "../../../Accessors/NotificationAccessor/Responses/NotificationsRecordedResponse";
+import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
+import { ClaimPostAnnouncementRequest } from "../../../Accessors/PostAccessor/Requests/ClaimPostAnnouncementRequest";
+import { PostAlreadyAnnouncedResponse } from "../../../Accessors/PostAccessor/Responses/PostAlreadyAnnouncedResponse";
+import { PostAnnouncementClaimedResponse } from "../../../Accessors/PostAccessor/Responses/PostAnnouncementClaimedResponse";
 import type { IHandler } from "../../../Common/IHandler";
 import type { ResponseBase } from "../../../Common/ResponseBase";
 import type { NotifyFollowersRequest } from "../Requests/NotifyFollowersRequest";
@@ -17,12 +21,15 @@ type Result = FollowersNotifiedResponse | FollowerNoticeUnavailableResponse;
 
 // Followers of the author and of every tag on the post, each once, minus the author
 // and minus anyone who muted or blocked the author: they asked not to see this member.
-// An unlisted post is not announced: it is out, but only to people with the link.
+// An unlisted post is not announced: it is out, but only to people with the link. A
+// post is announced once, ever: the claim on `announced_at` stops a re-publish, a
+// double-click and two moderators approving together from telling followers again.
 export class TransformNotifyFollowersHandler implements IHandler<
   NotifyFollowersRequest,
   Result
 > {
   constructor(
+    private readonly posts: IPostAccessor,
     private readonly follows: IFollowAccessor,
     private readonly memberBlocks: IMemberBlockAccessor,
     private readonly notifications: INotificationAccessor,
@@ -33,6 +40,15 @@ export class TransformNotifyFollowersHandler implements IHandler<
     const context = { correlationId, timestamp };
     if (post.status !== "published" || post.visibility !== "public") {
       return new FollowersNotifiedResponse(correlationId, 0);
+    }
+    const claimed = await this.posts.store(
+      new ClaimPostAnnouncementRequest(post.id, context),
+    );
+    if (claimed instanceof PostAlreadyAnnouncedResponse) {
+      return new FollowersNotifiedResponse(correlationId, 0);
+    }
+    if (!(claimed instanceof PostAnnouncementClaimedResponse)) {
+      return unavailable(correlationId, claimed, "posts.store");
     }
     const authorId = post.author.kind === "member" ? post.author.profileId : null;
 
