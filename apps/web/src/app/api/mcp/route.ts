@@ -466,7 +466,9 @@ function registerTools(
       inputSchema: z.object({ id: z.string().min(1) }),
     },
     async ({ id }) => {
-      const response = await postManager.execute(new PublishPostRequest(actor, id, origin));
+      const response = await postManager.execute(
+        new PublishPostRequest(actor, id, origin),
+      );
       if (!isPost(response)) {
         return refusalFor(response, "publish_post");
       }
