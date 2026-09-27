@@ -17,16 +17,30 @@ export type BodyInsert =
 
 interface BodyEditorProps {
   readonly initialMarkdown: string;
-  readonly onChange: (markdown: string) => void;
+  readonly onChange?: (markdown: string) => void;
   // Set by the body to its insert function, for the attachment panel beside it.
-  readonly insertRef: RefObject<((item: BodyInsert) => void) | null>;
+  readonly insertRef?: RefObject<((item: BodyInsert) => void) | null>;
+  // The hidden field that carries the markdown to the form. A post's body by default;
+  // the admin page's About text uses the same editor (#74).
+  readonly name?: string;
+  // What the field is called to assistive tech and in markdown mode.
+  readonly label?: string;
+  // The toolbar's Image button. The About text takes none.
+  readonly allowImages?: boolean;
 }
 
 // The body: Tiptap in rich mode, a textarea over the same markdown in markdown mode.
-// Markdown is the one truth (SPEC.md §2): the hidden `bodyMd` field carries it to the
-// form, the rich view serializes to it on every edit, and switching to rich mode parses
+// Markdown is the one truth (SPEC.md §2): the hidden field (`bodyMd` by default)
+// carries it to the form, the rich view serializes to it on every edit, and switching to rich mode parses
 // it back. A body that is never touched is submitted as it was loaded, byte for byte.
-export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorProps) {
+export function BodyEditor({
+  initialMarkdown,
+  onChange,
+  insertRef,
+  name = "bodyMd",
+  label = "Body",
+  allowImages = true,
+}: BodyEditorProps) {
   const [mode, setMode] = useState<BodyMode>("rich");
   const [markdown, setMarkdown] = useState(initialMarkdown);
   const [dialog, setDialog] = useState<UrlDialogKind | null>(null);
@@ -47,20 +61,23 @@ export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorP
       attributes: {
         class: "prose",
         role: "textbox",
-        "aria-label": "Body",
+        "aria-label": label,
         "aria-multiline": "true",
       },
     },
     onUpdate: ({ editor: current }) => {
       const next = trimBlankEnds(current.getMarkdown());
       setMarkdown(next);
-      onChangeRef.current(next);
+      onChangeRef.current?.(next);
     },
   });
 
   // Rich mode inserts at the cursor. Markdown mode has no cursor to trust once focus
   // left the textarea, so the snippet goes on a line of its own at the end.
   useEffect(() => {
+    if (insertRef === undefined) {
+      return undefined;
+    }
     insertRef.current = (item) => {
       if (mode === "rich" && editor !== null) {
         // At the end of the selection, never over it: an image just inserted stays
@@ -88,7 +105,7 @@ export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorP
           : `[${plain(item.label)}](${item.url})`;
       setMarkdown((current) => {
         const next = `${current.trimEnd()}${current.trim() === "" ? "" : "\n\n"}${snippet}\n`;
-        onChangeRef.current(next);
+        onChangeRef.current?.(next);
         return next;
       });
     };
@@ -168,7 +185,7 @@ export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorP
 
   return (
     <>
-      <input type="hidden" name="bodyMd" value={markdown} />
+      <input type="hidden" name={name} value={markdown} />
       <EditorToolbar
         editor={editor}
         mode={mode}
@@ -176,9 +193,16 @@ export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorP
         onInsertLink={() => {
           openDialog("link");
         }}
-        onInsertImage={() => {
-          openDialog("image");
-        }}
+        label={label}
+        // Spread, not `undefined`: the prop is optional, and exactOptionalPropertyTypes
+        // refuses an explicit undefined.
+        {...(allowImages
+          ? {
+              onInsertImage: () => {
+                openDialog("image");
+              },
+            }
+          : {})}
       />
       <div className={styles.body} hidden={mode !== "rich"}>
         <EditorContent editor={editor} />
@@ -186,12 +210,12 @@ export function BodyEditor({ initialMarkdown, onChange, insertRef }: BodyEditorP
       {mode === "markdown" && (
         <textarea
           className={styles.markdown}
-          aria-label="Body (markdown)"
+          aria-label={`${label} (markdown)`}
           value={markdown}
           spellCheck={false}
           onChange={(event) => {
             setMarkdown(event.target.value);
-            onChangeRef.current(event.target.value);
+            onChangeRef.current?.(event.target.value);
           }}
         />
       )}

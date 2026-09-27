@@ -12,7 +12,10 @@ interface EditorToolbarProps {
   readonly mode: BodyMode;
   readonly onModeChange: (mode: BodyMode) => void;
   readonly onInsertLink: () => void;
-  readonly onInsertImage: () => void;
+  // Left out where the field takes no images (the About text, #74).
+  readonly onInsertImage?: () => void;
+  // The field's name, for the mode switch's group label.
+  readonly label?: string;
 }
 
 // Only what markdown can store (SPEC.md §5): bold, italic, H2, H3, link, quote, the two
@@ -24,6 +27,7 @@ export function EditorToolbar({
   onModeChange,
   onInsertLink,
   onInsertImage,
+  label = "Body",
 }: EditorToolbarProps) {
   const active = useEditorState({
     editor,
@@ -181,9 +185,10 @@ export function EditorToolbar({
           },
           <CodeBlockIcon />,
         )}
-        {tool("Image", false, !inCode, onInsertImage, <ImageIcon />)}
+        {onInsertImage !== undefined &&
+          tool("Image", false, !inCode, onInsertImage, <ImageIcon />)}
       </div>
-      <div className={styles.modes} role="group" aria-label="Body mode">
+      <div className={styles.modes} role="group" aria-label={`${label} mode`}>
         <button
           type="button"
           className={styles.mode}
