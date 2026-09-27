@@ -1,6 +1,6 @@
 "use client";
 
-import type { NotificationKind } from "@porchlight/core";
+import { NOTIFICATION_SENTENCES } from "@porchlight/core/client";
 import { useEffect, useId, useState } from "react";
 
 import {
@@ -18,18 +18,6 @@ interface NotificationBellProps {
   readonly recipientId: string;
   readonly initial: readonly NotificationRow[];
 }
-
-// Keyed by the whole NotificationKind union, so a new kind with no sentence here is a
-// type error, the same guarantee EvaluatePermissionHandler's RULES record gives.
-const LABELS: Readonly<Record<NotificationKind, string>> = {
-  "queue.pending": "A new item is waiting for review",
-  "reply.created": "Someone replied to your comment",
-  "item.approved": "Your post or comment was approved",
-  "item.rejected": "Your post or comment was rejected",
-  "report.filed": "A new report was filed",
-  "mod.action": "A moderator took action on your account",
-  "post.published": "Someone you follow published a post",
-};
 
 // The bell (SPEC.md §8): the server-rendered `initial` list is what a member sees on
 // first paint; a Supabase Realtime subscription on their own `notifications` rows
@@ -156,7 +144,7 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
                     void markOne(notification.id);
                   }}
                 >
-                  {LABELS[notification.kind]}
+                  {NOTIFICATION_SENTENCES[notification.kind]}
                 </button>
               </li>
             ))}

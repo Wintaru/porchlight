@@ -6,3 +6,4 @@
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
 export { AGENT_TOKEN_NAME_MAX_LENGTH } from "./Common/AgentToken";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
+export { NOTIFICATION_SENTENCES } from "./Common/NotificationSentences";
