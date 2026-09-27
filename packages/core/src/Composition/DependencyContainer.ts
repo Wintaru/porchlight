@@ -196,6 +196,7 @@ import { createRateLimitAccessor } from "./createRateLimitAccessor";
 import { createReactionAccessor } from "./createReactionAccessor";
 import { createMemberBlockAccessor } from "./createMemberBlockAccessor";
 import { createFollowAccessor } from "./createFollowAccessor";
+import { createFollowerNoticeEngine } from "./createFollowerNoticeEngine";
 import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
@@ -257,6 +258,11 @@ export class DependencyContainer {
     const modActions = createModActionAccessor(env, db);
     const auditLog = createAuditAccessor(env, db);
     const notifications = createNotificationAccessor(env, db);
+    const followerNotice = createFollowerNoticeEngine(
+      follows,
+      memberBlocks,
+      notifications,
+    );
     const agentTokens = createAgentTokenAccessor(env, db);
     const agentGuard = createAgentGuardEngine(siteConfig, rateLimits);
     const evidence = createEvidenceEngine(
@@ -377,6 +383,7 @@ export class DependencyContainer {
             permissions,
             agentGuard,
             mediaAssets,
+            followerNotice,
           ),
         )
         .register(UnpublishPostRequest, new UnpublishPostHandler(posts, permissions))
@@ -565,6 +572,7 @@ export class DependencyContainer {
             notifications,
             permissions,
             memberBlocks,
+            followerNotice,
           ),
         )
         .register(

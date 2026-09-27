@@ -25,6 +25,7 @@ import { UnpublishPostRequest } from "../Requests/UnpublishPostRequest";
 import { PostNotPublishableResponse } from "../Responses/PostNotPublishableResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PublishPostHandler } from "./PublishPostHandler";
+import { FollowersNotifiedResponse } from "../../../Engines/FollowerNoticeEngine/Responses/FollowersNotifiedResponse";
 import { UnpublishPostHandler } from "./UnpublishPostHandler";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
@@ -122,6 +123,11 @@ function wire(state: FakePostState) {
         new HandlerResolverBuilder().build(),
         new HandlerResolverBuilder().build(),
       ),
+      // Nobody follows anyone here: the fan-out is DependencyContainer.follow.test.ts's.
+      {
+        transform: (request) =>
+          Promise.resolve(new FollowersNotifiedResponse(request.correlationId, 0)),
+      },
     ),
     unpublish: new UnpublishPostHandler(posts, permissions),
   };

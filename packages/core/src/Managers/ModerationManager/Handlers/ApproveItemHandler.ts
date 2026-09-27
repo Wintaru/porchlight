@@ -6,10 +6,12 @@ import type { INotificationAccessor } from "../../../Accessors/NotificationAcces
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
+import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
 import { authorNotice, replyNotice } from "../notificationsForItem";
+import { notifyFollowers } from "../notifyFollowers";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
 import type { ApproveItemRequest } from "../Requests/ApproveItemRequest";
@@ -37,6 +39,7 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly memberBlocks: IMemberBlockAccessor,
+    private readonly followerNotice: IFollowerNoticeEngine,
   ) {}
 
   async handle(request: ApproveItemRequest): Promise<Result> {
@@ -94,6 +97,15 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
     );
     if (recorded !== undefined) {
       return recorded;
+    }
+    // A post leaving the queue goes out for the first time, so its followers hear of
+    // it (#24). Approving a post back from hidden is not news: they heard the first time.
+    if (
+      item.kind === "post" &&
+      item.post.status === "pending" &&
+      approved.kind === "post"
+    ) {
+      await notifyFollowers(this.followerNotice, approved.post, context);
     }
     return new ModerationItemResponse(correlationId, approved);
   }

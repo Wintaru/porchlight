@@ -4,12 +4,19 @@ import type { Actor } from "../Common/Actor";
 import type { Profile } from "../Common/Profile";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
 import { FollowRequest } from "../Managers/AccountManager/Requests/FollowRequest";
+import { SetMemberBlockRequest } from "../Managers/AccountManager/Requests/SetMemberBlockRequest";
 import { UnfollowRequest } from "../Managers/AccountManager/Requests/UnfollowRequest";
 import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/ActionForbiddenResponse";
 import { FollowRejectedResponse } from "../Managers/AccountManager/Responses/FollowRejectedResponse";
 import { FollowSetResponse } from "../Managers/AccountManager/Responses/FollowSetResponse";
+import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
+import { ListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
+import { NotificationsResponse } from "../Managers/NotificationManager/Responses/NotificationsResponse";
+import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
+import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
+import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { DependencyContainer } from "./DependencyContainer";
-import { FAKE_ENV } from "./FakeEnvironment.test-helper";
+import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
 // Issue #24: a member follows an author or a tag, and can stop.
 
@@ -35,6 +42,22 @@ const JUNE: Actor = {
   kind: "member",
   profile: profile({ id: "00000000-0000-4000-8000-000000000004", handle: "june" }),
 };
+const IVY: Actor = {
+  kind: "member",
+  profile: profile({
+    id: "00000000-0000-4000-8000-000000000005",
+    handle: "ivy",
+    trustLevel: "probation",
+  }),
+};
+const MIRA: Actor = {
+  kind: "member",
+  profile: profile({
+    id: "00000000-0000-4000-8000-000000000002",
+    handle: "mira",
+    role: "moderator",
+  }),
+};
 const THEO_AUTHOR = {
   kind: "author",
   profileId: "00000000-0000-4000-8000-000000000003",
@@ -43,7 +66,7 @@ const HIKING = { kind: "tag", slug: "hiking" } as const;
 
 async function withProfiles(): Promise<DependencyContainer> {
   const container = new DependencyContainer(FAKE_ENV);
-  for (const actor of [THEO, JUNE]) {
+  for (const actor of [THEO, JUNE, IVY, MIRA]) {
     if (actor.kind === "member") {
       await container.accountManager.execute(
         new EnsureProfileRequest({
@@ -89,4 +112,89 @@ describe("DependencyContainer: follows (#24)", () => {
     );
     expect(visitor).toBeInstanceOf(ActionForbiddenResponse);
   });
+
+  test("a post that goes out tells the followers of its author and its tags, once each", async () => {
+    const container = await withProfiles();
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    await container.accountManager.execute(new FollowRequest(JUNE, HIKING));
+    await container.accountManager.execute(new FollowRequest(MIRA, HIKING));
+    // Ivy follows Theo but muted him since: she hears nothing from him.
+    await container.accountManager.execute(new FollowRequest(IVY, THEO_AUTHOR));
+    await container.accountManager.execute(
+      new SetMemberBlockRequest(IVY, THEO_AUTHOR.profileId, "mute"),
+    );
+
+    const post = await publish(container, THEO, ["Hiking"], "public");
+    expect(await publishedNotices(container, JUNE)).toEqual([post.id]);
+    expect(await publishedNotices(container, MIRA)).toEqual([post.id]);
+    expect(await publishedNotices(container, IVY)).toEqual([]);
+    expect(await publishedNotices(container, THEO)).toEqual([]);
+
+    // An unlisted post is out, but only to people with the link: nobody is told.
+    await publish(container, THEO, ["Hiking"], "unlisted");
+    expect(await publishedNotices(container, JUNE)).toEqual([post.id]);
+  });
+
+  test("a post leaving the queue tells followers when a moderator approves it", async () => {
+    const container = await withProfiles();
+    await container.accountManager.execute(
+      new FollowRequest(JUNE, {
+        kind: "author",
+        profileId: "00000000-0000-4000-8000-000000000005",
+      }),
+    );
+    // Ivy is on probation: her post waits for a moderator, and nobody hears of it yet.
+    const pending = await publish(container, IVY, [], "public");
+    expect(pending.status).toBe("pending");
+    expect(await publishedNotices(container, JUNE)).toEqual([]);
+
+    await container.moderationManager.execute(
+      new ApproveItemRequest(MIRA, { kind: "post", id: pending.id }),
+    );
+    expect(await publishedNotices(container, JUNE)).toEqual([pending.id]);
+  });
 });
+
+async function publish(
+  container: DependencyContainer,
+  actor: Actor,
+  tags: readonly string[],
+  visibility: "public" | "unlisted",
+) {
+  const drafted = await container.postManager.execute(
+    new CreateDraftRequest(
+      actor,
+      {
+        title: `A post ${String(Math.random())}`,
+        bodyMd: "Words.",
+        summary: null,
+        tags: [...tags],
+        visibility,
+        commentsEnabled: true,
+      },
+      TEST_ORIGIN,
+    ),
+  );
+  if (!(drafted instanceof PostResponse)) {
+    throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
+  }
+  const published = await container.postManager.execute(
+    new PublishPostRequest(actor, drafted.post.id),
+  );
+  if (!(published instanceof PostResponse)) {
+    throw new Error(`expected PostResponse, got ${published.constructor.name}`);
+  }
+  return published.post;
+}
+
+async function publishedNotices(container: DependencyContainer, actor: Actor) {
+  const listed = await container.notificationManager.query(
+    new ListNotificationsRequest(actor),
+  );
+  if (!(listed instanceof NotificationsResponse)) {
+    throw new Error(`expected NotificationsResponse, got ${listed.constructor.name}`);
+  }
+  return listed.notifications
+    .filter((notification) => notification.kind === "post.published")
+    .map((notification) => notification.postId);
+}

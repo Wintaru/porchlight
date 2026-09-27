@@ -8,11 +8,13 @@ import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/Po
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
+import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { admitAgent } from "../admitAgent";
 import { coverAwaitsReview } from "../coverAwaitsReview";
+import { notifyFollowers } from "../notifyFollowers";
 import { permit } from "../permit";
 import { publishesAtOnce } from "../publishesAtOnce";
 import { reviewStamp } from "../provenance";
@@ -49,6 +51,7 @@ export class PublishPostHandler implements IHandler<
     private readonly permissions: IPermissionEngine,
     private readonly agentGuard: IAgentGuardEngine,
     private readonly mediaAssets: IMediaAssetAccessor,
+    private readonly followerNotice: IFollowerNoticeEngine,
   ) {}
 
   async handle(request: PublishPostRequest): Promise<PublishPostResult> {
@@ -113,6 +116,9 @@ export class PublishPostHandler implements IHandler<
       if (notified !== undefined) {
         return notified;
       }
+    }
+    if (changes.status === "published") {
+      await notifyFollowers(this.followerNotice, stored.post, context);
     }
     return new PostResponse(correlationId, stored.post);
   }
