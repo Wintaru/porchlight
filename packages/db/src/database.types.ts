@@ -16,10 +16,11 @@ export type Database = {
           id: string
           last_used_at: string | null
           name: string
+          oauth_client_id: string | null
           owner_id: string
           revoked_at: string | null
           scopes: Database["public"]["Enums"]["agent_scope"][]
-          token_hash: string
+          token_hash: string | null
         }
         Insert: {
           created_at?: string
@@ -27,10 +28,11 @@ export type Database = {
           id?: string
           last_used_at?: string | null
           name: string
+          oauth_client_id?: string | null
           owner_id: string
           revoked_at?: string | null
           scopes: Database["public"]["Enums"]["agent_scope"][]
-          token_hash: string
+          token_hash?: string | null
         }
         Update: {
           created_at?: string
@@ -38,10 +40,11 @@ export type Database = {
           id?: string
           last_used_at?: string | null
           name?: string
+          oauth_client_id?: string | null
           owner_id?: string
           revoked_at?: string | null
           scopes?: Database["public"]["Enums"]["agent_scope"][]
-          token_hash?: string
+          token_hash?: string | null
         }
         Relationships: [
           {

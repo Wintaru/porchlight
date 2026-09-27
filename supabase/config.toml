@@ -392,14 +392,15 @@ enabled = false
 # Obtain from https://clerk.com/setup/supabase
 # domain = "example.clerk.accounts.dev"
 
-# OAuth server configuration
+# Supabase Auth as the OAuth 2.1 server for MCP clients such as claude.ai connectors
+# (D25, #79, docs/setup/mcp-oauth.md). Auth sends the member to the app's consent page
+# at site_url + authorization_url_path. An MCP client registers itself, so dynamic
+# registration is on. The app, not Auth, decides what a client may do: the consent
+# page stores the member's choice of scopes, and /api/mcp honors a token only with it.
 [auth.oauth_server]
-# Enable OAuth server functionality
-enabled = false
-# Path for OAuth consent flow UI
+enabled = true
 authorization_url_path = "/oauth/consent"
-# Allow dynamic client registration
-allow_dynamic_registration = false
+allow_dynamic_registration = true
 
 [edge_runtime]
 # Porchlight has no edge functions: the server layers live in packages/core (SPEC.md §3).

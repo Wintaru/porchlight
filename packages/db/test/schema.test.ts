@@ -922,3 +922,51 @@ describe("media post link (#80)", () => {
     expect(unused).toBe(INSUFFICIENT_PRIVILEGE);
   });
 });
+
+describe("agent_tokens OAuth grants (#79, D25)", () => {
+  const CLIENT = "6e1a791f-75b8-46fb-a738-7c53cb270412";
+  const HASH = "a".repeat(64);
+
+  test("a row is a personal token or an OAuth grant, never both and never neither", async () => {
+    const both = await errorCodeOf(() =>
+      asService(
+        (tx) => tx`
+          insert into public.agent_tokens (owner_id, name, scopes, token_hash, oauth_client_id)
+          values (${SEED.trustedMember}, 'both', '{posts:draft}', ${HASH}, ${CLIENT})
+        `,
+      ),
+    );
+    const neither = await errorCodeOf(() =>
+      asService(
+        (tx) => tx`
+          insert into public.agent_tokens (owner_id, name, scopes)
+          values (${SEED.trustedMember}, 'neither', '{posts:draft}')
+        `,
+      ),
+    );
+    expect(both).toBe(CHECK_VIOLATION);
+    expect(neither).toBe(CHECK_VIOLATION);
+  });
+
+  test("one live grant per member and client, and a revoked one does not count", async () => {
+    const grant = (tx: TransactionSql, revoked: boolean) => tx`
+      insert into public.agent_tokens (owner_id, name, scopes, oauth_client_id, revoked_at)
+      values (${SEED.trustedMember}, 'Claude', '{posts:draft}', ${CLIENT},
+        ${revoked ? new Date() : null})
+    `;
+    const twoLive = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await grant(tx, false);
+        await grant(tx, false);
+      }),
+    );
+    const afterRevoked = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await grant(tx, true);
+        await grant(tx, false);
+      }),
+    );
+    expect(twoLive).toBe(UNIQUE_VIOLATION);
+    expect(afterRevoked).toBeNull();
+  });
+});
