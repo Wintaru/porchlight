@@ -16,6 +16,10 @@ import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/Ensure
 import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
 import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
+import { GetPresenceSettingHandler } from "../Managers/AccountManager/Handlers/GetPresenceSettingHandler";
+import { SetPresenceSettingHandler } from "../Managers/AccountManager/Handlers/SetPresenceSettingHandler";
+import { GetPresenceSettingRequest } from "../Managers/AccountManager/Requests/GetPresenceSettingRequest";
+import { SetPresenceSettingRequest } from "../Managers/AccountManager/Requests/SetPresenceSettingRequest";
 import { CreateInviteHandler } from "../Managers/AccountManager/Handlers/CreateInviteHandler";
 import { GetInvitesHandler } from "../Managers/AccountManager/Handlers/GetInvitesHandler";
 import { RevokeInviteHandler } from "../Managers/AccountManager/Handlers/RevokeInviteHandler";
@@ -335,6 +339,10 @@ export class DependencyContainer {
         )
         .register(UpdateProfileRequest, new UpdateProfileHandler(profiles, permissions))
         .register(CreateInviteRequest, new CreateInviteHandler(invites, permissions))
+        .register(
+          SetPresenceSettingRequest,
+          new SetPresenceSettingHandler(profiles, permissions),
+        )
         .register(RevokeInviteRequest, new RevokeInviteHandler(invites, permissions))
         .register(
           SetMemberBlockRequest,
@@ -376,6 +384,10 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
         .register(GetInvitesRequest, new GetInvitesHandler(invites, permissions))
+        .register(
+          GetPresenceSettingRequest,
+          new GetPresenceSettingHandler(profiles, permissions),
+        )
         .register(
           CheckNewAccountRequest,
           new CheckNewAccountHandler(profiles, siteConfig, invites, {

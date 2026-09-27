@@ -10,6 +10,8 @@ export class FakeProfileState {
   readonly voiceGuides = new Map<string, string>();
   // Replaced guides by profile id, oldest first: the `voice_guide_revisions` trigger.
   readonly voiceGuideRevisions = new Map<string, VoiceGuideRevision[]>();
+  // Members who turned presence off (#75); everyone else shows, the column's default.
+  readonly presenceHidden = new Set<string>();
 
   constructor(readonly failing = false) {}
 

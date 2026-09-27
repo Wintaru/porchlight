@@ -1,3 +1,9 @@
+import { FakeLoadPresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadPresenceSettingHandler";
+import { FakeStorePresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStorePresenceSettingHandler";
+import { SupabaseLoadPresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadPresenceSettingHandler";
+import { SupabaseStorePresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseStorePresenceSettingHandler";
+import { LoadPresenceSettingRequest } from "../Accessors/ProfileAccessor/Requests/LoadPresenceSettingRequest";
+import { StorePresenceSettingRequest } from "../Accessors/ProfileAccessor/Requests/StorePresenceSettingRequest";
 import { FakeLoadVoiceGuideRevisionsHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadVoiceGuideRevisionsHandler";
 import { SupabaseLoadVoiceGuideRevisionsHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadVoiceGuideRevisionsHandler";
 import { LoadVoiceGuideRevisionsRequest } from "../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRevisionsRequest";
@@ -60,6 +66,7 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(StoreProfileChangesRequest, new SupabaseStoreProfileChangesHandler(db))
       .register(EraseProfileRequest, new SupabaseEraseProfileHandler(db))
       .register(StoreVoiceGuideRequest, new SupabaseStoreVoiceGuideHandler(db))
+      .register(StorePresenceSettingRequest, new SupabaseStorePresenceSettingHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new SupabaseLoadProfileByIdHandler(db))
@@ -67,6 +74,7 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(CountProfilesRequest, new SupabaseCountProfilesHandler(db))
       .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
       .register(LoadVoiceGuideRequest, new SupabaseLoadVoiceGuideHandler(db))
+      .register(LoadPresenceSettingRequest, new SupabaseLoadPresenceSettingHandler(db))
       .register(
         LoadVoiceGuideRevisionsRequest,
         new SupabaseLoadVoiceGuideRevisionsHandler(db),
@@ -83,6 +91,7 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .register(StoreProfileChangesRequest, new FakeStoreProfileChangesHandler(state))
       .register(EraseProfileRequest, new FakeEraseProfileHandler(state))
       .register(StoreVoiceGuideRequest, new FakeStoreVoiceGuideHandler(state))
+      .register(StorePresenceSettingRequest, new FakeStorePresenceSettingHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new FakeLoadProfileByIdHandler(state))
@@ -90,6 +99,7 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .register(CountProfilesRequest, new FakeCountProfilesHandler(state))
       .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))
       .register(LoadVoiceGuideRequest, new FakeLoadVoiceGuideHandler(state))
+      .register(LoadPresenceSettingRequest, new FakeLoadPresenceSettingHandler(state))
       .register(
         LoadVoiceGuideRevisionsRequest,
         new FakeLoadVoiceGuideRevisionsHandler(state),

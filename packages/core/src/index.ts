@@ -344,6 +344,10 @@ export {
   type InviteTerms,
 } from "./Managers/AccountManager/InviteTerms";
 export { type Invite, isInviteLive } from "./Common/Invite";
+// Presence (#75): a member's choice to be seen online and typing.
+export { GetPresenceSettingRequest } from "./Managers/AccountManager/Requests/GetPresenceSettingRequest";
+export { SetPresenceSettingRequest } from "./Managers/AccountManager/Requests/SetPresenceSettingRequest";
+export { PresenceSettingResponse } from "./Managers/AccountManager/Responses/PresenceSettingResponse";
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";

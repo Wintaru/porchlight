@@ -16,6 +16,8 @@ import { ExportBundleResponse } from "../Managers/AccountManager/Responses/Expor
 import { HandleRejectedResponse } from "../Managers/AccountManager/Responses/HandleRejectedResponse";
 import { NoSuchProfileResponse } from "../Managers/AccountManager/Responses/NoSuchProfileResponse";
 import { ProfileResponse } from "../Managers/AccountManager/Responses/ProfileResponse";
+import { GetPresenceSettingRequest } from "../Managers/AccountManager/Requests/GetPresenceSettingRequest";
+import { SetPresenceSettingRequest } from "../Managers/AccountManager/Requests/SetPresenceSettingRequest";
 import { CheckNewAccountRequest } from "../Managers/AccountManager/Requests/CheckNewAccountRequest";
 import { NewAccountCheckedResponse } from "../Managers/AccountManager/Responses/NewAccountCheckedResponse";
 import { SignUpClosedResponse } from "../Managers/AccountManager/Responses/SignUpClosedResponse";
@@ -458,5 +460,25 @@ describe("DependencyContainer: AccountManager", () => {
           ALLOW_FAKE_PROVIDERS: "1",
         }),
     ).not.toThrow();
+  });
+});
+
+describe("DependencyContainer: presence setting (#75)", () => {
+  test("a member is shown by default, turns it off, and a visitor has no setting", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const me = { kind: "member" as const, profile: await signIn(container, FIRST) };
+
+    expect(
+      await container.accountManager.query(new GetPresenceSettingRequest(me)),
+    ).toMatchObject({ visible: true });
+    await container.accountManager.execute(new SetPresenceSettingRequest(me, false));
+    expect(
+      await container.accountManager.query(new GetPresenceSettingRequest(me)),
+    ).toMatchObject({ visible: false });
+    expect(
+      await container.accountManager.query(
+        new GetPresenceSettingRequest({ kind: "visitor" }),
+      ),
+    ).toBeInstanceOf(ActionForbiddenResponse);
   });
 });
