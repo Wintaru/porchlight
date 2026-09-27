@@ -3,11 +3,14 @@ import {
   FakeImageClassifierState,
   type FakeImageClassifierResult,
 } from "../Accessors/ImageClassifierAccessor/FakeImageClassifierState";
+import { FakeClassifyVideoHandler } from "../Accessors/ImageClassifierAccessor/Handlers/FakeClassifyVideoHandler";
+import { UnsupportedClassifyVideoHandler } from "../Accessors/ImageClassifierAccessor/Handlers/UnsupportedClassifyVideoHandler";
 import { FakeClassifyImageHandler } from "../Accessors/ImageClassifierAccessor/Handlers/FakeClassifyImageHandler";
 import { SightengineClassifyImageHandler } from "../Accessors/ImageClassifierAccessor/Handlers/SightengineClassifyImageHandler";
 import type { IImageClassifierAccessor } from "../Accessors/ImageClassifierAccessor/IImageClassifierAccessor";
 import { ImageClassifierAccessor } from "../Accessors/ImageClassifierAccessor/ImageClassifierAccessor";
 import { ClassifyImageRequest } from "../Accessors/ImageClassifierAccessor/Requests/ClassifyImageRequest";
+import { ClassifyVideoRequest } from "../Accessors/ImageClassifierAccessor/Requests/ClassifyVideoRequest";
 import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
@@ -47,12 +50,11 @@ export function createImageClassifierAccessor(
         `IMAGE_CLASSIFIER_FAKE_RESULT=${result} is not one of ${FAKE_IMAGE_CLASSIFIER_RESULTS.join(", ")}.`,
       );
     }
+    const state = new FakeImageClassifierState(result);
     return new ImageClassifierAccessor(
       new HandlerResolverBuilder()
-        .register(
-          ClassifyImageRequest,
-          new FakeClassifyImageHandler(new FakeImageClassifierState(result)),
-        )
+        .register(ClassifyImageRequest, new FakeClassifyImageHandler(state))
+        .register(ClassifyVideoRequest, new FakeClassifyVideoHandler(state))
         .build(),
     );
   }
@@ -78,6 +80,7 @@ export function createImageClassifierAccessor(
         ClassifyImageRequest,
         new SightengineClassifyImageHandler(apiUser, apiSecret),
       )
+      .register(ClassifyVideoRequest, new UnsupportedClassifyVideoHandler(provider))
       .build(),
   );
 }

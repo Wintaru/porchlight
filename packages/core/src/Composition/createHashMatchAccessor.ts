@@ -1,3 +1,4 @@
+import { ArachnidShieldMatchMediaUrlHandler } from "../Accessors/HashMatchAccessor/Handlers/ArachnidShieldMatchMediaUrlHandler";
 import { ArachnidShieldMatchImageHashHandler } from "../Accessors/HashMatchAccessor/Handlers/ArachnidShieldMatchImageHashHandler";
 import { FakeMatchImageHashHandler } from "../Accessors/HashMatchAccessor/Handlers/FakeMatchImageHashHandler";
 import {
@@ -8,6 +9,7 @@ import {
 import { HashMatchAccessor } from "../Accessors/HashMatchAccessor/HashMatchAccessor";
 import type { IHashMatchAccessor } from "../Accessors/HashMatchAccessor/IHashMatchAccessor";
 import { MatchImageHashRequest } from "../Accessors/HashMatchAccessor/Requests/MatchImageHashRequest";
+import { MatchMediaUrlRequest } from "../Accessors/HashMatchAccessor/Requests/MatchMediaUrlRequest";
 import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
@@ -45,12 +47,11 @@ export function createHashMatchAccessor(env: Environment): IHashMatchAccessor {
         `HASH_MATCH_FAKE_RESULT=${result} is not one of ${FAKE_HASH_MATCH_RESULTS.join(", ")}.`,
       );
     }
+    const fake = new FakeMatchImageHashHandler(new FakeHashMatchState(result));
     return new HashMatchAccessor(
       new HandlerResolverBuilder()
-        .register(
-          MatchImageHashRequest,
-          new FakeMatchImageHashHandler(new FakeHashMatchState(result)),
-        )
+        .register(MatchImageHashRequest, fake)
+        .register(MatchMediaUrlRequest, fake)
         .build(),
     );
   }
@@ -71,6 +72,7 @@ export function createHashMatchAccessor(env: Environment): IHashMatchAccessor {
   return new HashMatchAccessor(
     new HandlerResolverBuilder()
       .register(MatchImageHashRequest, new ArachnidShieldMatchImageHashHandler(apiKey))
+      .register(MatchMediaUrlRequest, new ArachnidShieldMatchMediaUrlHandler(apiKey))
       .build(),
   );
 }

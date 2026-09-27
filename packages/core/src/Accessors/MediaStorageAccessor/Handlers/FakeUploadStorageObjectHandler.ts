@@ -13,7 +13,7 @@ export class FakeUploadStorageObjectHandler implements IHandler<
   constructor(private readonly state: FakeMediaStorageState) {}
 
   handle(request: UploadStorageObjectRequest): Promise<Result> {
-    const { bucket, path, bytes, correlationId } = request;
+    const { bucket, path, bytes, contentType, correlationId } = request;
     if (this.state.failing) {
       return Promise.resolve(
         new MediaStorageAccessFailedResponse(
@@ -22,7 +22,9 @@ export class FakeUploadStorageObjectHandler implements IHandler<
         ),
       );
     }
-    this.state.objects.set(this.state.key(bucket, path), bytes);
+    const key = this.state.key(bucket, path);
+    this.state.objects.set(key, bytes);
+    this.state.contentTypes.set(key, contentType);
     return Promise.resolve(new StorageObjectUploadedResponse(correlationId));
   }
 }

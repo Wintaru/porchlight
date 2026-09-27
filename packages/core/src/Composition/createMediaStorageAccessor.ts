@@ -18,6 +18,18 @@ import { CreateSignedUploadUrlRequest } from "../Accessors/MediaStorageAccessor/
 import { DownloadStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
 import { RemoveStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
 import { UploadStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
+import { FakeLoadStorageObjectInfoHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeLoadStorageObjectInfoHandler";
+import { SupabaseLoadStorageObjectInfoHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseLoadStorageObjectInfoHandler";
+import { LoadStorageObjectInfoRequest } from "../Accessors/MediaStorageAccessor/Requests/LoadStorageObjectInfoRequest";
+import { FakeDownloadStorageObjectRangeHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeDownloadStorageObjectRangeHandler";
+import { SupabaseDownloadStorageObjectRangeHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseDownloadStorageObjectRangeHandler";
+import { DownloadStorageObjectRangeRequest } from "../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRangeRequest";
+import { FakeDigestStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeDigestStorageObjectHandler";
+import { SupabaseDigestStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseDigestStorageObjectHandler";
+import { DigestStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/DigestStorageObjectRequest";
+import { FakeCopyStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeCopyStorageObjectHandler";
+import { SupabaseCopyStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseCopyStorageObjectHandler";
+import { CopyStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/CopyStorageObjectRequest";
 import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
@@ -48,6 +60,7 @@ function createSupabaseMediaStorageAccessor(db: DbClient): IMediaStorageAccessor
         new SupabaseCreateSignedUploadUrlHandler(db),
       )
       .register(UploadStorageObjectRequest, new SupabaseUploadStorageObjectHandler(db))
+      .register(CopyStorageObjectRequest, new SupabaseCopyStorageObjectHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(
@@ -58,6 +71,15 @@ function createSupabaseMediaStorageAccessor(db: DbClient): IMediaStorageAccessor
         CreateSignedDownloadUrlRequest,
         new SupabaseCreateSignedDownloadUrlHandler(db),
       )
+      .register(
+        LoadStorageObjectInfoRequest,
+        new SupabaseLoadStorageObjectInfoHandler(db),
+      )
+      .register(
+        DownloadStorageObjectRangeRequest,
+        new SupabaseDownloadStorageObjectRangeHandler(db),
+      )
+      .register(DigestStorageObjectRequest, new SupabaseDigestStorageObjectHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveStorageObjectRequest, new SupabaseRemoveStorageObjectHandler(db))
@@ -72,6 +94,7 @@ function createFakeMediaStorageAccessor(
     new HandlerResolverBuilder()
       .register(CreateSignedUploadUrlRequest, new FakeCreateSignedUploadUrlHandler(state))
       .register(UploadStorageObjectRequest, new FakeUploadStorageObjectHandler(state))
+      .register(CopyStorageObjectRequest, new FakeCopyStorageObjectHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(DownloadStorageObjectRequest, new FakeDownloadStorageObjectHandler(state))
@@ -79,6 +102,12 @@ function createFakeMediaStorageAccessor(
         CreateSignedDownloadUrlRequest,
         new FakeCreateSignedDownloadUrlHandler(state),
       )
+      .register(LoadStorageObjectInfoRequest, new FakeLoadStorageObjectInfoHandler(state))
+      .register(
+        DownloadStorageObjectRangeRequest,
+        new FakeDownloadStorageObjectRangeHandler(state),
+      )
+      .register(DigestStorageObjectRequest, new FakeDigestStorageObjectHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveStorageObjectRequest, new FakeRemoveStorageObjectHandler(state))

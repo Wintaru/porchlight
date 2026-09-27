@@ -1,39 +1,35 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { MatchImageHashRequest } from "../Requests/MatchImageHashRequest";
+import type { MatchMediaUrlRequest } from "../Requests/MatchMediaUrlRequest";
 import { HashMatchAccessFailedResponse } from "../Responses/HashMatchAccessFailedResponse";
 import type { HashMatchResultResponse } from "../Responses/HashMatchResultResponse";
 import { shieldAuthorization } from "./shieldAuthorization";
 import { shieldVerdict } from "./shieldVerdict";
 
-// Project Arachnid's Shield API (docs/setup/hash-matching.md, WAYFINDER D17b). The
-// contract is the one the Canadian Centre for Child Protection's own SDK uses
-// (github.com/CdnCentreForChildProtection/arachnid-shield-sdk-ts, `scanMediaFromBytes`):
-// POST the raw bytes to /v1/media/ with the image's Content-Type and HTTP Basic auth,
-// and read `classification` from the answer (shieldVerdict.ts).
-const SHIELD_MEDIA_URL = "https://shield.projectarachnid.com/v1/media/";
+// Shield fetches the media itself (#21): POST `{ "url": ... }` as JSON to /v1/url/, the
+// contract of the SDK's `scanMediaFromUrl`. Shield checks a video frame by frame.
+const SHIELD_URL_URL = "https://shield.projectarachnid.com/v1/url/";
 
-export class ArachnidShieldMatchImageHashHandler implements IHandler<
-  MatchImageHashRequest,
+export class ArachnidShieldMatchMediaUrlHandler implements IHandler<
+  MatchMediaUrlRequest,
   HashMatchResultResponse | HashMatchAccessFailedResponse
 > {
   private readonly authorization: string;
 
-  // `credentials` is Shield's "username:password", the one HASH_MATCH_API_KEY value.
   constructor(credentials: string) {
     this.authorization = shieldAuthorization(credentials);
   }
 
   async handle(
-    request: MatchImageHashRequest,
+    request: MatchMediaUrlRequest,
   ): Promise<HashMatchResultResponse | HashMatchAccessFailedResponse> {
     try {
-      const response = await fetch(SHIELD_MEDIA_URL, {
+      const response = await fetch(SHIELD_URL_URL, {
         method: "POST",
         headers: {
           authorization: this.authorization,
-          "content-type": request.mimeType,
+          "content-type": "application/json; charset=utf-8",
         },
-        body: new Uint8Array(request.bytes),
+        body: JSON.stringify({ url: request.url }),
       });
       if (!response.ok) {
         return new HashMatchAccessFailedResponse(

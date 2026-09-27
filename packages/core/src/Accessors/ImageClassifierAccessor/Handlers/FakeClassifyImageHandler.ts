@@ -1,15 +1,9 @@
-import { DEFAULT_MODERATION_THRESHOLDS } from "../../../Common/ModerationThresholds";
 import type { IHandler } from "../../../Common/IHandler";
 import type { FakeImageClassifierState } from "../FakeImageClassifierState";
 import type { ClassifyImageRequest } from "../Requests/ClassifyImageRequest";
-import { ImageClassifiedResponse } from "../Responses/ImageClassifiedResponse";
-import { ImageClassifierAccessFailedResponse } from "../Responses/ImageClassifierAccessFailedResponse";
-
-// A severity score strictly between the default flag and lock thresholds, so "flagged"
-// lands there under ModerationPolicyEngine's default thresholds without this fake
-// needing to know which thresholds a given composition actually passes it.
-const FLAGGED_SEVERITY =
-  (DEFAULT_MODERATION_THRESHOLDS.flagAt + DEFAULT_MODERATION_THRESHOLDS.lockAt) / 2;
+import type { ImageClassifiedResponse } from "../Responses/ImageClassifiedResponse";
+import type { ImageClassifierAccessFailedResponse } from "../Responses/ImageClassifierAccessFailedResponse";
+import { fakeClassifiedResponse } from "./fakeClassifiedResponse";
 
 // Bytes that carry this marker score as flagged even when the fake answers clear, so a
 // Playwright test can put one flagged upload through a running server without
@@ -31,36 +25,7 @@ export class FakeClassifyImageHandler implements IHandler<
       this.state.result === "clear" && carriesMarker(request.bytes)
         ? "flagged"
         : this.state.result;
-    switch (result) {
-      case "clear":
-        return Promise.resolve(
-          new ImageClassifiedResponse(request.correlationId, {
-            severityScore: 0,
-            minorsSignal: false,
-          }),
-        );
-      case "flagged":
-        return Promise.resolve(
-          new ImageClassifiedResponse(request.correlationId, {
-            severityScore: FLAGGED_SEVERITY,
-            minorsSignal: false,
-          }),
-        );
-      case "locked":
-        return Promise.resolve(
-          new ImageClassifiedResponse(request.correlationId, {
-            severityScore: 1,
-            minorsSignal: true,
-          }),
-        );
-      case "fail":
-        return Promise.resolve(
-          new ImageClassifierAccessFailedResponse(
-            request.correlationId,
-            "IMAGE_CLASSIFIER_FAKE_RESULT=fail",
-          ),
-        );
-    }
+    return Promise.resolve(fakeClassifiedResponse(request.correlationId, result));
   }
 }
 
