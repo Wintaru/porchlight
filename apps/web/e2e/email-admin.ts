@@ -87,3 +87,37 @@ export async function runEmailSweep(baseURL: string): Promise<void> {
   const body = (await response.json()) as { sent: number; failed: number };
   expect(body.failed).toBe(0);
 }
+
+// Marks a seeded post as announced ten minutes ago, as a publish would, so a reader's
+// window holds it. `null` puts the seed's value back.
+export async function setPostAnnounced(
+  postId: string,
+  announced: boolean,
+): Promise<void> {
+  const at = announced ? new Date(Date.now() - 10 * 60 * 1000).toISOString() : null;
+  await rest(`posts?id=eq.${postId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ announced_at: at }),
+  });
+}
+
+// Starts every subscription of this address two hours ago, so the next sweep finds it due.
+export async function backdateSubscriber(email: string): Promise<void> {
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  await rest(`subscribers?email=eq.${encodeURIComponent(email)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ cursor: twoHoursAgo }),
+  });
+}
+
+export async function subscriberCount(email: string): Promise<number> {
+  const response = await rest(
+    `subscribers?select=id&email=eq.${encodeURIComponent(email)}`,
+    { method: "GET" },
+  );
+  return ((await response.json()) as readonly unknown[]).length;
+}
+
+export async function deleteSubscribers(email: string): Promise<void> {
+  await rest(`subscribers?email=eq.${encodeURIComponent(email)}`, { method: "DELETE" });
+}

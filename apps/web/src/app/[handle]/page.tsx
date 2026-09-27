@@ -10,6 +10,7 @@ import { followTextFor } from "@/components/follow/follow-messages";
 import { blockTextFor } from "@/components/member-block/block-messages";
 import { MemberBlockButtons } from "@/components/member-block/MemberBlockButtons";
 import { PostCardList } from "@/components/PostCardList";
+import { SubscribeCard } from "@/components/SubscribeCard";
 import { Toast } from "@/components/toast/Toast";
 import { getCurrentActor } from "@/lib/current-actor";
 import { formatMonthYear } from "@/lib/format-date";
@@ -34,6 +35,7 @@ interface AuthorPageProps {
     readonly tab?: string;
     readonly block?: string;
     readonly follow?: string;
+    readonly subscribe?: string;
   }>;
 }
 
@@ -76,7 +78,7 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
 // member came here on purpose. `?tab=` switches Posts/Comments server-side, so both
 // tabs are plain links and work with no client JavaScript.
 export default async function AuthorPage({ params, searchParams }: AuthorPageProps) {
-  const [author, { tab, block, follow }, actor] = await Promise.all([
+  const [author, { tab, block, follow, subscribe }, actor] = await Promise.all([
     getAuthor((await params).handle),
     searchParams,
     getCurrentActor(),
@@ -162,6 +164,15 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
         <PostCardList posts={posts ?? []} empty="No posts yet." variant="row" />
       ) : (
         <AuthorCommentList comments={comments ?? []} />
+      )}
+
+      {viewerId !== author.id && (
+        <SubscribeCard
+          authorId={author.id}
+          label={name}
+          returnTo={returnTo}
+          status={subscribe}
+        />
       )}
 
       <p className={styles.footerNote}>

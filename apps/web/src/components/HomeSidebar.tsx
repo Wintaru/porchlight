@@ -1,5 +1,6 @@
 import type { Actor } from "@porchlight/core";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import type { TagPage } from "@/read-model/tag";
 
@@ -9,6 +10,8 @@ interface HomeSidebarProps {
   readonly actor: Actor;
   readonly mayWriteAnonymously: boolean;
   readonly tags: readonly TagPage[];
+  // The subscribe card (#22), rendered by the page, last in the rail.
+  readonly children?: ReactNode;
 }
 
 // The Main board's right rail: a welcome card for a signed-out visitor, an invitation
@@ -16,7 +19,12 @@ interface HomeSidebarProps {
 // piece with nothing to show (a signed-in member, `posting` set to `members`/`staff`,
 // a site with no tags yet) just does not render — the sidebar can end up empty on a
 // brand-new solo blog, which is fine.
-export function HomeSidebar({ actor, mayWriteAnonymously, tags }: HomeSidebarProps) {
+export function HomeSidebar({
+  actor,
+  mayWriteAnonymously,
+  tags,
+  children,
+}: HomeSidebarProps) {
   return (
     <aside className={styles.sidebar} aria-label="About this porch">
       {actor.kind === "visitor" && (
@@ -46,6 +54,7 @@ export function HomeSidebar({ actor, mayWriteAnonymously, tags }: HomeSidebarPro
           <Link href="/p/new">Write anonymously →</Link>
         </div>
       )}
+      {children}
     </aside>
   );
 }

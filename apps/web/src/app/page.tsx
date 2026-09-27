@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PostCardList } from "@/components/PostCardList";
 import { HomeSidebar } from "@/components/HomeSidebar";
+import { SubscribeCard } from "@/components/SubscribeCard";
 import { createSessionClient } from "@/auth/session-client";
 import { canPostAnonymously } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -15,7 +16,11 @@ import { loadTagCloud } from "@/read-model/tag";
 import styles from "./home.module.css";
 
 interface HomePageProps {
-  readonly searchParams: Promise<{ readonly erased?: string; readonly feed?: string }>;
+  readonly searchParams: Promise<{
+    readonly erased?: string;
+    readonly feed?: string;
+    readonly subscribe?: string;
+  }>;
 }
 
 // SPEC.md §9: the site feed's `<link rel="alternate">` and the home page's own OG
@@ -45,11 +50,8 @@ export async function generateMetadata(): Promise<Metadata> {
 // session is gone (SPEC.md §10): nowhere under `/settings` can show this, since that
 // gate now redirects to sign-in.
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const [{ siteName, siteTagline }, actor, { erased, feed }] = await Promise.all([
-    getSiteIdentity(),
-    getCurrentActor(),
-    searchParams,
-  ]);
+  const [{ siteName, siteTagline }, actor, { erased, feed, subscribe }] =
+    await Promise.all([getSiteIdentity(), getCurrentActor(), searchParams]);
   const db = await createSessionClient();
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   // The Following tab (#24, D20) is a member's, and only on a site with two or more
@@ -102,11 +104,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             }
           />
         </div>
-        <HomeSidebar
-          actor={actor}
-          mayWriteAnonymously={mayWriteAnonymously}
-          tags={tags}
-        />
+        <HomeSidebar actor={actor} mayWriteAnonymously={mayWriteAnonymously} tags={tags}>
+          <SubscribeCard
+            authorId={null}
+            label={siteName}
+            returnTo="/"
+            status={subscribe}
+          />
+        </HomeSidebar>
       </div>
     </main>
   );
