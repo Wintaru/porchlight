@@ -41,7 +41,9 @@ describe("RenderMarkdownHandler renders what markdown can store", () => {
     expect(html).toContain("<ul>\n<li>one</li>\n<li>two</li>\n</ul>");
     expect(html).toContain("<ol>\n<li>first</li>\n<li>second</li>\n</ol>");
     expect(html).toContain("<blockquote>\n<p>patience</p>\n</blockquote>");
-    expect(html).toContain('<pre><code class="language-sh">make bench\n</code></pre>');
+    expect(html).toContain(
+      '<pre><code class="hljs language-sh">make bench\n</code></pre>',
+    );
     expect(html).toContain("<hr>");
     expect(html).toContain("<code>code</code>");
   });
@@ -123,5 +125,46 @@ describe("RenderMarkdownHandler refuses hostile input", () => {
     const html = await render("```javascript:alert(1)\nx\n```");
     expect(html).not.toContain("javascript");
     expect(html).not.toMatch(/class="[^"]/);
+  });
+});
+
+describe("RenderMarkdownHandler highlights code that names its language (#77)", () => {
+  test("ts, sql and bash blocks get colour spans", async () => {
+    const html = await render(
+      [
+        "```ts",
+        "const answer: number = 42;",
+        "```",
+        "",
+        "```sql",
+        "select id from posts where status = 'published';",
+        "```",
+        "",
+        "```bash",
+        'echo "hello" | grep h',
+        "```",
+      ].join("\n"),
+    );
+    expect(html).toContain('<code class="hljs language-ts">');
+    expect(html).toContain('<span class="hljs-keyword">const</span>');
+    expect(html).toContain('<code class="hljs language-sql">');
+    expect(html).toContain('<span class="hljs-keyword">select</span>');
+    expect(html).toContain('<code class="hljs language-bash">');
+    expect(html).toContain('<span class="hljs-string">"hello"</span>');
+  });
+
+  test("a block with no language, or one the highlighter does not know, stays plain", async () => {
+    expect(await render("```\nconst x = 1;\n```")).toBe(
+      "<pre><code>const x = 1;\n</code></pre>",
+    );
+    const unknown = await render("```klingon\nqapla'\n```");
+    expect(unknown).not.toContain("<span");
+    expect(unknown).toContain("qapla'");
+  });
+
+  test("HTML in a highlighted block is still escaped", async () => {
+    const html = await render("```html\n<script>alert(1)</script>\n```");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&#x3C;");
   });
 });

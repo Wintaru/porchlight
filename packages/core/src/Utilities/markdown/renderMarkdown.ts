@@ -1,3 +1,4 @@
+import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize, { type Options as SanitizeSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import remarkParse from "remark-parse";
@@ -13,6 +14,12 @@ import { inertLinks } from "./inertLinks";
 // sanitizer would strip it anyway. Two walls, one policy. The schema is the caller's:
 // this utility knows how to render, not what Porchlight allows. `inert` renders links
 // and images as text (inertLinks.ts), for a body nobody has approved yet.
+//
+// Code blocks are highlighted after the sanitizer (#77): the colour spans come from
+// rehype-highlight, never from the author, so the schema never has to let `class` or
+// `style` through. Only a block that names its language is highlighted: `detect` off,
+// so a plain block stays plain, and a language the highlighter does not know is left
+// as it is.
 export async function renderMarkdown(
   markdown: string,
   schema: SanitizeSchema,
@@ -21,6 +28,7 @@ export async function renderMarkdown(
   const pipeline = unified().use(remarkParse).use(remarkRehype);
   const file = await (options.inert ? pipeline.use(inertLinks) : pipeline)
     .use(rehypeSanitize, schema)
+    .use(rehypeHighlight, { detect: false })
     .use(rehypeStringify)
     .process(markdown);
   return String(file);
