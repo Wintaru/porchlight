@@ -26,6 +26,8 @@ export const MEDIA_ERROR_TEXT: Readonly<Record<MediaErrorCode, string>> = {
   "agents-closed": "Agents are closed to this account on this site.",
   "extension-not-allowed": "That file type is not allowed here.",
   "type-mismatch": "That file's contents do not match its name. It was not accepted.",
+  "video-not-prepared":
+    "That video was not prepared by this editor. Upload it here again, from the original file.",
   "file-too-large": "That file is larger than this account's per-file limit.",
   "account-cap": "This account has reached its total upload limit.",
   "file-count-cap": "The upload limit for this action has been reached.",
