@@ -86,6 +86,37 @@ describe("EvaluateDraftHandler", () => {
   });
 });
 
+describe("EvaluateDraftHandler on ordinary and hostile input", () => {
+  test("a banned phrase in a list or a quote still counts", async () => {
+    const warnings = await warningsOf("- we delve into it\n\n> tapestry");
+    expect(
+      warnings.map((warning) => warning.kind === "banned-phrase" && warning.phrase),
+    ).toEqual(["delve", "tapestry"]);
+  });
+
+  test("a how-to of headed lists and a story's last line are not flagged", async () => {
+    const howTo =
+      "## Ingredients\n\n- flour\n- water\n\n## Steps\n\n1. mix\n2. bake\n\n## Notes\n\n- rest it";
+    expect(await warningsOf(howTo)).toEqual([]);
+    expect(
+      await warningsOf(
+        "We looked all night.\n\nIn the end, the dog found its own way home.",
+      ),
+    ).toEqual([]);
+  });
+
+  test.each([
+    ["hyphen runs", "a-".repeat(50_000)],
+    ["open brackets", "[".repeat(100_000)],
+    ["open parentheses after a bracket pair", `[x]${"(".repeat(100_000)}`],
+    ["apostrophe runs", "a'".repeat(50_000)],
+  ])("100 KB of %s is checked in well under a second", async (_name, body) => {
+    const started = performance.now();
+    await warningsOf(body);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
+});
+
 describe("guideBannedPhrases", () => {
   test("reads the list under the first heading that says banned, and stops at the next", () => {
     expect(
@@ -94,6 +125,11 @@ describe("guideBannedPhrases", () => {
       ),
     ).toEqual(["synergy", "circle back"]);
     expect(guideBannedPhrases(null)).toEqual([]);
+    expect(guideBannedPhrases("## Banned\n1. *circle back*\n2) _synergy_")).toEqual([
+      "circle back",
+      "synergy",
+    ]);
+    expect(guideBannedPhrases("## Unbanned words\n- fine")).toEqual([]);
     expect(guideBannedPhrases("- no heading, no list")).toEqual([]);
   });
 });

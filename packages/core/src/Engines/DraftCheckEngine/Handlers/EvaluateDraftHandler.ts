@@ -15,33 +15,36 @@ const MIN_TRICOLONS = 3;
 const TRICOLON_SHARE = 0.2;
 const MIN_HEADINGS = 3;
 const PARAGRAPHS_PER_HEADING = 1.5;
+// Only openings that announce a summary: "in the end" or "ultimately" also open an
+// ordinary last paragraph of a story.
 const SUMMARY_OPENINGS = [
   "in conclusion",
   "in summary",
   "to sum up",
   "to summarize",
   "to summarise",
-  "all in all",
-  "in short",
-  "overall",
-  "ultimately",
-  "in the end",
 ] as const;
 
 const FENCED_CODE = /^(```|~~~)[\s\S]*?^\1/gm;
 const INLINE_CODE = /`[^`\n]*`/g;
-const IMAGE = /!\[[^\]]*\]\([^)]*\)/g;
-const LINK = /\[([^\]]*)\]\([^)]*\)/g;
+// The inner classes also stop at the next opening bracket, so a run of "[" or "(" with
+// no closer costs one scan, not one scan per bracket.
+const IMAGE = /!\[[^\][]*\]\([^()]*\)/g;
+const LINK = /\[([^\][]*)\]\([^()]*\)/g;
 const HEADING = /^#{1,6}\s/;
 const LIST_OR_QUOTE = /^\s*([-*+]|\d+[.)]|>)\s/;
 const SENTENCE_END = /(?<=[.!?])\s+/;
-// "a, b, and c" or "a, b or c": three short items, each up to four words.
+// "a, b, and c" or "a, b or c": three short items, each up to four words. A match
+// starts only where a word starts (not after a letter, hyphen or apostrophe): with a
+// plain \b, "a-a-a-…" would start one attempt at every letter and take quadratic time.
 const TRICOLON =
-  /\b[\p{L}'’-]+(?:\s[\p{L}'’-]+){0,3},\s[\p{L}'’-]+(?:\s[\p{L}'’-]+){0,3},?\s(?:and|or)\s[\p{L}'’-]+/giu;
+  /(?<![\p{L}'’-])[\p{L}'’-]+(?:\s[\p{L}'’-]+){0,3},\s[\p{L}'’-]+(?:\s[\p{L}'’-]+){0,3},?\s(?:and|or)\s[\p{L}'’-]+/giu;
 
 interface Shape {
+  // Everything but code, for the banned phrases: a list item or a quote says it too.
+  readonly text: string;
   readonly headings: number;
-  // Prose paragraphs: not headings, lists or quotes.
+  // Prose paragraphs: not headings, lists or quotes. The rhythm checks read these.
   readonly paragraphs: readonly string[];
 }
 
@@ -68,7 +71,7 @@ function shapeOf(bodyMd: string): Shape {
     }
     paragraphs.push(trimmed.replace(/\s+/g, " "));
   }
-  return { headings, paragraphs };
+  return { text, headings, paragraphs };
 }
 
 function countOf(haystack: string, phrase: string): number {
@@ -85,9 +88,8 @@ export class EvaluateDraftHandler implements IHandler<
 > {
   handle(request: EvaluateDraftRequest): Promise<DraftEvaluatedResponse> {
     const { bodyMd, guideMd, correlationId } = request;
-    const { headings, paragraphs } = shapeOf(bodyMd);
-    const prose = paragraphs.join("\n\n");
-    const lowered = prose.toLowerCase();
+    const { text, headings, paragraphs } = shapeOf(bodyMd);
+    const lowered = text.toLowerCase();
     const warnings: DraftWarning[] = [];
 
     const phrases = new Set(
@@ -127,8 +129,11 @@ export class EvaluateDraftHandler implements IHandler<
       warnings.push({ kind: "tricolons", count: tricolons });
     }
 
+    // Prose under nearly every heading is the report shape. Headed lists (a recipe, a
+    // how-to) are not prose, so they never count toward it.
     if (
       headings >= MIN_HEADINGS &&
+      paragraphs.length >= MIN_HEADINGS &&
       paragraphs.length / headings <= PARAGRAPHS_PER_HEADING
     ) {
       warnings.push({ kind: "headings", headings, paragraphs: paragraphs.length });

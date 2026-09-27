@@ -6,6 +6,7 @@ import {
   AgentLimitsResponse,
   agentsOpenTo,
   CheckDraftRequest,
+  DRAFT_CHECK_MAX_LENGTH,
   DraftCheckResponse,
   draftWarningText,
   CreateDraftRequest,
@@ -188,7 +189,7 @@ function registerTools(
     {
       description:
         "Check a draft's markdown against the member's voice guide and a few tells of generated text: banned phrases, sentences all the same length, many lists of three, a heading on every paragraph, a closing summary. Warnings only. Run it before create_draft or update_draft and fix what it finds.",
-      inputSchema: z.object({ body_md: z.string() }),
+      inputSchema: z.object({ body_md: z.string().max(DRAFT_CHECK_MAX_LENGTH) }),
     },
     async ({ body_md }) => {
       const response = await accountManager.query(new CheckDraftRequest(actor, body_md));
