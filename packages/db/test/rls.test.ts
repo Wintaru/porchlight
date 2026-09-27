@@ -60,6 +60,8 @@ const PHASE_2_TABLES = [
   "subscribers",
   // #32: earlier versions of a member's voice guide, server only.
   "voice_guide_revisions",
+  // #25: invite links, server only.
+  "invites",
 ] as const;
 
 // Server-only functions: the service role calls them, a browser role never may (#22).
@@ -71,6 +73,7 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.confirm_subscription(text)",
   "public.claim_subscriber_emails(timestamptz, integer)",
   "public.release_subscriber_email(uuid, timestamptz, timestamptz)",
+  "public.redeem_invite(text)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or

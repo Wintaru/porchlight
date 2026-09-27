@@ -716,3 +716,51 @@ describe("sweep_rate_limits (#43)", () => {
     }
   });
 });
+
+// Issue #25: an invite link is spent one use at a time, and a revoked, expired or used
+// up link grants nothing.
+describe("redeem_invite (#25)", () => {
+  const redeem = (tx: TransactionSql, hash: string) =>
+    tx<{ trust: string | null }[]>`select public.redeem_invite(${hash}) as trust`.then(
+      (rows) => rows[0]?.trust ?? null,
+    );
+
+  test("a two-use link grants its level twice, then nothing", async () => {
+    const answers = await asService(async (tx) => {
+      await tx`
+        insert into public.invites (token_hash, created_by, max_uses, trust_level)
+        values ('h-two', ${SEED.admin}, 2, 'probation')
+      `;
+      return [
+        await redeem(tx, "h-two"),
+        await redeem(tx, "h-two"),
+        await redeem(tx, "h-two"),
+      ];
+    });
+    expect(answers).toEqual(["probation", "probation", null]);
+  });
+
+  test("a revoked, an expired and an unknown link grant nothing", async () => {
+    const answers = await asService(async (tx) => {
+      await tx`
+        insert into public.invites (token_hash, created_by, revoked_at, expires_at) values
+          ('h-revoked', ${SEED.admin}, now(), null),
+          ('h-expired', ${SEED.admin}, null, now() - interval '1 minute')
+      `;
+      return [
+        await redeem(tx, "h-revoked"),
+        await redeem(tx, "h-expired"),
+        await redeem(tx, "h-unknown"),
+      ];
+    });
+    expect(answers).toEqual([null, null, null]);
+  });
+
+  test("a link with no limit defaults to trusted", async () => {
+    const trust = await asService(async (tx) => {
+      await tx`insert into public.invites (token_hash, created_by) values ('h-open', ${SEED.admin})`;
+      return redeem(tx, "h-open");
+    });
+    expect(trust).toBe("trusted");
+  });
+});

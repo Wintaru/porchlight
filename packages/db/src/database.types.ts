@@ -332,6 +332,50 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          revoked_at: string | null
+          token_hash: string
+          trust_level: Database["public"]["Enums"]["trust_level"]
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          revoked_at?: string | null
+          token_hash: string
+          trust_level?: Database["public"]["Enums"]["trust_level"]
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          revoked_at?: string | null
+          token_hash?: string
+          trust_level?: Database["public"]["Enums"]["trust_level"]
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_assets: {
         Row: {
           anonymous_author_id: string | null
@@ -1311,6 +1355,10 @@ export type Database = {
         Returns: unknown
       }
       published_author_count: { Args: never; Returns: number }
+      redeem_invite: {
+        Args: { p_token_hash: string }
+        Returns: Database["public"]["Enums"]["trust_level"]
+      }
       release_member_email: {
         Args: {
           p_kind: string
