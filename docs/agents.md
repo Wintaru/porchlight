@@ -78,8 +78,10 @@ With the guide, the agent also receives two things you do not write:
 
 The settings page shows both under "What your agent also receives". An agent can change
 your guide only with the **Change your voice guide** scope, and the house rules tell it
-to add a rule only when you agree. The guide is part of your export, and erasing your
-account deletes it.
+to add a rule only when you agree. Each save, by you or by the agent, keeps the text
+it replaced: open "Earlier versions" under the guide to see what changed and copy a
+rule back. The site keeps the last 50. The guide and its earlier versions are part of
+your export, and erasing your account deletes them.
 
 The server tells every connecting agent the house rules before it writes: draft from
 your notes and your voice guide only, do not pad, do not add a closing summary, do not

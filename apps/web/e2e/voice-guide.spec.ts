@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 
 import { deleteCurrentPost, devSignIn, fillBodyMarkdown, THEO } from "./helpers";
 import { connect, firstText, mintToken, structured } from "./mcp-client";
+import { rest } from "./service-rest";
+
+const THEO_ID = "00000000-0000-4000-8000-000000000003";
 
 // Issue #29's acceptance test (SPEC.md §17, D22): the guide the agent reads holds the
 // member's rules, the default banned phrases, and only posts written by hand as
@@ -74,6 +77,15 @@ test("the voice guide carries the member's rules and only hand-written samples",
     await voice.getByText("What your agent also receives").click();
     await expect(page.getByTestId("voice-samples")).toContainText(handTitle);
     await expect(page.getByTestId("voice-samples")).not.toContainText(agentTitle);
+
+    // The text the agent replaced is kept as an earlier version (#32).
+    await page
+      .getByTestId("voice-history")
+      .getByText(/Earlier versions/)
+      .click();
+    await expect(page.getByTestId("voice-revision").first()).toContainText(
+      "Short sentences. No exclamation marks.",
+    );
   } finally {
     await client.close();
   }
@@ -88,6 +100,7 @@ test("the voice guide carries the member's rules and only hand-written samples",
   await voice.getByLabel("Your rules (markdown)").fill("");
   await voice.getByRole("button", { name: "Save voice guide" }).click();
   await expect(page.getByTestId("voice-status")).toBeVisible();
+  await rest(`voice_guide_revisions?profile_id=eq.${THEO_ID}`, { method: "DELETE" });
 });
 
 test("get_post shows the agent's first text beside the member's edit", async ({

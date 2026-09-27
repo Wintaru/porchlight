@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 
 import { localValue } from "./auth-admin";
+import { rest } from "./service-rest";
 
 // Service-role steps for the email specs (#22) that no page can do: move a digest's
 // window back in time, so a test need not wait an hour, and clean up afterwards.
@@ -11,31 +12,6 @@ const SEED_IDS = {
 } as const;
 
 export type EmailSeedMember = keyof typeof SEED_IDS;
-
-interface RestInit {
-  readonly method: string;
-  readonly body?: string;
-  readonly prefer?: string;
-}
-
-async function rest(path: string, init: RestInit): Promise<Response> {
-  const url = localValue("NEXT_PUBLIC_SUPABASE_URL");
-  const key = localValue("SUPABASE_SERVICE_ROLE_KEY");
-  const response = await fetch(`${url}/rest/v1/${path}`, {
-    method: init.method,
-    ...(init.body === undefined ? {} : { body: init.body }),
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-      ...(init.prefer === undefined ? {} : { Prefer: init.prefer }),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`${init.method} ${path}: ${String(response.status)}`);
-  }
-  return response;
-}
 
 // Starts the member's digest window two hours ago, so the next sweep finds it due.
 export async function backdateDigest(member: EmailSeedMember): Promise<void> {

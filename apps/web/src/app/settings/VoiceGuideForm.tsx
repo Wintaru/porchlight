@@ -1,4 +1,8 @@
-import { VOICE_GUIDE_MAX_LENGTH, type VoiceGuide } from "@porchlight/core";
+import {
+  VOICE_GUIDE_MAX_LENGTH,
+  type VoiceGuide,
+  type VoiceGuideRevision,
+} from "@porchlight/core";
 
 import { Toast } from "@/components/toast/Toast";
 import { formatDate } from "@/lib/format-date";
@@ -7,13 +11,15 @@ import styles from "./settings.module.css";
 
 interface VoiceGuideFormProps {
   readonly guide: VoiceGuide | undefined;
+  // Earlier versions, newest first (#32); undefined when they could not be loaded.
+  readonly revisions: readonly VoiceGuideRevision[] | undefined;
   readonly saved: boolean;
 }
 
 // The voice guide editor (SPEC.md §17): the member's own rules, then a preview of the
 // rest of what `get_voice_guide` sends — the phrases every guide bans and the posts
 // written here by hand that go with it as samples.
-export function VoiceGuideForm({ guide, saved }: VoiceGuideFormProps) {
+export function VoiceGuideForm({ guide, revisions, saved }: VoiceGuideFormProps) {
   if (guide === undefined) {
     return (
       <p role="alert" className="form-alert">
@@ -27,6 +33,9 @@ export function VoiceGuideForm({ guide, saved }: VoiceGuideFormProps) {
       <p>
         Your agent reads this before it drafts. Write the rules you would give a person
         who writes for you: sentence length, words you never use, how you open and close.
+        To ban your own phrases, put them in a list under a heading with the word
+        &ldquo;banned&rdquo; in it. The Check button in the editor and your agent&rsquo;s
+        check_draft both read that list.
       </p>
       {saved && (
         <Toast message="Voice guide saved." param="voiceSaved" testId="voice-status" />
@@ -72,6 +81,25 @@ export function VoiceGuideForm({ guide, saved }: VoiceGuideFormProps) {
           </ul>
         )}
       </details>
+      {revisions !== undefined && revisions.length > 0 && (
+        <details className={styles.voicePreview} data-testid="voice-history">
+          <summary>Earlier versions ({revisions.length})</summary>
+          <p className={styles.muted}>
+            Each save, by you or by your agent, keeps the text it replaced. Copy a rule
+            back into the guide above to use it again.
+          </p>
+          <ol className={styles.voiceSamples}>
+            {revisions.map((revision) => (
+              <li key={revision.replacedAt.toISOString()} data-testid="voice-revision">
+                <span className={styles.muted}>
+                  Replaced {formatDate(revision.replacedAt.toISOString())}
+                </span>
+                <pre className={styles.voiceRevision}>{revision.guideMd}</pre>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
     </div>
   );
 }

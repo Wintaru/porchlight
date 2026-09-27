@@ -3,9 +3,11 @@ import {
   AGENT_SCOPES,
   type AgentToken,
   GetVoiceGuideRequest,
+  ListVoiceGuideRevisionsRequest,
   ListAgentTokensRequest,
   TokensResponse,
   VoiceGuideResponse,
+  VoiceGuideRevisionsResponse,
   isAgentTokenLive,
 } from "@porchlight/core";
 
@@ -33,12 +35,15 @@ export async function AgentsSection({
   errorText,
 }: AgentsSectionProps) {
   const { accountManager } = getDependencyContainer();
-  const [response, voice] = await Promise.all([
+  const [response, voice, history] = await Promise.all([
     accountManager.query(new ListAgentTokensRequest(actor)),
     accountManager.query(new GetVoiceGuideRequest(actor)),
+    accountManager.query(new ListVoiceGuideRevisionsRequest(actor)),
   ]);
   const tokens = response instanceof TokensResponse ? response.tokens : undefined;
   const guide = voice instanceof VoiceGuideResponse ? voice.guide : undefined;
+  const revisions =
+    history instanceof VoiceGuideRevisionsResponse ? history.revisions : undefined;
   const now = new Date();
 
   return (
@@ -97,7 +102,7 @@ export async function AgentsSection({
           ))}
         </ul>
       )}
-      <VoiceGuideForm guide={guide} saved={voiceSaved} />
+      <VoiceGuideForm guide={guide} revisions={revisions} saved={voiceSaved} />
     </section>
   );
 }
