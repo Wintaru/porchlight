@@ -841,14 +841,84 @@ describe("media post link (#80)", () => {
     expect(linked).toBeNull();
   });
 
-  test("browser roles cannot run the link functions", async () => {
+  test("an upload taken out is unused, unless another post still uses it", async () => {
+    const [takenOut, stillUsed] = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`update public.posts set body_md = ${`x ${MEDIA}`} where id = ${SEED.draftPost}`;
+      await tx`update public.posts set body_md = 'nothing now' where id = ${SEED.draftPost}`;
+      const unused = await tx<{ id: string }[]>`
+        select public.unused_media(array[${MEDIA}]::uuid[], ${SEED.trustedMember}, ${SEED.draftPost}) as id
+      `;
+      await tx`
+        insert into public.posts (id, author_id, slug, title, body_md)
+        values (${OTHER_POST}, ${SEED.trustedMember}, 'second-post', 'Second', ${`y ${MEDIA}`})
+      `;
+      const afterReuse = await tx<{ id: string }[]>`
+        select public.unused_media(array[${MEDIA}]::uuid[], ${SEED.trustedMember}, ${SEED.draftPost}) as id
+      `;
+      return [unused.map((r) => r.id), afterReuse.map((r) => r.id)];
+    });
+    expect(takenOut).toContain(MEDIA);
+    expect(stillUsed).not.toContain(MEDIA);
+  });
+
+  test("an upload another member's post shows is not unused", async () => {
+    const unused = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`update public.posts set body_md = ${`x ${MEDIA}`} where id = ${SEED.draftPost}`;
+      await tx`update public.posts set body_md = 'nothing now' where id = ${SEED.draftPost}`;
+      await tx`update public.posts set body_md = ${`borrowed ${MEDIA}`} where id = ${SEED.pendingPost}`;
+      return tx<{ id: string }[]>`
+        select public.unused_media(array[${MEDIA}]::uuid[], ${SEED.trustedMember}, ${SEED.draftPost}) as id
+      `;
+    });
+    expect(unused.map((r) => r.id)).not.toContain(MEDIA);
+  });
+
+  test("an upload attached to its post for later is marked used once a save puts it in", async () => {
+    const [attached, inserted] = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`update public.media_assets set post_id = ${SEED.draftPost} where id = ${MEDIA}`;
+      const [before] = await tx<{ used_in_post: boolean }[]>`
+        select used_in_post from public.media_assets where id = ${MEDIA}
+      `;
+      await tx`update public.posts set body_md = ${`x ${MEDIA}`} where id = ${SEED.draftPost}`;
+      const [after] = await tx<{ used_in_post: boolean }[]>`
+        select used_in_post from public.media_assets where id = ${MEDIA}
+      `;
+      return [before?.used_in_post, after?.used_in_post];
+    });
+    expect(attached).toBe(false);
+    expect(inserted).toBe(true);
+  });
+
+  test("an upload cannot belong to another member's post", async () => {
     const code = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await upload(tx, MEDIA);
+        await tx`update public.media_assets set post_id = ${SEED.pendingPost} where id = ${MEDIA}`;
+      }),
+    );
+    expect(code).toBe(CHECK_VIOLATION);
+  });
+
+  test("browser roles cannot run the link functions", async () => {
+    const link = await errorCodeOf(() =>
       asRole(
         sql,
         "authenticated",
         (tx) => tx`select public.link_post_media(${SEED.draftPost})`,
       ),
     );
-    expect(code).toBe(INSUFFICIENT_PRIVILEGE);
+    const unused = await errorCodeOf(() =>
+      asRole(
+        sql,
+        "authenticated",
+        (tx) =>
+          tx`select public.unused_media(array[${SEED.publishedMedia}]::uuid[], ${SEED.trustedMember})`,
+      ),
+    );
+    expect(link).toBe(INSUFFICIENT_PRIVILEGE);
+    expect(unused).toBe(INSUFFICIENT_PRIVILEGE);
   });
 });

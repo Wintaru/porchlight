@@ -395,6 +395,7 @@ export type Database = {
           sha256: string
           storage_path: string
           updated_at: string
+          used_in_post: boolean
         }
         Insert: {
           anonymous_author_id?: string | null
@@ -414,6 +415,7 @@ export type Database = {
           sha256: string
           storage_path: string
           updated_at?: string
+          used_in_post?: boolean
         }
         Update: {
           anonymous_author_id?: string | null
@@ -433,6 +435,7 @@ export type Database = {
           sha256?: string
           storage_path?: string
           updated_at?: string
+          used_in_post?: boolean
         }
         Relationships: [
           {
@@ -1348,6 +1351,7 @@ export type Database = {
           sha256: string
           storage_path: string
           updated_at: string
+          used_in_post: boolean
         }[]
         SetofOptions: {
           from: "*"
@@ -1438,6 +1442,10 @@ export type Database = {
         Returns: undefined
       }
       sweep_rate_limits: { Args: never; Returns: number }
+      unused_media: {
+        Args: { p_media_ids: string[]; p_owner_id: string; p_post_id?: string }
+        Returns: string[]
+      }
       viewer_hidden_authors: { Args: never; Returns: string[] }
     }
     Enums: {
