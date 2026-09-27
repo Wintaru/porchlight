@@ -2,7 +2,6 @@ import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/
 import { StoreSiteConfigEntriesRequest } from "../../../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigStoredResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigStoredResponse";
 import type { SiteConfigEntry } from "../../../Accessors/SiteConfigAccessor/SiteConfigEntry";
-import type { Actor } from "../../../Common/Actor";
 import { AGENT_DISCLOSURES } from "../../../Common/AgentDisclosure";
 import { MAX_AGENT_DAILY_LIMIT } from "../../../Common/AgentLimits";
 import { AGENTS_POLICIES } from "../../../Common/AgentsPolicy";
@@ -28,6 +27,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { EvaluatePermissionRequest } from "../../../Engines/PermissionEngine/Requests/EvaluatePermissionRequest";
 import { PermissionDeniedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionDeniedResponse";
 import { PermissionUnavailableResponse } from "../../../Engines/PermissionEngine/Responses/PermissionUnavailableResponse";
+import { configEditorId } from "../configEditorId";
 import type { SaveSiteConfigRequest } from "../Requests/SaveSiteConfigRequest";
 import { SiteConfigForbiddenResponse } from "../Responses/SiteConfigForbiddenResponse";
 import { SiteConfigInvalidResponse } from "../Responses/SiteConfigInvalidResponse";
@@ -69,6 +69,10 @@ export class SaveSiteConfigHandler implements IHandler<SaveSiteConfigRequest, Ve
     if (verdict instanceof PermissionUnavailableResponse) {
       return new SiteConfigUnavailableResponse(correlationId, verdict.reason);
     }
+    const editorId = configEditorId(actor);
+    if (editorId === undefined) {
+      return new SiteConfigForbiddenResponse(correlationId, "not-allowed");
+    }
 
     const entries = entriesFor(update);
     if (!Array.isArray(entries)) {
@@ -79,7 +83,7 @@ export class SaveSiteConfigHandler implements IHandler<SaveSiteConfigRequest, Ve
     }
 
     const stored = await this.siteConfig.store(
-      new StoreSiteConfigEntriesRequest(entries, actorId(actor), context),
+      new StoreSiteConfigEntriesRequest(entries, editorId, context),
     );
     if (stored instanceof SiteConfigStoredResponse) {
       return new SiteConfigSavedResponse(correlationId);
@@ -91,10 +95,6 @@ export class SaveSiteConfigHandler implements IHandler<SaveSiteConfigRequest, Ve
         : `unexpected ${stored.constructor.name} from store`,
     );
   }
-}
-
-function actorId(actor: Actor): string {
-  return actor.kind === "member" ? actor.profile.id : "system";
 }
 
 interface FieldError {

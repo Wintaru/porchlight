@@ -1,7 +1,6 @@
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { StoreSiteConfigEntriesRequest } from "../../../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigStoredResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigStoredResponse";
-import type { Actor } from "../../../Common/Actor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
 import { SITE_CONFIG_PRESET_VALUES } from "../../../Common/SiteConfigPreset";
@@ -9,6 +8,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { EvaluatePermissionRequest } from "../../../Engines/PermissionEngine/Requests/EvaluatePermissionRequest";
 import { PermissionDeniedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionDeniedResponse";
 import { PermissionUnavailableResponse } from "../../../Engines/PermissionEngine/Responses/PermissionUnavailableResponse";
+import { configEditorId } from "../configEditorId";
 import type { ApplyPresetRequest } from "../Requests/ApplyPresetRequest";
 import { SiteConfigForbiddenResponse } from "../Responses/SiteConfigForbiddenResponse";
 import { SiteConfigSavedResponse } from "../Responses/SiteConfigSavedResponse";
@@ -42,6 +42,10 @@ export class ApplyPresetHandler implements IHandler<ApplyPresetRequest, Verdict>
     if (verdict instanceof PermissionUnavailableResponse) {
       return new SiteConfigUnavailableResponse(correlationId, verdict.reason);
     }
+    const editorId = configEditorId(actor);
+    if (editorId === undefined) {
+      return new SiteConfigForbiddenResponse(correlationId, "not-allowed");
+    }
 
     const values = SITE_CONFIG_PRESET_VALUES[preset];
     const stored = await this.siteConfig.store(
@@ -51,7 +55,7 @@ export class ApplyPresetHandler implements IHandler<ApplyPresetRequest, Verdict>
           { key: "comments", value: values.comments },
           { key: "sign_up", value: values.signUp },
         ],
-        actorId(actor),
+        editorId,
         context,
       ),
     );
@@ -65,8 +69,4 @@ export class ApplyPresetHandler implements IHandler<ApplyPresetRequest, Verdict>
         : `unexpected ${stored.constructor.name} from store`,
     );
   }
-}
-
-function actorId(actor: Actor): string {
-  return actor.kind === "member" ? actor.profile.id : "system";
 }
