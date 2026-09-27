@@ -30,13 +30,19 @@ function readLimit(env: Environment, variable: string, fallback: number): number
   return parsed;
 }
 
-function readOptions(env: Environment): AnonymousGuardOptions {
+// The one salt every address hash in the system uses. Also read for the email
+// subscription limits (#22), so a second variable for the same idea never appears.
+export function readIpHashSalt(env: Environment): string {
   const ipHashSalt = env.EVIDENCE_IP_HASH_SALT;
   if (ipHashSalt === undefined || ipHashSalt === "") {
     throw new Error("EVIDENCE_IP_HASH_SALT must be set to admit an anonymous write.");
   }
+  return ipHashSalt;
+}
+
+function readOptions(env: Environment): AnonymousGuardOptions {
   return {
-    ipHashSalt,
+    ipHashSalt: readIpHashSalt(env),
     perIpPerHour: readLimit(
       env,
       "ANONYMOUS_LIMIT_PER_IP_PER_HOUR",

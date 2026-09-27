@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { FakeEmailPreferenceState } from "../../../Accessors/EmailPreferenceAccessor/FakeEmailPreferenceState";
+import { FakePostState } from "../../../Accessors/PostAccessor/FakePostState";
+import { FakeSubscriberState } from "../../../Accessors/SubscriberAccessor/FakeSubscriberState";
+import type { Post } from "../../../Common/Post";
+import type { SubscriberEmailClaim } from "../../../Common/SubscriberEmailClaim";
+import { createFakePostAccessor } from "../../../Composition/createPostAccessor";
+import { createFakeSubscriberAccessor } from "../../../Composition/createSubscriberAccessor";
 import type { MemberEmailClaim } from "../../../Common/MemberEmailClaim";
 import { createEmailAccessor } from "../../../Composition/createEmailAccessor";
 import { createEmailComposeEngine } from "../../../Composition/createEmailComposeEngine";
@@ -24,11 +30,53 @@ function claim(profileId: string): MemberEmailClaim {
   };
 }
 
+function reader(id: string, authorId: string | null): SubscriberEmailClaim {
+  return {
+    subscriberId: id,
+    email: `${id}@example.test`,
+    authorId,
+    unsubscribeToken: `tok-${id}`,
+    windowStart: new Date("2026-09-27T10:00:00.000Z"),
+    windowEnd: new Date("2026-09-27T11:58:00.000Z"),
+  };
+}
+
+function addPost(state: FakePostState, id: string, authorId: string, at: Date): void {
+  const post: Post = {
+    id,
+    author: { kind: "member", profileId: authorId },
+    slug: id,
+    title: `Post ${id}`,
+    bodyMd: "",
+    bodyHtml: "",
+    summary: null,
+    coverMediaId: null,
+    status: "published",
+    visibility: "public",
+    commentsEnabled: true,
+    rejectionReason: null,
+    origin: "editor",
+    agentTokenId: null,
+    reviewedAt: null,
+    agentDraftMd: null,
+    tags: [],
+    publishedAt: at,
+    createdAt: at,
+    updatedAt: at,
+  };
+  state.posts.set(id, post);
+  state.announced.set(id, at);
+}
+
 function wire(options: { enabled?: boolean; failingSend?: boolean } = {}) {
   vi.spyOn(console, "info").mockImplementation(() => undefined);
   const state = new FakeEmailPreferenceState();
+  const readers = new FakeSubscriberState();
+  const posts = new FakePostState();
   const handler = new SendDigestsHandler(
     createFakeEmailPreferenceAccessor(state),
+    createFakeSubscriberAccessor(readers),
+    createFakePostAccessor(posts),
     createEmailAccessor({
       EMAIL_PROVIDER: "fake",
       EMAIL_FAKE_RESULT: options.failingSend === true ? "fail" : "ok",
@@ -36,7 +84,7 @@ function wire(options: { enabled?: boolean; failingSend?: boolean } = {}) {
     createEmailComposeEngine(),
     { enabled: options.enabled ?? true },
   );
-  return { state, handler };
+  return { state, readers, posts, handler };
 }
 
 afterEach(() => {
@@ -75,6 +123,20 @@ describe("SendDigestsHandler", () => {
 
     expect(sent).toEqual(new DigestsSentResponse(sent.correlationId, 0, 0));
     expect(state.due).toHaveLength(1);
+  });
+
+  test("mails each reader the posts in their window and scope", async () => {
+    const { readers, posts, handler } = wire();
+    addPost(posts, "p1", "theo", new Date("2026-09-27T10:30:00.000Z"));
+    addPost(posts, "p2", "june", new Date("2026-09-27T11:00:00.000Z"));
+    // Outside every window: announced before it opened.
+    addPost(posts, "p0", "theo", new Date("2026-09-27T09:00:00.000Z"));
+    readers.due = [reader("site", null), reader("theo-only", "theo")];
+
+    const sent = await handler.handle(new SendDigestsRequest(SITE, { timestamp: AT }));
+
+    expect(sent).toEqual(new DigestsSentResponse(sent.correlationId, 2, 0));
+    expect(readers.due).toEqual([]);
   });
 
   test("works through more than one batch", async () => {

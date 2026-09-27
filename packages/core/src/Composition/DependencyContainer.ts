@@ -73,6 +73,10 @@ import { GetEmailSettingsRequest } from "../Managers/NotificationManager/Request
 import { SendDigestsRequest } from "../Managers/NotificationManager/Requests/SendDigestsRequest";
 import { SetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/SetEmailSettingsRequest";
 import { UnsubscribeRequest } from "../Managers/NotificationManager/Requests/UnsubscribeRequest";
+import { ConfirmSubscriptionHandler } from "../Managers/NotificationManager/Handlers/ConfirmSubscriptionHandler";
+import { SubscribeHandler } from "../Managers/NotificationManager/Handlers/SubscribeHandler";
+import { ConfirmSubscriptionRequest } from "../Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
+import { SubscribeRequest } from "../Managers/NotificationManager/Requests/SubscribeRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -180,7 +184,7 @@ import { SiteConfigManager } from "../Managers/SiteConfigManager/SiteConfigManag
 import { computeDutyChecklist } from "./computeDutyChecklist";
 import { createAnonymousAuthorAccessor } from "./createAnonymousAuthorAccessor";
 import { createAuditAccessor } from "./createAuditAccessor";
-import { createAnonymousGuardEngine } from "./createAnonymousGuardEngine";
+import { createAnonymousGuardEngine, readIpHashSalt } from "./createAnonymousGuardEngine";
 import { createAttachmentEngine } from "./createAttachmentEngine";
 import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
@@ -188,6 +192,7 @@ import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createEmailAccessor, readEmailProvider } from "./createEmailAccessor";
 import { createEmailComposeEngine } from "./createEmailComposeEngine";
 import { createEmailPreferenceAccessor } from "./createEmailPreferenceAccessor";
+import { createSubscriberAccessor } from "./createSubscriberAccessor";
 import { createEvidenceAccessor } from "./createEvidenceAccessor";
 import { createEvidenceEngine } from "./createEvidenceEngine";
 import { createGreetingAccessor } from "./createGreetingAccessor";
@@ -284,6 +289,7 @@ export class DependencyContainer {
     const email = createEmailAccessor(env);
     const emailPreferences = createEmailPreferenceAccessor(env, db);
     const emailCompose = createEmailComposeEngine();
+    const subscribers = createSubscriberAccessor(env, db);
     const emailOptions = { enabled: readEmailProvider(env) !== "none" };
     const agentTokens = createAgentTokenAccessor(env, db);
     const agentGuard = createAgentGuardEngine(siteConfig, rateLimits);
@@ -804,9 +810,32 @@ export class DependencyContainer {
         )
         .register(
           SendDigestsRequest,
-          new SendDigestsHandler(emailPreferences, email, emailCompose, emailOptions),
+          new SendDigestsHandler(
+            emailPreferences,
+            subscribers,
+            posts,
+            email,
+            emailCompose,
+            emailOptions,
+          ),
         )
-        .register(UnsubscribeRequest, new UnsubscribeHandler(emailPreferences))
+        .register(
+          UnsubscribeRequest,
+          new UnsubscribeHandler(emailPreferences, subscribers),
+        )
+        .register(
+          SubscribeRequest,
+          new SubscribeHandler(
+            subscribers,
+            profiles,
+            turnstile,
+            rateLimits,
+            email,
+            emailCompose,
+            { ...emailOptions, ipHashSalt: readIpHashSalt(env) },
+          ),
+        )
+        .register(ConfirmSubscriptionRequest, new ConfirmSubscriptionHandler(subscribers))
         .build(),
       new HandlerResolverBuilder()
         .register(

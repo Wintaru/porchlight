@@ -323,6 +323,14 @@ export { UnsubscribeRequest } from "./Managers/NotificationManager/Requests/Unsu
 export { EmailSettingsResponse } from "./Managers/NotificationManager/Responses/EmailSettingsResponse";
 export { DigestsSentResponse } from "./Managers/NotificationManager/Responses/DigestsSentResponse";
 export { UnsubscribedResponse } from "./Managers/NotificationManager/Responses/UnsubscribedResponse";
+export { SubscribeRequest } from "./Managers/NotificationManager/Requests/SubscribeRequest";
+export { ConfirmSubscriptionRequest } from "./Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
+export { SubscriptionRequestedResponse } from "./Managers/NotificationManager/Responses/SubscriptionRequestedResponse";
+export {
+  SubscribeRejectedResponse,
+  type SubscribeRejection,
+} from "./Managers/NotificationManager/Responses/SubscribeRejectedResponse";
+export { SubscriptionConfirmedResponse } from "./Managers/NotificationManager/Responses/SubscriptionConfirmedResponse";
 export { DIGEST_SCHEDULES, type DigestSchedule } from "./Common/DigestSchedule";
 export type { EmailPreference } from "./Common/EmailPreference";
 export type { EmailSite } from "./Common/EmailSite";
