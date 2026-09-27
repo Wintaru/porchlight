@@ -23,6 +23,13 @@
   /* The Post board's warm chip: the "author" and "anonymous" badges. */
   --chip-warm: #f8e7cf;
   --chip-warm-ink: #8f3f05;
+  /* Code colours (#77), each at least 4.5:1 on --surface, the code block's ground. */
+  --code-keyword: #8f3f05;
+  --code-string: #2f6b2f;
+  --code-number: #7a3e9d;
+  --code-comment: #75695c;
+  --code-title: #1f5f8b;
+  --code-builtin: #6b4f00;
   --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-source-sans), "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
@@ -48,6 +55,12 @@
     --danger: #e0705f;
     --chip-warm: #4a3522;
     --chip-warm-ink: #f2b441;
+    --code-keyword: #f2b441;
+    --code-string: #9ccc7a;
+    --code-number: #d7a6f0;
+    --code-comment: #b3a695;
+    --code-title: #8ec5f0;
+    --code-builtin: #e0c070;
     color-scheme: dark;
   }
 }
@@ -338,6 +351,52 @@ textarea.text-input {
 .prose code {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.9em;
+}
+
+/* Highlighted code (#77): the classes rehype-highlight writes, in the theme's colours.
+   Anything it marks that is not listed here keeps the block's own colour. */
+.prose .hljs-keyword,
+.prose .hljs-selector-tag,
+.prose .hljs-literal,
+.prose .hljs-doctag {
+  color: var(--code-keyword);
+}
+
+.prose .hljs-string,
+.prose .hljs-regexp,
+.prose .hljs-symbol,
+.prose .hljs-template-tag,
+.prose .hljs-addition {
+  color: var(--code-string);
+}
+
+.prose .hljs-number,
+.prose .hljs-variable,
+.prose .hljs-template-variable {
+  color: var(--code-number);
+}
+
+.prose .hljs-comment,
+.prose .hljs-quote,
+.prose .hljs-deletion {
+  color: var(--code-comment);
+  font-style: italic;
+}
+
+.prose .hljs-title,
+.prose .hljs-section,
+.prose .hljs-name,
+.prose .hljs-selector-id,
+.prose .hljs-selector-class {
+  color: var(--code-title);
+}
+
+.prose .hljs-built_in,
+.prose .hljs-type,
+.prose .hljs-attr,
+.prose .hljs-attribute,
+.prose .hljs-meta {
+  color: var(--code-builtin);
 }
 
 .prose img {
