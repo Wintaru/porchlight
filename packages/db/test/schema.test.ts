@@ -781,3 +781,74 @@ describe("redeem_invite (#25)", () => {
     expect(trust).toBe("trusted");
   });
 });
+
+describe("media post link (#80)", () => {
+  // A fresh upload of the trusted member's, with no post yet.
+  const upload = async (tx: TransactionSql, id: string) => {
+    await tx`
+      insert into public.media_assets
+        (id, owner_id, storage_path, kind, mime_type, original_filename, bytes, sha256)
+      values (${id}, ${SEED.trustedMember}, ${`members/${id}.png`}, 'image', 'image/png',
+        'porch.png', 10, ${"a".repeat(64)})
+    `;
+  };
+  const postIdOf = async (tx: TransactionSql, id: string) => {
+    const [row] = await tx<{ post_id: string | null }[]>`
+      select post_id from public.media_assets where id = ${id}
+    `;
+    return row?.post_id ?? null;
+  };
+  const MEDIA = "00000000-0000-4000-8000-0000000000f1";
+  const OTHER_POST = "00000000-0000-4000-8000-0000000000f2";
+
+  test("a save that puts an upload in the body links it, and a later post does not take it", async () => {
+    const [first, second] = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`
+        update public.posts set body_md = ${`![porch](https://x.test/public-media/${MEDIA}.png)`}
+        where id = ${SEED.draftPost}
+      `;
+      const linked = await postIdOf(tx, MEDIA);
+      await tx`
+        insert into public.posts (id, author_id, slug, title, body_md)
+        values (${OTHER_POST}, ${SEED.trustedMember}, 'second-post', 'Second',
+          ${`![again](https://x.test/public-media/${MEDIA}.png)`})
+      `;
+      return [linked, await postIdOf(tx, MEDIA)];
+    });
+    expect(first).toBe(SEED.draftPost);
+    expect(second).toBe(SEED.draftPost);
+  });
+
+  test("a cover links its upload", async () => {
+    const linked = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`update public.posts set cover_media_id = ${MEDIA} where id = ${SEED.draftPost}`;
+      return postIdOf(tx, MEDIA);
+    });
+    expect(linked).toBe(SEED.draftPost);
+  });
+
+  test("another member's post never links an upload that is not theirs", async () => {
+    const linked = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`
+        update public.posts set body_md = ${`see ${MEDIA}`}
+        where id = ${SEED.pendingPost}
+      `;
+      return postIdOf(tx, MEDIA);
+    });
+    expect(linked).toBeNull();
+  });
+
+  test("browser roles cannot run the link functions", async () => {
+    const code = await errorCodeOf(() =>
+      asRole(
+        sql,
+        "authenticated",
+        (tx) => tx`select public.link_post_media(${SEED.draftPost})`,
+      ),
+    );
+    expect(code).toBe(INSUFFICIENT_PRIVILEGE);
+  });
+});

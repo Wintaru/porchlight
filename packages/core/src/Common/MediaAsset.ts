@@ -22,6 +22,10 @@ export interface MediaAsset {
   // (SPEC.md §7); mature items render blurred with click-to-reveal regardless of
   // publication state.
   readonly mature: boolean;
+  // The post that first used this upload in its body or as its cover (#80), set by the
+  // database when the post is saved. Null until a post uses it, or once that post is
+  // deleted.
+  readonly postId: string | null;
   readonly retainUntil: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

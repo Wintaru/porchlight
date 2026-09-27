@@ -5,7 +5,7 @@ import type { MediaAsset } from "../../Common/MediaAsset";
 
 // Never `select *`: the shape here is the one the mapper below expects.
 export const MEDIA_ASSET_COLUMNS =
-  "id, owner_id, anonymous_author_id, storage_path, published_path, kind, mime_type, original_filename, bytes, sha256, scan_status, mature, retain_until, created_at, updated_at";
+  "id, owner_id, anonymous_author_id, storage_path, published_path, kind, mime_type, original_filename, bytes, sha256, scan_status, mature, post_id, retain_until, created_at, updated_at";
 
 export type MediaAssetRow = Pick<
   Tables<"media_assets">,
@@ -21,6 +21,7 @@ export type MediaAssetRow = Pick<
   | "sha256"
   | "scan_status"
   | "mature"
+  | "post_id"
   | "retain_until"
   | "created_at"
   | "updated_at"
@@ -39,6 +40,7 @@ export function toMediaAsset(row: MediaAssetRow): MediaAsset {
     sha256: row.sha256,
     scanStatus: row.scan_status,
     mature: row.mature,
+    postId: row.post_id,
     retainUntil: row.retain_until === null ? null : new Date(row.retain_until),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),

@@ -32,6 +32,7 @@ export class FakeStoreNewMediaAssetHandler implements IHandler<
       sha256: asset.sha256,
       scanStatus: asset.scanStatus,
       mature: false,
+      postId: null,
       retainUntil: asset.retainUntil,
       createdAt: timestamp,
       updatedAt: timestamp,

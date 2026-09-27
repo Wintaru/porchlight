@@ -36,6 +36,7 @@ function asset(overrides: Partial<MediaAsset>): MediaAsset {
     sha256: "0".repeat(64),
     scanStatus: "flagged",
     mature: true,
+    postId: null,
     retainUntil: null,
     createdAt: AT,
     updatedAt: AT,

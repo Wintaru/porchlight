@@ -388,6 +388,7 @@ export type Database = {
           original_filename: string
           owner_id: string | null
           perceptual_hash: string | null
+          post_id: string | null
           published_path: string | null
           retain_until: string | null
           scan_status: Database["public"]["Enums"]["scan_status"]
@@ -406,6 +407,7 @@ export type Database = {
           original_filename: string
           owner_id?: string | null
           perceptual_hash?: string | null
+          post_id?: string | null
           published_path?: string | null
           retain_until?: string | null
           scan_status?: Database["public"]["Enums"]["scan_status"]
@@ -424,6 +426,7 @@ export type Database = {
           original_filename?: string
           owner_id?: string | null
           perceptual_hash?: string | null
+          post_id?: string | null
           published_path?: string | null
           retain_until?: string | null
           scan_status?: Database["public"]["Enums"]["scan_status"]
@@ -444,6 +447,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_assets_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -1331,6 +1341,7 @@ export type Database = {
           original_filename: string
           owner_id: string | null
           perceptual_hash: string | null
+          post_id: string | null
           published_path: string | null
           retain_until: string | null
           scan_status: Database["public"]["Enums"]["scan_status"]
@@ -1352,10 +1363,19 @@ export type Database = {
           published_at: string
         }[]
       }
+      link_post_media: { Args: { p_post_id: string }; Returns: undefined }
       null_expired_raw_ips: { Args: never; Returns: number }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
         Returns: unknown
+      }
+      post_uses_media: {
+        Args: {
+          p_body_md: string
+          p_cover_media_id: string
+          p_media_id: string
+        }
+        Returns: boolean
       }
       presence_allowed: { Args: never; Returns: boolean }
       published_author_count: { Args: never; Returns: number }

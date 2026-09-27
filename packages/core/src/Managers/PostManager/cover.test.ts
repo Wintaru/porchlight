@@ -28,6 +28,7 @@ function asset(id: string, overrides: Partial<MediaAsset>): MediaAsset {
     sha256: "0".repeat(64),
     scanStatus: "clear",
     mature: false,
+    postId: null,
     retainUntil: null,
     createdAt: AT,
     updatedAt: AT,
