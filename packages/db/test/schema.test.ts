@@ -629,3 +629,51 @@ describe("subscribers (#22)", () => {
     expect(left.length).toBe(0);
   });
 });
+
+// Issue #32: every change to a voice guide keeps the text it replaced, up to 50, and
+// erasure keeps none.
+describe("voice_guide_revisions (#32)", () => {
+  const guides = (tx: TransactionSql) => tx<{ guide_md: string }[]>`
+    select guide_md from public.voice_guide_revisions
+    where profile_id = ${SEED.trustedMember}
+  `;
+
+  test("keeps the replaced text, not an unchanged save or a first guide", async () => {
+    const kept = await asService(async (tx) => {
+      for (const text of ["one", "one", "two"]) {
+        await tx`
+          update public.profiles set voice_guide_md = ${text}
+          where id = ${SEED.trustedMember}
+        `;
+      }
+      await tx`update public.profiles set bio = 'x' where id = ${SEED.trustedMember}`;
+      return guides(tx);
+    });
+    expect(kept.map((row) => row.guide_md).filter((text) => text === "one")).toEqual([
+      "one",
+    ]);
+  });
+
+  test("keeps at most 50 versions", async () => {
+    const kept = await asService(async (tx) => {
+      for (let i = 0; i < 55; i += 1) {
+        await tx`
+          update public.profiles set voice_guide_md = ${`v${String(i)}`}
+          where id = ${SEED.trustedMember}
+        `;
+      }
+      return guides(tx);
+    });
+    expect(kept.length).toBe(50);
+  });
+
+  test("erasure keeps no version, and does not keep the last guide either", async () => {
+    const kept = await asService(async (tx) => {
+      await tx`update public.profiles set voice_guide_md = 'a' where id = ${SEED.trustedMember}`;
+      await tx`update public.profiles set voice_guide_md = 'b' where id = ${SEED.trustedMember}`;
+      await tx`select public.erase_account(${SEED.trustedMember})`;
+      return guides(tx);
+    });
+    expect(kept).toEqual([]);
+  });
+});

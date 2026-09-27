@@ -58,6 +58,8 @@ const PHASE_2_TABLES = [
   "email_preferences",
   // #22, D20: readers who follow the site or an author by email, server only.
   "subscribers",
+  // #32: earlier versions of a member's voice guide, server only.
+  "voice_guide_revisions",
 ] as const;
 
 // Server-only functions: the service role calls them, a browser role never may (#22).
