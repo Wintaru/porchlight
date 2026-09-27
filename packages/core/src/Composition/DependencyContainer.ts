@@ -16,6 +16,12 @@ import { EnsureProfileHandler } from "../Managers/AccountManager/Handlers/Ensure
 import { EraseAccountHandler } from "../Managers/AccountManager/Handlers/EraseAccountHandler";
 import { ExportAccountHandler } from "../Managers/AccountManager/Handlers/ExportAccountHandler";
 import { GetAnonymousStatusHandler } from "../Managers/AccountManager/Handlers/GetAnonymousStatusHandler";
+import { CreateInviteHandler } from "../Managers/AccountManager/Handlers/CreateInviteHandler";
+import { GetInvitesHandler } from "../Managers/AccountManager/Handlers/GetInvitesHandler";
+import { RevokeInviteHandler } from "../Managers/AccountManager/Handlers/RevokeInviteHandler";
+import { CreateInviteRequest } from "../Managers/AccountManager/Requests/CreateInviteRequest";
+import { GetInvitesRequest } from "../Managers/AccountManager/Requests/GetInvitesRequest";
+import { RevokeInviteRequest } from "../Managers/AccountManager/Requests/RevokeInviteRequest";
 import { CheckNewAccountHandler } from "../Managers/AccountManager/Handlers/CheckNewAccountHandler";
 import { CheckNewAccountRequest } from "../Managers/AccountManager/Requests/CheckNewAccountRequest";
 import { GetProfileHandler } from "../Managers/AccountManager/Handlers/GetProfileHandler";
@@ -198,6 +204,7 @@ import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createEmailAccessor, readEmailProvider } from "./createEmailAccessor";
+import { createInviteAccessor } from "./createInviteAccessor";
 import { createDraftCheckEngine } from "./createDraftCheckEngine";
 import { createEmailComposeEngine } from "./createEmailComposeEngine";
 import { createEmailPreferenceAccessor } from "./createEmailPreferenceAccessor";
@@ -262,6 +269,7 @@ export class DependencyContainer {
     const follows = createFollowAccessor(env, db);
     const tags = createTagAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
+    const invites = createInviteAccessor(env, db);
     const permissions = createPermissionEngine(siteConfig);
     const content = createContentRenderEngine();
     const turnstile = createTurnstileAccessor(env);
@@ -321,11 +329,13 @@ export class DependencyContainer {
       new HandlerResolverBuilder()
         .register(
           EnsureProfileRequest,
-          new EnsureProfileHandler(profiles, permissions, siteConfig, {
+          new EnsureProfileHandler(profiles, permissions, siteConfig, invites, {
             adminEmail: env.PORCHLIGHT_ADMIN_EMAIL,
           }),
         )
         .register(UpdateProfileRequest, new UpdateProfileHandler(profiles, permissions))
+        .register(CreateInviteRequest, new CreateInviteHandler(invites, permissions))
+        .register(RevokeInviteRequest, new RevokeInviteHandler(invites, permissions))
         .register(
           SetMemberBlockRequest,
           new SetMemberBlockHandler(memberBlocks, profiles, permissions),
@@ -365,9 +375,10 @@ export class DependencyContainer {
         .build(),
       new HandlerResolverBuilder()
         .register(GetProfileRequest, new GetProfileHandler(profiles))
+        .register(GetInvitesRequest, new GetInvitesHandler(invites, permissions))
         .register(
           CheckNewAccountRequest,
-          new CheckNewAccountHandler(profiles, siteConfig, {
+          new CheckNewAccountHandler(profiles, siteConfig, invites, {
             adminEmail: env.PORCHLIGHT_ADMIN_EMAIL,
           }),
         )

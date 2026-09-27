@@ -160,6 +160,8 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "member.block": mayManageOwnAccount,
   // A member follows for themselves (#24).
   "member.follow": mayManageOwnAccount,
+  // Invite links let people into the site, a site setting's weight (#25).
+  "invite.manage": mayManageSiteConfig,
 };
 
 // The gate: the profile of an active member, or the reason there is none.
@@ -614,6 +616,7 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "voice.edit": agentMayWriteVoiceGuide,
   "member.block": deny,
   "member.follow": deny,
+  "invite.manage": deny,
 };
 
 function deny(): Promise<Denial> {

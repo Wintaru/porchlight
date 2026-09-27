@@ -329,6 +329,21 @@ export { SubscribeRequest } from "./Managers/NotificationManager/Requests/Subscr
 // The sign-in link's gate (#68): may a new address get an account here.
 export { CheckNewAccountRequest } from "./Managers/AccountManager/Requests/CheckNewAccountRequest";
 export { NewAccountCheckedResponse } from "./Managers/AccountManager/Responses/NewAccountCheckedResponse";
+// Invite links (#25): an admin makes and revokes them; a friend signs in through one.
+export { CreateInviteRequest } from "./Managers/AccountManager/Requests/CreateInviteRequest";
+export { RevokeInviteRequest } from "./Managers/AccountManager/Requests/RevokeInviteRequest";
+export { GetInvitesRequest } from "./Managers/AccountManager/Requests/GetInvitesRequest";
+export { InviteMadeResponse } from "./Managers/AccountManager/Responses/InviteMadeResponse";
+export { InviteEndedResponse } from "./Managers/AccountManager/Responses/InviteEndedResponse";
+export { InvitesResponse } from "./Managers/AccountManager/Responses/InvitesResponse";
+export { NoSuchInviteResponse } from "./Managers/AccountManager/Responses/NoSuchInviteResponse";
+export { InviteRejectedResponse } from "./Managers/AccountManager/Responses/InviteRejectedResponse";
+export {
+  INVITE_MAX_DAYS,
+  INVITE_MAX_USES,
+  type InviteTerms,
+} from "./Managers/AccountManager/InviteTerms";
+export { type Invite, isInviteLive } from "./Common/Invite";
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";

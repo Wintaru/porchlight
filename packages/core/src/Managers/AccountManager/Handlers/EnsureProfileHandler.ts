@@ -1,3 +1,8 @@
+import type { IInviteAccessor } from "../../../Accessors/InviteAccessor/IInviteAccessor";
+import { RedeemInviteRequest } from "../../../Accessors/InviteAccessor/Requests/RedeemInviteRequest";
+import { InviteNotRedeemableResponse } from "../../../Accessors/InviteAccessor/Responses/InviteNotRedeemableResponse";
+import { InviteAccessFailedResponse } from "../../../Accessors/InviteAccessor/Responses/InviteAccessFailedResponse";
+import { InviteRedeemedResponse } from "../../../Accessors/InviteAccessor/Responses/InviteRedeemedResponse";
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
 import { LoadSignUpPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
 import { SignUpPolicyLoadedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SignUpPolicyLoadedResponse";
@@ -20,6 +25,7 @@ import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermi
 import { DeriveHandleRequest } from "../../../Engines/PermissionEngine/Requests/DeriveHandleRequest";
 import { HandleDerivedResponse } from "../../../Engines/PermissionEngine/Responses/HandleDerivedResponse";
 import type { EnsureProfileOptions } from "../EnsureProfileOptions";
+import { inviteTokenHash } from "../inviteTokenHash";
 import { isSiteAdminEmail } from "../isSiteAdminEmail";
 import type { EnsureProfileRequest } from "../Requests/EnsureProfileRequest";
 import { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";
@@ -50,6 +56,7 @@ export class EnsureProfileHandler implements IHandler<
     private readonly profiles: IProfileAccessor,
     private readonly permissions: IPermissionEngine,
     private readonly siteConfig: ISiteConfigAccessor,
+    private readonly invites: IInviteAccessor,
     private readonly options: EnsureProfileOptions,
   ) {}
 
@@ -73,15 +80,32 @@ export class EnsureProfileHandler implements IHandler<
     if (!(counted instanceof ProfileCountResponse)) {
       return unavailable(correlationId, counted, "load");
     }
-    const standing = this.standingFor(counted.count, identity.email);
+    let standing = this.standingFor(counted.count, identity.email);
 
     if (standing === NEW_MEMBER) {
       const signUp = await this.siteConfig.load(new LoadSignUpPolicyRequest(context));
       if (!(signUp instanceof SignUpPolicyLoadedResponse)) {
         return unavailable(correlationId, signUp, "load");
       }
-      if (signUp.policy !== "open") {
+      if (signUp.policy === "closed") {
         return new SignUpClosedResponse(correlationId);
+      }
+      // Invite-only: a live link lets a friend in at the level the admin chose, and
+      // spends one use (#25). `open` ignores invites (SPEC.md §4).
+      if (signUp.policy === "invite") {
+        if (request.inviteToken === null) {
+          return new SignUpClosedResponse(correlationId);
+        }
+        const redeemed = await this.invites.store(
+          new RedeemInviteRequest(await inviteTokenHash(request.inviteToken), context),
+        );
+        if (redeemed instanceof InviteNotRedeemableResponse) {
+          return new SignUpClosedResponse(correlationId);
+        }
+        if (!(redeemed instanceof InviteRedeemedResponse)) {
+          return unavailable(correlationId, redeemed, "invites.store");
+        }
+        standing = { role: "member", trustLevel: redeemed.trustLevel };
       }
     }
 
@@ -131,7 +155,8 @@ function unavailable(
 ): AccountUnavailableResponse {
   const reason =
     response instanceof ProfileAccessFailedResponse ||
-    response instanceof SiteConfigAccessFailedResponse
+    response instanceof SiteConfigAccessFailedResponse ||
+    response instanceof InviteAccessFailedResponse
       ? response.reason
       : `unexpected ${response.constructor.name} from ${method}`;
   return new AccountUnavailableResponse(correlationId, reason);
