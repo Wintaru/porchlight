@@ -56,6 +56,8 @@ const PHASE_2_TABLES = [
   "follows",
   // #22: email settings and digest cursors, server only.
   "email_preferences",
+  // #22, D20: readers who follow the site or an author by email, server only.
+  "subscribers",
 ] as const;
 
 // Server-only functions: the service role calls them, a browser role never may (#22).
@@ -63,6 +65,10 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.set_email_preferences(uuid, public.digest_schedule, boolean)",
   "public.claim_member_emails(timestamptz, integer)",
   "public.release_member_email(uuid, text, timestamptz, timestamptz)",
+  "public.request_subscription(text, public.digest_schedule, text, uuid)",
+  "public.confirm_subscription(text)",
+  "public.claim_subscriber_emails(timestamptz, integer)",
+  "public.release_subscriber_email(uuid, timestamptz, timestamptz)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or

@@ -1095,6 +1095,53 @@ export type Database = {
           },
         ]
       }
+      subscribers: {
+        Row: {
+          author_id: string | null
+          confirm_sent_at: string | null
+          confirm_token: string | null
+          confirmed_at: string | null
+          created_at: string
+          cursor: string
+          digest: Database["public"]["Enums"]["digest_schedule"]
+          email: string
+          id: string
+          unsubscribe_token: string
+        }
+        Insert: {
+          author_id?: string | null
+          confirm_sent_at?: string | null
+          confirm_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          cursor?: string
+          digest?: Database["public"]["Enums"]["digest_schedule"]
+          email: string
+          id?: string
+          unsubscribe_token?: string
+        }
+        Update: {
+          author_id?: string | null
+          confirm_sent_at?: string | null
+          confirm_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          cursor?: string
+          digest?: Database["public"]["Enums"]["digest_schedule"]
+          email?: string
+          id?: string
+          unsubscribe_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscribers_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string
@@ -1157,7 +1204,19 @@ export type Database = {
           window_start: string
         }[]
       }
+      claim_subscriber_emails: {
+        Args: { p_limit: number; p_until: string }
+        Returns: {
+          author_id: string
+          email: string
+          subscriber_id: string
+          unsubscribe_token: string
+          window_end: string
+          window_start: string
+        }[]
+      }
       comment_search_document: { Args: { p_body_md: string }; Returns: unknown }
+      confirm_subscription: { Args: { p_token: string }; Returns: boolean }
       erase_account: { Args: { p_profile_id: string }; Returns: string }
       finalize_media_scan: {
         Args: {
@@ -1232,9 +1291,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      release_subscriber_email: {
+        Args: {
+          p_subscriber_id: string
+          p_window_end: string
+          p_window_start: string
+        }
+        Returns: undefined
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
+      }
+      request_subscription: {
+        Args: {
+          p_author_id?: string
+          p_confirm_token: string
+          p_digest: Database["public"]["Enums"]["digest_schedule"]
+          p_email: string
+        }
+        Returns: string
       }
       search_query: { Args: { p_query: string }; Returns: unknown }
       search_site: {

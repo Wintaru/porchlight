@@ -563,3 +563,69 @@ describe("claim_member_emails (#22)", () => {
     expect(left.length).toBe(0);
   });
 });
+
+// Issue #22, D20: a reader's subscription is double opt-in, and the sweep mails each
+// announced post once.
+describe("subscribers (#22)", () => {
+  const request = (tx: TransactionSql, token: string, author: string | null = null) =>
+    tx<{ answer: string }[]>`
+      select public.request_subscription('reader@example.test', 'hourly', ${token}, ${author})
+        as answer
+    `.then((rows) => rows[0]?.answer);
+
+  test("asks once, holds a repeat for ten minutes, and leaves a confirmed one alone", async () => {
+    const answers = await asService(async (tx) => {
+      const first = await request(tx, "t1");
+      const again = await request(tx, "t2");
+      const [{ ok } = { ok: false }] = await tx<{ ok: boolean }[]>`
+        select public.confirm_subscription('t1') as ok
+      `;
+      const [{ ok: twice } = { ok: true }] = await tx<{ ok: boolean }[]>`
+        select public.confirm_subscription('t1') as ok
+      `;
+      return [first, again, ok, twice, await request(tx, "t3")];
+    });
+    expect(answers).toEqual(["pending", "recent", true, false, "confirmed"]);
+  });
+
+  test("an address subscribes to the site and to an author separately", async () => {
+    const answers = await asService(async (tx) => [
+      await request(tx, "a1"),
+      await request(tx, "a2", SEED.trustedMember),
+    ]);
+    expect(answers).toEqual(["pending", "pending"]);
+  });
+
+  test("the sweep claims a reader once a post they follow is announced", async () => {
+    const [before, claimed, again] = await asService(async (tx) => {
+      await request(tx, "c1", SEED.trustedMember);
+      await tx`select public.confirm_subscription('c1')`;
+      await tx`
+        update public.subscribers set cursor = now() - interval '3 hours'
+        where email = 'reader@example.test'
+      `;
+      const before = await tx`select 1 from public.claim_subscriber_emails(now(), 10)`;
+      await tx`
+        update public.posts set announced_at = now() - interval '1 hour'
+        where id = ${SEED.publicPost}
+      `;
+      const claimed = await tx<{ author_id: string }[]>`
+        select author_id from public.claim_subscriber_emails(now(), 10)
+      `;
+      const again = await tx`select 1 from public.claim_subscriber_emails(now(), 10)`;
+      return [before.length, claimed, again.length];
+    });
+    expect(before).toBe(0);
+    expect(claimed).toEqual([{ author_id: SEED.trustedMember }]);
+    expect(again).toBe(0);
+  });
+
+  test("erasing an author removes the subscriptions to them", async () => {
+    const left = await asService(async (tx) => {
+      await request(tx, "e1", SEED.trustedMember);
+      await tx`select public.erase_account(${SEED.trustedMember})`;
+      return tx`select 1 from public.subscribers where author_id = ${SEED.trustedMember}`;
+    });
+    expect(left.length).toBe(0);
+  });
+});
