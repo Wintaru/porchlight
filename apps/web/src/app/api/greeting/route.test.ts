@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+// The first loadRoute transforms the whole container graph cold. That grows with every
+// store, and on CI (run 36334655514) it passed the 5-second default.
+vi.setConfig({ testTimeout: 30_000 });
+
 // The route reads the container at import, so each test that needs a different
 // environment stubs it first and imports a fresh module graph. The container also wires
 // the profile store, which must not touch the stack from a unit test.
