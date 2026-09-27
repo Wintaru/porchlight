@@ -14,9 +14,11 @@ The admin duty checklist links the same guides.
 | [`hash-matching.md`](hash-matching.md) | Known-illegal image fingerprints      | `HASH_MATCH_*`                        |
 | [`classifiers.md`](classifiers.md)  | Image classifier and text moderation     | `IMAGE_CLASSIFIER_*`, `TEXT_MODERATION_*` |
 | [`email.md`](email.md) (phase 2)    | Digest email                             | `EMAIL_*`                             |
+| [`mcp-oauth.md`](mcp-oauth.md) (phase 2) | OAuth for claude.ai connectors (Supabase Auth OAuth server) | None: set in the Supabase dashboard |
 
-Agents have no setup guide because they need no external service: a member mints a
-token in the app. [../agents.md](../agents.md) explains the door and the workflow.
+Personal agent tokens need no external service: a member mints one in the app.
+[../agents.md](../agents.md) explains the door and the workflow. Only OAuth connectors,
+such as claude.ai's, need the Supabase Auth step in [`mcp-oauth.md`](mcp-oauth.md).
 
 The order to do these in for a hosted instance is [../deploy.md](../deploy.md).
 Research that fed the decisions lives in [../research/](../research/).

@@ -27,7 +27,7 @@ The MIT license covers the code only.
 | `packages/core`  | iDesign layers: Managers, Engines, Accessors, Utilities, and the composition root. |
 | `packages/db`    | The typed Supabase client, generated database types, and the RLS tests. |
 | `supabase`       | The local stack config, the migrations, and the seed.               |
-| `docs/setup`     | Setup guides for Supabase, Google OAuth, email sign-in, Turnstile, storage, hash matching, classifiers, email. |
+| `docs/setup`     | Setup guides for Supabase, Google OAuth, email sign-in, Turnstile, storage, hash matching, classifiers, email, MCP OAuth. |
 | `docs/deploy.md` | The ordered go-live steps that link those guides.                  |
 | `design`         | Approved screen boards.                                            |
 

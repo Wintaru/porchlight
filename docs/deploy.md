@@ -140,14 +140,31 @@ any of hash matching, the image classifier, Turnstile or media storage still run
 its fake — each row links its setup guide. Every value here can change again later
 from the same page.
 
-## 9. Agents — no production step
+## 9. Agents
 
-The MCP door at `/api/mcp` needs no key and no external service: a member mints their
-own token on the settings page. Decide whether to leave `agents` on (`/admin`, the
-Access section), check the two daily limits per token beside it, and pick the agent
-disclosure: `footer` (the default) puts a line under every post an agent drafted, and
-`off` shows nothing. If you leave agents on, read [agents.md](agents.md) so you can
-answer a member who asks what their assistant may do.
+Guide: [`setup/mcp-oauth.md`](setup/mcp-oauth.md).
+
+The MCP door at `/api/mcp` needs no key: a member mints their own token on the settings
+page. Decide whether to leave `agents` on (`/admin`, the Access section), check the two
+daily limits per token beside it, and pick the agent disclosure: `footer` (the default)
+puts a line under every post an agent drafted, and `off` shows nothing. If you leave
+agents on, read [agents.md](agents.md) so you can answer a member who asks what their
+assistant may do.
+
+To let members connect claude.ai as a custom connector (issue #79, D25), turn on
+Supabase Auth's OAuth server:
+
+1. In the Supabase dashboard, open Authentication, **OAuth Server**. Turn on the OAuth
+   2.1 server.
+2. Set the authorization path to `/oauth/consent`.
+3. Turn on **Allow dynamic client registration**.
+4. Check that the site's metadata names Auth's issuer. Follow
+   [`setup/mcp-oauth.md`](setup/mcp-oauth.md), Production, step 4.
+5. After the deploy, connect claude.ai by hand once. Follow
+   [`setup/mcp-oauth.md`](setup/mcp-oauth.md), Connect claude.ai by hand after deploy.
+   No automated test does this against the deployed site.
+
+Skip these steps and `plt_` tokens still work. Only OAuth connectors do not.
 
 ## 10. Email — digests and the moderation queue (issue #22)
 

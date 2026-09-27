@@ -40,6 +40,22 @@ claude mcp add --transport http porchlight https://your-site.example/api/mcp \
 
 Run it in a terminal. Claude Code then lists Porchlight's tools and can write for you.
 
+## Connect Claude on the web, desktop or phone
+
+Claude's apps connect through a custom connector, which signs in with OAuth instead of
+a token. The site's admin must turn this on first ([setup/mcp-oauth.md](setup/mcp-oauth.md)).
+
+1. In Claude, open Settings, **Connectors**, and add a custom connector with the URL
+   `https://your-site.example/api/mcp`.
+2. Press **Connect**. Claude sends you to Porchlight. Sign in if you are asked to.
+3. The page **Connect an app** names the app and where it sends you back. Tick what it
+   may do, the same choices as for a token, and press **Allow**. **Deny** sends it away
+   with nothing.
+
+The app then shows in **Settings**, section **Agents**, marked "(connected app)". Revoke
+it there to disconnect it at once. To change what it may do, revoke it and connect it
+again.
+
 ## The notes-to-draft workflow
 
 The way this is meant to be used:

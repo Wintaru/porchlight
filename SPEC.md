@@ -318,7 +318,8 @@ subscription) is the client. Porchlight never calls a model vendor and needs no 
 for this. Design and reasoning: [AGENT-PUBLISHING-PROPOSAL.md](AGENT-PUBLISHING-PROPOSAL.md).
 
 **The door.** `POST /api/mcp`, Streamable HTTP, stateless, built on
-`@modelcontextprotocol/server`. Auth is `Authorization: Bearer plt_…`. The route is a
+`@modelcontextprotocol/server`. Auth is `Authorization: Bearer plt_…`, or an OAuth
+access token from a connector (below). The route is a
 Client: it resolves the token to an actor once per request and maps each tool to one
 Manager request. The server's MCP `instructions` state the house rules to every agent:
 draft from the author's notes and voice guide only, do not pad, do not add a closing
@@ -361,9 +362,19 @@ constant. The guide exports and erases with the account (section 10).
 `finalize_upload`, `get_media`. Uploads reuse the section 6 signed-URL flow: the agent's
 client sends the bytes to storage itself, so they never pass through the model.
 
+**OAuth for connectors** (#79, D25). claude.ai connectors use OAuth 2.1, with Supabase
+Auth as the authorization server and dynamic client registration. The door's 401 names
+the protected-resource metadata (`/.well-known/oauth-protected-resource/api/mcp`, RFC
+9728), which names Auth. Auth sends the member to `/oauth/consent`, where they pick the
+scopes; Auth has no custom scopes, so the choice is stored as an `agent_tokens` row keyed
+by `oauth_client_id` instead of a hash. A bearer that is not `plt_` must be an Auth JWT
+with a `client_id` claim, and resolves through the member's live grant for that client to
+the same `agent` actor. A member's own session JWT has no `client_id` and is refused.
+Revoking the grant in settings shuts the door at once and withdraws the consent at Auth.
+
 **Docs.** `docs/agents.md`: what the door is, how to mint a token, the `claude mcp add`
-line, the notes-to-draft workflow, and the fake mode. No production step: tokens are
-minted in the app.
+line, the notes-to-draft workflow, and the fake mode. Tokens need no production step.
+`docs/setup/mcp-oauth.md`: the Supabase Auth switches for OAuth connectors.
 
 **Draft check** (#32). `check_draft(body_md)` and the editor's Check button run the same
 deterministic heuristics against the writer's own guide: banned phrases (the default list
@@ -372,4 +383,4 @@ of three, a heading over nearly every paragraph, a closing summary. Warnings, ne
 block. **Voice guide revisions** (#32): each change keeps the text it replaced, up to 50,
 shown under the guide in Settings, exported and erased with the account.
 
-**Later.** OAuth 2.1 for claude.ai connectors (#79). A local stdio wrapper.
+**Later.** A local stdio wrapper.
