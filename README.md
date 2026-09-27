@@ -76,8 +76,8 @@ locally: the emails go to Mailpit at http://127.0.0.1:58324 (docs/setup/email-si
 | `pnpm lint`      | ESLint (with the boundary policy) and a Prettier check. |
 | `pnpm format`    | Prettier, writing.                                      |
 | `pnpm test`      | Vitest in every package. `packages/db` needs the Supabase stack up. |
-| `pnpm test:e2e`  | Playwright, headless. Starts its own dev server. Set `PORT` to move it. |
-| `pnpm test:e2e:headed` | The real Google sign-in in a visible browser, with you at the keyboard (docs/setup/google-oauth.md). |
+| `pnpm test:e2e`  | Playwright, headless. Starts its own dev server. Set `PORT` to move it. On another port the email sign-in link test skips, since the local stack builds its links for port 3000. |
+| `pnpm test:e2e:headed` | The real Google sign-in in a visible browser, with you at the keyboard (docs/setup/google-oauth.md). Port 3000 only: Google returns to `NEXT_PUBLIC_SITE_URL`. |
 | `pnpm build`     | Production build of `apps/web`.                         |
 
 Playwright needs a browser once: `pnpm --filter @porchlight/web exec playwright install chromium`.

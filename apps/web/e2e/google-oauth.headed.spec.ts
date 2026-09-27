@@ -15,6 +15,13 @@ test.skip(
   "Needs a person at a visible browser and Google keys.",
 );
 
+// The app builds Google's return address from NEXT_PUBLIC_SITE_URL, which is port 3000
+// locally (#42). On another port the callback lands on a server that is not this run's.
+test.skip(
+  (process.env.PORT ?? "3000") !== "3000",
+  "The Google callback returns to NEXT_PUBLIC_SITE_URL, port 3000 locally.",
+);
+
 test("a person signs in with Google and gets a session", async ({ page }) => {
   test.setTimeout(PERSON_TIMEOUT + 30_000);
 

@@ -50,6 +50,10 @@ minutes for you to sign in at Google. Then it checks that the session shows and 
 sign-out ends it. CI never runs this test. Every other part of sign-in has a headless
 test in `apps/web/e2e/auth.spec.ts`.
 
+Run it on port 3000, the default. The app builds the address Google returns to from
+`NEXT_PUBLIC_SITE_URL`, which is `http://localhost:3000` locally. With `PORT` set to
+anything else, the callback would land on a different server, so the test skips itself.
+
 ## What happens on sign-in
 
 1. The "Sign in with Google" button posts to a Server Function, which asks Supabase Auth
