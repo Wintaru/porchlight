@@ -165,10 +165,11 @@ Pipeline order is fixed inside `MediaManager`:
 only when a moderator approves it with a mandatory `mature` tag. Mature items render
 blurred with click-to-reveal and use the branded preview card, never the image.
 
-**Evidence envelope.** Every post, comment and upload writes `submission_evidence` in the
-same transaction: source IP and port, UTC timestamp, user agent, anonymous token id or
-account id, Turnstile result, original filename and size, SHA-256 and perceptual hash,
-request id. Original bytes stay untouched in quarantine (EXIF intact). Published image
+**Evidence envelope.** Every post, comment and upload writes `submission_evidence`: an
+upload in the same transaction, a post or comment right after it is stored, and a post
+again when it is published, hashing the text that went out (D24). Each row holds source
+IP and port, UTC timestamp, user agent, anonymous token id or account id, Turnstile
+result, original filename and size, SHA-256 and perceptual hash, request id. Original bytes stay untouched in quarantine (EXIF intact). Published image
 copies are re-encoded with metadata stripped. Raw IP and port are kept for a
 region-gated window (90 days to start), then nulled, leaving the salted hash. A locked
 item sets `frozen = true`: envelope and original bytes are held for the retention period,
