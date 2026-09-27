@@ -324,6 +324,10 @@ export { EmailSettingsResponse } from "./Managers/NotificationManager/Responses/
 export { DigestsSentResponse } from "./Managers/NotificationManager/Responses/DigestsSentResponse";
 export { UnsubscribedResponse } from "./Managers/NotificationManager/Responses/UnsubscribedResponse";
 export { SubscribeRequest } from "./Managers/NotificationManager/Requests/SubscribeRequest";
+// The draft check (#32): heuristics against the caller's own voice guide.
+export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
+export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";
+export { draftWarningText, type DraftWarning } from "./Common/DraftWarning";
 export { GetEmailAvailabilityRequest } from "./Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 export { EmailAvailabilityResponse } from "./Managers/NotificationManager/Responses/EmailAvailabilityResponse";
 export { ConfirmSubscriptionRequest } from "./Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";

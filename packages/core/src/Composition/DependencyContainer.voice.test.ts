@@ -6,6 +6,8 @@ import type { Post } from "../Common/Post";
 import type { Profile } from "../Common/Profile";
 import { DEFAULT_BANNED_PHRASES } from "../Common/VoiceGuideRules";
 import { EnsureProfileRequest } from "../Managers/AccountManager/Requests/EnsureProfileRequest";
+import { CheckDraftRequest } from "../Managers/AccountManager/Requests/CheckDraftRequest";
+import { DraftCheckResponse } from "../Managers/AccountManager/Responses/DraftCheckResponse";
 import { GetVoiceGuideRequest } from "../Managers/AccountManager/Requests/GetVoiceGuideRequest";
 import { UpdateVoiceGuideRequest } from "../Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/ActionForbiddenResponse";
@@ -173,5 +175,34 @@ describe("DependencyContainer: the voice guide (#29)", () => {
     );
     await container.postManager.execute(new PublishPostRequest(THEO, started.id));
     expect((await guideFor(container, THEO)).samples).toEqual([]);
+  });
+});
+
+describe("DependencyContainer: check_draft (#32)", () => {
+  test("a member's draft is checked against the defaults and their own banned list", async () => {
+    const container = await setUp();
+    await container.accountManager.execute(
+      new UpdateVoiceGuideRequest(THEO, "## Banned\n\n- circle back\n"),
+    );
+    for (const actor of [THEO, agent(["posts:draft"])]) {
+      const checked = await container.accountManager.query(
+        new CheckDraftRequest(actor, "Let's circle back. Let's dive in."),
+      );
+      expect(checked).toBeInstanceOf(DraftCheckResponse);
+      expect(
+        (checked as DraftCheckResponse).warnings.map(
+          (warning) => warning.kind === "banned-phrase" && warning.phrase,
+        ),
+      ).toEqual(["let's dive in", "circle back"]);
+    }
+  });
+
+  test("a visitor has no guide to check against", async () => {
+    const container = await setUp();
+    expect(
+      await container.accountManager.query(
+        new CheckDraftRequest({ kind: "visitor" }, "Hello."),
+      ),
+    ).toBeInstanceOf(ActionForbiddenResponse);
   });
 });

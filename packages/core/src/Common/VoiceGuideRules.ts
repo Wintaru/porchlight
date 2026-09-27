@@ -23,3 +23,7 @@ export const VOICE_SAMPLE_COUNT = 5;
 
 // The longest guide the store takes (`profiles_voice_guide_length`).
 export const VOICE_GUIDE_MAX_LENGTH = 20_000;
+
+// The most of a draft check_draft reads (#32). A post longer than this is checked on
+// its first part only: the heuristics look for habits, which show early.
+export const DRAFT_CHECK_MAX_LENGTH = 100_000;

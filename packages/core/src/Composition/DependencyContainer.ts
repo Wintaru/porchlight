@@ -1,6 +1,8 @@
 import { GetVoiceGuideHandler } from "../Managers/AccountManager/Handlers/GetVoiceGuideHandler";
 import { UpdateVoiceGuideHandler } from "../Managers/AccountManager/Handlers/UpdateVoiceGuideHandler";
 import { GetVoiceGuideRequest } from "../Managers/AccountManager/Requests/GetVoiceGuideRequest";
+import { CheckDraftHandler } from "../Managers/AccountManager/Handlers/CheckDraftHandler";
+import { CheckDraftRequest } from "../Managers/AccountManager/Requests/CheckDraftRequest";
 import { UpdateVoiceGuideRequest } from "../Managers/AccountManager/Requests/UpdateVoiceGuideRequest";
 import type { DbClient } from "@porchlight/db";
 
@@ -192,6 +194,7 @@ import { createBlockAccessor } from "./createBlockAccessor";
 import { createCommentAccessor } from "./createCommentAccessor";
 import { createContentRenderEngine } from "./createContentRenderEngine";
 import { createEmailAccessor, readEmailProvider } from "./createEmailAccessor";
+import { createDraftCheckEngine } from "./createDraftCheckEngine";
 import { createEmailComposeEngine } from "./createEmailComposeEngine";
 import { createEmailPreferenceAccessor } from "./createEmailPreferenceAccessor";
 import { createSubscriberAccessor } from "./createSubscriberAccessor";
@@ -361,6 +364,10 @@ export class DependencyContainer {
         .register(
           GetVoiceGuideRequest,
           new GetVoiceGuideHandler(profiles, posts, permissions),
+        )
+        .register(
+          CheckDraftRequest,
+          new CheckDraftHandler(profiles, createDraftCheckEngine(), permissions),
         )
         .register(
           ListAgentTokensRequest,
