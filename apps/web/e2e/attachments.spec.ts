@@ -1,11 +1,11 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 
-import { devSignIn, JUNE, THEO } from "./helpers";
+import { deleteCurrentPost, devSignIn, JUNE, THEO } from "./helpers";
 
 // The issue #9 acceptance test, on the #52 panel: the server checks magic bytes, not
 // extensions (SPEC.md §6), a non-image is served as a download rather than inline, and
-// a member over quota sees why. Uploads now outlive the page (the panel lists them
-// again), so every test removes what it uploaded.
+// a member over quota sees why. Uploads outlive the page (the panel lists a post's own
+// again, #80), so every test removes what it uploaded.
 
 const PNG_SIGNATURE = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0,
@@ -84,12 +84,16 @@ test("a probation member over the per-file cap sees the cap, not a generic failu
   await expect(row(page, "big.png")).toHaveText(/big\.png:.*per-file limit/);
 });
 
-test("an upload is listed again after a reload, until it is removed", async ({
+test("a post's upload is listed again after a reload, until it is removed", async ({
   page,
 }) => {
-  const name = `kept-${Date.now().toString(36)}.png`;
+  const stamp = Date.now().toString(36);
+  const name = `kept-${stamp}.png`;
   await devSignIn(page, THEO);
   await page.goto("/write");
+  await page.getByLabel("Title").fill(`Kept ${stamp}`);
+  // Autosave gives the new post its id; the upload is made for that post.
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]{36}$/);
   await attach(page, { name, mimeType: "image/png", buffer: PNG_SIGNATURE });
   await expect(row(page, name)).toBeVisible();
 
@@ -99,4 +103,5 @@ test("an upload is listed again after a reload, until it is removed", async ({
   await page.reload();
   await expect(page.getByTestId("attachment-drop")).toBeVisible();
   await expect(row(page, name)).toHaveCount(0);
+  await deleteCurrentPost(page);
 });

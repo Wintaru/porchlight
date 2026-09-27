@@ -37,6 +37,7 @@ function asset(overrides: Partial<MediaAsset>): MediaAsset {
     scanStatus: "flagged",
     mature: true,
     postId: null,
+    usedInPost: false,
     retainUntil: null,
     createdAt: AT,
     updatedAt: AT,

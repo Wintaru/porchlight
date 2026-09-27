@@ -17,9 +17,11 @@ export interface UploadProgress {
 // straight from the browser, then have the server check and scan what arrived. The
 // cover picker and the attachment panel both upload this way. A video is converted in
 // the browser before any of them (prepare-video.ts).
+// `postId` is the post the upload is for, when the editor has one (#80).
 export async function uploadFile(
   file: File,
   onProgress?: (progress: UploadProgress) => void,
+  postId: string | null = null,
 ): Promise<UploadOutcome> {
   let upload = file;
   let convertedFrom: { readonly filename: string; readonly bytes: number } | null = null;
@@ -44,7 +46,7 @@ export async function uploadFile(
   } catch {
     return { ok: false, error: "The upload did not reach storage. Try again." };
   }
-  return finalizeUpload(requested.mediaId, upload.name, convertedFrom);
+  return finalizeUpload(requested.mediaId, upload.name, convertedFrom, postId);
 }
 
 export function formatBytes(bytes: number): string {

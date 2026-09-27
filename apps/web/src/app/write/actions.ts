@@ -8,6 +8,10 @@ import {
   DraftCheckResponse,
   draftWarningText,
   type Post,
+  ListMediaRequest,
+  type MediaAsset,
+  MediaListResponse,
+  MediaPrunedResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
   PostNotPublishableResponse,
@@ -15,6 +19,7 @@ import {
   PostRejectedResponse,
   PostResponse,
   PreviewPostRequest,
+  PruneMediaRequest,
   PublishPostRequest,
   UnpublishPostRequest,
   UpdateDraftRequest,
@@ -57,6 +62,14 @@ export async function submitPost(formData: FormData): Promise<void> {
   if (!(response instanceof PostResponse)) {
     redirect(`${returnTo}?error=${errorCode(response)}`);
   }
+  // Only an upload a saved version used can have been taken out: one uploaded and not
+  // put in yet stays for later.
+  const uploads = await postUploads(actor, response.post.id);
+  await pruneUploads(
+    actor,
+    uploads.filter((upload) => upload.usedInPost).map((upload) => upload.id),
+    response.post.id,
+  );
   if (parseIntent(formData) === "publish") {
     await publish(actor, response.post);
   }
@@ -151,15 +164,20 @@ export async function unpublishPost(formData: FormData): Promise<void> {
   redirect(`${returnTo}?saved=unpublished`);
 }
 
+// A deleted post's uploads go with it (#80). Their ids are read first: the delete
+// leaves them with no post. They are deleted only once the post is gone, and only those
+// no other post uses.
 export async function deletePost(formData: FormData): Promise<void> {
   const postId = idOf(formData);
   const actor = await requireMember(`/write/${postId}`);
+  const uploadIds = (await postUploads(actor, postId)).map((upload) => upload.id);
   const response = await getDependencyContainer().postManager.execute(
     new DeletePostRequest(actor, postId),
   );
   if (!(response instanceof PostDeletedResponse)) {
     redirect(`/write/${postId}?error=${errorCode(response)}`);
   }
+  await pruneUploads(actor, uploadIds, null);
   redirect("/write?deleted=1");
 }
 
@@ -176,6 +194,47 @@ async function publish(actor: Actor & { kind: "member" }, post: Post): Promise<n
     redirect(`/@${actor.profile.handle}/${response.post.slug}`);
   }
   redirect(`/write/${post.id}?saved=${response.post.status}`);
+}
+
+// The actor's uploads for this post. An empty list when it cannot be read: nothing is
+// then deleted.
+async function postUploads(
+  actor: Actor & { kind: "member" },
+  postId: string,
+): Promise<readonly MediaAsset[]> {
+  const response = await getDependencyContainer().mediaManager.query(
+    new ListMediaRequest(actor, postId),
+  );
+  if (!(response instanceof MediaListResponse)) {
+    console.error(`upload list failed [${response.correlationId}]`, response);
+    return [];
+  }
+  return response.assets;
+}
+
+// Deletes those of these uploads that no post uses any more (#80). An explicit save
+// sends the post's used uploads, so the ones taken out go. Autosave never does, so an upload
+// taken out and put back before Save survives. The post is saved or deleted by now, so
+// a failed prune keeps the files and does not fail the action: the next save tries
+// again.
+async function pruneUploads(
+  actor: Actor & { kind: "member" },
+  mediaIds: readonly string[],
+  savedPostId: string | null,
+): Promise<void> {
+  if (mediaIds.length === 0) {
+    return;
+  }
+  try {
+    const response = await getDependencyContainer().mediaManager.execute(
+      new PruneMediaRequest(actor, mediaIds, savedPostId),
+    );
+    if (!(response instanceof MediaPrunedResponse)) {
+      console.error(`upload prune failed [${response.correlationId}]`, response);
+    }
+  } catch (error: unknown) {
+    console.error("upload prune failed", error);
+  }
 }
 
 async function requireMember(next: string): Promise<Actor & { kind: "member" }> {

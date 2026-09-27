@@ -9,7 +9,7 @@ import { MEDIA_ASSET_COLUMNS, toMediaAsset } from "../toMediaAsset";
 type Result = MediaAssetsLoadedResponse | MediaAssetAccessFailedResponse;
 
 // One member's uploads is a bounded list, the same assumption LoadPostsByAuthorRequest
-// makes: no page here yet.
+// makes: no page here yet. One post's uploads are fewer still.
 export class SupabaseLoadMediaAssetsByOwnerHandler implements IHandler<
   LoadMediaAssetsByOwnerRequest,
   Result
@@ -23,11 +23,17 @@ export class SupabaseLoadMediaAssetsByOwnerHandler implements IHandler<
       .select(MEDIA_ASSET_COLUMNS)
       .eq("owner_id", request.profileId)
       .order("created_at", { ascending: false });
+    const narrowed =
+      listing === undefined
+        ? query
+        : listing.excludeLocked
+          ? query.neq("scan_status", "locked")
+          : query;
     const { data, error } = await (listing === undefined
-      ? query
-      : (listing.excludeLocked ? query.neq("scan_status", "locked") : query).limit(
-          listing.limit,
-        ));
+      ? narrowed
+      : listing.postId === null
+        ? narrowed.is("post_id", null)
+        : narrowed.eq("post_id", listing.postId));
     if (error) {
       return new MediaAssetAccessFailedResponse(request.correlationId, error.message);
     }

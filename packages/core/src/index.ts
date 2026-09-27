@@ -244,6 +244,8 @@ export { ReactionToggledResponse } from "./Managers/CommentManager/Responses/Rea
 // MediaManager: attachments (SPEC.md §6, issue #9).
 export type { IMediaManager } from "./Managers/MediaManager/IMediaManager";
 export { DeleteMediaRequest } from "./Managers/MediaManager/Requests/DeleteMediaRequest";
+export { PruneMediaRequest } from "./Managers/MediaManager/Requests/PruneMediaRequest";
+export { AttachMediaToPostRequest } from "./Managers/MediaManager/Requests/AttachMediaToPostRequest";
 export { FinalizeUploadAnonymouslyRequest } from "./Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 export type { ConvertedSource } from "./Managers/MediaManager/ConvertedSource";
 export { FinalizeUploadRequest } from "./Managers/MediaManager/Requests/FinalizeUploadRequest";
@@ -254,6 +256,8 @@ export { RequestUploadUrlAnonymouslyRequest } from "./Managers/MediaManager/Requ
 export { RequestUploadUrlRequest } from "./Managers/MediaManager/Requests/RequestUploadUrlRequest";
 export { AnonymousUploadUrlIssuedResponse } from "./Managers/MediaManager/Responses/AnonymousUploadUrlIssuedResponse";
 export { MediaDeletedResponse } from "./Managers/MediaManager/Responses/MediaDeletedResponse";
+export { MediaPrunedResponse } from "./Managers/MediaManager/Responses/MediaPrunedResponse";
+export { MediaAttachedResponse } from "./Managers/MediaManager/Responses/MediaAttachedResponse";
 export { MediaFinalizedResponse } from "./Managers/MediaManager/Responses/MediaFinalizedResponse";
 export { MediaForbiddenResponse } from "./Managers/MediaManager/Responses/MediaForbiddenResponse";
 export { MediaGuardRefusedResponse } from "./Managers/MediaManager/Responses/MediaGuardRefusedResponse";

@@ -96,6 +96,8 @@ import { SubscribeRequest } from "../Managers/NotificationManager/Requests/Subsc
 import { GetEmailAvailabilityHandler } from "../Managers/NotificationManager/Handlers/GetEmailAvailabilityHandler";
 import { GetEmailAvailabilityRequest } from "../Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
+import { PruneMediaHandler } from "../Managers/MediaManager/Handlers/PruneMediaHandler";
+import { AttachMediaToPostHandler } from "../Managers/MediaManager/Handlers/AttachMediaToPostHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
 import { RepublishMediaHandler } from "../Managers/MediaManager/Handlers/RepublishMediaHandler";
@@ -106,6 +108,8 @@ import { RequestUploadUrlHandler } from "../Managers/MediaManager/Handlers/Reque
 import type { IMediaManager } from "../Managers/MediaManager/IMediaManager";
 import { MediaManager } from "../Managers/MediaManager/MediaManager";
 import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMediaRequest";
+import { PruneMediaRequest } from "../Managers/MediaManager/Requests/PruneMediaRequest";
+import { AttachMediaToPostRequest } from "../Managers/MediaManager/Requests/AttachMediaToPostRequest";
 import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
 import { RepublishMediaRequest } from "../Managers/MediaManager/Requests/RepublishMediaRequest";
@@ -564,6 +568,14 @@ export class DependencyContainer {
         .build(),
     );
 
+    // One instance: an explicit save's prune deletes each upload through it (#80).
+    const deleteMedia = new DeleteMediaHandler(
+      mediaStorage,
+      mediaAssets,
+      quotas,
+      permissions,
+      mediaOptions,
+    );
     this.mediaManager = new MediaManager(
       new HandlerResolverBuilder()
         .register(
@@ -626,16 +638,9 @@ export class DependencyContainer {
           RepublishMediaRequest,
           new RepublishMediaHandler(mediaAssets, permissions, mediaPublisher),
         )
-        .register(
-          DeleteMediaRequest,
-          new DeleteMediaHandler(
-            mediaStorage,
-            mediaAssets,
-            quotas,
-            permissions,
-            mediaOptions,
-          ),
-        )
+        .register(DeleteMediaRequest, deleteMedia)
+        .register(PruneMediaRequest, new PruneMediaHandler(mediaAssets, deleteMedia))
+        .register(AttachMediaToPostRequest, new AttachMediaToPostHandler(mediaAssets))
         .build(),
       new HandlerResolverBuilder()
         .register(

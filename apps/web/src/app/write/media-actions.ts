@@ -1,11 +1,14 @@
 "use server";
 
 import {
+  type Actor,
+  AttachMediaToPostRequest,
   type ConvertedSource,
   DeleteMediaRequest,
   FinalizeUploadRequest,
   GetMediaRequest,
   ListMediaRequest,
+  MediaAttachedResponse,
   MediaDeletedResponse,
   MediaFinalizedResponse,
   MediaForbiddenResponse,
@@ -86,17 +89,23 @@ export async function requestUpload(
 }
 
 // `convertedFrom` is the phone's file a video was converted from in the browser (#21),
-// for the evidence envelope.
+// for the evidence envelope. `postId` is the post the editor is on, once it has one:
+// the upload joins it (#80).
 export async function finalizeUpload(
   mediaId: string,
   originalFilename: string,
   convertedFrom: ConvertedSource | null = null,
+  postId: string | null = null,
 ): Promise<FinalizeUploadResult> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     return { ok: false, error: mediaErrorTextFor("signed-out") };
   }
-  if (!isEntityId(mediaId) || !isConvertedSource(convertedFrom)) {
+  if (
+    !isEntityId(mediaId) ||
+    !isConvertedSource(convertedFrom) ||
+    (postId !== null && !isEntityId(postId))
+  ) {
     return { ok: false, error: mediaErrorTextFor("unavailable") };
   }
 
@@ -114,21 +123,66 @@ export async function finalizeUpload(
   if (!(finalized instanceof MediaFinalizedResponse)) {
     return { ok: false, error: errorTextFor(finalized) };
   }
+  if (postId !== null) {
+    await attach(actor, mediaId, postId);
+  }
   return { ok: true, upload: uploadViewOf(finalized.asset, finalized.unpublishable) };
 }
 
-// The member's newest uploads, so a file put up before a reload can still go into the
-// post (#52). An empty list for anyone else.
-export async function listUploads(): Promise<readonly UploadView[]> {
+// An upload made before the new post had an id joins it once it has one (#80).
+export async function attachUpload(mediaId: string, postId: string): Promise<void> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member" || !isEntityId(mediaId) || !isEntityId(postId)) {
+    return;
+  }
+  await attach(actor, mediaId, postId);
+}
+
+// A failed attach leaves the upload with no post, where a save that puts it in the body
+// attaches it anyway, so it is logged and not shown.
+async function attach(
+  actor: Actor & { kind: "member" },
+  mediaId: string,
+  postId: string,
+): Promise<void> {
+  const response = await getDependencyContainer().mediaManager.execute(
+    new AttachMediaToPostRequest(actor, mediaId, postId),
+  );
+  if (!(response instanceof MediaAttachedResponse)) {
+    console.error(`upload attach failed [${response.correlationId}]`, response);
+  }
+}
+
+// This post's uploads, so a file put up before a reload can still go into it (#52,
+// #80). An empty list for anyone else, and for a post not saved yet.
+export async function listUploads(postId: string): Promise<readonly UploadView[]> {
+  const actor = await getCurrentActor();
+  if (actor.kind !== "member" || !isEntityId(postId)) {
+    return [];
+  }
+  const response = await getDependencyContainer().mediaManager.query(
+    new ListMediaRequest(actor, postId),
+  );
+  if (!(response instanceof MediaListResponse)) {
+    console.error(`upload list failed [${response.correlationId}]`, response);
+    return [];
+  }
+  return response.assets.map((asset) => uploadViewOf(asset));
+}
+
+// The member's uploads that are in no post: made before a new post had an id, older
+// than posts owning uploads (#80), or left by a post someone else deleted. Listed so the
+// member can still put one in, or remove it and free the space.
+export async function listUnattachedUploads(): Promise<readonly UploadView[]> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     return [];
   }
   const response = await getDependencyContainer().mediaManager.query(
-    new ListMediaRequest(actor),
+    new ListMediaRequest(actor, null),
   );
   if (!(response instanceof MediaListResponse)) {
-    console.error(`upload list failed [${response.correlationId}]`, response);
+    console.error(`unattached upload list failed [${response.correlationId}]`, response);
     return [];
   }
   return response.assets.map((asset) => uploadViewOf(asset));

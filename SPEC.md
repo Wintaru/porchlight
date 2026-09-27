@@ -149,6 +149,17 @@ published as AVIF. **Video links:** a YouTube, Vimeo or Imgur video link alone o
 line renders as a player; YouTube and Vimeo stay a card that loads nothing from the
 service until the reader presses it. Linked videos are not scanned.
 
+**Uploads and posts (#80).** Each upload belongs to one post: the one the editor
+uploaded it for, or else the first post of its owner that used it. The editor lists
+only that post's uploads, so a picture used in a second post is uploaded again. When
+the author presses Save or Publish, an upload a saved version used and the post no
+longer uses is deleted. Autosave never deletes, so an upload taken out and put back
+before Save survives, and one uploaded and not put in yet stays. Deleting your post
+deletes your uploads in it. An upload that any post still shows, anyone's, is kept, and
+so is a locked one. Uploads in no post (made before posts owned uploads, or left by a
+post a moderator deleted) are listed apart and folded, so the member can still put one
+in or remove it.
+
 ## 7. Moderation and safety
 
 **Every upload is quarantined until scanned and approved. Scanning cannot be turned off.**

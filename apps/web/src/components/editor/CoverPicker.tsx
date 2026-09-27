@@ -11,6 +11,9 @@ import { uploadFile } from "./upload-file";
 interface CoverPickerProps {
   readonly initialMediaId: string | null;
   readonly onChange: () => void;
+  // The post being edited, or "" while a new post has no id: a cover joins its post
+  // (#80).
+  readonly postId: string;
 }
 
 type Cover =
@@ -22,7 +25,7 @@ type Cover =
 // The Editor board's "Cover image" (#52): one of the author's images, shown on the post
 // above the body and on the share card. The hidden field carries its id with the rest
 // of the form; the Manager checks it is the author's own image.
-export function CoverPicker({ initialMediaId, onChange }: CoverPickerProps) {
+export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerProps) {
   const [cover, setCover] = useState<Cover>(
     initialMediaId === null
       ? { kind: "none" }
@@ -58,7 +61,7 @@ export function CoverPicker({ initialMediaId, onChange }: CoverPickerProps) {
   const choose = async (file: File) => {
     setBusy(true);
     setError(null);
-    const outcome = await uploadFile(file);
+    const outcome = await uploadFile(file, undefined, postId === "" ? null : postId);
     setBusy(false);
     if (!outcome.ok) {
       setError(outcome.error);

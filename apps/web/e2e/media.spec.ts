@@ -40,15 +40,6 @@ async function attach(page: Page, name: string, buffer: Buffer, mimeType: string
   return page.getByTestId("attachment").filter({ hasText: name });
 }
 
-async function removeUploads(page: Page, names: readonly string[]): Promise<void> {
-  await page.goto("/write");
-  for (const name of names) {
-    const row = page.getByTestId("attachment").filter({ hasText: name });
-    await row.getByRole("button", { name: "Remove" }).click();
-    await expect(row).toHaveCount(0);
-  }
-}
-
 test("a cover, a picture and a PDF go into a post, from a re-encoded public copy", async ({
   page,
 }) => {
@@ -157,8 +148,9 @@ test("a cover, a picture and a PDF go into a post, from a re-encoded public copy
     .click();
   // The saved cover comes back with the draft.
   await expect(page.getByTestId("cover-image")).toHaveAttribute("src", coverUrl);
+  // The post's uploads go with it (#80): the public copy is gone too.
   await deleteCurrentPost(page);
-  await removeUploads(page, [cover, picture, pdf]);
+  expect((await page.request.get(coverUrl)).ok()).toBe(false);
 });
 
 async function queueAsMira(browser: Browser): Promise<Page> {
@@ -223,7 +215,6 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
   await deleteCurrentPost(page);
-  await removeUploads(page, [cover]);
 });
 
 // A visible element's box. A hidden one has none, and a check against a made-up zero

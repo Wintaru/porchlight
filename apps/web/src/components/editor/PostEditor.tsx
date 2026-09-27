@@ -292,7 +292,11 @@ export function PostEditor({
           />
         </div>
         <aside className={styles.side}>
-          <CoverPicker initialMediaId={post?.coverMediaId ?? null} onChange={markDirty} />
+          <CoverPicker
+            initialMediaId={post?.coverMediaId ?? null}
+            onChange={markDirty}
+            postId={postId}
+          />
           <label className={styles.field}>
             <span className={styles.label}>Summary for the preview card</span>
             <input
@@ -360,6 +364,7 @@ export function PostEditor({
             </label>
           </div>
           <AttachmentPanel
+            postId={postId}
             onInsert={(item) => {
               insertRef.current?.(item);
             }}

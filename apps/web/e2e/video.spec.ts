@@ -7,8 +7,8 @@ import { deleteCurrentPost, devSignIn, fillBodyMarkdown, THEO } from "./helpers"
 
 // Issue #21: an iPhone photo (HEIC) goes up and is published as AVIF; a video is
 // prepared in the browser (its metadata dropped, its movie box moved first), checked,
-// scanned and plays in the post. Every post a test writes it deletes, and every upload
-// it removes.
+// scanned and plays in the post. Every post a test writes it deletes, and its uploads go
+// with it (#80); an upload in no post is removed on the page that made it.
 
 const FIXTURES = join(import.meta.dirname, "fixtures");
 // porch-photo.jpg saved as HEIC by macOS.
@@ -33,13 +33,10 @@ async function deletePost(page: Page, title: string): Promise<void> {
   await deleteCurrentPost(page);
 }
 
-async function removeUploads(page: Page, names: readonly string[]): Promise<void> {
-  await page.goto("/write");
-  for (const name of names) {
-    const row = page.getByTestId("attachment").filter({ hasText: name });
-    await row.getByRole("button", { name: "Remove" }).click();
-    await expect(row).toHaveCount(0);
-  }
+async function removeUpload(page: Page, name: string): Promise<void> {
+  const row = page.getByTestId("attachment").filter({ hasText: name });
+  await row.getByRole("button", { name: "Remove" }).click();
+  await expect(row).toHaveCount(0);
 }
 
 test("an iPhone HEIC photo is published as AVIF", async ({ page }) => {
@@ -57,7 +54,7 @@ test("an iPhone HEIC photo is published as AVIF", async ({ page }) => {
   const copy = await page.request.get(url);
   expect(copy.headers()["content-type"]).toBe("image/avif");
 
-  await removeUploads(page, [photo]);
+  await removeUpload(page, photo);
 });
 
 test("a video is prepared in the browser, checked, and plays in the post", async ({
@@ -99,5 +96,4 @@ test("a video is prepared in the browser, checked, and plays in the post", async
   expect(bytes.subarray(ftypSize + 4, ftypSize + 8).toString("latin1")).toBe("moov");
 
   await deletePost(page, title);
-  await removeUploads(page, [clip]);
 });

@@ -110,12 +110,8 @@ test("an agent uploads a photo through the signed URL and it shows in the post",
       /\/storage\/v1\/object\/public\/public-media\/.+\.jpg$/,
     );
   } finally {
-    // The post and the upload go even when an assertion above failed.
+    // The post goes even when an assertion above failed, and its upload with it (#80).
     await page.goto(`/write/${postId}`);
     await deleteCurrentPost(page);
-    await page.goto("/write");
-    const row = page.getByTestId("attachment").filter({ hasText: filename });
-    await row.getByRole("button", { name: "Remove" }).click();
-    await expect(row).toHaveCount(0);
   }
 });

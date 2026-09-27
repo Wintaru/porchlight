@@ -10,10 +10,6 @@ import { unavailable } from "../unavailable";
 
 type Result = MediaListResponse | MediaForbiddenResponse | MediaUnavailableResponse;
 
-// How many uploads the editor lists. Older ones stay on the member's account; the list
-// is for "the file I just put up", not an archive browser.
-const EDITOR_LIST_LIMIT = 24;
-
 // Only ever the caller's own uploads, so there is no subject to check: a visitor has
 // none, and a member sees exactly what they uploaded. A locked upload is left out —
 // nobody views one (SPEC.md §7).
@@ -21,7 +17,7 @@ export class ListMediaHandler implements IHandler<ListMediaRequest, Result> {
   constructor(private readonly mediaAssets: IMediaAssetAccessor) {}
 
   async handle(request: ListMediaRequest): Promise<Result> {
-    const { correlationId, actor } = request;
+    const { correlationId, actor, postId } = request;
     if (actor.kind !== "member") {
       return new MediaForbiddenResponse(correlationId, "signed-out");
     }
@@ -29,7 +25,7 @@ export class ListMediaHandler implements IHandler<ListMediaRequest, Result> {
       new LoadMediaAssetsByOwnerRequest(
         actor.profile.id,
         { correlationId },
-        { limit: EDITOR_LIST_LIMIT, excludeLocked: true },
+        { postId, excludeLocked: true },
       ),
     );
     if (!(loaded instanceof MediaAssetsLoadedResponse)) {

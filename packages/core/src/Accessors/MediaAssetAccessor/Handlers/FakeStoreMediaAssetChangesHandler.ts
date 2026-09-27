@@ -23,13 +23,17 @@ export class FakeStoreMediaAssetChangesHandler implements IHandler<
       );
     }
     const current = this.state.assets.get(id);
-    if (current === undefined) {
+    if (
+      current === undefined ||
+      (changes.postId !== undefined && current.postId !== null)
+    ) {
       return Promise.resolve(new MediaAssetNotFoundResponse(correlationId, id));
     }
     const stored = {
       ...current,
       mature: changes.mature ?? current.mature,
       publishedPath: changes.publishedPath ?? current.publishedPath,
+      postId: changes.postId ?? current.postId,
     };
     this.state.assets.set(id, stored);
     return Promise.resolve(new MediaAssetStoredResponse(correlationId, stored));

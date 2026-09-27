@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { deleteUpload, listUploads, republishUpload } from "@/app/write/media-actions";
+import {
+  attachUpload,
+  deleteUpload,
+  listUnattachedUploads,
+  listUploads,
+  republishUpload,
+} from "@/app/write/media-actions";
 import type { UploadView } from "@/lib/upload-view";
 import type { BodyInsert } from "./BodyEditor";
 import { DropZone } from "./DropZone";
@@ -11,6 +17,8 @@ import { formatBytes, type UploadProgress, uploadFile } from "./upload-file";
 
 interface AttachmentPanelProps {
   readonly onInsert: (item: BodyInsert) => void;
+  // The post being edited, or "" while a new post has no id yet.
+  readonly postId: string;
 }
 
 type Row =
@@ -23,39 +31,86 @@ type Row =
     };
 
 // The editor's uploads (SPEC.md §6, #52): drop or choose a file, see it accepted or
-// refused with why, put it into the post, or remove it. The member's recent uploads
-// are listed again after a reload. An image goes in as a picture, a video as a player
+// refused with why, put it into the post, or remove it. Only this post's uploads are
+// listed (#80), again after a reload. An upload made before a new post has an id joins
+// the post once autosave gives it one. Uploads in no post at all sit apart, folded, so
+// the member can still put one in or remove it. An image goes in as a picture, a video as a player
 // (#21), any other file as a download card. A file with no public copy yet (a flagged
 // image) cannot go in.
-export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
+export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const [rows, setRows] = useState<readonly Row[]>([]);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
+  // Uploads made while the post had no id, and the id once it has one: an upload that
+  // finishes after the id arrives is attached at once instead of waiting here.
+  const unattached = useRef<string[]>([]);
+  const currentPostId = useRef(postId);
+  const [loose, setLoose] = useState<readonly UploadView[]>([]);
 
   useEffect(() => {
+    currentPostId.current = postId;
+    if (postId === "") {
+      return;
+    }
     let live = true;
-    void listUploads().then((uploads) => {
-      if (!live) {
-        return;
+    const waiting = unattached.current;
+    unattached.current = [];
+    void Promise.all(waiting.map((mediaId) => attachUpload(mediaId, postId)))
+      .then(() => {
+        void listUnattachedUploads().then((uploads) => {
+          if (live) {
+            setLoose(uploads);
+          }
+        });
+        return listUploads(postId);
+      })
+      .then((uploads) => {
+        if (!live) {
+          return;
+        }
+        // Anything added while the list loaded stays at the top.
+        setRows((current) => [
+          ...current,
+          ...uploads
+            .filter((upload) => !current.some((row) => row.id === upload.mediaId))
+            .map((upload): Row => ({ id: upload.mediaId, kind: "done", upload })),
+        ]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [postId]);
+
+  // A new post has no id, so no list of its own yet: only the uploads in no post.
+  useEffect(() => {
+    if (postId !== "") {
+      return;
+    }
+    let live = true;
+    void listUnattachedUploads().then((uploads) => {
+      if (live) {
+        setLoose(uploads);
       }
-      // Anything added while the list loaded stays at the top.
-      setRows((current) => [
-        ...current,
-        ...uploads
-          .filter((upload) => !current.some((row) => row.id === upload.mediaId))
-          .map((upload): Row => ({ id: upload.mediaId, kind: "done", upload })),
-      ]);
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [postId]);
 
   const attach = async (file: File) => {
     setBusy(true);
-    const outcome = await uploadFile(file, setProgress);
+    const madeFor = postId;
+    const outcome = await uploadFile(file, setProgress, madeFor === "" ? null : madeFor);
     setBusy(false);
     setProgress(null);
+    if (outcome.ok && madeFor === "") {
+      const mediaId = outcome.upload.mediaId;
+      if (currentPostId.current === "") {
+        unattached.current.push(mediaId);
+      } else {
+        void attachUpload(mediaId, currentPostId.current);
+      }
+    }
     const row: Row = outcome.ok
       ? { id: outcome.upload.mediaId, kind: "done", upload: outcome.upload }
       : {
@@ -103,6 +158,16 @@ export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
     );
   };
 
+  const removeLoose = async (upload: UploadView) => {
+    const deleted = await deleteUpload(upload.mediaId);
+    if (deleted.ok) {
+      setLoose((current) => current.filter((u) => u.mediaId !== upload.mediaId));
+    }
+  };
+  const shownLoose = loose.filter(
+    (upload) => !rows.some((row) => row.id === upload.mediaId),
+  );
+
   return (
     <div className={styles.field}>
       <span className={styles.label}>Attachments</span>
@@ -142,6 +207,29 @@ export function AttachmentPanel({ onInsert }: AttachmentPanelProps) {
             </li>
           ))}
         </ul>
+      )}
+      {shownLoose.length > 0 && (
+        <details data-testid="unattached-uploads">
+          <summary className={styles.hint}>
+            Not in any post ({String(shownLoose.length)})
+          </summary>
+          <ul className={styles.attachmentList}>
+            {shownLoose.map((upload) => (
+              <li key={upload.mediaId} data-testid="unattached-upload">
+                <AttachmentRow
+                  upload={upload}
+                  onInsert={onInsert}
+                  onRetry={() => {
+                    void retry(upload);
+                  }}
+                  onRemove={() => {
+                    void removeLoose(upload);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

@@ -20,10 +20,10 @@ export class SupabaseStoreMediaAssetChangesHandler implements IHandler<
     MediaAssetStoredResponse | MediaAssetNotFoundResponse | MediaAssetAccessFailedResponse
   > {
     const { id, changes, correlationId } = request;
-    const { data, error } = await this.db
-      .from("media_assets")
-      .update(toColumns(changes))
-      .eq("id", id)
+    const update = this.db.from("media_assets").update(toColumns(changes)).eq("id", id);
+    const { data, error } = await (
+      changes.postId === undefined ? update : update.is("post_id", null)
+    )
       .select(MEDIA_ASSET_COLUMNS)
       .maybeSingle();
     if (error) {
@@ -40,5 +40,6 @@ function toColumns(changes: MediaAssetChanges): TablesUpdate<"media_assets"> {
   const columns: TablesUpdate<"media_assets"> = {};
   if (changes.mature !== undefined) columns.mature = changes.mature;
   if (changes.publishedPath !== undefined) columns.published_path = changes.publishedPath;
+  if (changes.postId !== undefined) columns.post_id = changes.postId;
   return columns;
 }

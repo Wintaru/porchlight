@@ -30,8 +30,11 @@ export class FakeLoadMediaAssetsByOwnerHandler implements IHandler<
         (asset) =>
           !(request.listing?.excludeLocked ?? false) || asset.scanStatus !== "locked",
       )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, request.listing?.limit);
+      .filter(
+        (asset) =>
+          request.listing === undefined || asset.postId === request.listing.postId,
+      )
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return Promise.resolve(new MediaAssetsLoadedResponse(request.correlationId, assets));
   }
 }

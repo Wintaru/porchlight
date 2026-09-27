@@ -23,7 +23,7 @@ import { NoSuchMediaResponse } from "../Responses/NoSuchMediaResponse";
 import type { MediaUnavailableResponse } from "../Responses/MediaUnavailableResponse";
 import { unavailable } from "../unavailable";
 
-type Result =
+export type DeleteMediaResult =
   | MediaDeletedResponse
   | NoSuchMediaResponse
   | MediaForbiddenResponse
@@ -33,7 +33,10 @@ type Result =
 // the quota are untouched, so the whole delete is safe to retry. Deleting the row first
 // would leave an orphaned quarantine object with nothing pointing at it if the storage
 // call then failed.
-export class DeleteMediaHandler implements IHandler<DeleteMediaRequest, Result> {
+export class DeleteMediaHandler implements IHandler<
+  DeleteMediaRequest,
+  DeleteMediaResult
+> {
   constructor(
     private readonly storage: IMediaStorageAccessor,
     private readonly mediaAssets: IMediaAssetAccessor,
@@ -42,7 +45,7 @@ export class DeleteMediaHandler implements IHandler<DeleteMediaRequest, Result> 
     private readonly options: MediaManagerOptions,
   ) {}
 
-  async handle(request: DeleteMediaRequest): Promise<Result> {
+  async handle(request: DeleteMediaRequest): Promise<DeleteMediaResult> {
     const { correlationId, actor, mediaId } = request;
     const context = { correlationId };
 
