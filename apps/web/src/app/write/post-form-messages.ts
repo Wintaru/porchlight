@@ -21,6 +21,7 @@ type ErrorCode =
   | CannotPostResponse["reason"]
   | `rejected-${PostRejectionReason}`
   | `not-publishable-${Exclude<PostStatus, "draft" | "pending" | "published">}`
+  | "changed"
   | "unavailable";
 
 // What the editor says for each `?error=` and `?saved=` code its actions redirect with.
@@ -47,6 +48,8 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "not-publishable-hidden": "A moderator hid this post. It cannot be published again.",
   "not-publishable-removed":
     "A moderator removed this post. It cannot be published again.",
+  changed:
+    "This post changed since you opened it, in another tab or by an agent. Save draft keeps what is on this page. Reload to see the other version.",
   unavailable: "The post could not be saved. Try again in a moment.",
 };
 

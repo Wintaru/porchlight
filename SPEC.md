@@ -126,6 +126,10 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
   `admin`, `mod`, and every top-level route. Erased authors return 410 Gone.
 - Unlisted posts are excluded from feeds, tag pages, sitemap, RSS, and carry `noindex`.
 - The editor toolbar offers only what markdown can store.
+- `posts.version` moves by one on every write (#100). An autosave sends the version
+  its page last saw and changes nothing when the post was written since. The editor
+  then says the post changed and keeps the text on the page. Save, Publish and an
+  agent's `update_draft` send no version: the last of those wins.
 
 ## 6. Attachments
 

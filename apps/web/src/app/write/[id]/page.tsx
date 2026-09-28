@@ -104,6 +104,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
     commentsEnabled: post.commentsEnabled,
     coverMediaId: post.coverMediaId,
     status: post.status,
+    version: post.version,
   };
   return (
     <main>

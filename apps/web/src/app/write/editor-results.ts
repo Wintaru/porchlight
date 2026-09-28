@@ -1,8 +1,9 @@
 // What the editor's background calls answer. They return instead of redirecting: the
 // page stays put and shows the word in the top bar. The error is a code from the same
 // table the redirects use (`errorTextFor`), so one sentence serves both.
+// `version` is the post's version after this save: the next autosave sends it (#100).
 export type AutosaveResult =
-  | { readonly ok: true; readonly postId: string }
+  | { readonly ok: true; readonly postId: string; readonly version: number }
   | { readonly ok: false; readonly error: string };
 
 export type PreviewResult =

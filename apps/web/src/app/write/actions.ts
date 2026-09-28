@@ -13,6 +13,7 @@ import {
   MediaListResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
+  PostChangedResponse,
   PostNotPublishableResponse,
   PostPreviewResponse,
   PostRejectedResponse,
@@ -42,7 +43,8 @@ import { parseIntent, parsePostForm } from "./parse-post-form";
 
 // Save draft and Publish. One function for a new post and an existing one: autosave can
 // create the draft under the new-post page, after which the page's own buttons carry
-// the id and must update, not create again.
+// the id and must update, not create again. A button press sends no version: it is the
+// person's last word, and it is how they keep their text after a conflict (#100).
 export async function submitPost(formData: FormData): Promise<void> {
   const postId = optionalIdOf(formData);
   if (postId === INVALID_ID) {
@@ -72,13 +74,16 @@ export async function submitPost(formData: FormData): Promise<void> {
 // The editor's timer. Same parse and the same Manager calls as a save, but the answer
 // comes back to the page instead of moving it: a redirect from a background call would
 // unmount the editor and drop what was typed. Never publishes.
+// It sends the version the page last saw, so an autosave that arrives after a newer
+// write (a Save it lost the race to, another tab, an agent) changes nothing (#100).
 export async function autosavePost(formData: FormData): Promise<AutosaveResult> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
     return { ok: false, error: "signed-out" };
   }
   const postId = optionalIdOf(formData);
-  if (postId === INVALID_ID) {
+  const version = optionalVersionOf(formData);
+  if (postId === INVALID_ID || version === INVALID_VERSION) {
     return { ok: false, error: "unavailable" };
   }
   const parsed = parsePostForm(formData);
@@ -88,12 +93,12 @@ export async function autosavePost(formData: FormData): Promise<AutosaveResult> 
   const response = await getDependencyContainer().postManager.execute(
     postId === undefined
       ? new CreateDraftRequest(actor, parsed.draft, await currentRequestMeta())
-      : new UpdateDraftRequest(actor, postId, parsed.draft),
+      : new UpdateDraftRequest(actor, postId, parsed.draft, undefined, version),
   );
   if (!(response instanceof PostResponse)) {
     return { ok: false, error: errorCode(response) };
   }
-  return { ok: true, postId: response.post.id };
+  return { ok: true, postId: response.post.id, version: response.post.version };
 }
 
 // The Preview button: the body as the page will render it, through the one render path
@@ -233,6 +238,25 @@ function optionalIdOf(formData: FormData): string | undefined | typeof INVALID_I
   return typeof id === "string" && isEntityId(id) ? id : INVALID_ID;
 }
 
+// A `version` value that is not a count never came from the editor.
+const INVALID_VERSION = Symbol("invalid post version");
+
+// No version means a page from before #100, still open across a deploy: its autosave
+// keeps the old last-write-wins until the author reloads.
+function optionalVersionOf(
+  formData: FormData,
+): number | undefined | typeof INVALID_VERSION {
+  const version = formData.get("version");
+  if (version === null || version === "") {
+    return undefined;
+  }
+  if (typeof version !== "string" || !/^[1-9][0-9]{0,9}$/.test(version)) {
+    return INVALID_VERSION;
+  }
+  const parsed = Number(version);
+  return Number.isSafeInteger(parsed) ? parsed : INVALID_VERSION;
+}
+
 // The query-string code the page turns into a sentence. Unexpected responses are
 // logged with their correlation id and shown as "unavailable".
 function errorCode(response: object & { readonly correlationId: string }): string {
@@ -244,6 +268,9 @@ function errorCode(response: object & { readonly correlationId: string }): strin
   }
   if (response instanceof PostNotPublishableResponse) {
     return `not-publishable-${response.status}`;
+  }
+  if (response instanceof PostChangedResponse) {
+    return "changed";
   }
   console.error(`post action failed [${response.correlationId}]`, response);
   return "unavailable";

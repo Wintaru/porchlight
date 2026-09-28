@@ -35,6 +35,7 @@ export type EditorPost = Pick<
   | "commentsEnabled"
   | "coverMediaId"
   | "status"
+  | "version"
 >;
 
 interface PostEditorProps {
@@ -67,6 +68,12 @@ export function PostEditor({
   notices,
 }: PostEditorProps) {
   const [postId, setPostId] = useState(post?.id ?? "");
+  // The post's version as this page last saw it. Each autosave sends it and gets the new
+  // one back, so a save that arrives after another write changes nothing (#100).
+  const [version, setVersion] = useState<number | undefined>(post?.version);
+  const adoptVersion = useCallback((next: number) => {
+    setVersion((seen) => (seen === undefined || next > seen ? next : seen));
+  }, []);
   const [title, setTitle] = useState(post?.title ?? "");
   const [tags, setTags] = useState<readonly string[]>(
     post?.tags.filter((tag) => tag.slug !== MATURE_TAG).map((tag) => tag.name) ?? [],
@@ -133,7 +140,21 @@ export function PostEditor({
           reject(new Error("autosave timed out"));
         }, AUTOSAVE_TIMEOUT_MS);
       });
-      Promise.race([autosavePost(formData), timeout]).then(
+      const request = autosavePost(formData);
+      // This tab's own write, even one that answers after the timeout or after a newer
+      // attempt: its version is adopted, so the next autosave does not see its own late
+      // write as someone else's change. Never lower: a foreign write after it would give
+      // a higher version, and one before it would have refused it. A failure is reported
+      // by the race below.
+      request.then(
+        (result) => {
+          if (result.ok && result.postId === postId) {
+            adoptVersion(result.version);
+          }
+        },
+        () => undefined,
+      );
+      Promise.race([request, timeout]).then(
         (result) => {
           if (!current()) {
             return;
@@ -148,6 +169,7 @@ export function PostEditor({
             window.history.replaceState(null, "", `/write/${result.postId}`);
           }
           setPostId(result.postId);
+          adoptVersion(result.version);
           setSave(
             editsRef.current === savedEdits ? { kind: "saved" } : { kind: "dirty" },
           );
@@ -164,7 +186,7 @@ export function PostEditor({
     return () => {
       clearTimeout(timer);
     };
-  }, [edits, isDraft, postId, save.kind, submitting]);
+  }, [adoptVersion, edits, isDraft, postId, save.kind, submitting]);
 
   // Leaving with unsaved changes asks first.
   useEffect(() => {
@@ -243,6 +265,7 @@ export function PostEditor({
       }}
     >
       <input type="hidden" name="postId" value={postId} />
+      <input type="hidden" name="version" value={version ?? ""} />
       <input type="hidden" name="tags" value={allTags.join(", ")} />
       <div className={styles.bar}>
         <h1 className={styles.crumb}>
@@ -420,13 +443,13 @@ export function PostEditor({
 }
 
 // The form as one string, for "did anything change since the last save". Every field
-// here is text; a file would need a different key.
+// here is text; a file would need a different key. The version is left out: every save
+// moves it, so with it no form would ever look unchanged.
 function serialize(formData: FormData): string {
   return JSON.stringify(
-    [...formData.entries()].map(([name, value]) => [
-      name,
-      typeof value === "string" ? value : value.name,
-    ]),
+    [...formData.entries()]
+      .filter(([name]) => name !== "version")
+      .map(([name, value]) => [name, typeof value === "string" ? value : value.name]),
   );
 }
 

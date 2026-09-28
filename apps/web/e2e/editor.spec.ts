@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 
 import { AUTOSAVE_DELAY_MS } from "../src/components/editor/autosave-delay";
 import { deleteCurrentPost, devSignIn, JUNE, THEO } from "./helpers";
@@ -204,4 +204,71 @@ test("another member's published post does not open in the editor", async ({ pag
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Nothing here" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Publish" })).toHaveCount(0);
+});
+
+// #100: the editor stops waiting for an autosave after 15 s, but the server call runs
+// on. An autosave that reaches the store after a newer Save must not put the older
+// body back, and the page that sent it must say the post changed.
+test("a late autosave after a newer Save changes nothing and says so", async ({
+  page,
+  context,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  const stamp = Date.now().toString(36);
+  await page.getByLabel("Title").fill(`Race notes ${stamp}`);
+  await modeButton(page, "Markdown").click();
+  await page.getByLabel("Body (markdown)").fill("The first words.");
+  await expect(page.getByTestId("save-state")).toHaveText("Draft saved a moment ago");
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]+$/);
+  const editorPath = new URL(page.url()).pathname;
+
+  // The next autosave from this tab is held on its way to the server.
+  const marker = `stale-${stamp}`;
+  const held: Route[] = [];
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    if (
+      request.method() === "POST" &&
+      request.headers()["next-action"] !== undefined &&
+      (request.postData() ?? "").includes(marker)
+    ) {
+      held.push(route);
+      return;
+    }
+    await route.fallback();
+  });
+  await page.getByLabel("Body (markdown)").fill(`The older words, ${marker}.`);
+  await expect(page.getByTestId("save-state")).toHaveText("Saving…");
+  await expect.poll(() => held.length).toBe(1);
+
+  // Meanwhile a newer Save lands, from a second tab.
+  const other = await context.newPage();
+  await other.goto(editorPath);
+  await modeButton(other, "Markdown").click();
+  await other.getByLabel("Body (markdown)").fill("The newer words.");
+  await other.getByRole("button", { name: "Save draft" }).click();
+  await expect(other.getByTestId("form-status")).toHaveText("Saved.");
+
+  // Now the held autosave reaches the server.
+  const late = held[0];
+  if (late === undefined) {
+    throw new Error("expected a held autosave");
+  }
+  const finished = page.waitForEvent("requestfinished", (r) => r === late.request());
+  await late.continue();
+  await finished;
+  await expect(page.getByTestId("save-state")).toHaveText(
+    /This post changed since you opened it/,
+  );
+  // The typed text stays on the page, for Save draft to keep.
+  await expect(page.getByLabel("Body (markdown)")).toHaveValue(
+    `The older words, ${marker}.`,
+  );
+
+  await other.reload();
+  await modeButton(other, "Markdown").click();
+  await expect(other.getByLabel("Body (markdown)")).toHaveValue("The newer words.");
+  await page.close();
+  await deleteCurrentPost(other);
 });
