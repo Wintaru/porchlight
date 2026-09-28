@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { expect, type Locator, type Page, type Route, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, THEO } from "./helpers";
+import { deleteCurrentPost, devSignIn, openUploadPreview, THEO } from "./helpers";
 import { rest } from "./service-rest";
 
 // Issue #80: pressing an upload in the Attachments panel opens a preview before
@@ -37,13 +37,6 @@ async function attach(
   return row;
 }
 
-async function openPreview(page: Page, row: Locator): Promise<Locator> {
-  await row.locator('button[aria-haspopup="dialog"]').click();
-  const preview = page.getByTestId("attachment-preview");
-  await expect(preview).toBeVisible();
-  return preview;
-}
-
 test("an image, a video and a PDF each preview before they go in", async ({ page }) => {
   const stamp = Date.now().toString(36);
   const [photo, clip, pdf, flagged] = [
@@ -61,7 +54,7 @@ test("an image, a video and a PDF each preview before they go in", async ({ page
 
   // The image shows, from its public copy, and Escape closes the preview untouched.
   const photoRow = await attach(page, photo, PHOTO, "image/jpeg");
-  let preview = await openPreview(page, photoRow);
+  let preview = await openUploadPreview(photoRow);
   await expect(preview.getByRole("heading", { name: photo })).toBeVisible();
   const image = preview.getByRole("img", { name: photo });
   await expect(image).toHaveAttribute(
@@ -75,14 +68,14 @@ test("an image, a video and a PDF each preview before they go in", async ({ page
   await page.keyboard.press("Escape");
   await expect(preview).toBeHidden();
   await expect(bodyMd).toHaveValue("");
-  preview = await openPreview(page, photoRow);
+  preview = await openUploadPreview(photoRow);
   await preview.getByRole("button", { name: "Insert" }).click();
   await expect(preview).toBeHidden();
   await expect(bodyMd).toHaveValue(/!\[porch [^\]]+\]\(http[^)]+\)/);
 
   // The video plays in the page.
   const clipRow = await attach(page, clip, CLIP, "video/mp4");
-  preview = await openPreview(page, clipRow);
+  preview = await openUploadPreview(clipRow);
   const video = preview.locator("video");
   await expect(video).toHaveAttribute("src", /\.mp4$/);
   await video.evaluate((element: HTMLVideoElement) => {
@@ -98,7 +91,7 @@ test("an image, a video and a PDF each preview before they go in", async ({ page
 
   // Any other file is named, with its type and size.
   const pdfRow = await attach(page, pdf, PDF, "application/pdf");
-  preview = await openPreview(page, pdfRow);
+  preview = await openUploadPreview(pdfRow);
   await expect(preview.getByRole("heading", { name: pdf })).toBeVisible();
   await expect(preview).toContainText("application/pdf");
   await expect(preview).toContainText(/\d+(\.\d+)? (B|KB|MB)/);
@@ -109,7 +102,7 @@ test("an image, a video and a PDF each preview before they go in", async ({ page
 
   // A flagged image waits for a moderator: no picture, nothing to insert.
   const flaggedRow = await attach(page, flagged, FLAGGED_PHOTO, "image/jpeg");
-  preview = await openPreview(page, flaggedRow);
+  preview = await openUploadPreview(flaggedRow);
   await expect(preview).toContainText("A moderator looks at it first");
   await expect(preview.locator("img")).toHaveCount(0);
   await expect(preview.getByRole("button", { name: "Insert" })).toHaveCount(0);
@@ -165,7 +158,7 @@ test("a Try again that finishes while the preview is open updates it", async ({
   });
   await row.getByRole("button", { name: "Try again" }).click();
   await expect.poll(() => held.length).toBe(1);
-  const preview = await openPreview(page, row);
+  const preview = await openUploadPreview(row);
   await expect(preview).toContainText("It is not ready to show yet.");
   await held[0]?.continue();
   await expect(preview.getByRole("img", { name })).toHaveAttribute(

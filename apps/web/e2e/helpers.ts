@@ -51,11 +51,18 @@ export async function signOut(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Sign out" }).click();
 }
 
-// An upload goes into the body from its preview (#80): the row's name opens the
-// preview, and Insert is there.
-export async function insertUpload(row: Locator): Promise<void> {
+// Opens an upload's preview (#80): the row's name is the button that opens it. Answers
+// the open preview.
+export async function openUploadPreview(row: Locator): Promise<Locator> {
   await row.locator('button[aria-haspopup="dialog"]').click();
   const preview = row.page().getByTestId("attachment-preview");
+  await expect(preview).toBeVisible();
+  return preview;
+}
+
+// An upload goes into the body from its preview (#80), where Insert is.
+export async function insertUpload(row: Locator): Promise<void> {
+  const preview = await openUploadPreview(row);
   await preview.getByRole("button", { name: "Insert" }).click();
   await expect(preview).toBeHidden();
 }

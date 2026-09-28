@@ -1,6 +1,13 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 
-import { deleteCurrentPost, devSignIn, insertUpload, JUNE, THEO } from "./helpers";
+import {
+  deleteCurrentPost,
+  devSignIn,
+  insertUpload,
+  JUNE,
+  openUploadPreview,
+  THEO,
+} from "./helpers";
 
 // The issue #9 acceptance test, on the #52 panel: the server checks magic bytes, not
 // extensions (SPEC.md §6), a non-image is served as a download rather than inline, and
@@ -41,8 +48,7 @@ test("a real PNG header is accepted; an SVG renamed to .png is refused", async (
   await expect(row(page, name).getByRole("button", { name: "Remove" })).toBeVisible();
   // Only a signature, not a picture: it cannot be re-encoded, so it has no public copy
   // and nothing to insert.
-  await row(page, name).locator('button[aria-haspopup="dialog"]').click();
-  const preview = page.getByTestId("attachment-preview");
+  const preview = await openUploadPreview(row(page, name));
   await expect(preview).toContainText("could not be read");
   await expect(preview.getByRole("button", { name: "Insert" })).toHaveCount(0);
   await page.keyboard.press("Escape");

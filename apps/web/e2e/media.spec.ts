@@ -9,6 +9,7 @@ import {
   fillBodyMarkdown,
   insertUpload,
   MIRA,
+  openUploadPreview,
   THEO,
 } from "./helpers";
 import { rest } from "./service-rest";
@@ -242,12 +243,9 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   expect(
     await editorCover.locator("img").evaluate((el) => getComputedStyle(el).filter),
   ).toContain("blur");
-  await page
-    .getByTestId("attachment")
-    .filter({ hasText: cover })
-    .locator('button[aria-haspopup="dialog"]')
-    .click();
-  const preview = page.getByTestId("attachment-preview");
+  const preview = await openUploadPreview(
+    page.getByTestId("attachment").filter({ hasText: cover }),
+  );
   const previewImage = preview.getByTestId("reveal-image");
   await expect(previewImage).toHaveAttribute("data-mode", "mature");
   expect(
