@@ -1,10 +1,12 @@
 // The shape of a handle, the same rule as the `profiles_handle_shape` CHECK in the schema:
 // lowercase letters, digits, `_` and `-`, 2 to 30 characters, starting with a letter or a
-// digit. Kept here so the Engine can refuse before the round trip and name the reason.
+// digit. Kept here so the Engine can refuse before the round trip and name the reason,
+// and in Common so the web app reads a handle from a URL by the same rule.
+// packages/db/test/mirrors.test.ts fails when the pattern and the CHECK differ.
 export const HANDLE_MIN_LENGTH = 2;
 export const HANDLE_MAX_LENGTH = 30;
 
-const HANDLE_PATTERN = /^[a-z0-9][a-z0-9_-]{1,29}$/;
+export const HANDLE_PATTERN = /^[a-z0-9][a-z0-9_-]{1,29}$/;
 
 export function hasHandleShape(value: string): boolean {
   return HANDLE_PATTERN.test(value);

@@ -1,14 +1,12 @@
 "use server";
 
 import { SetTagDescriptionRequest, SiteConfigSavedResponse } from "@porchlight/core";
+import { hasSlugShape } from "@porchlight/core/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
-
-// A tag slug is lowercase letters, digits and dashes (the `tags_slug_shape` check).
-const TAG_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 // An admin's description for a tag (#24). The SiteConfigManager checks it is an admin.
 export async function saveTagDescription(formData: FormData): Promise<void> {
@@ -16,7 +14,7 @@ export async function saveTagDescription(formData: FormData): Promise<void> {
   const description = formData.get("descriptionMd");
   if (
     typeof slug !== "string" ||
-    !TAG_SLUG.test(slug) ||
+    !hasSlugShape(slug) ||
     typeof description !== "string"
   ) {
     redirect("/tags");

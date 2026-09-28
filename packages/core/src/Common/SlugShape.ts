@@ -1,9 +1,11 @@
 // The shape of a post or tag slug, the same rule as the `posts_slug_shape` and
 // `tags_slug_shape` CHECKs: lowercase letters and digits in runs joined by single `-`.
-// Kept here so the Engine can refuse before the round trip and name the reason.
+// Kept here so the Engine can refuse before the round trip and name the reason, and in
+// Common so the web app checks a slug by the same rule. packages/db/test/mirrors.test.ts
+// fails when the pattern and the CHECKs differ.
 export const SLUG_MAX_LENGTH = 80;
 
-const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 export function hasSlugShape(value: string): boolean {
   return value.length <= SLUG_MAX_LENGTH && SLUG_PATTERN.test(value);

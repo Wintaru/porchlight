@@ -4,7 +4,7 @@ import {
   HANDLE_MIN_LENGTH,
   hasHandleShape,
   toHandleShape,
-} from "../HandleShape";
+} from "../../../Common/HandleShape";
 import type { DeriveHandleRequest } from "../Requests/DeriveHandleRequest";
 import { isReservedHandle } from "../ReservedHandles";
 import { HandleDerivedResponse } from "../Responses/HandleDerivedResponse";

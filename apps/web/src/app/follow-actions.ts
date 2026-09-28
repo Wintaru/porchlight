@@ -6,6 +6,7 @@ import {
   FollowSetResponse,
   UnfollowRequest,
 } from "@porchlight/core";
+import { hasSlugShape } from "@porchlight/core/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -43,9 +44,6 @@ export async function setFollow(formData: FormData): Promise<void> {
   redirect(`${returnTo}?follow=${follow}`);
 }
 
-// A tag slug is lowercase letters, digits and dashes (the `tags_slug_shape` check).
-const TAG_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
 function targetOf(formData: FormData): FollowTarget | undefined {
   const kind = formData.get("kind");
   const id = formData.get("target");
@@ -55,7 +53,7 @@ function targetOf(formData: FormData): FollowTarget | undefined {
   if (kind === "author" && isEntityId(id)) {
     return { kind: "author", profileId: id };
   }
-  if (kind === "tag" && TAG_SLUG.test(id)) {
+  if (kind === "tag" && hasSlugShape(id)) {
     return { kind: "tag", slug: id };
   }
   return undefined;

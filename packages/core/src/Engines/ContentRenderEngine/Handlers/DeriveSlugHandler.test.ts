@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { DeriveSlugRequest } from "../Requests/DeriveSlugRequest";
 import { SlugDerivedResponse } from "../Responses/SlugDerivedResponse";
 import { SlugUnusableResponse } from "../Responses/SlugUnusableResponse";
-import { hasSlugShape, SLUG_MAX_LENGTH } from "../SlugShape";
+import { hasSlugShape, SLUG_MAX_LENGTH } from "../../../Common/SlugShape";
 import { DeriveSlugHandler } from "./DeriveSlugHandler";
 
 const handler = new DeriveSlugHandler();

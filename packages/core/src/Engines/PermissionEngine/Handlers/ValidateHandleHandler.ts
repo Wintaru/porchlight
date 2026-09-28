@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import { hasHandleShape } from "../HandleShape";
+import { hasHandleShape } from "../../../Common/HandleShape";
 import type { ValidateHandleRequest } from "../Requests/ValidateHandleRequest";
 import { isReservedHandle } from "../ReservedHandles";
 import { HandleInvalidResponse } from "../Responses/HandleInvalidResponse";
