@@ -1,4 +1,5 @@
 import { EMBED_PLAYERS } from "../../Common/EmbedPlayers";
+import { isUploadedVideoKey } from "../../Common/UploadedVideoKey";
 import type { HastNode } from "../../Utilities/markdown/renderMarkdown";
 
 // Which video links become players (#21). A YouTube, Vimeo or Imgur video link, or
@@ -19,7 +20,6 @@ const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 const VIMEO_ID = /^\d{1,12}$/;
 const VIMEO_HASH = /^[0-9a-f]{6,20}$/;
 const IMGUR_ID = /^[A-Za-z0-9]{5,10}$/;
-const UPLOADED_VIDEO_KEY = /^[0-9a-f-]{36}\.mp4$/;
 // YouTube's `t`: seconds ("90", "90s") or "1h2m3s" parts.
 const YOUTUBE_TIME = /^(?:(\d{1,2})h)?(?:(\d{1,3})m)?(?:(\d{1,5})s?)?$/;
 
@@ -35,9 +35,7 @@ export function videoEmbedFor(
 ): HastNode | undefined {
   if (uploadedVideoPrefix !== null && href.startsWith(uploadedVideoPrefix)) {
     const key = href.slice(uploadedVideoPrefix.length);
-    return UPLOADED_VIDEO_KEY.test(key)
-      ? videoFile("upload", href, "metadata")
-      : undefined;
+    return isUploadedVideoKey(key) ? videoFile("upload", href, "metadata") : undefined;
   }
   let url: URL;
   try {

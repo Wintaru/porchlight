@@ -15,6 +15,7 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { ResponseBase } from "../../../Common/ResponseBase";
 import { extensionOf } from "../../../Common/FileExtension";
+import { uploadedVideoKeyOf } from "../../../Common/UploadedVideoKey";
 import type { MediaPublishOptions } from "../MediaPublishOptions";
 import type { PublishMediaRequest } from "../Requests/PublishMediaRequest";
 import { MediaPublishedResponse } from "../Responses/MediaPublishedResponse";
@@ -102,7 +103,7 @@ export class TransformPublishMediaHandler implements IHandler<
     // A video is served as it is: finalize accepted only an MP4 with no metadata that
     // every browser plays (#21). Storage copies it, so it never passes through here.
     if (asset.kind === "video") {
-      const key = `${asset.id}.mp4`;
+      const key = uploadedVideoKeyOf(asset.id);
       const copied = await this.storage.store(
         new CopyStorageObjectRequest(
           this.options.quarantineBucket,
