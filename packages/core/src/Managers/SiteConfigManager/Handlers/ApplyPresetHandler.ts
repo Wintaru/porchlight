@@ -7,7 +7,7 @@ import { SITE_CONFIG_PRESET_VALUES } from "../../../Common/SiteConfigPreset";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { EvaluatePermissionRequest } from "../../../Engines/PermissionEngine/Requests/EvaluatePermissionRequest";
 import { PermissionDeniedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionDeniedResponse";
-import { PermissionUnavailableResponse } from "../../../Engines/PermissionEngine/Responses/PermissionUnavailableResponse";
+import { PermissionGrantedResponse } from "../../../Engines/PermissionEngine/Responses/PermissionGrantedResponse";
 import { configEditorId } from "../configEditorId";
 import type { ApplyPresetRequest } from "../Requests/ApplyPresetRequest";
 import { SiteConfigForbiddenResponse } from "../Responses/SiteConfigForbiddenResponse";
@@ -39,8 +39,14 @@ export class ApplyPresetHandler implements IHandler<ApplyPresetRequest, Verdict>
     if (verdict instanceof PermissionDeniedResponse) {
       return new SiteConfigForbiddenResponse(correlationId, verdict.reason);
     }
-    if (verdict instanceof PermissionUnavailableResponse) {
-      return new SiteConfigUnavailableResponse(correlationId, verdict.reason);
+    // Only a clear grant writes (#96): an unknown verdict is an outage, not a yes.
+    if (!(verdict instanceof PermissionGrantedResponse)) {
+      return new SiteConfigUnavailableResponse(
+        correlationId,
+        "reason" in verdict && typeof verdict.reason === "string"
+          ? verdict.reason
+          : `unexpected ${verdict.constructor.name} from evaluate`,
+      );
     }
     const editorId = configEditorId(actor);
     if (editorId === undefined) {
