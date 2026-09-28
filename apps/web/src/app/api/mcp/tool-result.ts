@@ -3,6 +3,7 @@ import {
   NoSuchPostResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
+  PostListRejectedResponse,
   POST_BODY_MAX_LENGTH,
   PostNotPublishableResponse,
   PostRateLimitedResponse,
@@ -53,6 +54,11 @@ export function refusalFor(response: ResponseBase, what: string) {
       response.reason === "body"
         ? `The body is longer than ${String(POST_BODY_MAX_LENGTH)} characters. Shorten it and try once more.`
         : `The ${response.reason} is not usable. Fix it and try once more.`,
+    );
+  }
+  if (response instanceof PostListRejectedResponse) {
+    return refuse(
+      "The limit must be a whole number of 1 or more. Fix it and try once more.",
     );
   }
   if (response instanceof PostNotPublishableResponse) {

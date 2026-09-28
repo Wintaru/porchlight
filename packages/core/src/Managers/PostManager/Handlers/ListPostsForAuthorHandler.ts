@@ -2,15 +2,21 @@ import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccesso
 import { LoadPostsByAuthorRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByAuthorRequest";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
+import { isPostListLimit } from "../../../Common/PostListFilter";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { permit } from "../permit";
 import type { ListPostsForAuthorRequest } from "../Requests/ListPostsForAuthorRequest";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
+import { PostListRejectedResponse } from "../Responses/PostListRejectedResponse";
 import { PostsResponse } from "../Responses/PostsResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import { unavailable } from "../unavailable";
 
-type ListPostsResult = PostsResponse | PostForbiddenResponse | PostUnavailableResponse;
+type ListPostsResult =
+  | PostsResponse
+  | PostForbiddenResponse
+  | PostListRejectedResponse
+  | PostUnavailableResponse;
 
 export class ListPostsForAuthorHandler implements IHandler<
   ListPostsForAuthorRequest,
@@ -34,6 +40,9 @@ export class ListPostsForAuthorHandler implements IHandler<
     );
     if (refused !== undefined) {
       return refused;
+    }
+    if (!isPostListLimit(filter.limit)) {
+      return new PostListRejectedResponse(correlationId);
     }
     const loaded = await this.posts.load(
       new LoadPostsByAuthorRequest(profileId, filter, context),

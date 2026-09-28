@@ -9,3 +9,10 @@ export interface PostListFilter {
 }
 
 export const ALL_POSTS: PostListFilter = { status: null, limit: null };
+
+// A usable cap: none, or a whole number of 1 or more (#96). 0, a negative number or NaN
+// is refused in the core, so the fake store and the real one never have to agree on
+// what such a cap means.
+export function isPostListLimit(limit: number | null): boolean {
+  return limit === null || (Number.isInteger(limit) && limit >= 1);
+}

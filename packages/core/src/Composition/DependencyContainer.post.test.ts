@@ -20,6 +20,7 @@ import { CanPostResponse } from "../Managers/PostManager/Responses/CanPostRespon
 import { NoSuchPostResponse } from "../Managers/PostManager/Responses/NoSuchPostResponse";
 import { PostDeletedResponse } from "../Managers/PostManager/Responses/PostDeletedResponse";
 import { PostForbiddenResponse } from "../Managers/PostManager/Responses/PostForbiddenResponse";
+import { PostListRejectedResponse } from "../Managers/PostManager/Responses/PostListRejectedResponse";
 import { PostPreviewResponse } from "../Managers/PostManager/Responses/PostPreviewResponse";
 import { PostRejectedResponse } from "../Managers/PostManager/Responses/PostRejectedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
@@ -473,6 +474,20 @@ describe("DependencyContainer: PostManager", () => {
     ]);
     expect((one as PostsResponse).posts).toHaveLength(1);
   });
+
+  test.each([0, -1, 1.5, Number.NaN])(
+    "ListPostsForAuthor refuses a cap of %s (#96)",
+    async (limit) => {
+      const container = new DependencyContainer(FAKE_ENV);
+      await draft(container, THEO);
+
+      const response = await container.postManager.query(
+        new ListPostsForAuthorRequest(THEO, THEO.profile.id, { status: null, limit }),
+      );
+
+      expect(response).toBeInstanceOf(PostListRejectedResponse);
+    },
+  );
 
   test("PreviewPost renders the same sanitized HTML a save would cache, for anyone", async () => {
     const container = new DependencyContainer(FAKE_ENV);

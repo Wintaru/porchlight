@@ -210,6 +210,7 @@ export { CanPostResponse } from "./Managers/PostManager/Responses/CanPostRespons
 export { NoSuchPostResponse } from "./Managers/PostManager/Responses/NoSuchPostResponse";
 export { PostDeletedResponse } from "./Managers/PostManager/Responses/PostDeletedResponse";
 export { PostForbiddenResponse } from "./Managers/PostManager/Responses/PostForbiddenResponse";
+export { PostListRejectedResponse } from "./Managers/PostManager/Responses/PostListRejectedResponse";
 export { PostGuardRefusedResponse } from "./Managers/PostManager/Responses/PostGuardRefusedResponse";
 export { PostNotPublishableResponse } from "./Managers/PostManager/Responses/PostNotPublishableResponse";
 export { PostPreviewResponse } from "./Managers/PostManager/Responses/PostPreviewResponse";
