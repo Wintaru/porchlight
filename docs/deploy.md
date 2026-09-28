@@ -165,7 +165,9 @@ Supabase Auth's OAuth server:
 3. Turn on **Allow dynamic client registration**.
 4. Check that the site's metadata names Auth's issuer. Follow
    [`setup/mcp-oauth.md`](setup/mcp-oauth.md), Production, step 4.
-5. After the deploy, connect claude.ai by hand once. Follow
+5. Check that Auth signs tokens with an ES256 key. The door refuses every other kind
+   (issue #88). Follow [`setup/mcp-oauth.md`](setup/mcp-oauth.md), Production, step 5.
+6. After the deploy, connect claude.ai by hand once. Follow
    [`setup/mcp-oauth.md`](setup/mcp-oauth.md), Connect claude.ai by hand after deploy.
    No automated test does this against the deployed site.
 

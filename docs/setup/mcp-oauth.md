@@ -45,8 +45,8 @@ the client calls `/api/mcp` with its token.
    grant, then tells Auth to approve. Auth sends the member back to the client with a
    code.
 6. The client trades the code for an access token (PKCE) and calls `/api/mcp` with it.
-7. The door checks the token's signature, reads the member and the client from it, and
-   loads the member's grant for that client. The scopes come from the grant, not from
+7. The door checks the token's header, key and signature, reads the member and the
+   client from it, and loads the member's grant for that client. The scopes come from the grant, not from
    the token.
 
 Supabase Auth has no custom scopes. That is why the member picks Porchlight's scopes on
@@ -75,7 +75,27 @@ Do these in the Supabase dashboard of the hosted project.
 
    The first answer's `authorization_servers` must hold the second answer's `issuer`.
 
+5. Check that Auth signs tokens with an ES256 key. The door accepts only an ES256 token
+   whose key id is in Auth's public key set (issue #88). It refuses every other token
+   before it calls Auth, so a junk token costs nothing. Every hosted project with
+   signing keys uses ES256. A project that still uses the legacy shared secret (HS256)
+   must move to signing keys first: open Project Settings, **JWT Keys**. Check the key
+   set:
+
+   ```sh
+   curl -s https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json
+   ```
+
+   Each key must show `"alg":"ES256"`.
+
 There is no new environment variable.
+
+### Rotate the signing key
+
+The door keeps Auth's public key set for 10 minutes. It does not see a new key before
+then. In Project Settings, **JWT Keys**, make the new key the standby key first. Wait at
+least 10 minutes, then rotate. Until the door fetches the key set again, a token signed
+with a key that it has not seen gets 401.
 
 ## Connect claude.ai by hand after deploy
 
