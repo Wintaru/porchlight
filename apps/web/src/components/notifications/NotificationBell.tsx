@@ -43,8 +43,10 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
       if (cancelled) {
         return;
       }
+      // Private (#89, C9): the hosted project refuses public channels, and only the
+      // recipient may join their own topic (the notifications_recipient_receive policy).
       channel = db
-        .channel(`notifications:${recipientId}`)
+        .channel(`notifications:${recipientId}`, { config: { private: true } })
         .on(
           "postgres_changes",
           {

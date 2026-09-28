@@ -238,3 +238,23 @@ changes the render, such as code colours (issue #77) or video links (issue #21),
 Maintenance, and press **Re-render posts and comments** once. It is safe to press
 again: a body that is already current is left as it is. A post it changes gets a new
 "last updated" time, which the sitemap shows.
+
+## 12. Realtime: private channels only (issue #89)
+
+Porchlight uses only private Realtime channels: presence, and the notification bell.
+With public access on, anyone who has the anon key can join a public channel and send
+on it, and use your Realtime quota. Switch public access off.
+
+1. Deploy the release that makes the bell private first. Its migration
+   (`20260928050000_notifications_private_channel`) must be in the hosted database.
+   Before that release, the bell uses a public channel, and this switch stops it.
+2. In the dashboard, open Realtime, Settings. Switch off **Allow public access**.
+3. Check the bell. Sign in as one member and keep a page open. As a second member,
+   reply to a comment of the first member (or approve a held reply to it). The bell of
+   the first member must light up with no reload. If it does not, switch public access
+   on again and open an issue.
+
+Watch the cost of presence after launch. Each open page calls `/api/presence` about 3
+times a minute. In the Vercel dashboard, open Usage and look at the function
+invocations for `/api/presence`. If the count is too high, a later release can make
+the interval longer (decision C8 in issue #89 kept it at 20 seconds).

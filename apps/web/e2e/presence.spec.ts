@@ -1,6 +1,3 @@
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-
 import {
   type Browser,
   type BrowserContext,
@@ -12,6 +9,7 @@ import {
 import { localValue } from "./auth-admin";
 import { devSignIn, JUNE, MIRA, type SeedMember, THEO } from "./helpers";
 import { rest } from "./service-rest";
+import { SUPABASE_UMD } from "./supabase-umd";
 
 // Issue #75: typing indicators and who is online, seen from a second signed-in browser.
 // Issue #81 (D26): the server vouches for who that is.
@@ -26,18 +24,6 @@ const POST_ID = "00000000-0000-4000-8000-0000000000b2";
 // A seeded post by neither Theo nor June: a block closes the comment form on the
 // blocker's own posts, so June can type here while Theo blocks her.
 const LAMPLIGHTER_POST = "/@lamplighter/welcome-to-porchlight";
-
-// supabase-js's browser build, for a test page to talk to Realtime directly, the way a
-// modified browser could. The web app has no direct dependency on it; the db package
-// does.
-const SUPABASE_UMD = join(
-  dirname(
-    createRequire(new URL("../../../packages/db/package.json", import.meta.url)).resolve(
-      "@supabase/supabase-js",
-    ),
-  ),
-  "umd/supabase.js",
-);
 
 async function signedIn(
   browser: Browser,

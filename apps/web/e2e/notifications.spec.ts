@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { localValue } from "./auth-admin";
 import {
   deleteCurrentPost,
   devSignIn,
@@ -8,6 +9,10 @@ import {
   MIRA,
   THEO,
 } from "./helpers";
+import { SUPABASE_UMD } from "./supabase-umd";
+
+const THEO_ID = "00000000-0000-4000-8000-000000000003";
+const JUNE_ID = "00000000-0000-4000-8000-000000000004";
 
 // Issue #13's acceptance test: a reply approved by a mod lights the author's bell
 // without a reload, and a pending reply does not. Runs against the seeded local stack
@@ -132,4 +137,77 @@ test("the bell's panel opens, and closes with its button, Escape or a click away
   await page.getByRole("heading", { level: 1 }).click();
   await expect(panel).toBeHidden();
   await expect(bell).toHaveAttribute("aria-expanded", "false");
+});
+
+// Issue #89 (C9): the bell's channel is private, so the hosted project can refuse public
+// channels. A member may join their own bell's channel and no one else's. June's
+// browser goes around the app and asks Realtime for both, the way a modified browser
+// could.
+test("a member can join their own bell's channel, and not another member's", async ({
+  page,
+}) => {
+  await devSignIn(page, JUNE);
+  await page.addScriptTag({ path: SUPABASE_UMD });
+  const joins = await page.evaluate(
+    async ({ url, anonKey, email, topics }) => {
+      interface Channel {
+        on: (type: string, filter: object, callback: () => void) => Channel;
+        subscribe: (callback: (status: string) => void) => Channel;
+      }
+      interface Client {
+        auth: {
+          signInWithPassword: (credentials: object) => Promise<{ error: unknown }>;
+        };
+        realtime: { setAuth: () => Promise<void> };
+        channel: (topic: string, options: object) => Channel;
+      }
+      const { createClient } = (
+        window as unknown as {
+          supabase: {
+            createClient: (url: string, key: string, options: object) => Client;
+          };
+        }
+      ).supabase;
+      const client = createClient(url, anonKey, { auth: { persistSession: false } });
+      const { error } = await client.auth.signInWithPassword({
+        email,
+        password: "porchlight",
+      });
+      if (error !== null) {
+        throw new Error("June could not sign in");
+      }
+      await client.realtime.setAuth();
+      const results: Record<string, string> = {};
+      for (const [name, recipientId] of Object.entries(topics)) {
+        results[name] = await new Promise<string>((resolve) => {
+          client
+            .channel(`notifications:${recipientId}`, { config: { private: true } })
+            .on(
+              "postgres_changes",
+              {
+                event: "INSERT",
+                schema: "public",
+                table: "notifications",
+                filter: `recipient_id=eq.${recipientId}`,
+              },
+              () => undefined,
+            )
+            .subscribe((status) => {
+              if (status !== "CLOSED") {
+                resolve(status);
+              }
+            });
+        });
+      }
+      return results;
+    },
+    {
+      url: localValue("NEXT_PUBLIC_SUPABASE_URL"),
+      anonKey: localValue("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+      email: JUNE.email,
+      topics: { own: JUNE_ID, theirs: THEO_ID },
+    },
+  );
+  expect(joins.own).toBe("SUBSCRIBED");
+  expect(joins.theirs).toBe("CHANNEL_ERROR");
 });
