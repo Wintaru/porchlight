@@ -288,6 +288,8 @@ describe("ResolveOAuthAgent", () => {
     );
 
     expect(revoked).toBeInstanceOf(TokenRevokedResponse);
+    // The caller withdraws the consent at Auth for the row's client, not a form's (#88).
+    expect((revoked as TokenRevokedResponse).oauthClientId).toBe(CLAUDE_ID);
     expect(await resolve(handlers)).toBeInstanceOf(NoAgentActorResponse);
   });
 

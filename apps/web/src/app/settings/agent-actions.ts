@@ -93,11 +93,10 @@ export async function revokeAgentToken(formData: FormData): Promise<void> {
   if (response instanceof TokenRevokedResponse) {
     // A connected app's grant (D25): withdraw the consent at Auth too, or Auth would
     // approve the app again without asking and its tokens would meet a revoked grant.
-    // The id only ever reaches the member's own consents at Auth, so a tampered one
-    // can do no harm.
-    const oauthClientId = formData.get("oauthClientId");
-    if (typeof oauthClientId === "string" && isEntityId(oauthClientId)) {
-      await withdrawOAuthConsent(oauthClientId);
+    // The client id is the revoked row's, so the consent withdrawn is always the one
+    // for the grant just revoked (#88).
+    if (response.oauthClientId !== null) {
+      await withdrawOAuthConsent(response.oauthClientId);
     }
     redirect("/settings?agentRevoked=1");
   }

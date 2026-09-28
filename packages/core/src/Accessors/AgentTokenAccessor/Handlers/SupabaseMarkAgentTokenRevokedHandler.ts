@@ -6,8 +6,9 @@ import { AgentTokenAccessFailedResponse } from "../Responses/AgentTokenAccessFai
 import { AgentTokenNotFoundResponse } from "../Responses/AgentTokenNotFoundResponse";
 import { AgentTokenRevokedResponse } from "../Responses/AgentTokenRevokedResponse";
 
-// Revoking twice is not an error: the second call matches the row and rewrites the
-// same column, so a double click on the settings page stays quiet.
+// Revoking twice is not an error: the second call finds the row already revoked, so a
+// double click on the settings page stays quiet. Both answers carry the row's OAuth
+// client, so the caller withdraws the consent at Auth from the row, not the form (#88).
 export class SupabaseMarkAgentTokenRevokedHandler implements IHandler<
   MarkAgentTokenRevokedRequest,
   AgentTokenRevokedResponse | AgentTokenNotFoundResponse | AgentTokenAccessFailedResponse
@@ -28,14 +29,15 @@ export class SupabaseMarkAgentTokenRevokedHandler implements IHandler<
       .eq("id", tokenId)
       .eq("owner_id", ownerId)
       .is("revoked_at", null)
-      .select("id");
+      .select("oauth_client_id");
     if (error) {
       return new AgentTokenAccessFailedResponse(correlationId, error.message);
     }
-    if (data.length === 0) {
+    const row = data.at(0);
+    if (row === undefined) {
       return await this.alreadyRevokedOrMissing(tokenId, ownerId, correlationId);
     }
-    return new AgentTokenRevokedResponse(correlationId);
+    return new AgentTokenRevokedResponse(correlationId, row.oauth_client_id);
   }
 
   private async alreadyRevokedOrMissing(
@@ -49,7 +51,7 @@ export class SupabaseMarkAgentTokenRevokedHandler implements IHandler<
   > {
     const { data, error } = await this.db
       .from("agent_tokens")
-      .select("id")
+      .select("oauth_client_id")
       .eq("id", tokenId)
       .eq("owner_id", ownerId)
       .maybeSingle();
@@ -58,6 +60,6 @@ export class SupabaseMarkAgentTokenRevokedHandler implements IHandler<
     }
     return data === null
       ? new AgentTokenNotFoundResponse(correlationId)
-      : new AgentTokenRevokedResponse(correlationId);
+      : new AgentTokenRevokedResponse(correlationId, data.oauth_client_id);
   }
 }

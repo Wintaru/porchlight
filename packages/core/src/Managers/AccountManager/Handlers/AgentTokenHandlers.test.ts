@@ -239,6 +239,7 @@ describe("RevokeAgentToken and ListAgentTokens", () => {
     const listed = await handlers.list.handle(new ListAgentTokensRequest(THEO));
 
     expect(revoked).toBeInstanceOf(TokenRevokedResponse);
+    expect((revoked as TokenRevokedResponse).oauthClientId).toBeNull();
     expect(listed).toBeInstanceOf(TokensResponse);
     expect((listed as TokensResponse).tokens).toMatchObject([
       { id: minted.token.id, revokedAt: LATER },

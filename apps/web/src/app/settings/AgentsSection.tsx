@@ -95,13 +95,6 @@ export async function AgentsSection({
               {isAgentTokenLive(token, now) && (
                 <form action={revokeAgentToken}>
                   <input type="hidden" name="tokenId" value={token.id} />
-                  {token.oauthClientId !== null && (
-                    <input
-                      type="hidden"
-                      name="oauthClientId"
-                      value={token.oauthClientId}
-                    />
-                  )}
                   <button
                     type="submit"
                     className="pill-button"

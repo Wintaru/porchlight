@@ -55,7 +55,7 @@ export class RevokeAgentTokenHandler implements IHandler<
       new MarkAgentTokenRevokedRequest(tokenId, actor.profile.id, context),
     );
     if (revoked instanceof AgentTokenRevokedResponse) {
-      return new TokenRevokedResponse(correlationId);
+      return new TokenRevokedResponse(correlationId, revoked.oauthClientId);
     }
     if (revoked instanceof AgentTokenNotFoundResponse) {
       return new NoSuchTokenResponse(correlationId);

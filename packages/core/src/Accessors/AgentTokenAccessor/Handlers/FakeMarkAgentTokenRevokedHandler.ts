@@ -31,6 +31,8 @@ export class FakeMarkAgentTokenRevokedHandler implements IHandler<
     if (token.revokedAt === null) {
       this.state.tokens.set(tokenId, { ...token, revokedAt: timestamp });
     }
-    return Promise.resolve(new AgentTokenRevokedResponse(correlationId));
+    return Promise.resolve(
+      new AgentTokenRevokedResponse(correlationId, token.oauthClientId),
+    );
   }
 }
