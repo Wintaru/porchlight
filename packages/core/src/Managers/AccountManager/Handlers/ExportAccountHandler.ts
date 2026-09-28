@@ -80,7 +80,7 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
     }
 
     const loadedPosts = await this.posts.load(
-      new LoadPostsByAuthorRequest(profileId, ALL_POSTS, context),
+      new LoadPostsByAuthorRequest(profileId, ALL_POSTS, context, true),
     );
     if (!(loadedPosts instanceof PostsLoadedResponse)) {
       return unavailable(correlationId, loadedPosts, "posts.load");

@@ -24,7 +24,8 @@ export class FakeLoadPostsByAuthorHandler implements IHandler<
         (post) =>
           post.author.kind === "member" &&
           post.author.profileId === request.profileId &&
-          (status === null || post.status === status),
+          (status === null || post.status === status) &&
+          (request.withPrivate || post.visibility !== "private"),
       )
       .sort(
         (a, b) =>

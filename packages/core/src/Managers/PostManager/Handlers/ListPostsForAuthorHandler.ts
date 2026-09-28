@@ -44,8 +44,11 @@ export class ListPostsForAuthorHandler implements IHandler<
     if (!isPostListLimit(filter.limit)) {
       return new PostListRejectedResponse(correlationId);
     }
+    // An admin may list a member's posts (PermissionEngine), never their private ones
+    // (D27). The member, and their agent, see their own.
+    const own = actor.kind !== "visitor" && actor.profile.id === profileId;
     const loaded = await this.posts.load(
-      new LoadPostsByAuthorRequest(profileId, filter, context),
+      new LoadPostsByAuthorRequest(profileId, filter, context, own),
     );
     if (loaded instanceof PostsLoadedResponse) {
       return new PostsResponse(correlationId, loaded.posts);

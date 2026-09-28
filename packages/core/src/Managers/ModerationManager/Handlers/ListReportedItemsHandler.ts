@@ -120,8 +120,13 @@ export class ListReportedItemsHandler implements IHandler<
       if (!(loaded instanceof PostsLoadedResponse)) {
         return unavailable(context.correlationId, loaded, "posts.load");
       }
+      // A private post is its author's alone (D27): a report on it, or on a comment on
+      // it, names an item no moderator may see, so the item drops out of the list. The
+      // report rows stay.
       for (const post of loaded.posts) {
-        posts.set(post.id, post);
+        if (post.visibility !== "private") {
+          posts.set(post.id, post);
+        }
       }
     }
     return { posts, comments };

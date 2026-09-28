@@ -25,6 +25,9 @@ export class SupabaseLoadPostsByAuthorHandler implements IHandler<
     if (status !== null) {
       query = query.eq("status", status);
     }
+    if (!request.withPrivate) {
+      query = query.neq("visibility", "private");
+    }
     // `id` breaks ties, so a capped list is the same list on every call.
     const ordered = query
       .order("created_at", { ascending: false })

@@ -11,6 +11,7 @@ import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
 import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
+import { LoadPostsByIdsRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByIdsRequest";
 import { LoadPostsByStatusRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
@@ -86,12 +87,36 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     if (!(loadedHeld instanceof MediaAssetsLoadedResponse)) {
       return unavailable(correlationId, loadedHeld, "mediaAssets.load");
     }
-    const pendingComments = loadedComments.comments.filter(
+    const liveComments = loadedComments.comments.filter(
       (comment): comment is LiveComment => comment.status !== "tombstone",
     );
     // A pending post's held cover is decided on the post's own card, with the post.
     const pendingCovers = new Set(loadedPosts.posts.map((post) => post.coverMediaId));
-    const heldUploads = loadedHeld.assets.filter((asset) => !pendingCovers.has(asset.id));
+    const unpairedUploads = loadedHeld.assets.filter(
+      (asset) => !pendingCovers.has(asset.id),
+    );
+    // A private post is its author's alone (D27): a comment on one, and an upload in
+    // one, stay out of the queue. A private post itself is never pending (the schema's
+    // posts_private_never_pending). The upload is still scanned and held: it comes
+    // back here the moment its post goes public.
+    const privatePosts = await this.privatePostIds(
+      [
+        ...liveComments.map((comment) => comment.postId),
+        ...unpairedUploads.flatMap((asset) =>
+          asset.postId === null ? [] : [asset.postId],
+        ),
+      ],
+      context,
+    );
+    if (privatePosts instanceof ModerationUnavailableResponse) {
+      return privatePosts;
+    }
+    const pendingComments = liveComments.filter(
+      (comment) => !privatePosts.has(comment.postId),
+    );
+    const heldUploads = unpairedUploads.filter(
+      (asset) => asset.postId === null || !privatePosts.has(asset.postId),
+    );
 
     // Three lookups that do not depend on each other, so none waits on another. The
     // escalation read is one request per hundred items, not one per item.
@@ -149,6 +174,25 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
       .sort((a, b) => createdAtOf(b).getTime() - createdAtOf(a).getTime());
 
     return new QueueResponse(correlationId, items);
+  }
+
+  // Which of these posts are private, in one read (#57's batched load).
+  private async privatePostIds(
+    ids: readonly string[],
+    context: { readonly correlationId: string },
+  ): Promise<ReadonlySet<string> | ModerationUnavailableResponse> {
+    if (ids.length === 0) {
+      return new Set();
+    }
+    const loaded = await this.posts.load(
+      new LoadPostsByIdsRequest([...new Set(ids)], context),
+    );
+    if (!(loaded instanceof PostsLoadedResponse)) {
+      return unavailable(context.correlationId, loaded, "posts.load");
+    }
+    return new Set(
+      loaded.posts.filter((post) => post.visibility === "private").map((post) => post.id),
+    );
   }
 
   // Each anonymous item's body with its links and images made text (#34), by item id.
