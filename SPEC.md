@@ -387,8 +387,10 @@ line, the notes-to-draft workflow, and the fake mode. Tokens need no production 
 **Draft check** (#32). `check_draft(body_md)` and the editor's Check button run the same
 deterministic heuristics against the writer's own guide: banned phrases (the default list
 plus the list under a "banned" heading in the guide), sentences all one length, many lists
-of three, a heading over nearly every paragraph, a closing summary. Warnings, never a
-block. **Voice guide revisions** (#32): each change keeps the text it replaced, up to 50,
+of three, a heading over nearly every paragraph, a closing summary. A phrase matches at
+the start of a longer word ("ai" matches "aim"). A closing summary that opens with a
+banned phrase that is also a summary opening ("in conclusion") is one warning, not two
+(#97). Warnings, never a block. **Voice guide revisions** (#32): each change keeps the text it replaced, up to 50,
 shown under the guide in Settings, exported and erased with the account.
 
 **Later.** A local stdio wrapper.

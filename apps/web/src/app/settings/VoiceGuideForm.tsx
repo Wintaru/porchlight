@@ -35,7 +35,9 @@ export function VoiceGuideForm({ guide, revisions, saved }: VoiceGuideFormProps)
         who writes for you: sentence length, words you never use, how you open and close.
         To ban your own phrases, put them in a list under a heading with the word
         &ldquo;banned&rdquo; in it. The Check button in the editor and your agent&rsquo;s
-        check_draft both read that list.
+        check_draft both read that list. A phrase also matches the start of longer words:
+        &ldquo;ai&rdquo; finds &ldquo;aim&rdquo;, so keep each phrase long enough to name
+        only what you mean.
       </p>
       {saved && (
         <Toast message="Voice guide saved." param="voiceSaved" testId="voice-status" />

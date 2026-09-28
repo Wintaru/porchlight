@@ -88,6 +88,11 @@ With the guide, the agent also receives two things you do not write:
   - circle back
   - super excited
   ```
+
+  A phrase matches at the start of a longer word too, so "delve" also finds "delves"
+  and "delved". This works for short phrases as well: "ai" finds "aim" and "aisle".
+  Keep your own phrases long enough to name only what you mean. A last paragraph that
+  opens with "In conclusion" gives one warning, for the closing summary.
 - Your five latest published posts **that you wrote in the editor**, as samples of your
   writing. A post an agent drafted never counts, even after you edit it, so the agent
   does not learn from itself.
