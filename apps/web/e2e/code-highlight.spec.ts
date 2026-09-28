@@ -117,3 +117,26 @@ test("the admin's re-render brings an older post's code colours up to date", asy
     });
   }
 });
+
+test("a re-render stopped part way offers Continue, which runs on to the end (#98)", async ({
+  page,
+}) => {
+  await devSignIn(page, LAMPLIGHTER);
+  // The address a press that stopped after the posts redirects to.
+  await page.goto(
+    "/admin?done=rerender-stopped&changed=2&skipped=1&table=comments#maintenance",
+  );
+  await expect(page.getByTestId("rerender-stopped")).toHaveText(
+    "Stopped part way. This press: 2 changed, 1 skipped. Press Continue to render the rest.",
+  );
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByTestId("form-status")).toContainText("Re-rendered.");
+  await expect(page.getByTestId("rerender-stopped")).toHaveCount(0);
+
+  // A cursor that is not a row id offers no Continue, only a fresh start.
+  await page.goto("/admin?done=rerender-stopped&table=posts&after=nope#maintenance");
+  await expect(page.getByTestId("rerender-stopped")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Re-render posts and comments" }),
+  ).toBeVisible();
+});

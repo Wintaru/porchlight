@@ -25,6 +25,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { applyPreset, saveSiteConfig } from "./actions";
 import { InvitesSection } from "./InvitesSection";
 import { rerenderBodies } from "./rerender-actions";
+import { parseRerenderCursor } from "./rerender-press";
 import styles from "./admin.module.css";
 
 interface AdminPageProps {
@@ -32,8 +33,15 @@ interface AdminPageProps {
     readonly done?: string;
     readonly error?: string;
     readonly changed?: string;
+    readonly skipped?: string;
+    readonly table?: string;
+    readonly after?: string;
   }>;
 }
+
+// The Maintenance re-render runs as a server action of this page, so this is its time
+// limit (#98). One press renders RERENDER_BODIES_PER_PRESS bodies, inside it.
+export const maxDuration = 60;
 
 const PRESET_LABEL: Record<(typeof SITE_CONFIG_PRESETS)[number], string> = {
   just_me: "Just me",
@@ -58,6 +66,7 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   "signed-out": "Sign in as the site's admin first.",
   "account-inactive": "This account cannot make changes right now.",
   unavailable: "The settings could not be saved. Try again in a moment.",
+  "rerender-cursor": "That re-render could not continue. Press Re-render to start again.",
   agentLimits: `Each agent limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}.`,
   agentDisclosure: "Pick a disclosure setting from the list.",
 };
@@ -83,7 +92,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const { config, regionProfile, dutyChecklist } = response;
-  const { done, error, changed } = await searchParams;
+  const { done, error, changed, skipped, table, after } = await searchParams;
+  const rerenderCounts = `${countText(changed)} changed, ${countText(skipped)} skipped`;
+  // A stopped re-render offers Continue from where it stopped. The cursor is checked
+  // here and again by the action, so a typed address cannot reach a query.
+  const resume =
+    done === "rerender-stopped" ? parseRerenderCursor(table, after) : undefined;
   const errorText = error === undefined ? undefined : (ERROR_TEXT[error] ?? `${error}.`);
 
   return (
@@ -95,7 +109,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       )}
       {done === "rerendered" && (
         <Toast
-          message={`Re-rendered. ${changed ?? "0"} changed.`}
+          message={`Re-rendered. ${rerenderCounts}.`}
           param="done"
           testId="form-status"
         />
@@ -161,11 +175,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           changes how they render (code colours, for one), render them all again once. A
           body that is already current is left as it is.
         </p>
-        <form action={rerenderBodies}>
-          <button type="submit" className="pill-button">
-            Re-render posts and comments
-          </button>
-        </form>
+        {resume === undefined ? (
+          <form action={rerenderBodies}>
+            <button type="submit" className="pill-button">
+              Re-render posts and comments
+            </button>
+          </form>
+        ) : (
+          <form action={rerenderBodies}>
+            <p role="status" data-testid="rerender-stopped">
+              Stopped part way. This press: {rerenderCounts}. Press Continue to render the
+              rest.
+            </p>
+            <input type="hidden" name="table" value={resume.table} />
+            <input type="hidden" name="after" value={resume.afterId ?? ""} />
+            <button type="submit" className="pill-button">
+              Continue
+            </button>
+          </form>
+        )}
       </section>
 
       <form action={saveSiteConfig} className={styles.form}>
@@ -413,6 +441,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       </form>
     </StaffShell>
   );
+}
+
+// A count from the address, shown only when it is a plain whole number.
+function countText(value: string | undefined): string {
+  return value !== undefined && /^\d{1,9}$/.test(value) ? value : "0";
 }
 
 function PolicySelect({
