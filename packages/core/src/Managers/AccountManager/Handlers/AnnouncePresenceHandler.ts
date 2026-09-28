@@ -33,9 +33,11 @@ const MS_PER_MINUTE = 60_000;
 // Per member per minute (#89, decision C7). A page reports every 20 seconds and on
 // each change of typing: a fast typist with two tabs reaches about 60. A `join` makes
 // every member on the channel answer, so joins have a counter of their own, and a
-// member who reloads in a loop cannot use up the allowance their reports need.
+// member who reloads in a loop cannot use up the allowance their reports need. A tab
+// that comes back into view joins again, so joins allow 30: 12 was reached by a reader
+// who changes windows about 6 times a minute.
 export const PRESENCE_REPORTS_PER_MINUTE = 120;
-export const PRESENCE_JOINS_PER_MINUTE = 12;
+export const PRESENCE_JOINS_PER_MINUTE = 30;
 
 // What goes out for a member who lets others see them.
 function shownMessage(memberId: string, signal: PresenceSignal): PresenceMessage {
