@@ -79,6 +79,25 @@ something unread from that time. The queue email is due when a new item waits. A
 reader's email is due when its hour or day has passed and a post they follow went out.
 The sweep also deletes subscriptions nobody confirmed within seven days.
 
+### Pacing and retries (#86)
+
+The site waits 550 ms between two calls to Resend, so it stays under two calls a
+second. Supabase Auth mail can use the same Resend account, so the site leaves room
+for it. One call carries up to 100 emails.
+
+Each call carries an `Idempotency-Key`. One try waits at most four seconds for an
+answer. When Resend answers 429 or 5xx, the network fails, or a try runs out of time,
+the site tries the same call again, up to three times. A retry starts only within five
+seconds of the first try, so one call takes at most about nine seconds. The site waits
+as long as Resend's `retry-after` header says. The key is the same on each try, so
+Resend sends the emails of that call once only.
+
+When a call still fails, the sweep stops. The emails that went out stay sent. The
+windows of the rest go back in one database call, and the next run tries them again.
+A run also claims no new batch after 30 seconds, so it ends well inside the 60 seconds
+the route asks for. One case can still send an email twice: Resend took a call, but no
+try got an answer back. The next run sends those emails again with a new key.
+
 Every digest and reader email has a one-click unsubscribe header and an "unsubscribe"
 link. The confirmation email has neither, since there is nothing to stop yet. The link
 opens a page with a button, so a mail scanner that opens links cannot unsubscribe

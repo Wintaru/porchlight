@@ -26,5 +26,10 @@ async function sweep(request: Request): Promise<Response> {
   return Response.json({ sent: response.sent, failed: response.failed });
 }
 
+// A run paces its calls to Resend and retries a refused one for a few seconds (#86), so
+// it can take longer than a plain page. Sixty seconds is allowed on every Vercel plan and
+// matches the pg_net timeout in docs/deploy.md step 10.
+export const maxDuration = 60;
+
 export const GET = sweep;
 export const POST = sweep;

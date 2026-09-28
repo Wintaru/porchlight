@@ -215,6 +215,10 @@ and Settings says so. Nothing else breaks.
    );
    ```
 
+   A run can take up to 60 seconds, because it waits between calls to Resend (issue
+   #86). Keep `timeout_milliseconds` at 60000 or more. The route asks the host for 60
+   seconds, which every Vercel plan allows.
+
    Any other scheduler works too: it sends `POST` (or `GET`) to `/api/email/digest` with
    the header `Authorization: Bearer <CRON_SECRET>`. Vercel Cron sends that header on its
    own, but the Hobby plan runs a job at most once a day, which is too slow for hourly
