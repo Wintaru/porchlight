@@ -1,4 +1,4 @@
-import type { DbClient } from "@porchlight/db";
+import type { DbClient, Enums } from "@porchlight/db";
 
 // The shape every list on the site shows for one post: the feed, an author's page, a
 // tag page. Names its columns (never `select *`, the grants are column lists) and the
@@ -6,8 +6,10 @@ import type { DbClient } from "@porchlight/db";
 // and the cover the feed card shows (#73). An anonymous post has no author row until
 // it is claimed (D7): `author` is null. The cover's `published_path` is null until the
 // scan passes, and the grants hide it from anyone else (#36), as on the post page.
+// `visibility` marks a private post (D27): RLS hands one only to its author, whose own
+// feed and profile show it with the "Only you" chip.
 export const POST_CARD_COLUMNS =
-  "id, slug, title, summary, published_at, comments_enabled, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "id, slug, title, summary, published_at, comments_enabled, visibility, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostCardAuthor {
   readonly handle: string;
@@ -27,6 +29,7 @@ export interface PostCard {
   readonly summary: string | null;
   readonly published_at: string | null;
   readonly comments_enabled: boolean;
+  readonly visibility: Enums<"post_visibility">;
   readonly author: PostCardAuthor | null;
   readonly post_tags: readonly { readonly tag: PostCardTag | null }[];
   readonly cover: {
@@ -43,12 +46,15 @@ export const PAGE_SIZE = 20;
 // applies on top, so an unlisted post is reachable by link and appears in no list.
 // A signed-in viewer's lists leave out their muted and blocked members (#23) in the
 // database instead: `listed_post_ids` picks the ids and `cardsInOrder` loads them.
-export function publicPostCards(db: DbClient) {
-  return db
-    .from("posts")
-    .select(POST_CARD_COLUMNS)
-    .eq("status", "published")
-    .eq("visibility", "public")
+// `withPrivate` adds private posts (D27) for an author's own profile: RLS hands a
+// private post to its author only, so no other reader ever gets one from it.
+export function publicPostCards(db: DbClient, withPrivate = false) {
+  const published = db.from("posts").select(POST_CARD_COLUMNS).eq("status", "published");
+  return (
+    withPrivate
+      ? published.in("visibility", ["public", "private"])
+      : published.eq("visibility", "public")
+  )
     .order("published_at", { ascending: false })
     .limit(PAGE_SIZE);
 }

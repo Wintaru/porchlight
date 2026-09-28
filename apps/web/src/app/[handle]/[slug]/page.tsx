@@ -51,8 +51,10 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   }
   const url = `${SITE_URL}/@${post.author.handle}/${post.slug}`;
   const description = post.summary ?? undefined;
-  // Unlisted posts and anything not yet published carry noindex (SPEC.md §5, §9).
-  const noindex = post.visibility === "unlisted" || post.status !== "published";
+  // Unlisted and private posts and anything not yet published carry noindex (SPEC.md
+  // §5, §9, D27). Only its author ever gets a private post here, but a crawler never
+  // should even so.
+  const noindex = post.visibility !== "public" || post.status !== "published";
   return {
     title: `${post.title} · ${siteName}`,
     description,
@@ -90,6 +92,9 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
     notFound();
   }
   const note = STATUS_NOTE[post.status];
+  // A private post takes no comments and shows no one typing (D27): nobody but its
+  // author can reach it.
+  const isPrivate = post.visibility === "private";
   const returnTo = `/@${post.author.handle}/${post.slug}`;
 
   const [
@@ -107,11 +112,12 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
     post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
   ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [formState, comments, reactions, hiddenAuthorIds] = await Promise.all([
+  const [formState, comments, reactions, hiddenAuthorIds, presence] = await Promise.all([
     commentFormStateFor(actor, post.id),
     loadCommentsForPost(db, post.id),
     loadReactionsForPost(db, post.id, viewerId),
     loadViewerHiddenAuthors(db, viewerId),
+    isPrivate ? undefined : presenceFor(actor),
   ]);
 
   const url = `${SITE_URL}${returnTo}`;
@@ -152,23 +158,25 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         disclosure={disclosure}
         returnTo={returnTo}
       />
-      <CommentSection
-        postId={post.id}
-        postAuthorId={post.author_id}
-        comments={comments}
-        reactions={reactions.comments}
-        formState={formState}
-        viewer={{
-          profileId: viewerId,
-          isAdmin: actor.kind === "member" && actor.profile.role === "admin",
-          hiddenAuthorIds,
-        }}
-        signInPath={signInPathFor(returnTo)}
-        returnTo={returnTo}
-        presence={await presenceFor(actor)}
-        noticeCode={noticeCode}
-        errorCode={errorCode}
-      />
+      {!isPrivate && (
+        <CommentSection
+          postId={post.id}
+          postAuthorId={post.author_id}
+          comments={comments}
+          reactions={reactions.comments}
+          formState={formState}
+          viewer={{
+            profileId: viewerId,
+            isAdmin: actor.kind === "member" && actor.profile.role === "admin",
+            hiddenAuthorIds,
+          }}
+          signInPath={signInPathFor(returnTo)}
+          returnTo={returnTo}
+          presence={presence}
+          noticeCode={noticeCode}
+          errorCode={errorCode}
+        />
+      )}
     </main>
   );
 }

@@ -6,6 +6,7 @@ import { shownCover } from "@/lib/post-cover";
 import type { PostCard } from "@/read-model/post-card";
 
 import { Avatar } from "./Avatar";
+import { PrivateChip } from "./PrivateChip";
 import { RevealImage } from "./RevealImage";
 import styles from "./PostCardList.module.css";
 
@@ -68,6 +69,7 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
           <Link href={`/@${author.handle}`}>@{author.handle}</Link>
         )}
         {post.published_at !== null && <span>· {formatDate(post.published_at)}</span>}
+        {post.visibility === "private" && <PrivateChip />}
       </p>
       <h2 className={styles.title}>
         {author === null ? (
@@ -77,7 +79,7 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
         )}
       </h2>
       {post.summary !== null && <p className={styles.summary}>{post.summary}</p>}
-      <TagChips tags={post.post_tags} />
+      <TagChips tags={post.post_tags} linked={post.visibility !== "private"} />
     </WithCover>
   );
 }
@@ -138,10 +140,18 @@ function PostRow({ post }: { readonly post: PostCard }) {
           <Link href={`/@${author.handle}/${post.slug}`}>{post.title}</Link>
         )}
       </h2>
-      {post.published_at !== null && (
-        <p className={styles.rowMeta}>{formatDate(post.published_at)}</p>
+      {(post.published_at !== null || post.visibility === "private") && (
+        <p className={styles.rowMeta}>
+          {post.published_at !== null && formatDate(post.published_at)}
+          {post.visibility === "private" && (
+            <>
+              {" "}
+              · <PrivateChip />
+            </>
+          )}
+        </p>
       )}
-      <TagChips tags={post.post_tags} />
+      <TagChips tags={post.post_tags} linked={post.visibility !== "private"} />
     </WithCover>
   );
 }

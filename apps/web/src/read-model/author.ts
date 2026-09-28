@@ -51,12 +51,15 @@ export async function loadAuthorStatus(
   return data?.status;
 }
 
-// An author's public posts, newest first.
+// An author's public posts, newest first. On their own profile, their private posts
+// too (D27): `ownProfile` is only ever true for the signed-in author, and RLS refuses a
+// private post to anyone else whatever this says.
 export async function loadAuthorPosts(
   db: DbClient,
   authorId: string,
+  ownProfile = false,
 ): Promise<readonly PostCard[]> {
-  const { data, error } = await publicPostCards(db).eq("author_id", authorId);
+  const { data, error } = await publicPostCards(db, ownProfile).eq("author_id", authorId);
   if (error) {
     throw new Error(`author posts ${authorId}: ${error.message}`);
   }

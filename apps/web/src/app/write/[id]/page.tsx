@@ -20,6 +20,7 @@ import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { unpublishPost } from "../actions";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
+import { PrivateChip } from "@/components/PrivateChip";
 
 interface EditPageProps {
   readonly params: Promise<{ readonly id: string }>;
@@ -65,7 +66,15 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   const authorHandle = await handleOfAuthor(post, actor);
   const notices = (
     <>
-      <p data-testid="post-status">{STATUS_TEXT[post.status]}</p>
+      <p data-testid="post-status">
+        {STATUS_TEXT[post.status]}
+        {post.visibility === "private" && (
+          <>
+            {" "}
+            · <PrivateChip />
+          </>
+        )}
+      </p>
       {/* SPEC.md §17: it warns, it does not block. Any save by a person clears it. */}
       {post.origin === "agent" && post.reviewedAt === null && post.status === "draft" && (
         <p role="note" data-testid="agent-review-warning">

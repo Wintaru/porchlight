@@ -94,7 +94,9 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
   const viewerOnOthersPage =
     viewerId !== undefined && viewerId !== author.id ? viewerId : undefined;
   const [posts, comments, blockLevel, following] = await Promise.all([
-    activeTab === "posts" ? loadAuthorPosts(db, author.id) : undefined,
+    activeTab === "posts"
+      ? loadAuthorPosts(db, author.id, viewerId === author.id)
+      : undefined,
     activeTab === "comments" ? loadAuthorComments(db, author.id) : undefined,
     viewerOnOthersPage === undefined
       ? undefined

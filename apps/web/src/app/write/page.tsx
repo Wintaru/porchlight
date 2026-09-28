@@ -15,6 +15,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { errorTextFor } from "./post-form-messages";
+import { PrivateChip } from "@/components/PrivateChip";
 
 interface WritePageProps {
   readonly searchParams: Promise<{ readonly error?: string; readonly deleted?: string }>;
@@ -92,6 +93,12 @@ export default async function WritePage({ searchParams }: WritePageProps) {
               <li key={post.id} data-testid="post-row">
                 <Link href={`/write/${post.id}`}>{post.title}</Link> ·{" "}
                 {STATUS_TEXT[post.status]}
+                {post.visibility === "private" && (
+                  <>
+                    {" "}
+                    · <PrivateChip />
+                  </>
+                )}
                 {post.origin === "agent" && post.reviewedAt === null && (
                   <>
                     {" "}

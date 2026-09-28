@@ -131,6 +131,12 @@ a:hover {
   color: var(--chip-warm-ink);
 }
 
+/* A chip's leading icon: the private post's lock (D27). */
+.chip > svg {
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line);

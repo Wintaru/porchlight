@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { ReactionBar } from "@/components/comments/ReactionBar";
 import { TagChips } from "@/components/PostCardList";
+import { PrivateChip } from "@/components/PrivateChip";
 import { RaccoonMark } from "@/components/RaccoonMark";
 import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
@@ -46,6 +47,9 @@ export function PostArticle({
   disclosure,
 }: PostArticleProps) {
   const agentLine = disclosure === "footer" ? agentLineFor(post) : undefined;
+  // Only its author ever reaches a private post (D27): nothing to share, react to or
+  // report, since nobody else can open it.
+  const isPrivate = post.visibility === "private";
   return (
     <article className={styles.article}>
       {note !== undefined && (
@@ -66,9 +70,9 @@ export function PostArticle({
             {viewerId !== undefined && viewerId === post.author_id && (
               <AuthorControls post={post} returnTo={returnTo} />
             )}
-            <ShareButton url={shareUrl} title={post.title} />
+            {!isPrivate && <ShareButton url={shareUrl} title={post.title} />}
             {/* Anyone may report a published post (SPEC.md §7), except its author. */}
-            {post.status === "published" && viewerId !== post.author_id && (
+            {post.status === "published" && !isPrivate && viewerId !== post.author_id && (
               <Link
                 className={styles.reportLink}
                 href={reportPathFor({ kind: "post", id: post.id }, returnTo)}
@@ -91,7 +95,7 @@ export function PostArticle({
           {agentLine}
         </p>
       )}
-      {post.status === "published" && (
+      {post.status === "published" && !isPrivate && (
         <div id="reactions" className={styles.reactions} data-testid="post-reactions">
           <ReactionBar
             target={{ kind: "post", id: post.id }}
@@ -209,7 +213,8 @@ function Byline({ post }: { readonly post: PostPage }) {
       <p>
         <Link href={`/@${post.author.handle}`} className={styles.name}>
           @{post.author.handle}
-        </Link>
+        </Link>{" "}
+        {post.visibility === "private" && <PrivateChip />}
         {when}
       </p>
     </div>
