@@ -81,6 +81,10 @@ export function PostEditor({
   const editsRef = useRef(0);
   const [preview, setPreview] = useState<PreviewState>({ kind: "closed" });
   const [check, setCheck] = useState<CheckState>({ kind: "closed" });
+  // Bumped by every open and every close, so only the newest request's answer lands, and
+  // an answer that arrives after a close cannot open the dialog again.
+  const previewRequestRef = useRef(0);
+  const checkRequestRef = useRef(0);
   // Set by a Save or Publish and never cleared: the redirect remounts the editor. It
   // stops the timer and the buttons, so one draft is never created twice.
   const [submitting, setSubmitting] = useState(false);
@@ -177,30 +181,46 @@ export function PostEditor({
   }, [save.kind]);
 
   const openPreview = () => {
+    const request = ++previewRequestRef.current;
+    const current = () => request === previewRequestRef.current;
     setPreview({ kind: "loading" });
     previewPost(bodyRef.current).then(
       (result) => {
+        if (!current()) {
+          return;
+        }
         setPreview(
           result.ok ? { kind: "ready", bodyHtml: result.bodyHtml } : { kind: "failed" },
         );
       },
       (error: unknown) => {
         console.error("preview failed", error);
+        if (!current()) {
+          return;
+        }
         setPreview({ kind: "failed" });
       },
     );
   };
 
   const openCheck = () => {
+    const request = ++checkRequestRef.current;
+    const current = () => request === checkRequestRef.current;
     setCheck({ kind: "loading" });
     checkDraft(bodyRef.current).then(
       (result) => {
+        if (!current()) {
+          return;
+        }
         setCheck(
           result.ok ? { kind: "ready", warnings: result.warnings } : { kind: "failed" },
         );
       },
       (error: unknown) => {
         console.error("draft check failed", error);
+        if (!current()) {
+          return;
+        }
         setCheck({ kind: "failed" });
       },
     );
@@ -383,6 +403,7 @@ export function PostEditor({
       <CheckDialog
         state={check}
         onClose={() => {
+          checkRequestRef.current += 1;
           setCheck({ kind: "closed" });
         }}
       />
@@ -390,6 +411,7 @@ export function PostEditor({
         state={preview}
         title={title}
         onClose={() => {
+          previewRequestRef.current += 1;
           setPreview({ kind: "closed" });
         }}
       />
