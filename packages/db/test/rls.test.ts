@@ -343,6 +343,67 @@ describe("following_post_ids", () => {
   });
 });
 
+// Issue #93: the home and tag feeds for a member, minus the members they muted or
+// blocked, filtered in the database. A visitor cannot call it (their feed is a plain
+// query), and a member's mutes stay theirs.
+describe("listed_post_ids and viewer_hidden_author_ids", () => {
+  test("leave out the caller's muted members, by tag too, and refuse a visitor", async () => {
+    await sql`
+      insert into public.member_blocks (member_id, target_id, level)
+      values (${SEED.probationMember}, ${SEED.trustedMember}, 'mute')
+    `;
+    try {
+      const listed = async (member: string, tagId: string | null) =>
+        (
+          await asRole(
+            sql,
+            "authenticated",
+            (tx) =>
+              tx<{ id: string }[]>`select id from public.listed_post_ids(${tagId}, 50)`,
+            member,
+          )
+        ).map((row) => row.id);
+
+      // Theo's public post carries the "making" tag.
+      const makingTag = "00000000-0000-4000-8000-0000000000e3";
+      const muter = await listed(SEED.probationMember, null);
+      for (const hidden of [SEED.publicPost, SEED.unlistedPost, SEED.draftPost]) {
+        expect(muter).not.toContain(hidden);
+      }
+      expect(muter.length).toBeGreaterThan(0);
+      expect(await listed(SEED.probationMember, makingTag)).toEqual([]);
+      expect(await listed(SEED.moderator, makingTag)).toEqual([SEED.publicPost]);
+
+      const hiddenFor = async (member: string) =>
+        (
+          await asRole(
+            sql,
+            "authenticated",
+            (tx) =>
+              tx<{ ids: string[] }[]>`select public.viewer_hidden_author_ids() as ids`,
+            member,
+          )
+        )[0]?.ids;
+      expect(await hiddenFor(SEED.probationMember)).toEqual([SEED.trustedMember]);
+      expect(await hiddenFor(SEED.moderator)).toEqual([]);
+
+      const listCode = await errorCodeOf(() =>
+        asRole(sql, "anon", (tx) => tx`select id from public.listed_post_ids(null, 20)`),
+      );
+      expect(listCode).toBe(INSUFFICIENT_PRIVILEGE);
+      const hiddenCode = await errorCodeOf(() =>
+        asRole(sql, "anon", (tx) => tx`select public.viewer_hidden_author_ids()`),
+      );
+      expect(hiddenCode).toBe(INSUFFICIENT_PRIVILEGE);
+    } finally {
+      await sql`
+        delete from public.member_blocks
+        where member_id = ${SEED.probationMember} and target_id = ${SEED.trustedMember}
+      `;
+    }
+  });
+});
+
 // Issue #24: follows are private to the follower, like mutes and blocks. Nobody reads
 // who follows them (no follower counts, D9), a visitor reads nothing, and every write
 // goes through the AccountManager.

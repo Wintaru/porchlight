@@ -1387,6 +1387,13 @@ export type Database = {
         } & "the function public.invite_is_live with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
+      listed_post_ids: {
+        Args: { p_limit?: number; p_tag_id?: string }
+        Returns: {
+          id: string
+          published_at: string
+        }[]
+      }
       media_in_use: { Args: { p_media_id: string }; Returns: boolean }
       member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
@@ -1499,6 +1506,7 @@ export type Database = {
         Args: { p_media_ids: string[]; p_owner_id: string; p_post_id?: string }
         Returns: string[]
       }
+      viewer_hidden_author_ids: { Args: never; Returns: string[] }
       viewer_hidden_authors: { Args: never; Returns: string[] }
     }
     Enums: {
