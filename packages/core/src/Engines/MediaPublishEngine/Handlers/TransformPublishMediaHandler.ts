@@ -14,7 +14,7 @@ import { StorageObjectUploadedResponse } from "../../../Accessors/MediaStorageAc
 import type { IHandler } from "../../../Common/IHandler";
 import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { ResponseBase } from "../../../Common/ResponseBase";
-import { extensionOf } from "../../../Utilities/media/extensionOf";
+import { extensionOf } from "../../../Common/FileExtension";
 import type { MediaPublishOptions } from "../MediaPublishOptions";
 import type { PublishMediaRequest } from "../Requests/PublishMediaRequest";
 import { MediaPublishedResponse } from "../Responses/MediaPublishedResponse";

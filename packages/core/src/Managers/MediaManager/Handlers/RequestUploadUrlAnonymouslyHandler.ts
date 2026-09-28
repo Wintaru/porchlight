@@ -19,7 +19,7 @@ import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
 import { EvaluateQuotaRequest } from "../../../Engines/QuotaEngine/Requests/EvaluateQuotaRequest";
 import { QuotaAllowedResponse } from "../../../Engines/QuotaEngine/Responses/QuotaAllowedResponse";
 import { QuotaExceededResponse } from "../../../Engines/QuotaEngine/Responses/QuotaExceededResponse";
-import { extensionOf } from "../../../Utilities/media/extensionOf";
+import { extensionOf } from "../../../Common/FileExtension";
 import { mediaStoragePath } from "../mediaStoragePath";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
 import { permit } from "../permit";

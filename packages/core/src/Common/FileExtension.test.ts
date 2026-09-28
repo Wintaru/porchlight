@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { extensionOf } from "./extensionOf";
+import { extensionOf } from "./FileExtension";
 
 describe("extensionOf", () => {
   test("folds .jpg and .jpe into the catalog's jpeg", () => {

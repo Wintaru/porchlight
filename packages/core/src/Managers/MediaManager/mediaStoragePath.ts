@@ -1,6 +1,6 @@
 import type { ContentAuthor } from "../../Common/ContentAuthor";
 import { isUuid } from "../../Common/Uuid";
-import { extensionOf } from "../../Utilities/media/extensionOf";
+import { extensionOf } from "../../Common/FileExtension";
 
 // One quarantine object per upload, under a namespace derived only from the owner's own
 // identity — never from anything a caller supplies. `FinalizeUploadHandler` recomputes

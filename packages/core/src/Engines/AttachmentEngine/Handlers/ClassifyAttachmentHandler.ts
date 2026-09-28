@@ -1,6 +1,6 @@
 import { attachmentTypeForExtension } from "../../../Common/AttachmentTypeCatalog";
 import type { IHandler } from "../../../Common/IHandler";
-import { extensionOf } from "../../../Utilities/media/extensionOf";
+import { extensionOf } from "../../../Common/FileExtension";
 import {
   extensionFamily,
   sniffAttachmentExtension,

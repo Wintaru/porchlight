@@ -24,7 +24,7 @@ import { RawIpRetentionDaysLoadedResponse } from "../../../Accessors/SiteConfigA
 import type { IHandler } from "../../../Common/IHandler";
 import type { MediaKind } from "../../../Common/MediaKind";
 import type { Profile } from "../../../Common/Profile";
-import { extensionOf } from "../../../Utilities/media/extensionOf";
+import { extensionOf } from "../../../Common/FileExtension";
 import { hashIp } from "../../../Utilities/anonymous/hashIp";
 import { parseClientAddress } from "../../../Utilities/anonymous/parseClientAddress";
 import type { IAttachmentEngine } from "../../../Engines/AttachmentEngine/IAttachmentEngine";

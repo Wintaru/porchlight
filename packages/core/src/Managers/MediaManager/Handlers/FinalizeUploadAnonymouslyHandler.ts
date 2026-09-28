@@ -33,7 +33,7 @@ import type { IQuotaEngine } from "../../../Engines/QuotaEngine/IQuotaEngine";
 import { EvaluateQuotaRequest } from "../../../Engines/QuotaEngine/Requests/EvaluateQuotaRequest";
 import { QuotaAllowedResponse } from "../../../Engines/QuotaEngine/Responses/QuotaAllowedResponse";
 import { QuotaExceededResponse } from "../../../Engines/QuotaEngine/Responses/QuotaExceededResponse";
-import { extensionOf } from "../../../Utilities/media/extensionOf";
+import { extensionOf } from "../../../Common/FileExtension";
 import { sha256HexOfBytes } from "../../../Utilities/media/sha256HexOfBytes";
 import { claimedKindOf } from "../claimedKindOf";
 import { findAnonymousAuthor } from "../findAnonymousAuthor";
