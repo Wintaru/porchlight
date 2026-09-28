@@ -8,12 +8,12 @@ import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportA
 import { BLOCKED_REPLY_TEXT } from "../../../Common/BlockedReplyText";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
+import { NotifyFollowersRequest } from "../../../Engines/FollowerNoticeEngine/Requests/NotifyFollowersRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import type { LoadedItem } from "../LoadedItem";
 import { isLoadedItem, loadItem, subjectOf } from "../loadItem";
 import { authorNotice, replyNotice } from "../notificationsForItem";
-import { notifyFollowers } from "../notifyFollowers";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
 import type { ApproveItemRequest } from "../Requests/ApproveItemRequest";
@@ -98,6 +98,16 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
       return approved;
     }
 
+    // A post that goes out tells its followers (#24), before the moderation record: a
+    // failed record returns early, and the retry finds the post out already (#87). The
+    // store's one-time claim keeps the notice to once, so an approval back from hidden
+    // or a retry tells nobody again.
+    if (approved.kind === "post") {
+      await this.followerNotice.transform(
+        new NotifyFollowersRequest(approved.post, context),
+      );
+    }
+
     const notify = [...authorNotice(item, "item.approved"), ...replyNotice(item, thread)];
     const recorded = await recordModeration(
       this.modActions,
@@ -119,15 +129,6 @@ export class ApproveItemHandler implements IHandler<ApproveItemRequest, Result> 
     );
     if (recorded !== undefined) {
       return recorded;
-    }
-    // A post leaving the queue goes out for the first time, so its followers hear of
-    // it (#24). Approving a post back from hidden is not news: they heard the first time.
-    if (
-      item.kind === "post" &&
-      item.post.status === "pending" &&
-      approved.kind === "post"
-    ) {
-      await notifyFollowers(this.followerNotice, approved.post, context);
     }
     return new ModerationItemResponse(correlationId, approved);
   }

@@ -26,6 +26,7 @@ import { PostNotPublishableResponse } from "../Responses/PostNotPublishableRespo
 import { PostResponse } from "../Responses/PostResponse";
 import { PublishPostHandler } from "./PublishPostHandler";
 import { FollowersNotifiedResponse } from "../../../Engines/FollowerNoticeEngine/Responses/FollowersNotifiedResponse";
+import { NotifyFollowersRequest } from "../../../Engines/FollowerNoticeEngine/Requests/NotifyFollowersRequest";
 import { UnpublishPostHandler } from "./UnpublishPostHandler";
 import { TEST_ORIGIN } from "../../../Composition/FakeEnvironment.test-helper";
 import { TextEvidenceRecordedResponse } from "../../../Engines/EvidenceEngine/Responses/TextEvidenceRecordedResponse";
@@ -76,7 +77,7 @@ function stateWith(status: PostStatus): FakePostState {
   return state;
 }
 
-function wire(state: FakePostState) {
+function wire(state: FakePostState, noticed: string[] = []) {
   const posts = new PostAccessor(
     new HandlerResolverBuilder()
       .register(StorePostChangesRequest, new FakeStorePostChangesHandler(state))
@@ -126,9 +127,14 @@ function wire(state: FakePostState) {
         new HandlerResolverBuilder().build(),
       ),
       // Nobody follows anyone here: the fan-out is DependencyContainer.follow.test.ts's.
+      // `noticed` keeps the id of each post the handler asked about.
       {
-        transform: (request) =>
-          Promise.resolve(new FollowersNotifiedResponse(request.correlationId, 0)),
+        transform: (request) => {
+          if (request instanceof NotifyFollowersRequest) {
+            noticed.push(request.post.id);
+          }
+          return Promise.resolve(new FollowersNotifiedResponse(request.correlationId, 0));
+        },
       },
       // No test here reaches a publish, the only step that writes evidence.
       {
@@ -170,5 +176,30 @@ describe("Publish and Unpublish on a post a moderator acted on", () => {
 
     expect(response).toBeInstanceOf(PostResponse);
     expect(response).toMatchObject({ post: { status: "draft", publishedAt: null } });
+  });
+});
+
+// #87: a publish can stop after the post is out and before the notice. The retry finds
+// the post published and must still ask; the store's one-time claim keeps it to once.
+describe("Publish of a post that is already out", () => {
+  test("asks for the follower notice again", async () => {
+    const noticed: string[] = [];
+    const { publish } = wire(stateWith("published"), noticed);
+
+    const response = await publish.handle(
+      new PublishPostRequest(THEO, "p1", TEST_ORIGIN),
+    );
+
+    expect(response).toBeInstanceOf(PostResponse);
+    expect(noticed).toEqual(["p1"]);
+  });
+
+  test("of a pending post does not", async () => {
+    const noticed: string[] = [];
+    const { publish } = wire(stateWith("pending"), noticed);
+
+    await publish.handle(new PublishPostRequest(THEO, "p1", TEST_ORIGIN));
+
+    expect(noticed).toEqual([]);
   });
 });

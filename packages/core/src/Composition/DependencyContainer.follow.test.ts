@@ -13,6 +13,8 @@ import { FollowSetResponse } from "../Managers/AccountManager/Responses/FollowSe
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
 import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
+import { HideItemRequest } from "../Managers/ModerationManager/Requests/HideItemRequest";
+import { ModerationUnavailableResponse } from "../Managers/ModerationManager/Responses/ModerationUnavailableResponse";
 import { ProfileModeratedResponse } from "../Managers/ModerationManager/Responses/ProfileModeratedResponse";
 import { ListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
 import { NotificationsResponse } from "../Managers/NotificationManager/Responses/NotificationsResponse";
@@ -66,10 +68,16 @@ const THEO_AUTHOR = {
   kind: "author",
   profileId: "00000000-0000-4000-8000-000000000003",
 } as const;
+const IVY_AUTHOR = {
+  kind: "author",
+  profileId: "00000000-0000-4000-8000-000000000005",
+} as const;
 const HIKING = { kind: "tag", slug: "hiking" } as const;
 
-async function withProfiles(): Promise<DependencyContainer> {
-  const container = new DependencyContainer(FAKE_ENV);
+async function withProfiles(
+  overrides: Record<string, string> = {},
+): Promise<DependencyContainer> {
+  const container = new DependencyContainer({ ...FAKE_ENV, ...overrides });
   for (const actor of [THEO, JUNE, IVY, MIRA]) {
     if (actor.kind === "member") {
       await container.accountManager.execute(
@@ -195,6 +203,35 @@ describe("DependencyContainer: follows (#24)", () => {
       new ApproveItemRequest(MIRA, { kind: "post", id: pending.id }),
     );
     expect(await publishedNotices(container, JUNE)).toEqual([pending.id]);
+  });
+
+  test("an approval whose moderation record fails still tells followers, once (#87)", async () => {
+    const container = await withProfiles({ MOD_ACTION_FAKE_RESULT: "fail" });
+    await container.accountManager.execute(new FollowRequest(JUNE, IVY_AUTHOR));
+    const pending = await publish(container, IVY, [], "public");
+
+    // The post goes out, then the record fails. The moderator tries again, and it
+    // fails the same way: June still hears of the post once.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const approved = await container.moderationManager.execute(
+        new ApproveItemRequest(MIRA, { kind: "post", id: pending.id }),
+      );
+      expect(approved).toBeInstanceOf(ModerationUnavailableResponse);
+      expect(await publishedNotices(container, JUNE)).toEqual([pending.id]);
+    }
+  });
+
+  test("a post approved back from hidden tells nobody again (#87)", async () => {
+    const container = await withProfiles();
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    const post = await publish(container, THEO, [], "public");
+    await container.moderationManager.execute(
+      new HideItemRequest(MIRA, { kind: "post", id: post.id }, "checking a report"),
+    );
+    await container.moderationManager.execute(
+      new ApproveItemRequest(MIRA, { kind: "post", id: post.id }),
+    );
+    expect(await publishedNotices(container, JUNE)).toEqual([post.id]);
   });
 
   test("a post is announced once, however often it goes out", async () => {

@@ -9,6 +9,7 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import type { IHandler } from "../../../Common/IHandler";
 import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
+import { NotifyFollowersRequest } from "../../../Engines/FollowerNoticeEngine/Requests/NotifyFollowersRequest";
 import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
 import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import { evidenceTextOf } from "../evidenceTextOf";
@@ -18,7 +19,6 @@ import { isPost, loadPost, subjectOf } from "../loadPost";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { admitAgent } from "../admitAgent";
 import { coverAwaitsReview } from "../coverAwaitsReview";
-import { notifyFollowers } from "../notifyFollowers";
 import { permit } from "../permit";
 import { publishesAtOnce } from "../publishesAtOnce";
 import { reviewStamp } from "../provenance";
@@ -82,7 +82,13 @@ export class PublishPostHandler implements IHandler<
     if (capped !== undefined) {
       return capped;
     }
-    if (current.status === "published" || current.status === "pending") {
+    if (current.status === "pending") {
+      return new PostResponse(correlationId, current);
+    }
+    // A retry after a publish that stopped before the notice (#87): the post is out,
+    // and the one-time claim makes asking again safe.
+    if (current.status === "published") {
+      await this.followerNotice.transform(new NotifyFollowersRequest(current, context));
       return new PostResponse(correlationId, current);
     }
     if (current.status !== "draft") {
@@ -138,7 +144,9 @@ export class PublishPostHandler implements IHandler<
       }
     }
     if (changes.status === "published") {
-      await notifyFollowers(this.followerNotice, stored.post, context);
+      await this.followerNotice.transform(
+        new NotifyFollowersRequest(stored.post, context),
+      );
     }
     return new PostResponse(correlationId, stored.post);
   }
