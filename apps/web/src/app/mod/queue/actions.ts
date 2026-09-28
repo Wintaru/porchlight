@@ -44,7 +44,18 @@ export async function approveItem(formData: FormData): Promise<void> {
   const response = await getDependencyContainer().moderationManager.execute(
     new ApproveItemRequest(actor, target),
   );
-  finish(response, path, "approved");
+  finish(response, path, approvalOutcome(response));
+}
+
+// An approval of a comment whose writer is blocked in its thread comes back rejected
+// (#85). The moderator is told, so the queue does not claim an approval that did not
+// happen.
+function approvalOutcome(response: object): StaffOutcome {
+  return response instanceof ModerationItemResponse &&
+    response.item.kind === "comment" &&
+    response.item.comment.status === "rejected"
+    ? "rejected-blocked"
+    : "approved";
 }
 
 // A post held for a flagged cover (#36): the image is approved with the mature tag —

@@ -1,3 +1,4 @@
+import { BLOCKED_REPLY_TEXT } from "@porchlight/core/client";
 import type {
   CannotCommentResponse,
   CommentDeletion,
@@ -32,7 +33,7 @@ const ERROR_TEXT: Readonly<Record<CommentErrorCode, string>> = {
   "rejected-no-such-post": "That post is gone.",
   "rejected-no-such-parent": "The comment you answered is gone.",
   // Says only that the reply cannot go here, never who stopped it (#23).
-  "rejected-blocked": "You cannot reply here.",
+  "rejected-blocked": BLOCKED_REPLY_TEXT,
   "no-such-comment": "That comment is gone.",
   "no-such-target": "That is gone.",
   "too-long": "That comment is too long.",

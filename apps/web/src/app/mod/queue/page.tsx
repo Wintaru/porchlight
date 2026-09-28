@@ -54,6 +54,8 @@ const FILTER_LABEL: Record<QueueFilter, string> = {
 const DONE_TEXT: Readonly<Record<string, string>> = {
   approved: "Approved.",
   rejected: "Rejected.",
+  "rejected-blocked":
+    "Not approved. A member in that thread blocked the writer, so it was rejected.",
   hidden: "Hidden.",
   removed: "Removed.",
   escalated: "Escalated.",
