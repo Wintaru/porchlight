@@ -4,7 +4,7 @@ import { AgentTokenLoadedResponse } from "../../../Accessors/AgentTokenAccessor/
 import { AgentTokenNotFoundResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenNotFoundResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
 import type { IHandler } from "../../../Common/IHandler";
-import { isUuid } from "../../../Utilities/agent/isUuid";
+import { isUuid } from "../../../Common/Uuid";
 import { agentActorFor } from "../agentActorFor";
 import type { ResolveOAuthAgentRequest } from "../Requests/ResolveOAuthAgentRequest";
 import type { AccountUnavailableResponse } from "../Responses/AccountUnavailableResponse";

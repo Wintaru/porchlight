@@ -9,6 +9,7 @@ export { BLOCKED_REPLY_TEXT } from "./Common/BlockedReplyText";
 export { EMBED_PLAYER_PREFIXES } from "./Common/EmbedPlayers";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export { NOTIFICATION_SENTENCES } from "./Common/NotificationSentences";
+export { isUuid } from "./Common/Uuid";
 export { draftWarningText, type DraftWarning } from "./Common/DraftWarning";
 export {
   PRESENCE_EVENT,

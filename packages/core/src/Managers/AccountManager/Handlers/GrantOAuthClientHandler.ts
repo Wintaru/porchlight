@@ -10,7 +10,7 @@ import { isAgentScope } from "../../../Common/AgentScope";
 import { AGENT_TOKEN_NAME_MAX_LENGTH } from "../../../Common/AgentToken";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
-import { isUuid } from "../../../Utilities/agent/isUuid";
+import { isUuid } from "../../../Common/Uuid";
 import { ownProfileSubject } from "../ownProfileSubject";
 import { permit } from "../permit";
 import type { GrantOAuthClientRequest } from "../Requests/GrantOAuthClientRequest";

@@ -1,7 +1,6 @@
 import type { ContentAuthor } from "../../Common/ContentAuthor";
+import { isUuid } from "../../Common/Uuid";
 import { extensionOf } from "../../Utilities/media/extensionOf";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // One quarantine object per upload, under a namespace derived only from the owner's own
 // identity — never from anything a caller supplies. `FinalizeUploadHandler` recomputes
@@ -20,7 +19,7 @@ export function mediaStoragePath(
   mediaId: string,
   originalFilename: string,
 ): string {
-  if (!UUID.test(mediaId)) {
+  if (!isUuid(mediaId)) {
     throw new Error(`mediaId "${mediaId}" is not a UUID`);
   }
   const segment =
