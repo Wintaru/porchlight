@@ -1419,6 +1419,32 @@ export type Database = {
         Args: { p_confirm_token: string }
         Returns: boolean
       }
+      replace_oauth_grant: {
+        Args: {
+          p_client_id: string
+          p_name: string
+          p_owner_id: string
+          p_scopes: Database["public"]["Enums"]["agent_scope"][]
+        }
+        Returns: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          name: string
+          oauth_client_id: string | null
+          owner_id: string
+          revoked_at: string | null
+          scopes: Database["public"]["Enums"]["agent_scope"][]
+          token_hash: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_tokens"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined

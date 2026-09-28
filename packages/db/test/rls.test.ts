@@ -80,6 +80,10 @@ const SERVER_ONLY_FUNCTIONS = [
   // #86: a failed send puts its windows back in one call.
   "public.release_member_emails(jsonb)",
   "public.release_subscriber_emails(jsonb)",
+  // #88: a browser call would grant scopes to a client without the consent page.
+  // `_agent_scope` is Postgres's name for `agent_scope[]`: postgres.js does not quote
+  // `[]` inside an array literal.
+  "public.replace_oauth_grant(uuid, uuid, text, public._agent_scope)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or

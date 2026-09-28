@@ -1127,6 +1127,134 @@ describe("agent_tokens OAuth grants (#79, D25)", () => {
   });
 });
 
+// Issue #88 (D25, decision C6): consenting again replaces the grant in one call.
+class RollbackReplace extends Error {}
+
+describe("replace_oauth_grant (#88)", () => {
+  const CLIENT = "0b6d2f43-9f0e-4f55-8d61-5d1e4c1b7a88";
+  interface GrantRow {
+    name: string;
+    scopes: string[];
+    revoked: boolean;
+  }
+  const replace = (db: Sql | TransactionSql, name: string, scopes: readonly string[]) =>
+    db<{ id: string; name: string; revoked_at: Date | null }[]>`
+      select id, name, revoked_at from public.replace_oauth_grant(
+        ${SEED.trustedMember}, ${CLIENT}, ${name}, ${sql.array([...scopes])}::public.agent_scope[]
+      )
+    `;
+  const grantsOf = (db: Sql | TransactionSql, client: string) =>
+    db<GrantRow[]>`
+      select name, scopes::text[] as scopes, revoked_at is not null as revoked
+      from public.agent_tokens
+      where owner_id = ${SEED.trustedMember} and oauth_client_id = ${client}
+      order by revoked_at is null, name
+    `.then((rows) => rows.map((row) => ({ ...row })));
+
+  test("revokes the live grant and stores the new one", async () => {
+    const result = await asService(async (tx) => {
+      const [first] = await replace(tx, "first", ["posts:draft"]);
+      const [second] = await replace(tx, "second", ["posts:draft", "posts:publish"]);
+      return { first, second, grants: await grantsOf(tx, CLIENT) };
+    });
+    expect(result.first?.revoked_at).toBeNull();
+    expect(result.second?.name).toBe("second");
+    expect(result.second?.revoked_at).toBeNull();
+    expect(result.grants).toEqual([
+      { name: "first", scopes: ["posts:draft"], revoked: true },
+      { name: "second", scopes: ["posts:draft", "posts:publish"], revoked: false },
+    ]);
+  });
+
+  // A trigger that refuses the insert stands in for any failure there. It is made as
+  // `postgres` (the service role cannot own a trigger) inside a transaction that
+  // always rolls back.
+  test("a failed insert keeps the earlier grant", async () => {
+    let seen: { code: string | null; grants: GrantRow[] } | undefined;
+    try {
+      await sql.begin(async (tx) => {
+        await tx.unsafe("set local role service_role");
+        await replace(tx, "earlier", ["posts:draft"]);
+        await tx.unsafe("reset role");
+        await tx.unsafe(`
+          create function pg_temp.refuse_grant() returns trigger language plpgsql as $$
+          begin raise exception 'no grants today'; end; $$;
+          create trigger refuse_grant before insert on public.agent_tokens
+            for each row execute function pg_temp.refuse_grant();
+        `);
+        await tx.unsafe("set local role service_role");
+        const code = await errorCodeOf(() =>
+          tx.savepoint((sp) => replace(sp, "later", ["posts:draft", "posts:publish"])),
+        );
+        seen = { code, grants: await grantsOf(tx, CLIENT) };
+        throw new RollbackReplace();
+      });
+    } catch (error: unknown) {
+      if (!(error instanceof RollbackReplace)) throw error;
+    }
+    expect(seen).toEqual({
+      code: "P0001",
+      grants: [{ name: "earlier", scopes: ["posts:draft"], revoked: false }],
+    });
+  });
+
+  // Two presses on Allow at the same moment. It needs two connections, so the rows are
+  // committed under a client id of this run's own; the finally block removes them.
+  test("of two presses at the same moment, both succeed and the last one wins", async () => {
+    const client = globalThis.crypto.randomUUID();
+    const other = connect();
+    const watcher = connect();
+    const press = (db: Sql | TransactionSql, name: string, scopes: readonly string[]) =>
+      db<{ name: string }[]>`
+        select name from public.replace_oauth_grant(
+          ${SEED.trustedMember}, ${client}, ${name}, ${sql.array([...scopes])}::public.agent_scope[]
+        )
+      `.then((rows) => rows[0]?.name);
+    const waitForLock = async (pid: number) => {
+      for (let tries = 0; tries < RACE_LOCK_TRIES; tries += 1) {
+        const [row] = await watcher<{ waiting: boolean }[]>`
+          select wait_event_type = 'Lock' as waiting from pg_stat_activity where pid = ${pid}
+        `;
+        if (row?.waiting === true) return;
+        await new Promise((resolve) => setTimeout(resolve, RACE_POLL_MS));
+      }
+      throw new Error("the second press never waited on the grant lock");
+    };
+    try {
+      let second: Promise<string | undefined> = Promise.resolve(undefined);
+      const first = await sql.begin(async (tx) => {
+        await tx.unsafe("set local role service_role");
+        const answer = await press(tx, "first", ["posts:draft"]);
+        // Commit only once the second press waits on the lock, so the two overlap.
+        const [{ pid } = { pid: 0 }] = await other<{ pid: number }[]>`
+          select pg_backend_pid() as pid
+        `;
+        second = other.begin(async (otx) => {
+          await otx.unsafe("set local role service_role");
+          return press(otx, "second", ["posts:draft", "posts:publish"]);
+        });
+        await waitForLock(pid);
+        return answer;
+      });
+      expect([first, await second, await grantsOf(sql, client)]).toEqual([
+        "first",
+        "second",
+        [
+          { name: "first", scopes: ["posts:draft"], revoked: true },
+          { name: "second", scopes: ["posts:draft", "posts:publish"], revoked: false },
+        ],
+      ]);
+    } finally {
+      await sql`
+        delete from public.agent_tokens
+        where owner_id = ${SEED.trustedMember} and oauth_client_id = ${client}
+      `;
+      await other.end();
+      await watcher.end();
+    }
+  });
+});
+
 // Issue #87 (D13, D20): one call claims a post's announcement and writes its follower
 // notices. The seed's posts have no announcement yet on a fresh reset, but a stack
 // that ran the #87 backfill after seeding has them marked, so each test clears the
