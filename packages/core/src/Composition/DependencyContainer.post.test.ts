@@ -447,7 +447,7 @@ describe("DependencyContainer: PostManager", () => {
     expect(asAdmin).toBeInstanceOf(PostsResponse);
   });
 
-  test("ListPostsForAuthor narrows to one status and caps the count (#44)", async () => {
+  test("ListPostsForAuthor narrows to one status (#44)", async () => {
     const container = new DependencyContainer(FAKE_ENV);
     const published = await draft(container, THEO, { title: "Out" });
     await container.postManager.execute(
@@ -463,16 +463,36 @@ describe("DependencyContainer: PostManager", () => {
         limit: null,
       }),
     );
-    const one = await container.postManager.query(
-      new ListPostsForAuthorRequest(THEO, THEO.profile.id, { status: null, limit: 1 }),
-    );
 
     expect(drafts).toBeInstanceOf(PostsResponse);
     expect((drafts as PostsResponse).posts.map((post) => post.title).sort()).toEqual([
       "Draft one",
       "Draft two",
     ]);
-    expect((one as PostsResponse).posts).toHaveLength(1);
+  });
+
+  test("ListPostsForAuthor's cap keeps the newest post (#96)", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    // The newest is created first, so the fake's insertion order cannot pass for the
+    // store's newest-first sort.
+    for (const [title, minutes] of [
+      ["Newest", 20],
+      ["Oldest", 0],
+      ["Middle", 10],
+    ] as const) {
+      await container.postManager.execute(
+        new CreateDraftRequest(THEO, { ...DRAFT, title }, TEST_ORIGIN, {
+          timestamp: new Date(AT.getTime() + minutes * 60_000),
+        }),
+      );
+    }
+
+    const one = await container.postManager.query(
+      new ListPostsForAuthorRequest(THEO, THEO.profile.id, { status: null, limit: 1 }),
+    );
+
+    expect(one).toBeInstanceOf(PostsResponse);
+    expect((one as PostsResponse).posts.map((post) => post.title)).toEqual(["Newest"]);
   });
 
   test.each([0, -1, 1.5, Number.NaN])(
