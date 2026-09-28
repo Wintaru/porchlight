@@ -58,7 +58,15 @@ export default async function TermsPage() {
           is deleted outright.
         </li>
         <li>Every upload you made is deleted.</li>
+        <li>
+          Your notifications, your email settings and every email subscription under your
+          address are deleted.
+        </li>
         <li>Your profile is marked erased and your personal details are cleared.</li>
+        <li>
+          Reports you made and moderation records about your account stay, so the
+          moderators can explain their past decisions.
+        </li>
       </ul>
       <p>
         One thing does not go away: evidence frozen for a moderation investigation, as

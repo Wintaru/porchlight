@@ -254,6 +254,10 @@ comment on them, hard-delete the member's media, tombstone the member's comments
 have replies (`status = tombstone`, `author_id = null`, `body_md = ''`), hard-delete
 comments with no replies, set the profile to `erased` with personal fields nulled,
 delete the auth user last. Frozen evidence is skipped. Deleted post URLs return 410.
+The member's notifications, quota, email settings and every reader subscription under
+their address go too. Reports, moderation actions, the audit log and admin records keep
+the erased profile's id as accountability. A db test lists every foreign key to
+`profiles` and `auth.users` and fails when erasure does not handle one (#83).
 
 The terms page states: comments on an erased post go with it, tombstones keep other
 people's replies readable, frozen evidence outlives an erasure.
