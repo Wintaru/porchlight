@@ -1,24 +1,20 @@
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
-import { RemoveMediaAssetRequest } from "../../../Accessors/MediaAssetAccessor/Requests/RemoveMediaAssetRequest";
+import { LoadMediaInUseRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaInUseRequest";
 import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
-import { MediaAssetRemovedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetRemovedResponse";
-import { MediaAssetRetainedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetRetainedResponse";
+import { MediaInUseLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaInUseLoadedResponse";
 import type { IMediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
-import { RemoveStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
-import { StorageObjectRemovedResponse } from "../../../Accessors/MediaStorageAccessor/Responses/StorageObjectRemovedResponse";
 import type { IQuotaAccessor } from "../../../Accessors/QuotaAccessor/IQuotaAccessor";
-import { AdjustQuotaUsageRequest } from "../../../Accessors/QuotaAccessor/Requests/AdjustQuotaUsageRequest";
-import { QuotaUsageStoredResponse } from "../../../Accessors/QuotaAccessor/Responses/QuotaUsageStoredResponse";
-import { publishedObjectOf } from "../../../Utilities/media/publishedObjectOf";
 import type { IHandler } from "../../../Common/IHandler";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
 import { permit } from "../permit";
+import { removeUpload } from "../removeUpload";
 import type { DeleteMediaRequest } from "../Requests/DeleteMediaRequest";
-import { MediaDeletedResponse } from "../Responses/MediaDeletedResponse";
-import { MediaForbiddenResponse } from "../Responses/MediaForbiddenResponse";
+import type { MediaDeletedResponse } from "../Responses/MediaDeletedResponse";
+import type { MediaForbiddenResponse } from "../Responses/MediaForbiddenResponse";
+import { MediaInUseResponse } from "../Responses/MediaInUseResponse";
 import { NoSuchMediaResponse } from "../Responses/NoSuchMediaResponse";
 import type { MediaUnavailableResponse } from "../Responses/MediaUnavailableResponse";
 import { unavailable } from "../unavailable";
@@ -27,12 +23,12 @@ export type DeleteMediaResult =
   | MediaDeletedResponse
   | NoSuchMediaResponse
   | MediaForbiddenResponse
+  | MediaInUseResponse
   | MediaUnavailableResponse;
 
-// Storage first, then the row, then the quota: if the storage delete fails the row and
-// the quota are untouched, so the whole delete is safe to retry. Deleting the row first
-// would leave an orphaned quarantine object with nothing pointing at it if the storage
-// call then failed.
+// A member's Remove. Refused while any post or comment, anyone's, still shows the
+// upload (#90, C12): deleting it would break that picture, so the member takes it out
+// there first. The delete itself is removeUpload's, shared with the prune.
 export class DeleteMediaHandler implements IHandler<
   DeleteMediaRequest,
   DeleteMediaResult
@@ -76,53 +72,26 @@ export class DeleteMediaHandler implements IHandler<
     if (refused !== undefined) {
       return refused;
     }
-    // A locked item outlives its retention period regardless of who asks (SPEC.md §7);
-    // nothing this issue builds ever locks one, but the row's own trigger enforces it
-    // either way — this is the friendlier message ahead of that trigger firing.
-    if (asset.retainUntil !== null && asset.retainUntil > new Date()) {
-      return new MediaForbiddenResponse(correlationId, "not-allowed");
-    }
 
-    const removedObject = await this.storage.remove(
-      new RemoveStorageObjectRequest(
-        this.options.quarantineBucket,
-        asset.storagePath,
-        context,
-      ),
+    const inUse = await this.mediaAssets.load(
+      new LoadMediaInUseRequest(mediaId, context),
     );
-    if (!(removedObject instanceof StorageObjectRemovedResponse)) {
-      return unavailable(correlationId, removedObject, "storage.remove");
+    if (!(inUse instanceof MediaInUseLoadedResponse)) {
+      return unavailable(correlationId, inUse, "mediaAssets.load");
     }
-    // The public copy goes too (#36): a deleted upload must not stay reachable by URL.
-    const published =
-      asset.publishedPath === null ? undefined : publishedObjectOf(asset.publishedPath);
-    if (published !== undefined) {
-      const removedCopy = await this.storage.remove(
-        new RemoveStorageObjectRequest(published.bucket, published.path, context),
-      );
-      if (!(removedCopy instanceof StorageObjectRemovedResponse)) {
-        return unavailable(correlationId, removedCopy, "storage.remove");
-      }
+    if (inUse.inUse) {
+      return new MediaInUseResponse(correlationId, mediaId);
     }
 
-    const removedRow = await this.mediaAssets.remove(
-      new RemoveMediaAssetRequest(mediaId, context),
+    return removeUpload(
+      {
+        storage: this.storage,
+        mediaAssets: this.mediaAssets,
+        quotas: this.quotas,
+        options: this.options,
+      },
+      asset,
+      context,
     );
-    if (removedRow instanceof MediaAssetRetainedResponse) {
-      return new MediaForbiddenResponse(correlationId, "not-allowed");
-    }
-    if (!(removedRow instanceof MediaAssetRemovedResponse)) {
-      return unavailable(correlationId, removedRow, "mediaAssets.remove");
-    }
-
-    if (asset.owner.kind === "member") {
-      const adjusted = await this.quotas.store(
-        new AdjustQuotaUsageRequest(asset.owner.profileId, -asset.bytes, -1, context),
-      );
-      if (!(adjusted instanceof QuotaUsageStoredResponse)) {
-        return unavailable(correlationId, adjusted, "quotas.store");
-      }
-    }
-    return new MediaDeletedResponse(correlationId);
   }
 }

@@ -374,9 +374,15 @@
 
 .attachmentRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: 14px;
+}
+
+/* A refused Remove's reason (#90) sits on its own line under the row. */
+.attachmentRefusal {
+  flex-basis: 100%;
 }
 
 .attachmentName {

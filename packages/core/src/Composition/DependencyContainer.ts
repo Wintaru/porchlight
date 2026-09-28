@@ -104,6 +104,7 @@ import { GetEmailAvailabilityHandler } from "../Managers/NotificationManager/Han
 import { GetEmailAvailabilityRequest } from "../Managers/NotificationManager/Requests/GetEmailAvailabilityRequest";
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { PruneMediaHandler } from "../Managers/MediaManager/Handlers/PruneMediaHandler";
+import { PrunePostMediaHandler } from "../Managers/MediaManager/Handlers/PrunePostMediaHandler";
 import { AttachMediaToPostHandler } from "../Managers/MediaManager/Handlers/AttachMediaToPostHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -116,6 +117,7 @@ import type { IMediaManager } from "../Managers/MediaManager/IMediaManager";
 import { MediaManager } from "../Managers/MediaManager/MediaManager";
 import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMediaRequest";
 import { PruneMediaRequest } from "../Managers/MediaManager/Requests/PruneMediaRequest";
+import { PrunePostMediaRequest } from "../Managers/MediaManager/Requests/PrunePostMediaRequest";
 import { AttachMediaToPostRequest } from "../Managers/MediaManager/Requests/AttachMediaToPostRequest";
 import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
@@ -590,14 +592,6 @@ export class DependencyContainer {
         .build(),
     );
 
-    // One instance: an explicit save's prune deletes each upload through it (#80).
-    const deleteMedia = new DeleteMediaHandler(
-      mediaStorage,
-      mediaAssets,
-      quotas,
-      permissions,
-      mediaOptions,
-    );
     this.mediaManager = new MediaManager(
       new HandlerResolverBuilder()
         .register(
@@ -660,8 +654,36 @@ export class DependencyContainer {
           RepublishMediaRequest,
           new RepublishMediaHandler(mediaAssets, permissions, mediaPublisher),
         )
-        .register(DeleteMediaRequest, deleteMedia)
-        .register(PruneMediaRequest, new PruneMediaHandler(mediaAssets, deleteMedia))
+        .register(
+          DeleteMediaRequest,
+          new DeleteMediaHandler(
+            mediaStorage,
+            mediaAssets,
+            quotas,
+            permissions,
+            mediaOptions,
+          ),
+        )
+        .register(
+          PruneMediaRequest,
+          new PruneMediaHandler(
+            mediaStorage,
+            mediaAssets,
+            quotas,
+            permissions,
+            mediaOptions,
+          ),
+        )
+        .register(
+          PrunePostMediaRequest,
+          new PrunePostMediaHandler(
+            mediaStorage,
+            mediaAssets,
+            quotas,
+            permissions,
+            mediaOptions,
+          ),
+        )
         .register(AttachMediaToPostRequest, new AttachMediaToPostHandler(mediaAssets))
         .build(),
       new HandlerResolverBuilder()

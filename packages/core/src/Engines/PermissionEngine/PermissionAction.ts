@@ -21,6 +21,9 @@ export const PERMISSION_ACTIONS = [
   "media.upload.anonymous",
   "media.view",
   "media.delete",
+  // Deleting an upload a save or a delete left unused (#80, #90). Not `media.delete`:
+  // an agent that edits its member's draft may prune, but never deletes a file outright.
+  "media.prune",
   "moderation.act",
   "moderation.queue.view",
   "profile.moderate",

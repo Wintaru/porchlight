@@ -50,6 +50,8 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const currentPostId = useRef(postId);
   const [loose, setLoose] = useState<readonly UploadView[]>([]);
   const [previewing, setPreviewing] = useState<UploadView | null>(null);
+  // Why a Remove was refused, by upload (#90): the row stays, with the reason under it.
+  const [refusals, setRefusals] = useState<ReadonlyMap<string, string>>(new Map());
 
   useEffect(() => {
     currentPostId.current = postId;
@@ -146,25 +148,17 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
 
   const remove = async (upload: UploadView) => {
     const deleted = await deleteUpload(upload.mediaId);
-    setRows((current) =>
-      deleted.ok
-        ? current.filter((row) => row.id !== upload.mediaId)
-        : current.map((row) =>
-            row.id === upload.mediaId
-              ? {
-                  id: row.id,
-                  kind: "failed",
-                  filename: upload.originalFilename,
-                  error: "That file could not be removed. Try again.",
-                }
-              : row,
-          ),
-    );
-  };
-
-  const removeLoose = async (upload: UploadView) => {
-    const deleted = await deleteUpload(upload.mediaId);
+    setRefusals((current) => {
+      const next = new Map(current);
+      if (deleted.ok) {
+        next.delete(upload.mediaId);
+      } else {
+        next.set(upload.mediaId, deleted.error);
+      }
+      return next;
+    });
     if (deleted.ok) {
+      setRows((current) => current.filter((row) => row.id !== upload.mediaId));
       setLoose((current) => current.filter((u) => u.mediaId !== upload.mediaId));
     }
   };
@@ -200,6 +194,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
               ) : (
                 <AttachmentRow
                   upload={row.upload}
+                  refusal={refusals.get(row.id)}
                   onPreview={() => {
                     setPreviewing(row.upload);
                   }}
@@ -225,6 +220,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
               <li key={upload.mediaId} data-testid="unattached-upload">
                 <AttachmentRow
                   upload={upload}
+                  refusal={refusals.get(upload.mediaId)}
                   onPreview={() => {
                     setPreviewing(upload);
                   }}
@@ -232,7 +228,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
                     void retry(upload);
                   }}
                   onRemove={() => {
-                    void removeLoose(upload);
+                    void remove(upload);
                   }}
                 />
               </li>
@@ -260,12 +256,19 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
 
 interface AttachmentRowProps {
   readonly upload: UploadView;
+  readonly refusal: string | undefined;
   readonly onPreview: () => void;
   readonly onRetry: () => void;
   readonly onRemove: () => void;
 }
 
-function AttachmentRow({ upload, onPreview, onRetry, onRemove }: AttachmentRowProps) {
+function AttachmentRow({
+  upload,
+  refusal,
+  onPreview,
+  onRetry,
+  onRemove,
+}: AttachmentRowProps) {
   const note = upload.awaitingReview
     ? " · a moderator looks at it first"
     : upload.mature
@@ -297,6 +300,15 @@ function AttachmentRow({ upload, onPreview, onRetry, onRemove }: AttachmentRowPr
       <button type="button" className={styles.linkButton} onClick={onRemove}>
         Remove
       </button>
+      {refusal !== undefined && (
+        <span
+          className={classNames(styles.hint, styles.attachmentRefusal)}
+          data-state="failed"
+          role="alert"
+        >
+          {refusal}
+        </span>
+      )}
     </div>
   );
 }

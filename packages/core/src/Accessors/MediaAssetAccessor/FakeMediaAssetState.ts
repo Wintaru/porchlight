@@ -4,8 +4,8 @@ import type { MediaAuditEvent } from "./MediaAuditEvent";
 
 // The fake's "tables": media assets by id, and the evidence/audit rows a test can
 // assert against — mirroring what `finalize_media_scan` writes atomically for real
-// (SPEC.md §7). `usedMediaIds` stands in for the posts the fake does not hold: the
-// uploads some post still uses (#80). `failing` makes every call answer MediaAssetAccessFailedResponse, for
+// (SPEC.md §7). `usedMediaIds` stands in for the posts and comments the fake does not
+// hold: the uploads some post or comment still shows (#80, #90). `failing` makes every call answer MediaAssetAccessFailedResponse, for
 // the error path.
 export class FakeMediaAssetState {
   readonly assets = new Map<string, MediaAsset>();

@@ -242,6 +242,20 @@ describe("uploads (#31)", () => {
       await verdict(agent(), "media.view", media("clear", "public-media/x.png")),
     ).toBe("not-allowed");
   });
+
+  test("the draft scope prunes the member's own files, never another's (#90, C11)", async () => {
+    expect(await verdict(agent(), "media.prune", media("clear", null))).toBe("granted");
+    expect(await verdict(agent(), "media.prune", media("clear", null, JUNE_ID))).toBe(
+      "not-allowed",
+    );
+    expect(
+      await verdict(agent(["media:upload"]), "media.prune", media("clear", null)),
+    ).toBe("not-allowed");
+    // Pruning is not deleting: the draft scope never opens a delete outright.
+    expect(await verdict(agent(), "media.delete", media("clear", null))).toBe(
+      "not-allowed",
+    );
+  });
 });
 
 describe("the voice guide (#29)", () => {
@@ -283,6 +297,7 @@ describe("every other action", () => {
     "post.delete",
     "media.upload",
     "media.view",
+    "media.prune",
     "voice.view",
     "voice.edit",
   ]);

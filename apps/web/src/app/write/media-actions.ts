@@ -12,6 +12,7 @@ import {
   MediaDeletedResponse,
   MediaFinalizedResponse,
   MediaForbiddenResponse,
+  MediaInUseResponse,
   MediaListResponse,
   MediaRepublishedResponse,
   MediaRefusedResponse,
@@ -225,16 +226,28 @@ export async function republishUpload(mediaId: string): Promise<FinalizeUploadRe
   return { ok: true, upload: uploadViewOf(response.asset, response.unpublishable) };
 }
 
+// Refused while a saved post or a comment still shows the file (#90, C12): deleting it
+// would break that picture.
 export async function deleteUpload(mediaId: string): Promise<DeleteUploadResult> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member" || !isEntityId(mediaId)) {
-    return { ok: false };
+    return { ok: false, error: REMOVE_FAILED };
   }
   const response = await getDependencyContainer().mediaManager.execute(
     new DeleteMediaRequest(actor, mediaId),
   );
-  return { ok: response instanceof MediaDeletedResponse };
+  if (response instanceof MediaDeletedResponse) {
+    return { ok: true };
+  }
+  if (response instanceof MediaInUseResponse) {
+    return { ok: false, error: STILL_SHOWN };
+  }
+  return { ok: false, error: REMOVE_FAILED };
 }
+
+const REMOVE_FAILED = "That file could not be removed. Try again.";
+const STILL_SHOWN =
+  "A saved post or a comment still shows this file, so it stays. Take it out there and save first.";
 
 function errorTextFor(response: object & { readonly correlationId: string }): string {
   // A locked scan verdict (SPEC.md §7): a plain refusal, not an application error, so

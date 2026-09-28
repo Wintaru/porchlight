@@ -48,14 +48,22 @@ function media(scanStatus: ScanStatus, publishedPath: string | null): Permission
   };
 }
 
-async function mayView(actor: Actor, subject: PermissionSubject): Promise<boolean> {
+async function may(
+  action: "media.view" | "media.prune",
+  actor: Actor,
+  subject: PermissionSubject,
+): Promise<boolean> {
   const handler = new EvaluatePermissionHandler(
     fakeSiteConfigAccessor(new FakeSiteConfigState("anyone", "anyone")),
   );
   const response = await handler.handle(
-    new EvaluatePermissionRequest(actor, "media.view", subject),
+    new EvaluatePermissionRequest(actor, action, subject),
   );
   return response instanceof PermissionGrantedResponse;
+}
+
+async function mayView(actor: Actor, subject: PermissionSubject): Promise<boolean> {
+  return may("media.view", actor, subject);
 }
 
 describe("media.view", () => {
@@ -77,6 +85,16 @@ describe("media.view", () => {
     const locked = media("locked", null);
     for (const actor of [OWNER, MODERATOR, ADMIN]) {
       expect(await mayView(actor, locked)).toBe(false);
+    }
+  });
+});
+
+describe("media.prune (#90)", () => {
+  test("only the owner prunes: staff who edit a post never delete its author's files", async () => {
+    const upload = media("clear", "public-media/x.jpg");
+    expect(await may("media.prune", OWNER, upload)).toBe(true);
+    for (const actor of [STRANGER, MODERATOR, ADMIN]) {
+      expect(await may("media.prune", actor, upload)).toBe(false);
     }
   });
 });

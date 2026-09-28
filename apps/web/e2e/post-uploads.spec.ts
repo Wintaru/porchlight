@@ -7,11 +7,13 @@ import {
   insertUpload,
   THEO,
 } from "./helpers";
+import { rest } from "./service-rest";
 
 // Issue #80: an upload belongs to one post, and the editor lists only that post's. One
 // taken out of the post is deleted when the author presses Save; autosave never
 // deletes, so an upload taken out and put back before Save survives. One uploaded and
-// not put in yet stays for later. Deleting the post deletes its uploads.
+// not put in yet stays for later. Deleting the post deletes its uploads. A file a
+// comment shows is never deleted, and Remove refuses it with the reason (#90).
 
 const PDF = Buffer.from("%PDF-1.7\n%\xe2\xe3\xcf\xd3\n1 0 obj\n<<>>\nendobj\n");
 
@@ -127,5 +129,73 @@ test("an upload made before a new post has an id joins it, and one in no post st
   await looseRow.getByRole("button", { name: "Remove" }).click();
   await expect(looseRow).toHaveCount(0);
 
+  await deleteCurrentPost(page);
+});
+
+async function idOf(query: string): Promise<string> {
+  const rows = (await (await rest(query, { method: "GET" })).json()) as { id: string }[];
+  const id = rows[0]?.id;
+  if (id === undefined) {
+    throw new Error(`nothing found for ${query}`);
+  }
+  return id;
+}
+
+test("a file a comment shows is never pruned, and Remove says why (#90)", async ({
+  page,
+}) => {
+  const stamp = Date.now().toString(36);
+  const name = `quoted-${stamp}.pdf`;
+  await devSignIn(page, THEO);
+  await newPost(page, `Quoted ${stamp}`);
+  await upload(page, name);
+  await insertUpload(row(page, name));
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page).toHaveURL(/\?saved=draft$/);
+
+  // Someone quotes the file in a comment on a published post.
+  const mediaId = await idOf(`media_assets?select=id&original_filename=eq.${name}`);
+  const theoId = await idOf("profiles?select=id&handle=eq.theo");
+  const postId = await idOf("posts?select=id&status=eq.published&limit=1");
+  const commentId = (
+    (await (
+      await rest("comments?select=id", {
+        method: "POST",
+        prefer: "return=representation",
+        body: JSON.stringify({
+          post_id: postId,
+          author_id: theoId,
+          status: "visible",
+          body_md: `Here is the list: https://x.test/public-media/${mediaId}.pdf`,
+        }),
+      })
+    ).json()) as { id: string }[]
+  )[0]?.id;
+  if (commentId === undefined) {
+    throw new Error("the comment was not stored");
+  }
+  try {
+    // Taken out of the post and saved: the comment still shows it, so it stays.
+    await fillBodyMarkdown(page, "The list is in the comments now.");
+    await page.getByRole("button", { name: "Save draft" }).click();
+    await expect(page).toHaveURL(/\?saved=draft$/);
+    await expect(row(page, name)).toBeVisible();
+
+    // A fresh load: the first server call after a Save's redirect remounts the editor,
+    // which would drop the message (PHASE3-HANDOFF.md, #90).
+    await page.goto(page.url().replace(/\?.*$/, ""));
+    await row(page, name).getByRole("button", { name: "Remove" }).click();
+    await expect(row(page, name).getByRole("alert")).toContainText(
+      "a comment still shows this file",
+    );
+    await expect(row(page, name)).toBeVisible();
+
+    // Once the comment is gone, Remove works.
+    await rest(`comments?id=eq.${commentId}`, { method: "DELETE" });
+    await row(page, name).getByRole("button", { name: "Remove" }).click();
+    await expect(row(page, name)).toHaveCount(0);
+  } finally {
+    await rest(`comments?id=eq.${commentId}`, { method: "DELETE" });
+  }
   await deleteCurrentPost(page);
 });

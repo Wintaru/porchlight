@@ -41,6 +41,7 @@ import { getAgentsPolicy } from "@/lib/agents-policy";
 import { readSupabasePublicEnv } from "@/auth/supabase-env";
 import { verifyOAuthAccessToken } from "@/auth/oauth-access-token";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import { pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
@@ -419,7 +420,8 @@ function registerTools(
   server.registerTool(
     "update_draft",
     {
-      description: "Change a draft of the member's. Only the fields you name change.",
+      description:
+        "Change a draft of the member's. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
       inputSchema: z.object({
         id: z.string().min(1),
         title: z.string().min(1).optional(),
@@ -444,9 +446,16 @@ function registerTools(
             : { commentsEnabled: input.comments_enabled }),
         }),
       );
-      return isPost(response)
-        ? ok({ post: view(response.post) })
-        : refusalFor(response, "update_draft");
+      if (!isPost(response)) {
+        return refusalFor(response, "update_draft");
+      }
+      // A picture the agent took out goes, as it does on the editor's Save (#90, C11).
+      // Only when the agent wrote the body: an edit of the title alone must not delete a
+      // file the author took out by autosave and means to put back before Save.
+      if (input.body_md !== undefined) {
+        await pruneSavedPostUploads(actor, response.post);
+      }
+      return ok({ post: view(response.post) });
     },
   );
 

@@ -11,9 +11,9 @@ export type FinalizeUploadResult =
   | { readonly ok: true; readonly upload: UploadView }
   | { readonly ok: false; readonly error: string };
 
-export interface DeleteUploadResult {
-  readonly ok: boolean;
-}
+// A refused Remove says why (#90, C12): a post or comment that still shows the file.
+export type DeleteUploadResult =
+  { readonly ok: true } | { readonly ok: false; readonly error: string };
 
 // A saved cover looked up again: `gone` when it no longer exists or is not the member's,
 // `failed` when the lookup itself did not work — the cover then stays as it was.

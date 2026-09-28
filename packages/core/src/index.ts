@@ -252,6 +252,8 @@ export { ReactionToggledResponse } from "./Managers/CommentManager/Responses/Rea
 export type { IMediaManager } from "./Managers/MediaManager/IMediaManager";
 export { DeleteMediaRequest } from "./Managers/MediaManager/Requests/DeleteMediaRequest";
 export { PruneMediaRequest } from "./Managers/MediaManager/Requests/PruneMediaRequest";
+export { PrunePostMediaRequest } from "./Managers/MediaManager/Requests/PrunePostMediaRequest";
+export { MediaInUseResponse } from "./Managers/MediaManager/Responses/MediaInUseResponse";
 export { AttachMediaToPostRequest } from "./Managers/MediaManager/Requests/AttachMediaToPostRequest";
 export { FinalizeUploadAnonymouslyRequest } from "./Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 export type { ConvertedSource } from "./Managers/MediaManager/ConvertedSource";

@@ -11,7 +11,6 @@ import {
   ListMediaRequest,
   type MediaAsset,
   MediaListResponse,
-  MediaPrunedResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
   PostNotPublishableResponse,
@@ -19,7 +18,6 @@ import {
   PostRejectedResponse,
   PostResponse,
   PreviewPostRequest,
-  PruneMediaRequest,
   PublishPostRequest,
   UnpublishPostRequest,
   UpdateDraftRequest,
@@ -31,6 +29,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { isEntityId } from "@/lib/entity-id";
+import { pruneDeletedPostUploads, pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { currentRequestMeta } from "@/lib/request-meta";
 import { returnPathOf } from "@/lib/return-path";
 import type { AutosaveResult, CheckResult, PreviewResult } from "./editor-results";
@@ -62,14 +61,7 @@ export async function submitPost(formData: FormData): Promise<void> {
   if (!(response instanceof PostResponse)) {
     redirect(`${returnTo}?error=${errorCode(response)}`);
   }
-  // Only an upload a saved version used can have been taken out: one uploaded and not
-  // put in yet stays for later.
-  const uploads = await postUploads(actor, response.post.id);
-  await pruneUploads(
-    actor,
-    uploads.filter((upload) => upload.usedInPost).map((upload) => upload.id),
-    response.post.id,
-  );
+  await pruneSavedPostUploads(actor, response.post);
   if (parseIntent(formData) === "publish") {
     await publish(actor, response.post);
   }
@@ -177,7 +169,7 @@ export async function deletePost(formData: FormData): Promise<void> {
   if (!(response instanceof PostDeletedResponse)) {
     redirect(`/write/${postId}?error=${errorCode(response)}`);
   }
-  await pruneUploads(actor, uploadIds, null);
+  await pruneDeletedPostUploads(actor, uploadIds);
   redirect("/write?deleted=1");
 }
 
@@ -210,31 +202,6 @@ async function postUploads(
     return [];
   }
   return response.assets;
-}
-
-// Deletes those of these uploads that no post uses any more (#80). An explicit save
-// sends the post's used uploads, so the ones taken out go. Autosave never does, so an upload
-// taken out and put back before Save survives. The post is saved or deleted by now, so
-// a failed prune keeps the files and does not fail the action: the next save tries
-// again.
-async function pruneUploads(
-  actor: Actor & { kind: "member" },
-  mediaIds: readonly string[],
-  savedPostId: string | null,
-): Promise<void> {
-  if (mediaIds.length === 0) {
-    return;
-  }
-  try {
-    const response = await getDependencyContainer().mediaManager.execute(
-      new PruneMediaRequest(actor, mediaIds, savedPostId),
-    );
-    if (!(response instanceof MediaPrunedResponse)) {
-      console.error(`upload prune failed [${response.correlationId}]`, response);
-    }
-  } catch (error: unknown) {
-    console.error("upload prune failed", error);
-  }
 }
 
 async function requireMember(next: string): Promise<Actor & { kind: "member" }> {

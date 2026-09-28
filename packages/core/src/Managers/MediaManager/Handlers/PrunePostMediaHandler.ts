@@ -1,16 +1,15 @@
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
-import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
-import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
-import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
+import { LoadMediaAssetsByOwnerRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByOwnerRequest";
+import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IMediaStorageAccessor } from "../../../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
 import type { IQuotaAccessor } from "../../../Accessors/QuotaAccessor/IQuotaAccessor";
 import type { IHandler } from "../../../Common/IHandler";
-import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
+import { postUsesMedia } from "../../../Utilities/media/postUsesMedia";
 import type { MediaManagerOptions } from "../MediaManagerOptions";
 import { ownerIdOf } from "../ownerIdOf";
 import { pruneUnused } from "../pruneUnused";
-import type { PruneMediaRequest } from "../Requests/PruneMediaRequest";
+import type { PrunePostMediaRequest } from "../Requests/PrunePostMediaRequest";
 import { MediaForbiddenResponse } from "../Responses/MediaForbiddenResponse";
 import type { MediaPrunedResponse } from "../Responses/MediaPrunedResponse";
 import type { MediaUnavailableResponse } from "../Responses/MediaUnavailableResponse";
@@ -18,9 +17,12 @@ import { unavailable } from "../unavailable";
 
 type Result = MediaPrunedResponse | MediaForbiddenResponse | MediaUnavailableResponse;
 
-// Deletes the named uploads that nothing shows any more (#80, #90). Only the actor's
-// own: a moderator who deletes someone's post never deletes that member's files by it.
-export class PruneMediaHandler implements IHandler<PruneMediaRequest, Result> {
+// The prune after an explicit save, for the editor and for an agent alike (#80, #90).
+// Only an upload a saved version used can have been taken out: one uploaded and not put
+// in yet stays for later. An upload the text this save wrote uses is set aside here,
+// before the database looks at the stored row, so a late autosave that wrote older
+// text since cannot get a file deleted that the author just put back.
+export class PrunePostMediaHandler implements IHandler<PrunePostMediaRequest, Result> {
   constructor(
     private readonly storage: IMediaStorageAccessor,
     private readonly mediaAssets: IMediaAssetAccessor,
@@ -29,30 +31,26 @@ export class PruneMediaHandler implements IHandler<PruneMediaRequest, Result> {
     private readonly options: MediaManagerOptions,
   ) {}
 
-  async handle(request: PruneMediaRequest): Promise<Result> {
-    const { correlationId, actor, mediaIds } = request;
+  async handle(request: PrunePostMediaRequest): Promise<Result> {
+    const { correlationId, actor, postId, saved } = request;
     const context = { correlationId };
     const ownerId = ownerIdOf(actor);
     if (ownerId === undefined) {
       return new MediaForbiddenResponse(correlationId, "signed-out");
     }
 
-    // A deleted post held a handful of uploads, so one read each is bounded.
-    const loaded = await Promise.all(
-      mediaIds.map((id) =>
-        this.mediaAssets.load(new LoadMediaAssetByIdRequest(id, context)),
-      ),
+    const loaded = await this.mediaAssets.load(
+      new LoadMediaAssetsByOwnerRequest(ownerId, context, {
+        postId,
+        excludeLocked: true,
+      }),
     );
-    const candidates: MediaAsset[] = [];
-    for (const response of loaded) {
-      if (response instanceof MediaAssetLoadedResponse) {
-        candidates.push(response.asset);
-        continue;
-      }
-      if (!(response instanceof MediaAssetNotFoundResponse)) {
-        return unavailable(correlationId, response, "mediaAssets.load");
-      }
+    if (!(loaded instanceof MediaAssetsLoadedResponse)) {
+      return unavailable(correlationId, loaded, "mediaAssets.load");
     }
+    const takenOut = loaded.assets.filter(
+      (asset) => asset.usedInPost && !postUsesMedia(saved, asset.id),
+    );
 
     return pruneUnused(
       {
@@ -64,8 +62,8 @@ export class PruneMediaHandler implements IHandler<PruneMediaRequest, Result> {
       this.permissions,
       actor,
       ownerId,
-      candidates,
-      request.postId,
+      takenOut,
+      postId,
       context,
     );
   }

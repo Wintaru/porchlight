@@ -143,6 +143,7 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "media.upload.anonymous": mayUploadMediaAnonymously,
   "media.view": mayViewMedia,
   "media.delete": mayDeleteMedia,
+  "media.prune": mayPruneMedia,
   "moderation.act": mayModerate,
   "moderation.queue.view": mayModerate,
   "profile.moderate": mayModerate,
@@ -470,6 +471,22 @@ function mayDeleteMedia(actor: PersonActor, subject: PermissionSubject): Promise
   return Promise.resolve(verdict(isOwner || gate.role === "admin"));
 }
 
+// The owner only (#90): pruning follows the author's own save or delete, so an admin or
+// moderator who edits someone's post never deletes that member's files by it.
+function mayPruneMedia(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
+  const gate = activeMember(actor);
+  if (isDenial(gate)) {
+    return Promise.resolve(gate);
+  }
+  return Promise.resolve(
+    verdict(
+      subject.kind === "media" &&
+        subject.owner.kind === "member" &&
+        subject.owner.profileId === gate.id,
+    ),
+  );
+}
+
 // A moderator or an admin, for the whole ModerationManager action list except
 // promotion (SPEC.md §7): approve, reject, hide, remove, lock a thread, escalate,
 // suspend, ban, block an anonymous author, and viewing the queue or the reports list.
@@ -604,6 +621,7 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "media.upload.anonymous": deny,
   "media.view": agentMayViewMedia,
   "media.delete": deny,
+  "media.prune": agentMayPruneMedia,
   "moderation.act": deny,
   "moderation.queue.view": deny,
   "profile.moderate": deny,
@@ -796,5 +814,25 @@ async function agentMayViewMedia(
     subject.owner.kind === "member" &&
       subject.owner.profileId === gate.id &&
       hasScope(agent.grant, "media:upload"),
+  );
+}
+
+// An agent that edits its member's drafts may delete the member's files the saved draft
+// no longer uses (#90, C11 A), the same prune the editor's Save runs. Only the member's
+// own, and only with the draft scope: no upload scope is needed to take a picture out.
+async function agentMayPruneMedia(
+  agent: AgentActor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  return verdict(
+    subject.kind === "media" &&
+      subject.owner.kind === "member" &&
+      subject.owner.profileId === gate.id &&
+      hasScope(agent.grant, "posts:draft"),
   );
 }

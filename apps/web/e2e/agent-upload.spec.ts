@@ -115,3 +115,59 @@ test("an agent uploads a photo through the signed URL and it shows in the post",
     await deleteCurrentPost(page);
   }
 });
+
+// Issue #90 (C11): an agent's edit prunes the way the editor's Save does. A picture the
+// agent takes out of its member's draft is deleted, public copy and all.
+test("a picture an agent takes out of a draft is deleted", async ({ page, baseURL }) => {
+  const stamp = Date.now().toString(36);
+  const filename = `agent-taken-out-${stamp}.jpg`;
+  await devSignIn(page, THEO);
+  const { rawToken } = await mintToken(page, ["media:upload"]);
+  const client = await connect(baseURL ?? "", rawToken);
+  let postId = "";
+  try {
+    const issued = structured(
+      await client.callTool({
+        name: "request_upload",
+        arguments: { filename, bytes: PHOTO.length },
+      }),
+    );
+    await put(String(issued.curl), String(issued.uploadUrl), PHOTO, "image/jpeg");
+    const upload = structured(
+      await client.callTool({
+        name: "finalize_upload",
+        arguments: { media_id: String(issued.mediaId), filename },
+      }),
+    ).upload as Record<string, unknown>;
+    expect(upload).toMatchObject({ status: "ready" });
+
+    const drafted = structured(
+      await client.callTool({
+        name: "create_draft",
+        arguments: {
+          title: `Agent prune ${stamp}`,
+          body_md: `The porch.\n\n${String(upload.markdown)}`,
+        },
+      }),
+    ).post as Record<string, unknown>;
+    postId = String(drafted.id);
+
+    const updated = await client.callTool({
+      name: "update_draft",
+      arguments: { id: postId, body_md: "The porch, no picture after all." },
+    });
+    expect(updated.isError).not.toBe(true);
+
+    const lookup = await client.callTool({
+      name: "get_media",
+      arguments: { id: String(issued.mediaId) },
+    });
+    expect(lookup.isError).toBe(true);
+    expect((await page.request.get(String(upload.url))).ok()).toBe(false);
+  } finally {
+    await client.close();
+  }
+
+  await page.goto(`/write/${postId}`);
+  await deleteCurrentPost(page);
+});

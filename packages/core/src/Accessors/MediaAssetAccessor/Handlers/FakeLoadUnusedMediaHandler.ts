@@ -6,7 +6,7 @@ import { UnusedMediaLoadedResponse } from "../Responses/UnusedMediaLoadedRespons
 
 type Result = UnusedMediaLoadedResponse | MediaAssetAccessFailedResponse;
 
-// The fake holds no posts, so a test names the uploads some post still uses in
+// The fake holds no posts or comments, so a test names the uploads one still shows in
 // `usedMediaIds`.
 export class FakeLoadUnusedMediaHandler implements IHandler<
   LoadUnusedMediaRequest,
