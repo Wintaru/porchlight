@@ -212,6 +212,25 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
     .poll(() => cardImg.evaluate((el) => getComputedStyle(el).filter))
     .toBe("none");
 
+  // In the author's own list the thumbnail is small: the label wraps inside it, and on
+  // a phone the picture is first in the keyboard order as well as on top (#91).
+  for (const width of [1280, 390]) {
+    await reader.setViewportSize({ width, height: 900 });
+    await reader.goto("/@theo");
+    const row = reader.getByTestId("post-card").filter({ hasText: title });
+    const thumb = row.getByTestId("post-card-cover");
+    const label = thumb.getByText("Mature content. Show image");
+    await expect(label).toBeVisible();
+    const [thumbBox, labelBox] = [await boxOf(thumb), await boxOf(label)];
+    expect(labelBox.x).toBeGreaterThanOrEqual(thumbBox.x);
+    expect(labelBox.y).toBeGreaterThanOrEqual(thumbBox.y);
+    expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(thumbBox.x + thumbBox.width);
+    expect(labelBox.y + labelBox.height).toBeLessThanOrEqual(
+      thumbBox.y + thumbBox.height,
+    );
+    await expect(row.locator("a, input").first()).toHaveAttribute("type", "checkbox");
+  }
+
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
   await deleteCurrentPost(page);

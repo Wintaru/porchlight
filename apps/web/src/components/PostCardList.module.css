@@ -37,13 +37,19 @@
   align-items: start;
 }
 
+/* The cover comes first in the page, so on a phone it is first in the keyboard order
+   as well as on top (#91, C14). The grid puts it on the right on a wide screen. */
 .text {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   /* A title with no break point wraps inside its column, not over the cover. */
   overflow-wrap: anywhere;
 }
 
 .cover {
+  grid-column: 2;
+  grid-row: 1;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -64,6 +70,12 @@
   height: 84px;
 }
 
+/* The small thumbnail's "show image" label, smaller so it fits when it wraps. */
+.row .cover label {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
 /* Narrow screens: the picture on top, the card's width, so the text keeps its room. */
 @media (max-width: 600px) {
   .withCover,
@@ -72,8 +84,10 @@
     gap: 12px;
   }
 
+  .text,
   .cover {
-    order: -1;
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .cover img,

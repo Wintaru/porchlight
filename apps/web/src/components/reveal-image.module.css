@@ -36,7 +36,13 @@
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  line-height: 1.3;
+  /* One line when it fits. In a small card picture it wraps inside it instead of
+     running past the edge (#91). */
+  width: max-content;
+  max-width: calc(100% - 16px);
+  text-align: center;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 

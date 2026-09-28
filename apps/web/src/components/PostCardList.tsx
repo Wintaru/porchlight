@@ -83,8 +83,9 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
 }
 
 // The text on the left, the cover on the right as a cropped thumbnail (#76), stacked
-// with the picture on top on a narrow screen. A post with no cover keeps the text at
-// full width.
+// with the picture on top on a narrow screen. The cover comes first in the markup, so
+// the keyboard reaches it first too (#91); the grid moves it right on a wide screen. A
+// post with no cover keeps the text at full width.
 function WithCover({
   post,
   children,
@@ -98,8 +99,8 @@ function WithCover({
   }
   return (
     <div className={styles.withCover}>
-      <div className={styles.text}>{children}</div>
       <CardCover post={post} cover={cover} />
+      <div className={styles.text}>{children}</div>
     </div>
   );
 }
