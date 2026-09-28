@@ -77,6 +77,9 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.release_invite(text)",
   // #87: the follower notice fan-out. A browser call would spam every follower.
   "public.announce_post(uuid, timestamptz)",
+  // #86: a failed send puts its windows back in one call.
+  "public.release_member_emails(jsonb)",
+  "public.release_subscriber_emails(jsonb)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or

@@ -1405,6 +1405,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      release_member_emails: { Args: { p_claims: Json }; Returns: number }
       release_subscriber_email: {
         Args: {
           p_subscriber_id: string
@@ -1413,6 +1414,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      release_subscriber_emails: { Args: { p_claims: Json }; Returns: number }
       release_subscription_confirmation: {
         Args: { p_confirm_token: string }
         Returns: boolean

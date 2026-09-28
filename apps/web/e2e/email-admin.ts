@@ -71,10 +71,17 @@ export async function setPostAnnounced(
   announced: boolean,
 ): Promise<void> {
   const at = announced ? new Date(Date.now() - 10 * 60 * 1000).toISOString() : null;
-  await rest(`posts?id=eq.${postId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ announced_at: at }),
-  });
+  const patch = () =>
+    rest(`posts?id=eq.${postId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ announced_at: at }),
+    });
+  await patch();
+  // The first mark on an unmarked post takes the database clock (#86). A second write
+  // to a set mark keeps the value given, so it moves the mark back ten minutes.
+  if (at !== null) {
+    await patch();
+  }
 }
 
 // Starts every subscription of this address two hours ago, so the next sweep finds it due.

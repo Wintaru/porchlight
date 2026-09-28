@@ -552,6 +552,39 @@ describe("claim_member_emails (#22)", () => {
     expect(again.map((row) => row.kind)).toEqual(["digest"]);
   });
 
+  test("one call puts back a member's digest and queue windows together (#86)", async () => {
+    const [released, again, stale] = await asService(async (tx) => {
+      await arrange(tx, true);
+      // A JavaScript Date keeps milliseconds only, so the window end is cut to them, as
+      // the sweep's own `until` is. A release matches the cursor exactly.
+      const claims = await tx<
+        { profile_id: string; kind: string; window_start: Date; window_end: Date }[]
+      >`
+        select profile_id, kind, window_start, window_end
+        from public.claim_member_emails(
+          date_trunc('milliseconds', now() + interval '1 minute'), 50
+        )
+        where profile_id = ${SEED.moderator}
+      `;
+      const payload = claims.map((c) => ({
+        profile_id: c.profile_id,
+        kind: c.kind,
+        window_start: c.window_start.toISOString(),
+        window_end: c.window_end.toISOString(),
+      }));
+      const [{ released } = { released: 0 }] = await tx<{ released: number }[]>`
+        select public.release_member_emails(${tx.json(payload)}) as released
+      `;
+      const again = await claim(tx);
+      // A later claim moved the cursors on: the old windows stay where they are.
+      const [{ released: stale } = { released: -1 }] = await tx<{ released: number }[]>`
+        select public.release_member_emails(${tx.json(payload)}) as released
+      `;
+      return [released, again.map((row) => row.kind), stale];
+    });
+    expect([released, again, stale]).toEqual([2, ["digest", "queue"], 0]);
+  });
+
   test("erasure removes the member's email settings", async () => {
     const left = await asService(async (tx) => {
       await tx`select public.set_email_preferences(${SEED.trustedMember}, 'daily', false)`;
@@ -652,6 +685,46 @@ describe("subscribers (#22)", () => {
       "pending",
       false,
     ]);
+  });
+
+  test("one call puts back every reader window of a failed send (#86)", async () => {
+    const [released, again] = await asService(async (tx) => {
+      await request(tx, "b1");
+      await request(tx, "b2", SEED.trustedMember);
+      await tx`select public.confirm_subscription('b1')`;
+      await tx`select public.confirm_subscription('b2')`;
+      await tx`
+        update public.subscribers set cursor = now() - interval '3 hours'
+        where email = 'reader@example.test'
+      `;
+      await tx`
+        update public.posts set announced_at = now() - interval '1 hour'
+        where id = ${SEED.publicPost}
+      `;
+      const claims = await tx<
+        { subscriber_id: string; window_start: Date; window_end: Date }[]
+      >`
+        select subscriber_id, window_start, window_end
+        from public.claim_subscriber_emails(
+          date_trunc('milliseconds', now() + interval '1 minute'), 10
+        )
+        where email = 'reader@example.test'
+      `;
+      const payload = claims.map((c) => ({
+        subscriber_id: c.subscriber_id,
+        window_start: c.window_start.toISOString(),
+        window_end: c.window_end.toISOString(),
+      }));
+      const [{ released } = { released: 0 }] = await tx<{ released: number }[]>`
+        select public.release_subscriber_emails(${tx.json(payload)}) as released
+      `;
+      const again = await tx`
+        select 1 from public.claim_subscriber_emails(now(), 10)
+        where email = 'reader@example.test'
+      `;
+      return [released, again.length];
+    });
+    expect([released, again]).toEqual([2, 2]);
   });
 
   // Two requests for a new address at the same moment (#84): neither finds a row to
@@ -1102,18 +1175,43 @@ describe("announce_post (#87)", () => {
       `;
       const first = await announce(tx, SEED.publicPost);
       const recipients = await noticesFor(tx, SEED.publicPost);
-      const [{ announced_at } = { announced_at: null }] = await tx<
-        { announced_at: Date | null }[]
-      >`select announced_at from public.posts where id = ${SEED.publicPost}`;
+      const [{ announced_at, db_now } = { announced_at: null, db_now: null }] = await tx<
+        { announced_at: Date | null; db_now: Date }[]
+      >`select announced_at, now() as db_now from public.posts where id = ${SEED.publicPost}`;
       const second = await announce(tx, SEED.publicPost);
       const after = await noticesFor(tx, SEED.publicPost);
-      return { first, recipients, announced_at, second, after };
+      return { first, recipients, announced_at, db_now, second, after };
     });
     expect(result.first).toBe(2);
     expect(result.recipients).toEqual([SEED.admin, SEED.moderator].sort());
-    expect(result.announced_at).toEqual(ANNOUNCE_AT);
+    // The database clock, not the time the app passed in (#86).
+    expect(result.announced_at).toEqual(result.db_now);
+    expect(result.announced_at).not.toEqual(ANNOUNCE_AT);
     expect(result.second).toBe(0);
     expect(result.after).toEqual(result.recipients);
+  });
+
+  test("the database clock sets the mark once, and a set mark can change (#86)", async () => {
+    const result = await asService(async (tx) => {
+      await reset(tx, [SEED.publicPost]);
+      await tx`
+        update public.posts set announced_at = now() - interval '1 hour'
+        where id = ${SEED.publicPost}
+      `;
+      const [first] = await tx<{ same: boolean }[]>`
+        select announced_at = now() as same from public.posts where id = ${SEED.publicPost}
+      `;
+      await tx`
+        update public.posts set announced_at = now() - interval '1 hour'
+        where id = ${SEED.publicPost}
+      `;
+      const [later] = await tx<{ back: boolean }[]>`
+        select announced_at = now() - interval '1 hour' as back
+        from public.posts where id = ${SEED.publicPost}
+      `;
+      return [first?.same, later?.back];
+    });
+    expect(result).toEqual([true, true]);
   });
 
   test("announces no draft, unlisted or pending post", async () => {
