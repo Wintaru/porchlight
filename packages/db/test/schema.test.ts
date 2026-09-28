@@ -1031,6 +1031,45 @@ describe("media post link (#80)", () => {
     expect(unused.map((r) => r.id)).not.toContain(MEDIA);
   });
 
+  test("an upload only a comment shows is in use, and not unused (#90)", async () => {
+    const [inUse, unused] = await asService(async (tx) => {
+      await upload(tx, MEDIA);
+      await tx`update public.posts set body_md = ${`x ${MEDIA}`} where id = ${SEED.draftPost}`;
+      await tx`update public.posts set body_md = 'nothing now' where id = ${SEED.draftPost}`;
+      await tx`
+        insert into public.comments (post_id, author_id, status, body_md)
+        values (${SEED.publicPost}, ${SEED.trustedMember}, 'visible',
+          ${`![porch](https://x.test/public-media/${MEDIA}.png)`})
+      `;
+      const [row] = await tx<{ in_use: boolean }[]>`
+        select public.media_in_use(${MEDIA}) as in_use
+      `;
+      const ids = await tx<{ id: string }[]>`
+        select public.unused_media(array[${MEDIA}]::uuid[], ${SEED.trustedMember}, ${SEED.draftPost}) as id
+      `;
+      return [row?.in_use, ids.map((r) => r.id)];
+    });
+    expect(inUse).toBe(true);
+    expect(unused).not.toContain(MEDIA);
+  });
+
+  test("only a flagged upload can be turned down (#90)", async () => {
+    const clear = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await upload(tx, MEDIA);
+        await tx`update public.media_assets set scan_status = 'clear', rejected_at = now() where id = ${MEDIA}`;
+      }),
+    );
+    const flagged = await errorCodeOf(() =>
+      asService(async (tx) => {
+        await upload(tx, MEDIA);
+        await tx`update public.media_assets set scan_status = 'flagged', rejected_at = now() where id = ${MEDIA}`;
+      }),
+    );
+    expect(clear).toBe(CHECK_VIOLATION);
+    expect(flagged).toBeNull();
+  });
+
   test("an upload attached to its post for later is marked used once a save puts it in", async () => {
     const [attached, inserted] = await asService(async (tx) => {
       await upload(tx, MEDIA);
@@ -1074,8 +1113,16 @@ describe("media post link (#80)", () => {
           tx`select public.unused_media(array[${SEED.publishedMedia}]::uuid[], ${SEED.trustedMember})`,
       ),
     );
+    const inUse = await errorCodeOf(() =>
+      asRole(
+        sql,
+        "authenticated",
+        (tx) => tx`select public.media_in_use(${SEED.publishedMedia})`,
+      ),
+    );
     expect(link).toBe(INSUFFICIENT_PRIVILEGE);
     expect(unused).toBe(INSUFFICIENT_PRIVILEGE);
+    expect(inUse).toBe(INSUFFICIENT_PRIVILEGE);
   });
 });
 

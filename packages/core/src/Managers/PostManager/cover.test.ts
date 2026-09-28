@@ -30,6 +30,7 @@ function asset(id: string, overrides: Partial<MediaAsset>): MediaAsset {
     mature: false,
     postId: null,
     usedInPost: false,
+    rejectedAt: null,
     retainUntil: null,
     createdAt: AT,
     updatedAt: AT,

@@ -29,6 +29,9 @@ export interface MediaAsset {
   // A saved version of that post has used it. Only then does a post that stops using it
   // count as having taken it out.
   readonly usedInPost: boolean;
+  // When a moderator turned down this flagged upload (#90, C13). It stays held and never
+  // gets a public copy. Null for every other upload.
+  readonly rejectedAt: Date | null;
   readonly retainUntil: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

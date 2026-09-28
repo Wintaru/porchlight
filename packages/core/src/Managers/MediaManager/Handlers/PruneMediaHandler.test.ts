@@ -61,6 +61,7 @@ function asset(id: string, overrides: Partial<MediaAsset> = {}): MediaAsset {
     mature: false,
     postId: "p-porch",
     usedInPost: true,
+    rejectedAt: null,
     retainUntil: null,
     createdAt: AT,
     updatedAt: AT,

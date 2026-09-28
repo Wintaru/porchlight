@@ -393,6 +393,7 @@ export type Database = {
           perceptual_hash: string | null
           post_id: string | null
           published_path: string | null
+          rejected_at: string | null
           retain_until: string | null
           scan_status: Database["public"]["Enums"]["scan_status"]
           sha256: string
@@ -413,6 +414,7 @@ export type Database = {
           perceptual_hash?: string | null
           post_id?: string | null
           published_path?: string | null
+          rejected_at?: string | null
           retain_until?: string | null
           scan_status?: Database["public"]["Enums"]["scan_status"]
           sha256: string
@@ -433,6 +435,7 @@ export type Database = {
           perceptual_hash?: string | null
           post_id?: string | null
           published_path?: string | null
+          rejected_at?: string | null
           retain_until?: string | null
           scan_status?: Database["public"]["Enums"]["scan_status"]
           sha256?: string
@@ -1353,6 +1356,7 @@ export type Database = {
           perceptual_hash: string | null
           post_id: string | null
           published_path: string | null
+          rejected_at: string | null
           retain_until: string | null
           scan_status: Database["public"]["Enums"]["scan_status"]
           sha256: string
@@ -1375,6 +1379,7 @@ export type Database = {
         }[]
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
+      media_in_use: { Args: { p_media_id: string }; Returns: boolean }
       member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
       post_search_document: {

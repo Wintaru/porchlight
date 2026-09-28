@@ -34,6 +34,7 @@ export class FakeStoreNewMediaAssetHandler implements IHandler<
       mature: false,
       postId: null,
       usedInPost: false,
+      rejectedAt: null,
       retainUntil: asset.retainUntil,
       createdAt: timestamp,
       updatedAt: timestamp,

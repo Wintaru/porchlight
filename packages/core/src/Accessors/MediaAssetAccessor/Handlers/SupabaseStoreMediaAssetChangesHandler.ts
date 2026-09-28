@@ -41,5 +41,8 @@ function toColumns(changes: MediaAssetChanges): TablesUpdate<"media_assets"> {
   if (changes.mature !== undefined) columns.mature = changes.mature;
   if (changes.publishedPath !== undefined) columns.published_path = changes.publishedPath;
   if (changes.postId !== undefined) columns.post_id = changes.postId;
+  if (changes.rejectedAt !== undefined) {
+    columns.rejected_at = changes.rejectedAt.toISOString();
+  }
   return columns;
 }

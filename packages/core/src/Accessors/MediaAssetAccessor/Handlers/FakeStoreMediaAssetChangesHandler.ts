@@ -34,6 +34,7 @@ export class FakeStoreMediaAssetChangesHandler implements IHandler<
       mature: changes.mature ?? current.mature,
       publishedPath: changes.publishedPath ?? current.publishedPath,
       postId: changes.postId ?? current.postId,
+      rejectedAt: changes.rejectedAt ?? current.rejectedAt,
     };
     this.state.assets.set(id, stored);
     return Promise.resolve(new MediaAssetStoredResponse(correlationId, stored));

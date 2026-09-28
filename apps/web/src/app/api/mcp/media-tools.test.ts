@@ -31,6 +31,7 @@ function asset(overrides: Partial<MediaAsset>): MediaAsset {
     mature: false,
     postId: null,
     usedInPost: false,
+    rejectedAt: null,
     createdAt: new Date("2026-09-25T10:00:00.000Z"),
     updatedAt: new Date("2026-09-25T10:00:00.000Z"),
     ...overrides,
