@@ -88,6 +88,30 @@ describe("posts", () => {
     });
     expect(kept.map((row) => row.title)).toEqual(["Second", "First"]);
   });
+
+  // #100: an autosave matches on the version it last saw, so every write must move it,
+  // including one that tries to set it.
+  test("every update moves the version by one, whatever it says", async () => {
+    const versions = await asService(async (tx) => {
+      const read = async () =>
+        (
+          await tx<{ version: number }[]>`
+            select version from public.posts where id = ${SEED.draftPost}
+          `
+        )[0]?.version;
+      const before = await read();
+      await tx`update public.posts set title = 'Moved' where id = ${SEED.draftPost}`;
+      const afterTitle = await read();
+      await tx`update public.posts set version = 1 where id = ${SEED.draftPost}`;
+      const afterSet = await read();
+      return { before, afterTitle, afterSet };
+    });
+    if (versions.before === undefined) {
+      throw new Error("the seeded draft is missing");
+    }
+    expect(versions.afterTitle).toBe(versions.before + 1);
+    expect(versions.afterSet).toBe(versions.before + 2);
+  });
 });
 
 describe("comments", () => {

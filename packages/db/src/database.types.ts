@@ -741,6 +741,7 @@ export type Database = {
           summary: string | null
           title: string
           updated_at: string
+          version: number
           visibility: Database["public"]["Enums"]["post_visibility"]
         }
         Insert: {
@@ -764,6 +765,7 @@ export type Database = {
           summary?: string | null
           title: string
           updated_at?: string
+          version?: number
           visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Update: {
@@ -787,6 +789,7 @@ export type Database = {
           summary?: string | null
           title?: string
           updated_at?: string
+          version?: number
           visibility?: Database["public"]["Enums"]["post_visibility"]
         }
         Relationships: [
