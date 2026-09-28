@@ -15,6 +15,11 @@ import {
   SIGN_IN_NEXT_COOKIE,
   SIGN_IN_NEXT_MAX_AGE_SECONDS,
 } from "@/auth/email-link";
+import {
+  answerForClosedSiteOtpError,
+  answerForOtpError,
+  writeOtpLog,
+} from "@/auth/otp-error";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createCookielessAuthClient, createSessionClient } from "@/auth/session-client";
 import { toSessionUser } from "@/auth/session-user";
@@ -32,15 +37,6 @@ const SIGN_IN_PATH = "/auth/sign-in";
 // A first filter only: Supabase Auth checks the address properly and answers 400.
 const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
-const HTTP_BAD_REQUEST = 400;
-const HTTP_TOO_MANY_REQUESTS = 429;
-// Supabase Auth's answers when it will not make a new account for the address. A member
-// still gets a link, so the form must answer "sent" here too, or it tells a stranger
-// which addresses are members. The operator sees the log line.
-const NEW_ACCOUNTS_REFUSED: ReadonlySet<string> = new Set([
-  "otp_disabled",
-  "signup_disabled",
-]);
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {
   const next = safeNextPath(formValue(formData, "next"));
@@ -96,22 +92,9 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     options: { shouldCreateUser: true },
   });
   if (error !== null) {
-    if (error.status === HTTP_TOO_MANY_REQUESTS) {
-      back("error=wait");
-    }
-    if (error.status === HTTP_BAD_REQUEST) {
-      back("error=email");
-    }
-    if (error.code !== undefined && NEW_ACCOUNTS_REFUSED.has(error.code)) {
-      // This site would let the address in, but Supabase refused it: a hint for the
-      // operator. The form still says "sent", as it does for a member.
-      console.warn(
-        "Supabase Auth refuses new accounts by email: turn on 'Allow new users to sign up'",
-      );
-      back("sent=1");
-    }
-    console.error("sign-in link could not be sent", error);
-    back("error=failed");
+    const { answer, log } = answerForOtpError(error);
+    writeOtpLog(log);
+    back(answer === "sent" ? "sent=1" : `error=${answer}`);
   }
   await rememberNext(next);
   back("sent=1");
@@ -119,28 +102,16 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
 
 // The closed-site send, after the response. A client with no cookies: the response has
 // gone, so nothing can be written to the browser, and the emailed link carries its own
-// token hash, so no code verifier needs to be kept. A refused new address and an
-// address Auth calls malformed are expected. The send limit is logged without the
-// address, so the operator sees why members get no link.
+// token hash, so no code verifier needs to be kept. The form already said "sent", so an
+// error only reaches the log (answerForClosedSiteOtpError).
 async function sendClosedSiteLink(email: string): Promise<void> {
   const { error } = await createCookielessAuthClient().auth.signInWithOtp({
     email,
     options: { shouldCreateUser: false },
   });
-  if (error === null || error.status === HTTP_BAD_REQUEST) {
-    return;
+  if (error !== null) {
+    writeOtpLog(answerForClosedSiteOtpError(error).log);
   }
-  if (error.code !== undefined && NEW_ACCOUNTS_REFUSED.has(error.code)) {
-    return;
-  }
-  if (error.status === HTTP_TOO_MANY_REQUESTS) {
-    console.warn("closed-site sign-in link held back: Supabase Auth's send limit");
-    return;
-  }
-  console.error(
-    "closed-site sign-in link could not be sent",
-    error.code ?? error.message,
-  );
 }
 
 // The page to land on after the link, for the callback to read.
