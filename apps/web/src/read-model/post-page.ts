@@ -20,7 +20,7 @@ export interface PostPage {
   readonly summary: string | null;
   readonly body_html: string;
   readonly status: "draft" | "pending" | "published" | "rejected" | "hidden" | "removed";
-  readonly visibility: "public" | "unlisted";
+  readonly visibility: Enums<"post_visibility">;
   readonly comments_enabled: boolean;
   readonly rejection_reason: string | null;
   readonly published_at: string | null;

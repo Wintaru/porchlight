@@ -10,7 +10,7 @@ import { VOICE_GUIDE_REVISIONS_KEPT } from "../../core/src/Common/VoiceGuideRevi
 import { VOICE_GUIDE_MAX_LENGTH } from "../../core/src/Common/VoiceGuideRules";
 import { TAG_DESCRIPTION_MAX_LENGTH } from "../../core/src/Managers/SiteConfigManager/tagDescription";
 import { postUsesMedia } from "../../core/src/Utilities/media/postUsesMedia";
-import { connect, type DbRole, SEED } from "./local-stack";
+import { connect, SEED, seededAs } from "./local-stack";
 
 // Issue #94: a rule the core keeps in TypeScript and the schema keeps in SQL. The core
 // needs its copy to refuse before the round trip and name the reason; the schema's copy
@@ -186,39 +186,12 @@ describe("post_uses_media", () => {
   });
 });
 
-// Thrown from inside `sql.begin` so postgres.js rolls the seed back.
-class Rollback extends Error {}
-
-// Seeds `seed` as postgres, then runs `read` as `role` (and `sub`), in one transaction
-// that is always rolled back.
-async function seededAs<T>(
-  role: DbRole,
-  sub: string | undefined,
-  seed: (tx: TransactionSql) => Promise<unknown>,
-  read: (tx: TransactionSql) => Promise<T>,
-): Promise<T> {
-  let box: { value: T } | undefined;
-  const claims = JSON.stringify(sub === undefined ? { role } : { role, sub });
-  try {
-    await sql.begin(async (tx) => {
-      await seed(tx);
-      await tx.unsafe(`set local role ${role}`);
-      await tx`select set_config('request.jwt.claims', ${claims}, true)`;
-      box = { value: await read(tx) };
-      throw new Rollback();
-    });
-  } catch (error: unknown) {
-    if (!(error instanceof Rollback)) throw error;
-  }
-  if (box === undefined) throw new Error("seededAs: the read produced no value");
-  return box.value;
-}
-
 // #93: `search_candidates` reads past RLS (SECURITY DEFINER) so it can use the search
 // indexes, and applies the listing rule itself: what RLS lets the caller read, public,
 // and for comments visible. When RLS or the listing rule changes, this test fails until
 // `search_candidates` follows. The seed holds every post status and visibility, every
 // comment status, and posts by an anonymous and an erased author, all with one word.
+// A private post (#101) is readable under RLS by its author only, and listed to nobody.
 describe("search_candidates", () => {
   const WORD = "quillmirror";
 
@@ -243,6 +216,9 @@ describe("search_candidates", () => {
       ) as a(kind, id)
       cross join unnest(enum_range(null::public.post_status)) as s
       cross join unnest(enum_range(null::public.post_visibility)) as v
+      -- The two states the schema refuses (#101): a private post never waits in the
+      -- queue, and an anonymous post is never private.
+      where not (v = 'private' and (s = 'pending' or a.kind = 'anonymous'))
     `;
     await tx`
       insert into public.comments (post_id, author_id, status, body_md)
@@ -277,17 +253,19 @@ describe("search_candidates", () => {
     };
   }
 
-  // The listing rule on top of what RLS lets the caller read.
+  // The listing rule on top of what RLS lets the caller read. `published` matters only
+  // for an author, whom RLS also lets read their own drafts.
   async function listedUnderRls(tx: TransactionSql): Promise<Candidates> {
     const posts = await tx<{ id: string }[]>`
       select id from public.posts
-      where slug like 'mirror-%' and visibility = 'public'
+      where slug like 'mirror-%' and visibility = 'public' and status = 'published'
       order by id
     `;
     const comments = await tx<{ id: string }[]>`
       select c.id from public.comments c
       join public.posts p on p.id = c.post_id
-      where p.slug like 'mirror-%' and p.visibility = 'public' and c.status = 'visible'
+      where p.slug like 'mirror-%' and p.visibility = 'public' and p.status = 'published'
+        and c.status = 'visible'
       order by c.id
     `;
     return {
@@ -298,6 +276,7 @@ describe("search_candidates", () => {
 
   test("a visitor's candidates are exactly what RLS and the listing rule allow", async () => {
     const { candidates, listed } = await seededAs(
+      sql,
       "anon",
       undefined,
       seedEveryCase,
@@ -315,6 +294,7 @@ describe("search_candidates", () => {
   test("a member's candidates are readable by that member and leave out a mute", async () => {
     const viewer = SEED.probationMember;
     const { candidates, listed, muted } = await seededAs(
+      sql,
       "authenticated",
       viewer,
       async (tx) => {
@@ -347,6 +327,31 @@ describe("search_candidates", () => {
       posts: unmuted(listed.posts),
       comments: unmuted(listed.comments),
     });
+  });
+
+  test("an author's own private posts are readable to them and never candidates", async () => {
+    const { candidates, listed, readablePrivate } = await seededAs(
+      sql,
+      "authenticated",
+      SEED.trustedMember,
+      seedEveryCase,
+      async (tx) => ({
+        candidates: await candidatesOf(tx),
+        listed: await listedUnderRls(tx),
+        readablePrivate: (
+          await tx<{ id: string }[]>`
+            select id from public.posts
+            where slug like 'mirror-%' and visibility = 'private'
+          `
+        ).length,
+      }),
+    );
+
+    // RLS lets the author read every private post of theirs, so the listing rule is
+    // what keeps them out, and search_candidates must apply it too.
+    expect(readablePrivate).toBeGreaterThan(0);
+    expect(candidates.posts.length).toBeGreaterThan(0);
+    expect(candidates).toEqual(listed);
   });
 });
 

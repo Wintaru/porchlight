@@ -118,3 +118,27 @@ export async function errorCodeOf(fn: () => Promise<unknown>): Promise<string | 
     throw error;
   }
 }
+
+/**
+ * Seeds `seed` as postgres, then runs `read` as `role` (and `sub`), in one transaction
+ * that is always rolled back. For a check that needs rows the seed does not hold.
+ */
+export async function seededAs<T>(
+  sql: Sql,
+  role: DbRole,
+  sub: string | undefined,
+  seed: (tx: TransactionSql) => Promise<unknown>,
+  read: (tx: TransactionSql) => Promise<T>,
+): Promise<T> {
+  return asRole(
+    sql,
+    role,
+    async (tx) => {
+      await tx`reset role`;
+      await seed(tx);
+      await tx.unsafe(`set local role ${role}`);
+      return read(tx);
+    },
+    sub,
+  );
+}

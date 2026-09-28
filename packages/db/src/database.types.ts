@@ -1408,6 +1408,7 @@ export type Database = {
       media_in_use: { Args: { p_media_id: string }; Returns: boolean }
       member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
+      post_is_private: { Args: { p_post_id: string }; Returns: boolean }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
         Returns: unknown
@@ -1572,7 +1573,7 @@ export type Database = {
         | "rejected"
         | "hidden"
         | "removed"
-      post_visibility: "public" | "unlisted"
+      post_visibility: "public" | "unlisted" | "private"
       profile_status: "active" | "suspended" | "banned" | "erased"
       reaction_kind: "heart" | "laugh" | "wow" | "sad" | "clap"
       region: "US" | "EU" | "UK" | "CA" | "AU" | "other"
@@ -1768,7 +1769,7 @@ export const Constants = {
         "hidden",
         "removed",
       ],
-      post_visibility: ["public", "unlisted"],
+      post_visibility: ["public", "unlisted", "private"],
       profile_status: ["active", "suspended", "banned", "erased"],
       reaction_kind: ["heart", "laugh", "wow", "sad", "clap"],
       region: ["US", "EU", "UK", "CA", "AU", "other"],
