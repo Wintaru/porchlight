@@ -238,9 +238,18 @@ textarea.text-input {
 
 /* A column of fields, or of anything, spaced as the boards space a form. */
 .form-stack {
+  --stack-gap: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--stack-gap);
+}
+
+/* The Turnstile box (#103). It is 0 px tall while Cloudflare keeps it hidden, but a
+   0 px item still costs its stack one extra gap. Half a gap off each side takes that
+   back, and a shown box still keeps half a gap above and below it. The box must be a
+   direct child of the container that sets --stack-gap. */
+.turnstile-box {
+  margin-block: calc(var(--stack-gap, 0px) / -2);
 }
 
 .form-hint {

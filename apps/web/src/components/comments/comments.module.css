@@ -21,8 +21,9 @@
 
 /* The Post board's comment box: one card, the words on top, the button inside it. */
 .form {
+  --stack-gap: 12px;
   display: grid;
-  gap: 12px;
+  gap: var(--stack-gap);
   margin-bottom: 24px;
   padding: 16px;
   border: 1px solid var(--line);

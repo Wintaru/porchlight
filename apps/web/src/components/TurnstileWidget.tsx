@@ -1,6 +1,11 @@
 import Script from "next/script";
 
-import { TURNSTILE_SRC, turnstileSiteKey } from "@/lib/turnstile";
+import {
+  TURNSTILE_APPEARANCE,
+  TURNSTILE_SIZE,
+  TURNSTILE_SRC,
+  turnstileSiteKey,
+} from "@/lib/turnstile";
 
 // Cloudflare Turnstile, implicit render (docs/setup/turnstile.md): the script scans the
 // page for `.cf-turnstile` and injects a hidden `cf-turnstile-response` field into it,
@@ -16,7 +21,12 @@ export function TurnstileWidget() {
   return (
     <>
       <Script src={TURNSTILE_SRC} async defer />
-      <div className="cf-turnstile" data-sitekey={siteKey} />
+      <div
+        className="cf-turnstile turnstile-box"
+        data-sitekey={siteKey}
+        data-appearance={TURNSTILE_APPEARANCE}
+        data-size={TURNSTILE_SIZE}
+      />
     </>
   );
 }

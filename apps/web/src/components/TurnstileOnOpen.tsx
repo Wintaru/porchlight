@@ -3,11 +3,22 @@
 import Script from "next/script";
 import { useCallback, useEffect, useRef } from "react";
 
-import { TURNSTILE_SRC, turnstileSiteKey } from "@/lib/turnstile";
+import {
+  TURNSTILE_APPEARANCE,
+  TURNSTILE_SIZE,
+  TURNSTILE_SRC,
+  turnstileSiteKey,
+} from "@/lib/turnstile";
+
+interface TurnstileRenderOptions {
+  readonly sitekey: string;
+  readonly appearance: typeof TURNSTILE_APPEARANCE;
+  readonly size: typeof TURNSTILE_SIZE;
+}
 
 // Turnstile's explicit-render API (docs/setup/turnstile.md), the script's global.
 interface TurnstileApi {
-  render(container: HTMLElement, options: { readonly sitekey: string }): string;
+  render(container: HTMLElement, options: TurnstileRenderOptions): string;
   remove(widgetId: string): void;
 }
 
@@ -43,7 +54,11 @@ export function TurnstileOnOpen() {
     ) {
       return;
     }
-    widgetId.current = api.render(element, { sitekey: siteKey });
+    widgetId.current = api.render(element, {
+      sitekey: siteKey,
+      appearance: TURNSTILE_APPEARANCE,
+      size: TURNSTILE_SIZE,
+    });
   }, [siteKey]);
 
   useEffect(() => {
@@ -74,7 +89,7 @@ export function TurnstileOnOpen() {
         onLoad={renderIfOpen}
         onReady={renderIfOpen}
       />
-      <div ref={container} />
+      <div ref={container} className="turnstile-box" />
     </>
   );
 }
