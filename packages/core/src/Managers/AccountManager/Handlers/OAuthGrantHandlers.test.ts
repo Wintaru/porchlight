@@ -246,6 +246,7 @@ describe("ResolveOAuthAgent", () => {
       id: "00000000-0000-4000-8000-0000000000b4",
       author: { kind: "member" as const, profileId: THEO_ID },
       status: "draft" as const,
+      visibility: "public" as const,
       commentsEnabled: true,
     };
 

@@ -6,6 +6,7 @@ import {
 } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigAccessor.test-helper";
 import type { Actor, AgentActor } from "../../../Common/Actor";
 import type { AgentScope } from "../../../Common/AgentScope";
+import type { PostVisibility } from "../../../Common/PostVisibility";
 import type { Profile } from "../../../Common/Profile";
 import { PERMISSION_ACTIONS, type PermissionAction } from "../PermissionAction";
 import type { PermissionDenialReason } from "../PermissionDenialReason";
@@ -54,12 +55,14 @@ const MEMBER: Actor = { kind: "member", profile: profile() };
 function post(
   status: "draft" | "published" | "pending",
   authorId = THEO_ID,
+  visibility: PostVisibility = "public",
 ): PermissionSubject {
   return {
     kind: "post",
     id: "00000000-0000-4000-8000-0000000000b4",
     author: { kind: "member", profileId: authorId },
     status,
+    visibility,
     commentsEnabled: true,
   };
 }
@@ -320,6 +323,7 @@ describe("every other action", () => {
         author: { kind: "member", profileId: THEO_ID },
         status: "visible",
         postStatus: "published",
+        postVisibility: "public",
       },
       {
         kind: "media",
@@ -370,5 +374,32 @@ describe("every other action", () => {
     expect(await verdict(moderator, "token.manage", OWN_PROFILE, staffOnly)).toBe(
       "granted",
     );
+  });
+});
+
+// D27 (#101): a private post is read by its own member's agent with the draft scope,
+// the scope that already reads the member's drafts, and by no other agent.
+describe("a private post (#101)", () => {
+  test("its own member's agent reads it with the draft scope, and only then", async () => {
+    const own = post("published", THEO_ID, "private");
+    expect(await verdict(agent(), "post.view", own)).toBe("granted");
+    expect(await verdict(agent(["posts:publish"]), "post.view", own)).toBe("not-allowed");
+  });
+
+  test("another member's agent never reads it, published or draft", async () => {
+    for (const status of ["published", "draft"] as const) {
+      expect(await verdict(agent(), "post.view", post(status, JUNE_ID, "private"))).toBe(
+        "not-allowed",
+      );
+    }
+  });
+
+  test("its own member's agent edits it only as a draft, like any other post", async () => {
+    expect(await verdict(agent(), "post.edit", post("draft", THEO_ID, "private"))).toBe(
+      "granted",
+    );
+    expect(
+      await verdict(agent(), "post.edit", post("published", THEO_ID, "private")),
+    ).toBe("not-allowed");
   });
 });

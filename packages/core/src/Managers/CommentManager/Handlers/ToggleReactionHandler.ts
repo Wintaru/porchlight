@@ -112,6 +112,6 @@ export class ToggleReactionHandler implements IHandler<
     const post = await loadPost(this.posts, comment.postId, context);
     return post instanceof CommentUnavailableResponse || post === undefined
       ? post
-      : commentSubjectOf(comment, post.status);
+      : commentSubjectOf(comment, post);
   }
 }

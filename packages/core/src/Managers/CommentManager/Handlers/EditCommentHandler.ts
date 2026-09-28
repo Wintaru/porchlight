@@ -60,7 +60,7 @@ export class EditCommentHandler implements IHandler<
       this.permissions,
       actor,
       "comment.edit",
-      commentSubjectOf(current, post.status),
+      commentSubjectOf(current, post),
       context,
     );
     if (refused !== undefined) {

@@ -53,6 +53,7 @@ export async function loadItem(
     kind: "comment",
     comment: loaded.comment,
     postStatus: post.post.status,
+    postVisibility: post.post.visibility,
     postAuthor: post.post.author,
   };
 }
@@ -74,6 +75,7 @@ export function subjectOf(item: LoadedItem): PermissionSubject {
       id: item.post.id,
       author: item.post.author,
       status: item.post.status,
+      visibility: item.post.visibility,
       commentsEnabled: item.post.commentsEnabled,
     };
   }
@@ -83,5 +85,6 @@ export function subjectOf(item: LoadedItem): PermissionSubject {
     author: item.comment.author,
     status: item.comment.status,
     postStatus: item.postStatus,
+    postVisibility: item.postVisibility,
   };
 }

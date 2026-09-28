@@ -59,6 +59,7 @@ export class LockThreadHandler implements IHandler<LockThreadRequest, Result> {
         id: loaded.post.id,
         author: loaded.post.author,
         status: loaded.post.status,
+        visibility: loaded.post.visibility,
         commentsEnabled: loaded.post.commentsEnabled,
       },
       context,

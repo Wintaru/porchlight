@@ -145,7 +145,7 @@ const RULES: Readonly<Record<PermissionAction, Rule>> = {
   "media.view": mayViewMedia,
   "media.delete": mayDeleteMedia,
   "media.prune": mayPruneMedia,
-  "moderation.act": mayModerate,
+  "moderation.act": mayModerateItem,
   "moderation.queue.view": mayModerate,
   "profile.moderate": mayModerate,
   "profile.promote": mayPromoteProfile,
@@ -200,6 +200,17 @@ function isAuthor(profile: Profile, subject: PermissionSubject): boolean {
     return false;
   }
   return subject.author?.kind === "member" && subject.author.profileId === profile.id;
+}
+
+// A private post, or a comment on one (D27, #101): no role reaches it, staff included.
+// Its author reaches the post; a comment's author keeps their own words. Every rule that
+// would otherwise let an admin or a moderator in, or let anyone react or report, asks
+// this first.
+function isPrivate(subject: PermissionSubject): boolean {
+  return (
+    (subject.kind === "post" && subject.visibility === "private") ||
+    (subject.kind === "comment" && subject.postVisibility === "private")
+  );
 }
 
 // A member edits their own profile; an admin edits anyone's (SPEC.md §4).
@@ -275,19 +286,24 @@ async function mayCreatePostAnonymously(
 
 // A published post is everyone's to read, visitors included. Any other status is the
 // author's (and an admin's), the same wall the `posts_own_read` policy draws for the
-// browser.
+// browser. A private post is its author's alone, published or not (D27).
 function mayViewPost(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
   if (subject.kind !== "post") {
     return Promise.resolve("not-allowed");
   }
-  if (subject.status === "published") {
+  if (subject.status === "published" && !isPrivate(subject)) {
     return Promise.resolve(undefined);
   }
   const gate = activeMember(actor);
   if (isDenial(gate)) {
     return Promise.resolve(gate);
   }
-  return Promise.resolve(verdict(isAuthor(gate, subject) || gate.role === "admin"));
+  return Promise.resolve(verdict(isAuthorOrAdmin(gate, subject)));
+}
+
+// The author, or an admin unless the item is private (D27).
+function isAuthorOrAdmin(profile: Profile, subject: PermissionSubject): boolean {
+  return isAuthor(profile, subject) || (profile.role === "admin" && !isPrivate(subject));
 }
 
 // A member's own list, drafts included, is theirs and an admin's (SPEC.md §4).
@@ -304,13 +320,13 @@ function mayListPosts(actor: PersonActor, subject: PermissionSubject): Promise<D
 }
 
 // The author, or an admin. Moderators act on posts through ModerationManager (#11),
-// never by editing them.
+// never by editing them. Nobody but the author edits a private post (D27).
 function mayEditPost(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
   const gate = activeMember(actor);
   if (isDenial(gate)) {
     return Promise.resolve(gate);
   }
-  return Promise.resolve(verdict(isAuthor(gate, subject) || gate.role === "admin"));
+  return Promise.resolve(verdict(isAuthorOrAdmin(gate, subject)));
 }
 
 // Publishing is editing plus the posting policy: a member whose site went `staff`
@@ -335,13 +351,14 @@ async function mayPublishPost(
 // `off` (D20). The post's own switch is checked before the session: a visitor on a
 // closed post must not be offered sign-in for a form that will not appear. `members`
 // and `anyone` both admit every active member; anonymous authors under `anyone` arrive
-// with #8. The policy is read last, so a visitor never costs a config round trip.
+// with #8. The policy is read last, so a visitor never costs a config round trip. A
+// private post takes no comments, not even its author's (D27): nobody else can read them.
 async function mayCreateComment(
   actor: PersonActor,
   subject: PermissionSubject,
   policy: SitePolicy,
 ): Promise<Denial> {
-  if (subject.kind !== "post" || subject.status !== "published") {
+  if (subject.kind !== "post" || subject.status !== "published" || isPrivate(subject)) {
     return "not-allowed";
   }
   if (!subject.commentsEnabled) {
@@ -363,7 +380,7 @@ async function mayCreateCommentAnonymously(
   subject: PermissionSubject,
   policy: SitePolicy,
 ): Promise<Denial> {
-  if (subject.kind !== "post" || subject.status !== "published") {
+  if (subject.kind !== "post" || subject.status !== "published" || isPrivate(subject)) {
     return "not-allowed";
   }
   if (!subject.commentsEnabled) {
@@ -377,7 +394,8 @@ async function mayCreateCommentAnonymously(
 }
 
 // The author, or an admin, and never a tombstone: there is nothing left to edit and
-// nothing left to delete (D5). Moderators act through ModerationManager (#11).
+// nothing left to delete (D5). Moderators act through ModerationManager (#11). On a
+// private post the comment's own author still may, an admin may not (D27).
 function mayEditComment(actor: PersonActor, subject: PermissionSubject): Promise<Denial> {
   const gate = activeMember(actor);
   if (isDenial(gate)) {
@@ -386,11 +404,11 @@ function mayEditComment(actor: PersonActor, subject: PermissionSubject): Promise
   if (subject.kind !== "comment" || subject.status === "tombstone") {
     return Promise.resolve("not-allowed");
   }
-  return Promise.resolve(verdict(isAuthor(gate, subject) || gate.role === "admin"));
+  return Promise.resolve(verdict(isAuthorOrAdmin(gate, subject)));
 }
 
 // Any active member may react to what everyone can see: a published post, or a visible
-// comment on one (D9).
+// comment on one (D9). Nobody reacts on a private post (D27).
 function mayToggleReaction(
   actor: PersonActor,
   subject: PermissionSubject,
@@ -398,6 +416,9 @@ function mayToggleReaction(
   const gate = activeMember(actor);
   if (isDenial(gate)) {
     return Promise.resolve(gate);
+  }
+  if (isPrivate(subject)) {
+    return Promise.resolve("not-allowed");
   }
   if (subject.kind === "post") {
     return Promise.resolve(verdict(subject.status === "published"));
@@ -498,6 +519,15 @@ function mayModerate(actor: PersonActor): Promise<Denial> {
   return Promise.resolve(verdict(isStaff(gate)));
 }
 
+// A moderation action on one item: `mayModerate`, and never on a private post or a
+// comment on one (D27). No moderator can see it, so none may act on it by a guessed id.
+function mayModerateItem(
+  actor: PersonActor,
+  subject: PermissionSubject,
+): Promise<Denial> {
+  return isPrivate(subject) ? Promise.resolve("not-allowed") : mayModerate(actor);
+}
+
 // Trust-level promotion is an admin's call, not a moderator's (SPEC.md §4: "Admins
 // promote by hand").
 function mayPromoteProfile(actor: PersonActor): Promise<Denial> {
@@ -539,7 +569,7 @@ function mayFileReport(actor: PersonActor, subject: PermissionSubject): Promise<
   // Only what the public can see (SPEC.md §7, #40): a published post, or a visible
   // comment on one. A report puts the item's words on the moderators' reports page, so
   // a draft or a held item must never get there through a guessed id.
-  if (subject.kind !== "post" && subject.kind !== "comment") {
+  if ((subject.kind !== "post" && subject.kind !== "comment") || isPrivate(subject)) {
     return Promise.resolve("not-allowed");
   }
   const publiclyVisible =
@@ -684,7 +714,9 @@ async function agentMayCreatePost(
 }
 
 // Published posts are everyone's to read; the member's own drafts are the agent's
-// workspace with the draft scope. Pending and rejected posts stay the person's.
+// workspace with the draft scope. Pending and rejected posts stay the person's. A
+// private post (D27) is read only by its own member's agent, and only with the draft
+// scope, the scope that already reads the member's drafts. Another member's agent never.
 async function agentMayViewPost(
   agent: AgentActor,
   subject: PermissionSubject,
@@ -692,6 +724,13 @@ async function agentMayViewPost(
 ): Promise<Denial> {
   if (subject.kind !== "post") {
     return "not-allowed";
+  }
+  if (isPrivate(subject)) {
+    const gate = await activeAgent(agent, policy);
+    if (isDenial(gate)) {
+      return gate;
+    }
+    return verdict(hasScope(agent.grant, "posts:draft") && isAuthor(gate, subject));
   }
   if (subject.status === "published") {
     return undefined;

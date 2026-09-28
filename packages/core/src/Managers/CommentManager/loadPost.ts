@@ -33,6 +33,7 @@ export function postSubjectOf(post: Post): PermissionSubject {
     id: post.id,
     author: post.author,
     status: post.status,
+    visibility: post.visibility,
     commentsEnabled: post.commentsEnabled,
   };
 }

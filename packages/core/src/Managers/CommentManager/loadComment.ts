@@ -3,7 +3,7 @@ import { LoadCommentByIdRequest } from "../../Accessors/CommentAccessor/Requests
 import { CommentLoadedResponse } from "../../Accessors/CommentAccessor/Responses/CommentLoadedResponse";
 import { CommentNotFoundResponse } from "../../Accessors/CommentAccessor/Responses/CommentNotFoundResponse";
 import type { Comment } from "../../Common/Comment";
-import type { PostStatus } from "../../Common/PostStatus";
+import type { Post } from "../../Common/Post";
 import type { RequestContext } from "../../Common/RequestContext";
 import type { PermissionSubject } from "../../Engines/PermissionEngine/PermissionSubject";
 import type { CommentUnavailableResponse } from "./Responses/CommentUnavailableResponse";
@@ -26,16 +26,17 @@ export async function loadComment(
   return unavailable(context.correlationId, loaded, "load");
 }
 
-// The subject the PermissionEngine rules on for an existing comment.
+// The subject the PermissionEngine rules on for an existing comment, on `post`.
 export function commentSubjectOf(
   comment: Comment,
-  postStatus: PostStatus,
+  post: Pick<Post, "status" | "visibility">,
 ): PermissionSubject {
   return {
     kind: "comment",
     id: comment.id,
     author: comment.status === "tombstone" ? null : comment.author,
     status: comment.status,
-    postStatus,
+    postStatus: post.status,
+    postVisibility: post.visibility,
   };
 }

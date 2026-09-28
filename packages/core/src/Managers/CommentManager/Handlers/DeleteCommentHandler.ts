@@ -58,7 +58,7 @@ export class DeleteCommentHandler implements IHandler<
       this.permissions,
       actor,
       "comment.delete",
-      commentSubjectOf(current, post.status),
+      commentSubjectOf(current, post),
       context,
     );
     if (refused !== undefined) {
