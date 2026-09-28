@@ -24,8 +24,8 @@ import {
   loadAuthorComments,
   loadAuthorPosts,
 } from "@/read-model/author";
-import { loadViewerFollows } from "@/read-model/follows";
-import { loadViewerBlocks } from "@/read-model/member-blocks";
+import { isFollowingAuthor } from "@/read-model/follows";
+import { loadViewerBlockOf } from "@/read-model/member-blocks";
 
 import styles from "./profile.module.css";
 
@@ -88,12 +88,20 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
   }
   const activeTab = tab === "comments" ? "comments" : "posts";
   const db = await createSessionClient();
+  // Follow, Mute and Block show for a member on someone else's page; each reads one
+  // row of the viewer's own (#93).
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [posts, comments, blocks, follows] = await Promise.all([
+  const viewerOnOthersPage =
+    viewerId !== undefined && viewerId !== author.id ? viewerId : undefined;
+  const [posts, comments, blockLevel, following] = await Promise.all([
     activeTab === "posts" ? loadAuthorPosts(db, author.id) : undefined,
     activeTab === "comments" ? loadAuthorComments(db, author.id) : undefined,
-    loadViewerBlocks(db, viewerId),
-    loadViewerFollows(db, viewerId),
+    viewerOnOthersPage === undefined
+      ? undefined
+      : loadViewerBlockOf(db, viewerOnOthersPage, author.id),
+    viewerOnOthersPage === undefined
+      ? false
+      : isFollowingAuthor(db, viewerOnOthersPage, author.id),
   ]);
   const blockText = blockTextFor(block);
   const followText = followTextFor(follow);
@@ -124,19 +132,19 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
           <Link className="pill-button" href={`/@${author.handle}/feed.xml`}>
             RSS
           </Link>
-          {viewerId !== undefined && viewerId !== author.id && (
+          {viewerOnOthersPage !== undefined && (
             <FollowButton
               kind="author"
               target={author.id}
-              following={follows.authors.has(author.id)}
+              following={following}
               returnTo={returnTo}
             />
           )}
-          {viewerId !== undefined && viewerId !== author.id && (
+          {viewerOnOthersPage !== undefined && (
             <MemberBlockButtons
               targetId={author.id}
               handle={author.handle}
-              level={blocks.get(author.id)}
+              level={blockLevel}
               returnTo={returnTo}
             />
           )}

@@ -27,6 +27,25 @@ export async function loadViewerBlocks(
   return new Map(data.map((row) => [row.target_id, row.level]));
 }
 
+// The viewer's mute or block of one member (#23), or undefined: one row of their own
+// under RLS, by the (member, target) key. The profile page's buttons need only this.
+export async function loadViewerBlockOf(
+  db: DbClient,
+  viewerId: string,
+  targetId: string,
+): Promise<MemberBlockLevel | undefined> {
+  const { data, error } = await db
+    .from("member_blocks")
+    .select("level")
+    .eq("member_id", viewerId)
+    .eq("target_id", targetId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`member block of ${targetId} for ${viewerId}: ${error.message}`);
+  }
+  return data?.level;
+}
+
 // The PostgREST filter that drops posts by these authors from a list. Anonymous posts
 // have a null `author_id`, and `not.in` alone would drop them too (NULL NOT IN (…) is
 // not true), so the filter keeps a null author explicitly. Ids are profile uuids from

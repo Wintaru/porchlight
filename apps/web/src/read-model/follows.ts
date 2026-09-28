@@ -2,35 +2,40 @@ import type { DbClient } from "@porchlight/db";
 
 import { PAGE_SIZE, POST_CARD_COLUMNS, type PostCard } from "./post-card";
 
-// What the viewer follows (#24), from their own rows under RLS: author profile ids and
-// tag slugs. A visitor follows nothing and costs no query.
-export interface ViewerFollows {
-  readonly authors: ReadonlySet<string>;
-  readonly tags: ReadonlySet<string>;
-}
-
-export const NO_FOLLOWS: ViewerFollows = { authors: new Set(), tags: new Set() };
-
-export async function loadViewerFollows(
+// Whether the viewer follows this author, or this tag (#24): one row of their own
+// under RLS, by the unique (follower, target) index. Only a member sees the button.
+export async function isFollowingAuthor(
   db: DbClient,
-  viewerId: string | undefined,
-): Promise<ViewerFollows> {
-  if (viewerId === undefined) {
-    return NO_FOLLOWS;
-  }
+  viewerId: string,
+  authorId: string,
+): Promise<boolean> {
   const { data, error } = await db
     .from("follows")
-    .select("author_id, tag:tags(slug)")
-    .eq("follower_id", viewerId);
+    .select("id")
+    .eq("follower_id", viewerId)
+    .eq("author_id", authorId)
+    .maybeSingle();
   if (error) {
-    throw new Error(`follows for ${viewerId}: ${error.message}`);
+    throw new Error(`follow of author ${authorId}: ${error.message}`);
   }
-  return {
-    authors: new Set(
-      data.flatMap((row) => (row.author_id === null ? [] : [row.author_id])),
-    ),
-    tags: new Set(data.flatMap((row) => (row.tag === null ? [] : [row.tag.slug]))),
-  };
+  return data !== null;
+}
+
+export async function isFollowingTag(
+  db: DbClient,
+  viewerId: string,
+  tagId: string,
+): Promise<boolean> {
+  const { data, error } = await db
+    .from("follows")
+    .select("id")
+    .eq("follower_id", viewerId)
+    .eq("tag_id", tagId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`follow of tag ${tagId}: ${error.message}`);
+  }
+  return data !== null;
 }
 
 // The Following feed: `following_post_ids` picks the posts (followed authors and tags,

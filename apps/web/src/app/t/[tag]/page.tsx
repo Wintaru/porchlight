@@ -16,7 +16,7 @@ import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
-import { loadViewerFollows } from "@/read-model/follows";
+import { isFollowingTag } from "@/read-model/follows";
 import { loadViewerBlocks } from "@/read-model/member-blocks";
 import { loadTag, loadTagPosts } from "@/read-model/tag";
 
@@ -88,9 +88,9 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
     );
   }
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [blocks, follows] = await Promise.all([
+  const [blocks, following] = await Promise.all([
     loadViewerBlocks(db, viewerId),
-    loadViewerFollows(db, viewerId),
+    viewerId === undefined ? false : isFollowingTag(db, viewerId, tag.id),
   ]);
   const posts = await loadTagPosts(db, tag.id, blocks.keys());
   const followText = followTextFor(follow);
@@ -116,7 +116,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
           <FollowButton
             kind="tag"
             target={tag.slug}
-            following={follows.tags.has(tag.slug)}
+            following={following}
             returnTo={`/t/${tag.slug}`}
           />
         )}
