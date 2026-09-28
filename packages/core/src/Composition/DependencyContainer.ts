@@ -482,7 +482,17 @@ export class DependencyContainer {
         )
         .register(
           UpdateDraftRequest,
-          new UpdateDraftHandler(posts, content, permissions, mediaAssets),
+          new UpdateDraftHandler(
+            posts,
+            content,
+            permissions,
+            mediaAssets,
+            profiles,
+            notifications,
+            followerNotice,
+            evidence,
+            reports,
+          ),
         )
         .register(
           PublishPostRequest,

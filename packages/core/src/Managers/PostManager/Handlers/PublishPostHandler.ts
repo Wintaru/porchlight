@@ -41,7 +41,8 @@ type PublishPostResult =
 
 // A draft goes to `published` for a trusted member, an admin or a moderator, and to
 // `pending` for a member on probation (D7) — or for anyone whose cover the classifier
-// flagged and nobody has approved yet (#36), so a moderator sees it in the queue.
+// flagged and nobody has approved yet (#36), so a moderator sees it in the queue. A
+// private draft goes to `published` for anyone (D27).
 // Publishing a post that is already up, or already waiting, changes nothing. A post a
 // moderator took down stays down.
 export class PublishPostHandler implements IHandler<
@@ -95,17 +96,19 @@ export class PublishPostHandler implements IHandler<
       return new PostNotPublishableResponse(correlationId, current.status);
     }
 
-    const heldCover = await coverAwaitsReview(
-      this.mediaAssets,
-      current.coverMediaId,
-      context,
-    );
+    // A private post goes up at once, whoever wrote it (D27): nobody else can see it,
+    // so there is nothing for a moderator to approve. Going public later is a publish
+    // of its own (UpdateDraftHandler), and waits in the queue then.
+    const heldCover =
+      current.visibility === "private"
+        ? false
+        : await coverAwaitsReview(this.mediaAssets, current.coverMediaId, context);
     if (typeof heldCover !== "boolean") {
       return heldCover;
     }
     const review = reviewStamp(actor, timestamp);
     const changes: PostChanges =
-      publishesAtOnce(actor) && !heldCover
+      current.visibility === "private" || (publishesAtOnce(actor) && !heldCover)
         ? { status: "published", publishedAt: timestamp, ...review }
         : { status: "pending", publishedAt: null, ...review };
     const stored = await this.posts.store(

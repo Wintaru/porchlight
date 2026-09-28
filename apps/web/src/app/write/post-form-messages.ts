@@ -35,6 +35,9 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "rejected-title": "The title needs at least one letter or digit.",
   "rejected-tag": "Every tag needs at least one letter or digit.",
   "rejected-cover": "That file cannot be the cover. Choose one of your own images.",
+  "rejected-reported":
+    "This post has a report a moderator has not decided yet, so it cannot be made private now.",
+  "rejected-visibility": "Press Save to make this post public or unlisted.",
   "rejected-body": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "posting-closed": "Posting is closed to members on this site.",
   // Never reached by a post action; the table is keyed by every denial reason.
