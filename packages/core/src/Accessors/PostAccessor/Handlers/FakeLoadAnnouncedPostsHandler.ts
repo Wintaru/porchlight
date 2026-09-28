@@ -43,7 +43,6 @@ export class FakeLoadAnnouncedPostsHandler implements IHandler<
         slug: post.slug,
         authorId,
         authorHandle: authorId,
-        authorName: null,
         announcedAt,
       });
     }

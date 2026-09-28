@@ -20,8 +20,8 @@ export class TransformComposeSubscriptionConfirmationHandler implements IHandler
   handle(
     request: ComposeSubscriptionConfirmationRequest,
   ): Promise<EmailComposedResponse> {
-    const { email, confirmToken, authorLabel, digest, site, correlationId } = request;
-    const scope = authorLabel === null ? site.name : `${authorLabel} on ${site.name}`;
+    const { email, confirmToken, authorHandle, digest, site, correlationId } = request;
+    const scope = authorHandle === null ? site.name : `@${authorHandle} on ${site.name}`;
     const confirmUrl = `${site.url}${EMAIL_PATHS.confirmPage}?token=${encodeURIComponent(confirmToken)}`;
     const { text, html } = renderEmail(
       [

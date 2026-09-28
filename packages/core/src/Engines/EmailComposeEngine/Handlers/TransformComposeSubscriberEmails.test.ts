@@ -26,7 +26,6 @@ function post(overrides: Partial<AnnouncedPost>): AnnouncedPost {
     slug: "first-light",
     authorId: "a1",
     authorHandle: "theo",
-    authorName: "Theo",
     announcedAt: AT,
     ...overrides,
   };
@@ -67,10 +66,10 @@ describe("TransformComposeSubscriberDigestHandler", () => {
     expect(author.text).toContain("More new posts on Porch\nhttps://porch.test/@theo");
   });
 
-  test("an author subscription names the author", async () => {
+  test("an author subscription names the author by handle only (#84)", async () => {
     const message = await compose({ ...CLAIM, authorId: "a1" }, [post({})]);
-    expect(message.subject).toBe("New from Theo on Porch");
-    expect(message.text).toContain("you subscribed to Theo on Porch");
+    expect(message.subject).toBe("New from @theo on Porch");
+    expect(message.text).toContain("you subscribed to @theo on Porch");
   });
 });
 
@@ -81,7 +80,7 @@ describe("TransformComposeSubscriptionConfirmationHandler", () => {
         new ComposeSubscriptionConfirmationRequest(
           "reader@example.test",
           "c/1",
-          "@theo",
+          "theo",
           "daily",
           SITE,
         ),

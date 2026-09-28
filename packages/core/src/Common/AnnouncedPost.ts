@@ -8,6 +8,5 @@ export interface AnnouncedPost {
   readonly slug: string;
   readonly authorId: string | null;
   readonly authorHandle: string | null;
-  readonly authorName: string | null;
   readonly announcedAt: Date;
 }

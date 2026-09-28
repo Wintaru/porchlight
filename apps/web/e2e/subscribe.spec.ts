@@ -42,8 +42,11 @@ test.describe("subscribe by email", () => {
     await card.getByRole("button", { name: "Subscribe" }).click();
     await expect(page.getByTestId("subscribe-status")).toContainText("Check your email");
 
+    // The email goes out after the page answers (#84), and names the author by handle
+    // only: a display name is text any member can set.
     const confirmation = await emailTo(reader, since, "Confirm your subscription");
-    expect(confirmation.subject).toContain("Theo Lindqvist");
+    expect(confirmation.subject).toContain("@theo on");
+    expect(confirmation.text).not.toContain("Theo Lindqvist");
     await page.goto(linkIn(confirmation.text, "/email/confirm"));
     await page.getByRole("button", { name: "Confirm" }).click();
     await expect(page.getByTestId("subscribe-confirmed")).toBeVisible();
@@ -52,7 +55,8 @@ test.describe("subscribe by email", () => {
     await backdateSubscriber(reader);
     const beforeSweep = new Date(Date.now() - 1000);
     await runEmailSweep(baseURL ?? "");
-    const digest = await emailTo(reader, beforeSweep, "New from Theo Lindqvist");
+    const digest = await emailTo(reader, beforeSweep, "New from @theo");
+    expect(digest.text).not.toContain("Theo Lindqvist");
     expect(digest.text).toContain("Hello from the porch");
     expect(digest.text).toContain("/@theo/hello-from-the-porch");
 

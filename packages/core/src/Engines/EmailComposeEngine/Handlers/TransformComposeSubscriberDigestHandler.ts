@@ -13,11 +13,10 @@ function postUrl(site: EmailSite, post: AnnouncedPost): string {
     : `${site.url}/@${post.authorHandle}/${post.slug}`;
 }
 
+// The handle only, never the display name (#84): a member can put spam in their name.
 function authorLabelOf(post: AnnouncedPost | undefined): string | null {
-  if (post === undefined) {
-    return null;
-  }
-  return post.authorName ?? (post.authorHandle === null ? null : `@${post.authorHandle}`);
+  const handle = post?.authorHandle ?? null;
+  return handle === null ? null : `@${handle}`;
 }
 
 // Each post: its title as the link, then its summary when it has one.

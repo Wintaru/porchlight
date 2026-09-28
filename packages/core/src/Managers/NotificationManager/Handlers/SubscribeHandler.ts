@@ -89,7 +89,7 @@ export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
         : limited;
     }
 
-    let authorLabel: string | null = null;
+    let authorHandle: string | null = null;
     if (authorId !== null) {
       const author = await this.profiles.load(
         new LoadProfileByIdRequest(authorId, context),
@@ -103,7 +103,9 @@ export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
       if (author.profile.status !== "active") {
         return new SubscribeRejectedResponse(correlationId, "no-such-author");
       }
-      authorLabel = author.profile.displayName ?? `@${author.profile.handle}`;
+      // The handle only, never the display name (#84): this email goes to any address
+      // a stranger types, and a member can put anything in their name.
+      authorHandle = author.profile.handle;
     }
 
     const confirmToken = generateAnonymousSecret();
@@ -121,7 +123,7 @@ export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
       new ComposeSubscriptionConfirmationRequest(
         email,
         confirmToken,
-        authorLabel,
+        authorHandle,
         digest,
         site,
         context,
