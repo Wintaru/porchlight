@@ -1,4 +1,4 @@
-import type { PostCard } from "@/read-model/post-card";
+import { type PostCard, summaryLine } from "@/read-model/post-card";
 import type { RssItem } from "./rss";
 import { SITE_URL } from "./site";
 
@@ -16,6 +16,6 @@ export function rssItemFor(post: PostCard): RssItem {
     link,
     guid: link,
     pubDate: post.published_at === null ? null : new Date(post.published_at),
-    description: post.summary,
+    description: summaryLine(post),
   };
 }

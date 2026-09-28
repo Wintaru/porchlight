@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { formatDate } from "@/lib/format-date";
 import { shownCover } from "@/lib/post-cover";
-import type { PostCard } from "@/read-model/post-card";
+import { type PostCard, summaryLine } from "@/read-model/post-card";
 
 import { Avatar } from "./Avatar";
 import { PrivateChip } from "./PrivateChip";
@@ -55,6 +55,7 @@ export function PostCardList({ posts, empty, variant = "card" }: PostCardListPro
 
 function PostCardItem({ post }: { readonly post: PostCard }) {
   const author = post.author;
+  const summary = summaryLine(post);
   return (
     <WithCover post={post}>
       <p className={styles.byline}>
@@ -78,7 +79,7 @@ function PostCardItem({ post }: { readonly post: PostCard }) {
           <Link href={`/@${author.handle}/${post.slug}`}>{post.title}</Link>
         )}
       </h2>
-      {post.summary !== null && <p className={styles.summary}>{post.summary}</p>}
+      {summary !== null && <p className={styles.summary}>{summary}</p>}
       <TagChips tags={post.post_tags} linked={post.visibility !== "private"} />
     </WithCover>
   );

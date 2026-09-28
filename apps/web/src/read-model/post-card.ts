@@ -9,7 +9,7 @@ import type { DbClient, Enums } from "@porchlight/db";
 // `visibility` marks a private post (D27): RLS hands one only to its author, whose own
 // feed and profile show it with the "Only you" chip.
 export const POST_CARD_COLUMNS =
-  "id, slug, title, summary, published_at, comments_enabled, visibility, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "id, slug, title, summary, excerpt, published_at, comments_enabled, visibility, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostCardAuthor {
   readonly handle: string;
@@ -27,6 +27,7 @@ export interface PostCard {
   readonly slug: string;
   readonly title: string;
   readonly summary: string | null;
+  readonly excerpt: string | null;
   readonly published_at: string | null;
   readonly comments_enabled: boolean;
   readonly visibility: Enums<"post_visibility">;
@@ -36,6 +37,15 @@ export interface PostCard {
     readonly published_path: string | null;
     readonly mature: boolean;
   } | null;
+}
+
+// The one line a card, a share preview or a feed item shows: the author's summary, else
+// the body's first sentence (D18), which the database keeps in `excerpt`.
+export function summaryLine(post: {
+  readonly summary: string | null;
+  readonly excerpt: string | null;
+}): string | null {
+  return post.summary ?? post.excerpt;
 }
 
 // How many cards one list shows. Paging arrives with #16's feed board.

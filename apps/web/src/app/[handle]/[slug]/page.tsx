@@ -18,6 +18,7 @@ import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadViewerHiddenAuthors } from "@/read-model/member-blocks";
+import { summaryLine } from "@/read-model/post-card";
 import { loadPostPage, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
 import { savedTextFor } from "../../write/post-form-messages";
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     return {};
   }
   const url = `${SITE_URL}/@${post.author.handle}/${post.slug}`;
-  const description = post.summary ?? undefined;
+  const description = summaryLine(post) ?? undefined;
   // Unlisted and private posts and anything not yet published carry noindex (SPEC.md
   // §5, §9, D27). Only its author ever gets a private post here, but a crawler never
   // should even so.
@@ -192,12 +193,13 @@ function articleJsonLd(
 ): Record<string, unknown> {
   const cover = post.cover;
   const coverPath = cover != null && !cover.mature ? cover.published_path : null;
+  const description = summaryLine(post);
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
     url,
-    ...(post.summary !== null && { description: post.summary }),
+    ...(description !== null && { description }),
     ...(post.published_at !== null && { datePublished: post.published_at }),
     ...(coverPath != null && { image: publicMediaUrl(coverPath) }),
     ...(post.author !== null && {

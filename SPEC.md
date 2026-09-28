@@ -253,7 +253,8 @@ Server rendering for every public page. `sitemap.xml`, `robots.txt`, canonical U
 JSON-LD `Article`. OpenGraph and Twitter tags on every post. A generated preview
 image per post through Next.js `opengraph-image`: cover image if set, else a branded card
 with `site_name`, title and author. Author controls: pick the cover, write a one-line
-summary. No per-post off switch. Share button copies the link and calls
+summary. With no summary, the body's first sentence (`posts.excerpt`) is used on the
+share card, the feed card and the RSS item. No per-post off switch. Share button copies the link and calls
 `navigator.share` where available.
 
 **Three RSS feeds (D21):** `/feed.xml` (everything public), `/@handle/feed.xml` (one

@@ -14,6 +14,7 @@ import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadViewerHiddenAuthors } from "@/read-model/member-blocks";
+import { summaryLine } from "@/read-model/post-card";
 import { loadPostBySlug, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
 
@@ -36,7 +37,7 @@ export async function generateMetadata({
   }
   return {
     title: `${post.title} · ${siteName}`,
-    description: post.summary ?? undefined,
+    description: summaryLine(post) ?? undefined,
     robots:
       post.visibility === "unlisted" || post.status !== "published"
         ? "noindex"
