@@ -56,10 +56,13 @@ export async function submitPost(formData: FormData): Promise<void> {
   if (!parsed.ok) {
     redirect(`${returnTo}?error=${parsed.error}`);
   }
+  // A save that turns a private post public is a publish (D27), so it carries the
+  // request's origin for the evidence row, as Publish does.
+  const origin = await currentRequestMeta();
   const response = await getDependencyContainer().postManager.execute(
     postId === undefined
-      ? new CreateDraftRequest(actor, parsed.draft, await currentRequestMeta())
-      : new UpdateDraftRequest(actor, postId, parsed.draft),
+      ? new CreateDraftRequest(actor, parsed.draft, origin)
+      : new UpdateDraftRequest(actor, postId, parsed.draft, undefined, undefined, origin),
   );
   if (!(response instanceof PostResponse)) {
     redirect(`${returnTo}?error=${errorCode(response)}`);
@@ -68,7 +71,9 @@ export async function submitPost(formData: FormData): Promise<void> {
   if (parseIntent(formData) === "publish") {
     await publish(actor, response.post);
   }
-  redirect(`/write/${response.post.id}?saved=draft`);
+  // A private post a member on probation turned public waits in the queue now.
+  const saved = response.post.status === "pending" ? "pending" : "draft";
+  redirect(`/write/${response.post.id}?saved=${saved}`);
 }
 
 // The editor's timer. Same parse and the same Manager calls as a save, but the answer

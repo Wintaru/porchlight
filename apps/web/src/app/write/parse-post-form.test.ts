@@ -56,6 +56,12 @@ describe("parsePostForm", () => {
     });
   });
 
+  test("private is a visibility the form sends (D27)", () => {
+    expect(
+      parsePostForm(form({ title: "x", bodyMd: "", visibility: "private" })),
+    ).toMatchObject({ ok: true, draft: { visibility: "private" } });
+  });
+
   test("an empty or malformed cover field is no cover", () => {
     for (const coverMediaId of ["", "not-an-id", "../etc"]) {
       expect(parsePostForm(form({ title: "x", bodyMd: "", coverMediaId }))).toMatchObject(

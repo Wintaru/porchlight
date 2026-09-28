@@ -1,5 +1,9 @@
 import type { PostDraft } from "@porchlight/core";
-import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
+import {
+  POST_BODY_MAX_LENGTH,
+  POST_VISIBILITIES,
+  type PostVisibility,
+} from "@porchlight/core/client";
 
 import { isEntityId } from "@/lib/entity-id";
 
@@ -59,11 +63,18 @@ export function parsePostForm(formData: FormData): PostFormResult {
       bodyMd,
       summary: summary === "" ? null : summary,
       tags,
-      visibility: formData.get("visibility") === "unlisted" ? "unlisted" : "public",
+      visibility: visibilityOf(formData),
       commentsEnabled: formData.get("commentsEnabled") === "on",
       coverMediaId: coverOf(formData),
     },
   };
+}
+
+// The Visibility radios (D18, D27). Anything else, or none, reads as public, the
+// editor's default.
+function visibilityOf(formData: FormData): PostVisibility {
+  const value = formData.get("visibility");
+  return POST_VISIBILITIES.find((visibility) => visibility === value) ?? "public";
 }
 
 // The cover picker's hidden field: an upload's id, or empty for no cover. Anything that

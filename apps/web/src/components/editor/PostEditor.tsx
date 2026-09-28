@@ -380,6 +380,15 @@ export function PostEditor({
                 />
                 Unlisted · only people with the link
               </label>
+              <label className={styles.choice}>
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="private"
+                  defaultChecked={post?.visibility === "private"}
+                />
+                Private · only you, like a journal
+              </label>
             </div>
           </fieldset>
           <div className={styles.field}>
@@ -417,7 +426,8 @@ export function PostEditor({
               <strong>You are a new member</strong>
               <span className={styles.hint}>
                 Your first posts wait for an admin to read them before they show. You will
-                get a note either way.
+                get a note either way. A private post goes up at once, since only you see
+                it.
               </span>
             </div>
           )}
