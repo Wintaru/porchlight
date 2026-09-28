@@ -566,6 +566,11 @@ describe("claim_member_emails (#22)", () => {
 
 // Issue #22, D20: a reader's subscription is double opt-in, and the sweep mails each
 // announced post once.
+// How often, and how many times, the race test (#84) looks for the second request
+// waiting on the row lock.
+const RACE_POLL_MS = 20;
+const RACE_LOCK_TRIES = 250;
+
 describe("subscribers (#22)", () => {
   const request = (tx: TransactionSql, token: string, author: string | null = null) =>
     tx<{ answer: string }[]>`
@@ -618,6 +623,84 @@ describe("subscribers (#22)", () => {
     expect(before).toBe(0);
     expect(claimed).toEqual([{ author_id: SEED.trustedMember }]);
     expect(again).toBe(0);
+  });
+
+  test("a failed send releases the pending row, and never a confirmed one (#86)", async () => {
+    const [released, left, again, confirmedReleased] = await asService(async (tx) => {
+      await request(tx, "r1");
+      const [{ released } = { released: false }] = await tx<{ released: boolean }[]>`
+        select public.release_subscription_confirmation('r1') as released
+      `;
+      const left = await tx`
+        select 1 from public.subscribers where email = 'reader@example.test'
+      `;
+      // The reader asks again at once: no ten-minute hold after a failed send.
+      const again = await request(tx, "r2");
+      await tx`select public.confirm_subscription('r2')`;
+      await tx`
+        update public.subscribers set confirm_token = 'r2'
+        where email = 'reader@example.test'
+      `;
+      const [{ released: kept } = { released: true }] = await tx<{ released: boolean }[]>`
+        select public.release_subscription_confirmation('r2') as released
+      `;
+      return [released, left.length, again, kept];
+    });
+    expect([released, left, again, confirmedReleased]).toEqual([
+      true,
+      0,
+      "pending",
+      false,
+    ]);
+  });
+
+  // Two requests for a new address at the same moment (#84): neither finds a row to
+  // lock, so both insert, and the second lands on the conflict branch. It needs two
+  // connections, so the rows are committed; the finally block removes them.
+  test("a second request at the same moment keeps the first one's link", async () => {
+    const email = `race-${String(Date.now())}@example.test`;
+    const other = connect();
+    const watcher = connect();
+    const ask = (db: Sql | TransactionSql, token: string) =>
+      db<{ answer: string }[]>`
+        select public.request_subscription(${email}, 'daily', ${token}) as answer
+      `.then((rows) => rows[0]?.answer);
+    const waitForLock = async (pid: number) => {
+      for (let tries = 0; tries < RACE_LOCK_TRIES; tries += 1) {
+        const [row] = await watcher<{ waiting: boolean }[]>`
+          select wait_event_type = 'Lock' as waiting from pg_stat_activity where pid = ${pid}
+        `;
+        if (row?.waiting === true) return;
+        await new Promise((resolve) => setTimeout(resolve, RACE_POLL_MS));
+      }
+      throw new Error("the second request never waited on the row lock");
+    };
+    try {
+      let second: Promise<string | undefined> = Promise.resolve(undefined);
+      const first = await sql.begin(async (tx) => {
+        const answer = await ask(tx, "race-1");
+        // The second request waits on the first one's uncommitted row. Commit only once
+        // it does, or it would find the row at the top and never reach the conflict.
+        const [{ pid } = { pid: 0 }] = await other<{ pid: number }[]>`
+          select pg_backend_pid() as pid
+        `;
+        second = ask(other, "race-2");
+        await waitForLock(pid);
+        return answer;
+      });
+      const rows = await sql<{ confirm_token: string }[]>`
+        select confirm_token from public.subscribers where email = ${email}
+      `;
+      expect([first, await second, rows]).toEqual([
+        "pending",
+        "recent",
+        [{ confirm_token: "race-1" }],
+      ]);
+    } finally {
+      await sql`delete from public.subscribers where email = ${email}`;
+      await other.end();
+      await watcher.end();
+    }
   });
 
   test("erasing an author removes the subscriptions to them", async () => {

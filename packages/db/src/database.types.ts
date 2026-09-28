@@ -1409,6 +1409,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      release_subscription_confirmation: {
+        Args: { p_confirm_token: string }
+        Returns: boolean
+      }
       replace_post_tags: {
         Args: { p_post_id: string; p_tags: Json }
         Returns: undefined
