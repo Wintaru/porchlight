@@ -2,20 +2,20 @@ import type { DbClient } from "@porchlight/db";
 
 import { FakeSubscriberState } from "../Accessors/SubscriberAccessor/FakeSubscriberState";
 import { FakeClaimSubscriberEmailsHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeClaimSubscriberEmailsHandler";
-import { FakeReleaseSubscriberEmailHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeReleaseSubscriberEmailHandler";
+import { FakeReleaseSubscriberEmailsHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeReleaseSubscriberEmailsHandler";
 import { FakeRemovePendingSubscriptionHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeRemovePendingSubscriptionHandler";
 import { FakeRemoveSubscriberHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeRemoveSubscriberHandler";
 import { FakeStorePendingSubscriptionHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeStorePendingSubscriptionHandler";
 import { FakeStoreSubscriptionConfirmationHandler } from "../Accessors/SubscriberAccessor/Handlers/FakeStoreSubscriptionConfirmationHandler";
 import { SupabaseClaimSubscriberEmailsHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseClaimSubscriberEmailsHandler";
-import { SupabaseReleaseSubscriberEmailHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseReleaseSubscriberEmailHandler";
+import { SupabaseReleaseSubscriberEmailsHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseReleaseSubscriberEmailsHandler";
 import { SupabaseRemovePendingSubscriptionHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseRemovePendingSubscriptionHandler";
 import { SupabaseRemoveSubscriberHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseRemoveSubscriberHandler";
 import { SupabaseStorePendingSubscriptionHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseStorePendingSubscriptionHandler";
 import { SupabaseStoreSubscriptionConfirmationHandler } from "../Accessors/SubscriberAccessor/Handlers/SupabaseStoreSubscriptionConfirmationHandler";
 import type { ISubscriberAccessor } from "../Accessors/SubscriberAccessor/ISubscriberAccessor";
 import { ClaimSubscriberEmailsRequest } from "../Accessors/SubscriberAccessor/Requests/ClaimSubscriberEmailsRequest";
-import { ReleaseSubscriberEmailRequest } from "../Accessors/SubscriberAccessor/Requests/ReleaseSubscriberEmailRequest";
+import { ReleaseSubscriberEmailsRequest } from "../Accessors/SubscriberAccessor/Requests/ReleaseSubscriberEmailsRequest";
 import { RemovePendingSubscriptionRequest } from "../Accessors/SubscriberAccessor/Requests/RemovePendingSubscriptionRequest";
 import { RemoveSubscriberRequest } from "../Accessors/SubscriberAccessor/Requests/RemoveSubscriberRequest";
 import { StorePendingSubscriptionRequest } from "../Accessors/SubscriberAccessor/Requests/StorePendingSubscriptionRequest";
@@ -48,8 +48,8 @@ export function createSubscriberAccessor(
             new SupabaseClaimSubscriberEmailsHandler(client),
           )
           .register(
-            ReleaseSubscriberEmailRequest,
-            new SupabaseReleaseSubscriberEmailHandler(client),
+            ReleaseSubscriberEmailsRequest,
+            new SupabaseReleaseSubscriberEmailsHandler(client),
           )
           .build(),
         new HandlerResolverBuilder()
@@ -84,8 +84,8 @@ export function createFakeSubscriberAccessor(
       )
       .register(ClaimSubscriberEmailsRequest, new FakeClaimSubscriberEmailsHandler(state))
       .register(
-        ReleaseSubscriberEmailRequest,
-        new FakeReleaseSubscriberEmailHandler(state),
+        ReleaseSubscriberEmailsRequest,
+        new FakeReleaseSubscriberEmailsHandler(state),
       )
       .build(),
     new HandlerResolverBuilder()

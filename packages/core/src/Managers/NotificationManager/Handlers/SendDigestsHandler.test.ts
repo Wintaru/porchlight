@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+import type { IEmailAccessor } from "../../../Accessors/EmailAccessor/IEmailAccessor";
+import { EmailAccessFailedResponse } from "../../../Accessors/EmailAccessor/Responses/EmailAccessFailedResponse";
 import { FakeEmailPreferenceState } from "../../../Accessors/EmailPreferenceAccessor/FakeEmailPreferenceState";
 import { FakePostState } from "../../../Accessors/PostAccessor/FakePostState";
 import { FakeSubscriberState } from "../../../Accessors/SubscriberAccessor/FakeSubscriberState";
@@ -68,7 +70,9 @@ function addPost(state: FakePostState, id: string, authorId: string, at: Date): 
   state.announced.set(id, at);
 }
 
-function wire(options: { enabled?: boolean; failingSend?: boolean } = {}) {
+function wire(
+  options: { enabled?: boolean; failingSend?: boolean; email?: IEmailAccessor } = {},
+) {
   vi.spyOn(console, "info").mockImplementation(() => undefined);
   const state = new FakeEmailPreferenceState();
   const readers = new FakeSubscriberState();
@@ -77,10 +81,11 @@ function wire(options: { enabled?: boolean; failingSend?: boolean } = {}) {
     createFakeEmailPreferenceAccessor(state),
     createFakeSubscriberAccessor(readers),
     createFakePostAccessor(posts),
-    createEmailAccessor({
-      EMAIL_PROVIDER: "fake",
-      EMAIL_FAKE_RESULT: options.failingSend === true ? "fail" : "ok",
-    }),
+    options.email ??
+      createEmailAccessor({
+        EMAIL_PROVIDER: "fake",
+        EMAIL_FAKE_RESULT: options.failingSend === true ? "fail" : "ok",
+      }),
     createEmailComposeEngine(),
     { enabled: options.enabled ?? true },
   );
@@ -113,6 +118,55 @@ describe("SendDigestsHandler", () => {
       new DigestsSentResponse(sent.correlationId, 0, 2, "EMAIL_FAKE_RESULT=fail"),
     );
     expect(state.released.map((c) => c.profileId)).toEqual(["u1", "u2"]);
+  });
+
+  test("a send that fails part way puts back only the emails that did not go out", async () => {
+    // The vendor sent the first email, then refused (#86).
+    const email: IEmailAccessor = {
+      store: (request) =>
+        Promise.resolve(
+          new EmailAccessFailedResponse(request.correlationId, "resend answered 429", 1),
+        ),
+    };
+    const { state, handler } = wire({ email });
+    state.due = [claim("u1"), claim("u2"), claim("u3")];
+
+    const sent = await handler.handle(new SendDigestsRequest(SITE, { timestamp: AT }));
+
+    expect(sent).toEqual(
+      new DigestsSentResponse(sent.correlationId, 1, 2, "resend answered 429"),
+    );
+    expect(state.released.map((c) => c.profileId)).toEqual(["u2", "u3"]);
+  });
+
+  test("a failed reader send puts every reader window back", async () => {
+    const { readers, posts, handler } = wire({ failingSend: true });
+    addPost(posts, "p1", "theo", new Date("2026-09-27T10:30:00.000Z"));
+    readers.due = [reader("a", null), reader("b", "theo")];
+
+    const sent = await handler.handle(new SendDigestsRequest(SITE, { timestamp: AT }));
+
+    expect(sent).toEqual(
+      new DigestsSentResponse(sent.correlationId, 0, 2, "EMAIL_FAKE_RESULT=fail"),
+    );
+    expect(readers.released.map((c) => c.subscriberId)).toEqual(["a", "b"]);
+  });
+
+  test("a run that has used its time claims no new batch (#86)", async () => {
+    const { state, handler } = wire();
+    state.due = Array.from({ length: 150 }, (_, i) => claim(`u${String(i)}`));
+    // Each look at the clock moves it on by 20 seconds: the first batch starts in
+    // time, the second would start past the 30-second budget.
+    let clock = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => {
+      clock += 20_000;
+      return clock;
+    });
+
+    const sent = await handler.handle(new SendDigestsRequest(SITE, { timestamp: AT }));
+
+    expect(sent).toEqual(new DigestsSentResponse(sent.correlationId, 100, 0));
+    expect(state.due).toHaveLength(50);
   });
 
   test("with email off, nothing is claimed", async () => {

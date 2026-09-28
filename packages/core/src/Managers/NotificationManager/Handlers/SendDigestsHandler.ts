@@ -1,24 +1,27 @@
 import type { IEmailAccessor } from "../../../Accessors/EmailAccessor/IEmailAccessor";
 import { SendEmailsRequest } from "../../../Accessors/EmailAccessor/Requests/SendEmailsRequest";
+import { EmailAccessFailedResponse } from "../../../Accessors/EmailAccessor/Responses/EmailAccessFailedResponse";
 import { EmailsSentResponse } from "../../../Accessors/EmailAccessor/Responses/EmailsSentResponse";
 import type { IEmailPreferenceAccessor } from "../../../Accessors/EmailPreferenceAccessor/IEmailPreferenceAccessor";
 import { ClaimMemberEmailsRequest } from "../../../Accessors/EmailPreferenceAccessor/Requests/ClaimMemberEmailsRequest";
-import { ReleaseMemberEmailRequest } from "../../../Accessors/EmailPreferenceAccessor/Requests/ReleaseMemberEmailRequest";
-import { MemberEmailReleasedResponse } from "../../../Accessors/EmailPreferenceAccessor/Responses/MemberEmailReleasedResponse";
+import { ReleaseMemberEmailsRequest } from "../../../Accessors/EmailPreferenceAccessor/Requests/ReleaseMemberEmailsRequest";
+import { MemberEmailsReleasedResponse } from "../../../Accessors/EmailPreferenceAccessor/Responses/MemberEmailsReleasedResponse";
 import { MemberEmailsClaimedResponse } from "../../../Accessors/EmailPreferenceAccessor/Responses/MemberEmailsClaimedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { LoadAnnouncedPostsRequest } from "../../../Accessors/PostAccessor/Requests/LoadAnnouncedPostsRequest";
 import { AnnouncedPostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/AnnouncedPostsLoadedResponse";
 import type { ISubscriberAccessor } from "../../../Accessors/SubscriberAccessor/ISubscriberAccessor";
 import { ClaimSubscriberEmailsRequest } from "../../../Accessors/SubscriberAccessor/Requests/ClaimSubscriberEmailsRequest";
-import { ReleaseSubscriberEmailRequest } from "../../../Accessors/SubscriberAccessor/Requests/ReleaseSubscriberEmailRequest";
-import { SubscriberEmailReleasedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberEmailReleasedResponse";
+import { ReleaseSubscriberEmailsRequest } from "../../../Accessors/SubscriberAccessor/Requests/ReleaseSubscriberEmailsRequest";
+import { SubscriberEmailsReleasedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberEmailsReleasedResponse";
 import { SubscriberEmailsClaimedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberEmailsClaimedResponse";
 import type { EmailMessage } from "../../../Common/EmailMessage";
 import type { EmailSite } from "../../../Common/EmailSite";
+import type { MemberEmailClaim } from "../../../Common/MemberEmailClaim";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
 import type { ResponseBase } from "../../../Common/ResponseBase";
+import type { SubscriberEmailClaim } from "../../../Common/SubscriberEmailClaim";
 import type { IEmailComposeEngine } from "../../../Engines/EmailComposeEngine/IEmailComposeEngine";
 import { ComposeMemberEmailRequest } from "../../../Engines/EmailComposeEngine/Requests/ComposeMemberEmailRequest";
 import { ComposeSubscriberDigestRequest } from "../../../Engines/EmailComposeEngine/Requests/ComposeSubscriberDigestRequest";
@@ -41,20 +44,38 @@ const SETTLE_MS = 2 * 60 * 1000;
 // waits for the next run, a few minutes later.
 const BATCH = 100;
 const MAX_BATCHES = 5;
+// No new batch is claimed once a run is this old. Calls to Resend are paced and can be
+// retried (#86), so ten batches could pass the route's 60-second limit. A run stopped
+// by the host mid-send would leave its claimed windows neither sent nor put back. A
+// batch started just before this line ends within about ten seconds.
+const RUN_BUDGET_MS = 30_000;
 // The most posts one reader email lists, oldest first. A window with more ends with a
 // link to the site for the rest.
 const POSTS_PER_EMAIL = 20;
 
 // One batch's outcome: how many went out, or the failure that stops the run. A failed
-// send has already put its windows back.
+// send has already put back the windows of the emails that did not go out.
 type BatchOutcome =
   | { readonly kind: "sent"; readonly count: number }
-  | { readonly kind: "send-failed"; readonly failed: number; readonly reason: string }
+  | {
+      readonly kind: "send-failed";
+      readonly sent: number;
+      readonly failed: number;
+      readonly reason: string;
+    }
   | { readonly kind: "unavailable"; readonly response: NotificationUnavailableResponse };
 
+// One email and the claim it answers, so a failed send can put back exactly the
+// claims whose emails did not go out.
+interface Outgoing<C> {
+  readonly message: EmailMessage;
+  readonly claim: C;
+}
+
 // Members first, then readers. Each batch: claim, compose, send; on a failed send, put
-// every claimed window back so the next run tries again, and stop: the vendor is down
-// or refusing, and more claims would fail too.
+// back the windows of every email that did not go out, in one call, so the next run
+// tries those again, and stop: the vendor is down or refusing, and more claims would
+// fail too. The emails that did go out keep their claims, so nobody gets one twice.
 export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> {
   constructor(
     private readonly preferences: IEmailPreferenceAccessor,
@@ -72,6 +93,7 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
       return new DigestsSentResponse(correlationId, 0, 0);
     }
     const until = new Date(timestamp.getTime() - SETTLE_MS);
+    const started = Date.now();
     let sent = 0;
     const passes = [
       () => this.memberBatch(until, site, context),
@@ -79,6 +101,10 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
     ];
     for (const pass of passes) {
       for (let batch = 0; batch < MAX_BATCHES; batch += 1) {
+        // What is left waits for the next run, a few minutes later.
+        if (Date.now() - started > RUN_BUDGET_MS) {
+          return new DigestsSentResponse(correlationId, sent, 0);
+        }
         const outcome = await pass();
         if (outcome.kind === "unavailable") {
           return outcome.response;
@@ -86,7 +112,7 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
         if (outcome.kind === "send-failed") {
           return new DigestsSentResponse(
             correlationId,
-            sent,
+            sent + outcome.sent,
             outcome.failed,
             outcome.reason,
           );
@@ -113,28 +139,26 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
       return failure(context, claimed, "preferences.store");
     }
     const { claims } = claimed;
-    const release = async () => {
-      for (const claim of claims) {
-        const released = await this.preferences.store(
-          new ReleaseMemberEmailRequest(claim, context),
-        );
-        if (!(released instanceof MemberEmailReleasedResponse)) {
-          logLostRelease(`${claim.kind} window`, released);
-        }
+    const release = async (back: readonly MemberEmailClaim[]) => {
+      const released = await this.preferences.store(
+        new ReleaseMemberEmailsRequest(back, context),
+      );
+      if (!(released instanceof MemberEmailsReleasedResponse)) {
+        logLostRelease(back.length, "member", released);
       }
     };
-    const messages: EmailMessage[] = [];
+    const outgoing: Outgoing<MemberEmailClaim>[] = [];
     for (const claim of claims) {
       const composed = await this.compose.transform(
         new ComposeMemberEmailRequest(claim, site, context),
       );
       if (!(composed instanceof EmailComposedResponse)) {
-        await release();
+        await release(claims);
         return failure(context, composed, "compose.transform");
       }
-      messages.push(composed.message);
+      outgoing.push({ message: composed.message, claim });
     }
-    return this.send(messages, release, context);
+    return this.send(outgoing, release, context);
   }
 
   private async subscriberBatch(
@@ -152,14 +176,12 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
     if (claims.length === 0) {
       return { kind: "sent", count: 0 };
     }
-    const release = async () => {
-      for (const claim of claims) {
-        const released = await this.subscribers.store(
-          new ReleaseSubscriberEmailRequest(claim, context),
-        );
-        if (!(released instanceof SubscriberEmailReleasedResponse)) {
-          logLostRelease("reader window", released);
-        }
+    const release = async (back: readonly SubscriberEmailClaim[]) => {
+      const released = await this.subscribers.store(
+        new ReleaseSubscriberEmailsRequest(back, context),
+      );
+      if (!(released instanceof SubscriberEmailsReleasedResponse)) {
+        logLostRelease(back.length, "reader", released);
       }
     };
     // One read per scope and window, not one for the whole batch: a reader of a quiet
@@ -167,7 +189,7 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
     // crowd out every other reader's posts. Readers who share a scope and a window
     // share the read.
     const loads = new Map<string, Promise<ResponseBase>>();
-    const messages: EmailMessage[] = [];
+    const outgoing: Outgoing<SubscriberEmailClaim>[] = [];
     for (const claim of claims) {
       const key = `${claim.authorId ?? "site"}|${claim.windowStart.toISOString()}`;
       let load = loads.get(key);
@@ -185,7 +207,7 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
       }
       const loaded = await load;
       if (!(loaded instanceof AnnouncedPostsLoadedResponse)) {
-        await release();
+        await release(claims);
         return failure(context, loaded, "posts.load");
       }
       // The claim saw a post; one unpublished since leaves nothing to say.
@@ -202,29 +224,38 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
         ),
       );
       if (!(composed instanceof EmailComposedResponse)) {
-        await release();
+        await release(claims);
         return failure(context, composed, "compose.transform");
       }
-      messages.push(composed.message);
+      outgoing.push({ message: composed.message, claim });
     }
-    return this.send(messages, release, context);
+    return this.send(outgoing, release, context);
   }
 
-  private async send(
-    messages: readonly EmailMessage[],
-    release: () => Promise<void>,
+  // A claim with nothing to say sent no email and stays claimed: it is done.
+  private async send<C>(
+    outgoing: readonly Outgoing<C>[],
+    release: (back: readonly C[]) => Promise<void>,
     context: Ctx,
   ): Promise<BatchOutcome> {
     // Nothing claimed, or nothing to say: zero ends the pass.
-    if (messages.length === 0) {
+    if (outgoing.length === 0) {
       return { kind: "sent", count: 0 };
     }
-    const delivered = await this.email.store(new SendEmailsRequest(messages, context));
+    const delivered = await this.email.store(
+      new SendEmailsRequest(
+        outgoing.map((item) => item.message),
+        context,
+      ),
+    );
     if (!(delivered instanceof EmailsSentResponse)) {
-      await release();
+      // The emails before `sent` went out; only the ones after it go back.
+      const sent = delivered instanceof EmailAccessFailedResponse ? delivered.sent : 0;
+      await release(outgoing.slice(sent).map((item) => item.claim));
       return {
         kind: "send-failed",
-        failed: messages.length,
+        sent,
+        failed: outgoing.length - sent,
         reason: reasonOf(delivered),
       };
     }
@@ -239,10 +270,12 @@ function failure(context: Ctx, response: ResponseBase, method: string): BatchOut
   };
 }
 
-// A release that fails leaves its window claimed: those items are not emailed, though
+// A release that fails leaves its windows claimed: those items are not emailed, though
 // the bell and the site still show them. Logged, since nothing else can retry it.
-function logLostRelease(what: string, response: ResponseBase): void {
-  console.error(`[email] could not put back a ${what}: ${reasonOf(response)}`);
+function logLostRelease(count: number, who: string, response: ResponseBase): void {
+  console.error(
+    `[email] could not put back ${String(count)} ${who} windows: ${reasonOf(response)}`,
+  );
 }
 
 function reasonOf(response: ResponseBase): string {

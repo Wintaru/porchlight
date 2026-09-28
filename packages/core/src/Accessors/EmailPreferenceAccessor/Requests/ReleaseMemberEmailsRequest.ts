@@ -2,10 +2,10 @@ import type { MemberEmailClaim } from "../../../Common/MemberEmailClaim";
 import { RequestBase } from "../../../Common/RequestBase";
 import type { RequestContext } from "../../../Common/RequestContext";
 
-// Puts a claimed window back after its send failed.
-export class ReleaseMemberEmailRequest extends RequestBase {
+// Puts claimed windows back after their send failed, all in one call (#86).
+export class ReleaseMemberEmailsRequest extends RequestBase {
   constructor(
-    readonly claim: MemberEmailClaim,
+    readonly claims: readonly MemberEmailClaim[],
     context?: RequestContext,
   ) {
     super(context);

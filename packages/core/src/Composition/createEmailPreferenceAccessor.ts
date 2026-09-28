@@ -4,18 +4,18 @@ import { EmailPreferenceAccessor } from "../Accessors/EmailPreferenceAccessor/Em
 import { FakeEmailPreferenceState } from "../Accessors/EmailPreferenceAccessor/FakeEmailPreferenceState";
 import { FakeClaimMemberEmailsHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeClaimMemberEmailsHandler";
 import { FakeLoadEmailPreferenceHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeLoadEmailPreferenceHandler";
-import { FakeReleaseMemberEmailHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeReleaseMemberEmailHandler";
+import { FakeReleaseMemberEmailsHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeReleaseMemberEmailsHandler";
 import { FakeStoreEmailPreferenceHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeStoreEmailPreferenceHandler";
 import { FakeStoreMemberUnsubscribeHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/FakeStoreMemberUnsubscribeHandler";
 import { SupabaseClaimMemberEmailsHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseClaimMemberEmailsHandler";
 import { SupabaseLoadEmailPreferenceHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseLoadEmailPreferenceHandler";
-import { SupabaseReleaseMemberEmailHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseReleaseMemberEmailHandler";
+import { SupabaseReleaseMemberEmailsHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseReleaseMemberEmailsHandler";
 import { SupabaseStoreEmailPreferenceHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseStoreEmailPreferenceHandler";
 import { SupabaseStoreMemberUnsubscribeHandler } from "../Accessors/EmailPreferenceAccessor/Handlers/SupabaseStoreMemberUnsubscribeHandler";
 import type { IEmailPreferenceAccessor } from "../Accessors/EmailPreferenceAccessor/IEmailPreferenceAccessor";
 import { ClaimMemberEmailsRequest } from "../Accessors/EmailPreferenceAccessor/Requests/ClaimMemberEmailsRequest";
 import { LoadEmailPreferenceRequest } from "../Accessors/EmailPreferenceAccessor/Requests/LoadEmailPreferenceRequest";
-import { ReleaseMemberEmailRequest } from "../Accessors/EmailPreferenceAccessor/Requests/ReleaseMemberEmailRequest";
+import { ReleaseMemberEmailsRequest } from "../Accessors/EmailPreferenceAccessor/Requests/ReleaseMemberEmailsRequest";
 import { StoreEmailPreferenceRequest } from "../Accessors/EmailPreferenceAccessor/Requests/StoreEmailPreferenceRequest";
 import { StoreMemberUnsubscribeRequest } from "../Accessors/EmailPreferenceAccessor/Requests/StoreMemberUnsubscribeRequest";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
@@ -47,8 +47,8 @@ export function createEmailPreferenceAccessor(
             new SupabaseClaimMemberEmailsHandler(client),
           )
           .register(
-            ReleaseMemberEmailRequest,
-            new SupabaseReleaseMemberEmailHandler(client),
+            ReleaseMemberEmailsRequest,
+            new SupabaseReleaseMemberEmailsHandler(client),
           )
           .register(
             StoreMemberUnsubscribeRequest,
@@ -77,7 +77,7 @@ export function createFakeEmailPreferenceAccessor(
     new HandlerResolverBuilder()
       .register(StoreEmailPreferenceRequest, new FakeStoreEmailPreferenceHandler(state))
       .register(ClaimMemberEmailsRequest, new FakeClaimMemberEmailsHandler(state))
-      .register(ReleaseMemberEmailRequest, new FakeReleaseMemberEmailHandler(state))
+      .register(ReleaseMemberEmailsRequest, new FakeReleaseMemberEmailsHandler(state))
       .register(
         StoreMemberUnsubscribeRequest,
         new FakeStoreMemberUnsubscribeHandler(state),
