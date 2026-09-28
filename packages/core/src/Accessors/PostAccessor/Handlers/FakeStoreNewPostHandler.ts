@@ -47,6 +47,7 @@ export class FakeStoreNewPostHandler implements IHandler<
       publishedAt: null,
       createdAt: timestamp,
       updatedAt: timestamp,
+      version: 1,
     };
     this.state.posts.set(stored.id, stored);
     return Promise.resolve(new PostStoredResponse(correlationId, stored));

@@ -27,7 +27,12 @@ export class FakeStorePostBodyHtmlHandler implements IHandler<
     if (post?.bodyMd !== request.renderedFrom) {
       return Promise.resolve(new PostBodyChangedSinceReadResponse(request.correlationId));
     }
-    this.state.posts.set(post.id, { ...post, bodyHtml: request.bodyHtml });
+    // The store's `posts_bump_version` trigger moves the version on every update.
+    this.state.posts.set(post.id, {
+      ...post,
+      bodyHtml: request.bodyHtml,
+      version: post.version + 1,
+    });
     return Promise.resolve(new PostBodyHtmlStoredResponse(request.correlationId));
   }
 }

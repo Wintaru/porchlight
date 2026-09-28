@@ -26,6 +26,11 @@ import { PostRejectedResponse } from "../Managers/PostManager/Responses/PostReje
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { PostsResponse } from "../Managers/PostManager/Responses/PostsResponse";
 import { PostUnavailableResponse } from "../Managers/PostManager/Responses/PostUnavailableResponse";
+import { FakePostState } from "../Accessors/PostAccessor/FakePostState";
+import { FakeStorePostChangesHandler } from "../Accessors/PostAccessor/Handlers/FakeStorePostChangesHandler";
+import { StorePostChangesRequest } from "../Accessors/PostAccessor/Requests/StorePostChangesRequest";
+import { PostVersionChangedResponse } from "../Accessors/PostAccessor/Responses/PostVersionChangedResponse";
+import { PostChangedResponse } from "../Managers/PostManager/Responses/PostChangedResponse";
 import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
@@ -314,6 +319,84 @@ describe("DependencyContainer: PostManager", () => {
 
     expect(blank).toMatchObject({ reason: "title" });
     expect(missing).toBeInstanceOf(NoSuchPostResponse);
+  });
+
+  // #100: the editor gives up on an autosave after 15 s, but the server call runs on.
+  test("a late autosave after a newer Save changes nothing and says so", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await draft(container, THEO);
+    const seen = post.version;
+
+    // The Save wins the race. It names no version: a person's button is the last word.
+    const saved = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, post.id, { bodyMd: "The newer words." }),
+    );
+    const late = await container.postManager.execute(
+      new UpdateDraftRequest(
+        THEO,
+        post.id,
+        { bodyMd: "The older words." },
+        undefined,
+        seen,
+      ),
+    );
+    const now = await container.postManager.query(
+      new GetPostRequest(THEO, { by: "id", id: post.id }),
+    );
+
+    expect(saved).toMatchObject({ post: { version: seen + 1 } });
+    expect(late).toBeInstanceOf(PostChangedResponse);
+    expect(now).toMatchObject({
+      post: { bodyMd: "The newer words.", version: seen + 1 },
+    });
+  });
+
+  test("an autosave on the version it saw goes through and moves it", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await draft(container, THEO);
+
+    const first = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, post.id, { bodyMd: "One." }, undefined, post.version),
+    );
+    const second = await container.postManager.execute(
+      new UpdateDraftRequest(
+        THEO,
+        post.id,
+        { bodyMd: "Two." },
+        undefined,
+        post.version + 1,
+      ),
+    );
+
+    expect(first).toMatchObject({ post: { bodyMd: "One.", version: post.version + 1 } });
+    expect(second).toMatchObject({ post: { bodyMd: "Two.", version: post.version + 2 } });
+  });
+
+  // The Manager checks the version it read, but a write can land between that read and
+  // the update: the store's own check is the one that holds.
+  test("the store refuses a stale version even after the Manager's read", async () => {
+    const state = new FakePostState();
+    const store = new FakeStorePostChangesHandler(state);
+    const container = new DependencyContainer(FAKE_ENV);
+    const post = await draft(container, THEO);
+    state.posts.set(post.id, { ...post, bodyMd: "Saved.", version: post.version + 1 });
+
+    const stale = await store.handle(
+      new StorePostChangesRequest(post.id, { bodyMd: "Late." }, undefined, post.version),
+    );
+    const current = await store.handle(
+      new StorePostChangesRequest(
+        post.id,
+        { bodyMd: "Fresh." },
+        undefined,
+        post.version + 1,
+      ),
+    );
+
+    expect(stale).toBeInstanceOf(PostVersionChangedResponse);
+    expect(current).toMatchObject({
+      post: { bodyMd: "Fresh.", version: post.version + 2 },
+    });
   });
 
   test("Unpublish sends a published or pending post back to draft", async () => {

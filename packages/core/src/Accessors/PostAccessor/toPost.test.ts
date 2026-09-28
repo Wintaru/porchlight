@@ -48,12 +48,14 @@ test("toPost maps a member's row, its tags and its dates", () => {
     published_at: "2026-09-12T10:00:00.000Z",
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-12T10:00:00.000Z",
+    version: 3,
     post_tags: [{ tag: { slug: "making", name: "Making" } }, { tag: null }],
   });
   expect(post).toMatchObject({
     author: { kind: "member", profileId: "u1" },
     tags: [{ slug: "making", name: "Making" }],
     publishedAt: new Date("2026-09-12T10:00:00.000Z"),
+    version: 3,
   });
 });
 
@@ -78,6 +80,7 @@ test("toPost maps an anonymous row and refuses one with no author", () => {
     published_at: null,
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-11T10:00:00.000Z",
+    version: 1,
     post_tags: [],
   } as const;
   expect(toPost({ ...base, anonymous_author_id: "a1" }).author).toEqual({

@@ -4,6 +4,7 @@ import type { PostChanges } from "../../../Accessors/PostAccessor/PostChanges";
 import { StorePostChangesRequest } from "../../../Accessors/PostAccessor/Requests/StorePostChangesRequest";
 import { PostNotFoundResponse } from "../../../Accessors/PostAccessor/Responses/PostNotFoundResponse";
 import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/PostStoredResponse";
+import { PostVersionChangedResponse } from "../../../Accessors/PostAccessor/Responses/PostVersionChangedResponse";
 import type { IHandler } from "../../../Common/IHandler";
 import { ResponseBase } from "../../../Common/ResponseBase";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
@@ -15,6 +16,7 @@ import { permit } from "../permit";
 import { agentDraftStamp, reviewStamp } from "../provenance";
 import type { UpdateDraftRequest } from "../Requests/UpdateDraftRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
+import { PostChangedResponse } from "../Responses/PostChangedResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
@@ -25,6 +27,7 @@ import { unavailable } from "../unavailable";
 type UpdateDraftResult =
   | PostResponse
   | NoSuchPostResponse
+  | PostChangedResponse
   | PostForbiddenResponse
   | PostRejectedResponse
   | PostUnavailableResponse;
@@ -43,7 +46,7 @@ export class UpdateDraftHandler implements IHandler<
   ) {}
 
   async handle(request: UpdateDraftRequest): Promise<UpdateDraftResult> {
-    const { correlationId, actor, postId, changes, timestamp } = request;
+    const { correlationId, actor, postId, changes, timestamp, expectedVersion } = request;
     // One clock for the whole call: the store stamps the row with the request's time.
     const context = { correlationId, timestamp };
 
@@ -60,6 +63,11 @@ export class UpdateDraftHandler implements IHandler<
     );
     if (refused !== undefined) {
       return refused;
+    }
+    // Already stale on read: answer before rendering. The store checks again, since a
+    // write can still land between this read and the update (#100).
+    if (expectedVersion !== undefined && current.version !== expectedVersion) {
+      return new PostChangedResponse(correlationId);
     }
 
     // A person's save is a review (D22); an agent's is not.
@@ -134,10 +142,13 @@ export class UpdateDraftHandler implements IHandler<
       shaped.commentsEnabled = changes.commentsEnabled;
 
     const stored = await this.posts.store(
-      new StorePostChangesRequest(postId, columns, context),
+      new StorePostChangesRequest(postId, columns, context, expectedVersion),
     );
     if (stored instanceof PostStoredResponse) {
       return new PostResponse(correlationId, stored.post);
+    }
+    if (stored instanceof PostVersionChangedResponse) {
+      return new PostChangedResponse(correlationId);
     }
     if (stored instanceof PostNotFoundResponse) {
       return new NoSuchPostResponse(correlationId);

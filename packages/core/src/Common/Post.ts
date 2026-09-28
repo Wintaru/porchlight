@@ -35,4 +35,7 @@ export interface Post {
   readonly publishedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  // Moves by one on every write to the post. An editor sends the one it last saw, so a
+  // save that lost a race changes nothing (#100).
+  readonly version: number;
 }

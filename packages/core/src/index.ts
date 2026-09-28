@@ -208,6 +208,7 @@ export { AnonymousPostCreatedResponse } from "./Managers/PostManager/Responses/A
 export { CannotPostResponse } from "./Managers/PostManager/Responses/CannotPostResponse";
 export { CanPostResponse } from "./Managers/PostManager/Responses/CanPostResponse";
 export { NoSuchPostResponse } from "./Managers/PostManager/Responses/NoSuchPostResponse";
+export { PostChangedResponse } from "./Managers/PostManager/Responses/PostChangedResponse";
 export { PostDeletedResponse } from "./Managers/PostManager/Responses/PostDeletedResponse";
 export { PostForbiddenResponse } from "./Managers/PostManager/Responses/PostForbiddenResponse";
 export { PostListRejectedResponse } from "./Managers/PostManager/Responses/PostListRejectedResponse";

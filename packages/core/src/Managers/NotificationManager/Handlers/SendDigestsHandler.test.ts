@@ -65,6 +65,7 @@ function addPost(state: FakePostState, id: string, authorId: string, at: Date): 
     publishedAt: at,
     createdAt: at,
     updatedAt: at,
+    version: 1,
   };
   state.posts.set(id, post);
   state.announced.set(id, at);

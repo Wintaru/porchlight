@@ -7,33 +7,45 @@ import type { StorePostChangesRequest } from "../Requests/StorePostChangesReques
 import { PostAccessFailedResponse } from "../Responses/PostAccessFailedResponse";
 import { PostNotFoundResponse } from "../Responses/PostNotFoundResponse";
 import { PostStoredResponse } from "../Responses/PostStoredResponse";
+import { PostVersionChangedResponse } from "../Responses/PostVersionChangedResponse";
 import { POST_COLUMNS, toPost } from "../toPost";
 
+type Result =
+  | PostStoredResponse
+  | PostNotFoundResponse
+  | PostVersionChangedResponse
+  | PostAccessFailedResponse;
+
 // Update and read back in one round trip. A tag change adds the link call and a read
-// that shows the stored tags; a tags-only save has no columns and skips the update.
+// that shows the stored tags; a tags-only save has no columns and skips the update,
+// unless it names a version, which only the update can check.
 export class SupabaseStorePostChangesHandler implements IHandler<
   StorePostChangesRequest,
-  PostStoredResponse | PostNotFoundResponse | PostAccessFailedResponse
+  Result
 > {
   constructor(private readonly db: DbClient) {}
 
-  async handle(
-    request: StorePostChangesRequest,
-  ): Promise<PostStoredResponse | PostNotFoundResponse | PostAccessFailedResponse> {
-    const { id, changes, correlationId } = request;
+  async handle(request: StorePostChangesRequest): Promise<Result> {
+    const { id, changes, correlationId, expectedVersion } = request;
     const columns = toColumns(changes);
+    if (expectedVersion !== undefined && Object.keys(columns).length === 0) {
+      // Any column makes the update run. The `posts_bump_version` trigger sets the
+      // version itself, so the value written here is never kept.
+      columns.version = expectedVersion;
+    }
     if (Object.keys(columns).length > 0) {
-      const updated = await this.db
-        .from("posts")
-        .update(columns)
-        .eq("id", id)
-        .select(POST_COLUMNS)
-        .maybeSingle();
+      let update = this.db.from("posts").update(columns).eq("id", id);
+      if (expectedVersion !== undefined) {
+        update = update.eq("version", expectedVersion);
+      }
+      const updated = await update.select(POST_COLUMNS).maybeSingle();
       if (updated.error) {
         return new PostAccessFailedResponse(correlationId, updated.error.message);
       }
       if (updated.data === null) {
-        return new PostNotFoundResponse(correlationId);
+        return expectedVersion === undefined
+          ? new PostNotFoundResponse(correlationId)
+          : this.missOf(id, correlationId);
       }
       if (changes.tags === undefined) {
         return new PostStoredResponse(correlationId, toPost(updated.data));
@@ -57,6 +69,27 @@ export class SupabaseStorePostChangesHandler implements IHandler<
       return new PostNotFoundResponse(correlationId);
     }
     return new PostStoredResponse(correlationId, toPost(data));
+  }
+
+  // A conditional update that matched no row: the post is gone, or its version moved.
+  // One more read, only on this rare path, tells the two apart.
+  private async missOf(
+    id: string,
+    correlationId: string,
+  ): Promise<
+    PostNotFoundResponse | PostVersionChangedResponse | PostAccessFailedResponse
+  > {
+    const { data, error } = await this.db
+      .from("posts")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) {
+      return new PostAccessFailedResponse(correlationId, error.message);
+    }
+    return data === null
+      ? new PostNotFoundResponse(correlationId)
+      : new PostVersionChangedResponse(correlationId);
   }
 }
 

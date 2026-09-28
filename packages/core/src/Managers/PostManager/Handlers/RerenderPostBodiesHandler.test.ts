@@ -63,6 +63,7 @@ function stalePost(id: string): Post {
     publishedAt: AT,
     createdAt: AT,
     updatedAt: AT,
+    version: 1,
   };
 }
 

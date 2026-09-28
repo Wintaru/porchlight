@@ -5,17 +5,22 @@ import type { StorePostChangesRequest } from "../Requests/StorePostChangesReques
 import { PostAccessFailedResponse } from "../Responses/PostAccessFailedResponse";
 import { PostNotFoundResponse } from "../Responses/PostNotFoundResponse";
 import { PostStoredResponse } from "../Responses/PostStoredResponse";
+import { PostVersionChangedResponse } from "../Responses/PostVersionChangedResponse";
+
+type Result =
+  | PostStoredResponse
+  | PostNotFoundResponse
+  | PostVersionChangedResponse
+  | PostAccessFailedResponse;
 
 export class FakeStorePostChangesHandler implements IHandler<
   StorePostChangesRequest,
-  PostStoredResponse | PostNotFoundResponse | PostAccessFailedResponse
+  Result
 > {
   constructor(private readonly state: FakePostState) {}
 
-  handle(
-    request: StorePostChangesRequest,
-  ): Promise<PostStoredResponse | PostNotFoundResponse | PostAccessFailedResponse> {
-    const { id, changes, correlationId, timestamp } = request;
+  handle(request: StorePostChangesRequest): Promise<Result> {
+    const { id, changes, correlationId, timestamp, expectedVersion } = request;
     if (this.state.failing) {
       return Promise.resolve(
         new PostAccessFailedResponse(correlationId, "POST_FAKE_RESULT=fail"),
@@ -24,6 +29,9 @@ export class FakeStorePostChangesHandler implements IHandler<
     const current = this.state.posts.get(id);
     if (current === undefined) {
       return Promise.resolve(new PostNotFoundResponse(correlationId));
+    }
+    if (expectedVersion !== undefined && current.version !== expectedVersion) {
+      return Promise.resolve(new PostVersionChangedResponse(correlationId));
     }
     // The store's trigger refuses a second agent draft; the fake answers the same way.
     if (current.agentDraftMd !== null && changes.agentDraftMd !== undefined) {
@@ -56,6 +64,8 @@ export class FakeStorePostChangesHandler implements IHandler<
       publishedAt:
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,
+      // The store's `posts_bump_version` trigger.
+      version: current.version + 1,
     };
     // The store's `posts_keep_revision` trigger: a post that is out keeps the version
     // readers saw when its words change.

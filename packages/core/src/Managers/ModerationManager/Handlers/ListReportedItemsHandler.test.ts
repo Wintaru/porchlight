@@ -54,6 +54,7 @@ const POST: Post = {
   publishedAt: AT,
   createdAt: AT,
   updatedAt: AT,
+  version: 1,
 };
 
 function report(id: number, target: { postId?: string; commentId?: string }): Report {

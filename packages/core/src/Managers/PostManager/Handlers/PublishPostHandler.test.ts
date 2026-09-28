@@ -76,6 +76,7 @@ function stateWith(status: PostStatus): FakePostState {
     publishedAt: status === "published" ? AT : null,
     createdAt: AT,
     updatedAt: AT,
+    version: 1,
   };
   state.posts.set(post.id, post);
   return state;
