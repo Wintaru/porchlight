@@ -376,8 +376,11 @@ export { PRESENCE_SIGNALS, type PresenceSignal } from "./Common/PresenceMessage"
 // The one-time re-render of cached HTML after the render pipeline changes (#77).
 export { RerenderPostBodiesRequest } from "./Managers/PostManager/Requests/RerenderPostBodiesRequest";
 export { PostBodiesRerenderedResponse } from "./Managers/PostManager/Responses/PostBodiesRerenderedResponse";
+export { PostRerenderRejectedResponse } from "./Managers/PostManager/Responses/PostRerenderRejectedResponse";
 export { RerenderCommentBodiesRequest } from "./Managers/CommentManager/Requests/RerenderCommentBodiesRequest";
 export { CommentBodiesRerenderedResponse } from "./Managers/CommentManager/Responses/CommentBodiesRerenderedResponse";
+export { CommentRerenderRejectedResponse } from "./Managers/CommentManager/Responses/CommentRerenderRejectedResponse";
+export { RERENDER_BODIES_PER_PRESS } from "./Common/RerenderBudget";
 // The draft check (#32): heuristics against the caller's own voice guide.
 export { CheckDraftRequest } from "./Managers/AccountManager/Requests/CheckDraftRequest";
 export { DraftCheckResponse } from "./Managers/AccountManager/Responses/DraftCheckResponse";

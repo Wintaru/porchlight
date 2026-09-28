@@ -13,6 +13,7 @@ import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPost
 import { RerenderPostBodiesRequest } from "../Managers/PostManager/Requests/RerenderPostBodiesRequest";
 import { PostBodiesRerenderedResponse } from "../Managers/PostManager/Responses/PostBodiesRerenderedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
+import { RERENDER_BODIES_PER_PRESS } from "../Common/RerenderBudget";
 import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
@@ -70,15 +71,48 @@ describe("DependencyContainer: re-render cached HTML (#77)", () => {
   test("bodies already rendered by the current pipeline are checked, not rewritten", async () => {
     const { container, admin } = await adminAndPost();
     const posts = await container.postManager.execute(
-      new RerenderPostBodiesRequest(admin),
+      new RerenderPostBodiesRequest(admin, null, RERENDER_BODIES_PER_PRESS),
     );
     const comments = await container.commentManager.execute(
-      new RerenderCommentBodiesRequest(admin),
+      new RerenderCommentBodiesRequest(admin, null, RERENDER_BODIES_PER_PRESS),
     );
-    expect(posts).toEqual(new PostBodiesRerenderedResponse(posts.correlationId, 1, 0));
+    expect(posts).toEqual(
+      new PostBodiesRerenderedResponse(posts.correlationId, 1, 0, 0, null),
+    );
     expect(comments).toEqual(
-      new CommentBodiesRerenderedResponse(comments.correlationId, 1, 0),
+      new CommentBodiesRerenderedResponse(comments.correlationId, 1, 0, 0, null),
     );
+  });
+
+  test("a budget of one comment stops after it and resumes to the end (#98)", async () => {
+    const { container, admin, postId } = await adminAndPost();
+    await container.commentManager.execute(
+      new CreateCommentRequest(
+        admin,
+        { postId, parentId: null, bodyMd: "A second comment." },
+        TEST_ORIGIN,
+      ),
+    );
+
+    const press = async (afterId: string | null) => {
+      const response = await container.commentManager.execute(
+        new RerenderCommentBodiesRequest(admin, afterId, 1),
+      );
+      if (!(response instanceof CommentBodiesRerenderedResponse)) {
+        throw new Error(`expected a re-render, got ${response.constructor.name}`);
+      }
+      return response;
+    };
+
+    const first = await press(null);
+    expect(first).toMatchObject({ checked: 1, changed: 0, skipped: 0 });
+    expect(first.resumeAfterId).not.toBeNull();
+    const second = await press(first.resumeAfterId);
+    expect(second).toMatchObject({ checked: 1 });
+    expect(second.resumeAfterId).not.toBeNull();
+    // A full budget may end on the last row: the next press finds nothing and is done.
+    const third = await press(second.resumeAfterId);
+    expect(third).toMatchObject({ checked: 0, changed: 0, resumeAfterId: null });
   });
 
   test("only the admin may run it", async () => {
@@ -98,7 +132,9 @@ describe("DependencyContainer: re-render cached HTML (#77)", () => {
       } satisfies Profile,
     };
     expect(
-      await container.commentManager.execute(new RerenderCommentBodiesRequest(member)),
+      await container.commentManager.execute(
+        new RerenderCommentBodiesRequest(member, null, 1),
+      ),
     ).toBeInstanceOf(CommentForbiddenResponse);
   });
 });
