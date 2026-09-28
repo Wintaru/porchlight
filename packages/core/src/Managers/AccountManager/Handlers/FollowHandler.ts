@@ -23,7 +23,7 @@ type Result =
   | ActionForbiddenResponse
   | AccountUnavailableResponse;
 
-// Permission, then the target, then the write (#24). An author must be a live member
+// Permission, then the target, then the write (#24). An author must be an active member
 // who is not the actor; a tag must exist, which the store's foreign key answers.
 export class FollowHandler implements IHandler<FollowRequest, Result> {
   constructor(
@@ -65,7 +65,10 @@ export class FollowHandler implements IHandler<FollowRequest, Result> {
       if (!(author instanceof ProfileLoadedResponse)) {
         return unavailable(correlationId, author, "profiles.load");
       }
-      if (author.profile.status === "erased") {
+      // Suspended, banned and erased authors all answer like a missing one (#85). Their
+      // profile is a 404, so the only way here is a hand-made request. Follows made
+      // while the author was active stay (decision C3).
+      if (author.profile.status !== "active") {
         return new FollowRejectedResponse(correlationId, "no-such-target");
       }
     }

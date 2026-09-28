@@ -11,6 +11,9 @@ import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/Ac
 import { FollowRejectedResponse } from "../Managers/AccountManager/Responses/FollowRejectedResponse";
 import { FollowSetResponse } from "../Managers/AccountManager/Responses/FollowSetResponse";
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
+import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
+import { SuspendMemberRequest } from "../Managers/ModerationManager/Requests/SuspendMemberRequest";
+import { ProfileModeratedResponse } from "../Managers/ModerationManager/Responses/ProfileModeratedResponse";
 import { ListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
 import { NotificationsResponse } from "../Managers/NotificationManager/Responses/NotificationsResponse";
 import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
@@ -112,6 +115,45 @@ describe("DependencyContainer: follows (#24)", () => {
       new FollowRequest({ kind: "visitor" }, THEO_AUTHOR),
     );
     expect(visitor).toBeInstanceOf(ActionForbiddenResponse);
+  });
+
+  test("a suspended or banned author answers like a missing one (#85)", async () => {
+    const container = await withProfiles();
+    // June followed Theo while he was active: that follow stays (decision C3).
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    const suspended = await container.moderationManager.execute(
+      new SuspendMemberRequest(MIRA, THEO_AUTHOR.profileId, "spamming links"),
+    );
+    expect(suspended).toBeInstanceOf(ProfileModeratedResponse);
+
+    const whileSuspended = await container.accountManager.execute(
+      new FollowRequest(IVY, THEO_AUTHOR),
+    );
+    expect(whileSuspended).toBeInstanceOf(FollowRejectedResponse);
+    expect(whileSuspended).toMatchObject({ reason: "no-such-target" });
+    // A repeat of a follow that already exists is refused the same way.
+    await expect(
+      container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR)),
+    ).resolves.toMatchObject({ reason: "no-such-target" });
+
+    const juneAuthor = {
+      kind: "author",
+      profileId: "00000000-0000-4000-8000-000000000004",
+    } as const;
+    const banned = await container.moderationManager.execute(
+      new BanMemberRequest(MIRA, juneAuthor.profileId, "repeat offender"),
+    );
+    expect(banned).toBeInstanceOf(ProfileModeratedResponse);
+    const whileBanned = await container.accountManager.execute(
+      new FollowRequest(IVY, juneAuthor),
+    );
+    expect(whileBanned).toBeInstanceOf(FollowRejectedResponse);
+    expect(whileBanned).toMatchObject({ reason: "no-such-target" });
+
+    // Unfollowing still works, so a member can let go of a suspended author.
+    await expect(
+      container.accountManager.execute(new UnfollowRequest(JUNE, THEO_AUTHOR)),
+    ).resolves.toMatchObject({ following: false });
   });
 
   test("a post that goes out tells the followers of its author and its tags, once each", async () => {
