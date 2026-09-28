@@ -4,29 +4,6 @@ import type { PostCardAuthor } from "./post-card";
 
 type MemberBlockLevel = Enums<"member_block_level">;
 
-// The viewer's own mutes and blocks (#23), by the other member's profile id. Read under
-// RLS, which returns only the viewer's own rows. A visitor has none and costs no query.
-export type ViewerBlocks = ReadonlyMap<string, MemberBlockLevel>;
-
-export const NO_BLOCKS: ViewerBlocks = new Map();
-
-export async function loadViewerBlocks(
-  db: DbClient,
-  viewerId: string | undefined,
-): Promise<ViewerBlocks> {
-  if (viewerId === undefined) {
-    return NO_BLOCKS;
-  }
-  const { data, error } = await db
-    .from("member_blocks")
-    .select("target_id, level")
-    .eq("member_id", viewerId);
-  if (error) {
-    throw new Error(`member blocks for ${viewerId}: ${error.message}`);
-  }
-  return new Map(data.map((row) => [row.target_id, row.level]));
-}
-
 // The viewer's mute or block of one member (#23), or undefined: one row of their own
 // under RLS, by the (member, target) key. The profile page's buttons need only this.
 export async function loadViewerBlockOf(
@@ -44,6 +21,26 @@ export async function loadViewerBlockOf(
     throw new Error(`member block of ${targetId} for ${viewerId}: ${error.message}`);
   }
   return data?.level;
+}
+
+// Every member the viewer muted or blocked (#23), for the lists where anyone may show
+// up: a post's comments and typing line, and the home page's "On the porch now". One
+// array from `viewer_hidden_author_ids`, so the API's 1000-row cap cannot cut it
+// (#93). A visitor has none and costs no query.
+export const NO_HIDDEN_AUTHORS: ReadonlySet<string> = new Set();
+
+export async function loadViewerHiddenAuthors(
+  db: DbClient,
+  viewerId: string | undefined,
+): Promise<ReadonlySet<string>> {
+  if (viewerId === undefined) {
+    return NO_HIDDEN_AUTHORS;
+  }
+  const { data, error } = await db.rpc("viewer_hidden_author_ids");
+  if (error) {
+    throw new Error(`hidden authors for ${viewerId}: ${error.message}`);
+  }
+  return new Set(data);
 }
 
 // The settings page's list: each muted or blocked member with the level, newest first.

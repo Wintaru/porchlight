@@ -13,7 +13,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadCommentsForPost } from "@/read-model/comments";
-import { loadViewerBlocks } from "@/read-model/member-blocks";
+import { loadViewerHiddenAuthors } from "@/read-model/member-blocks";
 import { loadPostBySlug, type PostPage } from "@/read-model/post-page";
 import { loadReactionsForPost } from "@/read-model/reactions";
 
@@ -74,11 +74,11 @@ export default async function AnonymousPostPage({
     searchParams,
   ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [formState, comments, reactions, blocks] = await Promise.all([
+  const [formState, comments, reactions, hiddenAuthorIds] = await Promise.all([
     commentFormStateFor(actor, post.id),
     loadCommentsForPost(db, post.id),
     loadReactionsForPost(db, post.id, viewerId),
-    loadViewerBlocks(db, viewerId),
+    loadViewerHiddenAuthors(db, viewerId),
   ]);
 
   return (
@@ -102,7 +102,7 @@ export default async function AnonymousPostPage({
         viewer={{
           profileId: viewerId,
           isAdmin: actor.kind === "member" && actor.profile.role === "admin",
-          hiddenAuthorIds: new Set(blocks.keys()),
+          hiddenAuthorIds,
         }}
         signInPath={signInPathFor(returnTo)}
         returnTo={returnTo}

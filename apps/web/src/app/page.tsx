@@ -6,7 +6,7 @@ import { HomeSidebar } from "@/components/HomeSidebar";
 import { SubscribeCard } from "@/components/SubscribeCard";
 import { OnlineNow } from "@/components/presence/OnlineNow";
 import { presenceFor } from "@/lib/presence";
-import { loadViewerBlocks } from "@/read-model/member-blocks";
+import { loadViewerHiddenAuthors } from "@/read-model/member-blocks";
 import { createSessionClient } from "@/auth/session-client";
 import { canPostAnonymously } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -58,17 +58,22 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const db = await createSessionClient();
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   // The Following tab (#24, D20) is a member's, and only on a site with two or more
-  // authors: with one, it would be the same list as Everything.
-  const authorCount = viewerId === undefined ? 0 : await loadPublishedAuthorCount(db);
+  // authors: with one, it would be the same list as Everything. Every read runs in one
+  // round (#93), so the asked-for feed is read before the author count is known; a
+  // one-author site that was asked for Following reads Everything after.
+  const wantsFollowing = viewerId !== undefined && feed === "following";
+  const [authorCount, asked, tags, mayWriteAnonymously, presence, hidden] =
+    await Promise.all([
+      viewerId === undefined ? 0 : loadPublishedAuthorCount(db),
+      wantsFollowing ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
+      loadTagCloud(db),
+      canPostAnonymously(actor),
+      presenceFor(actor),
+      loadViewerHiddenAuthors(db, viewerId),
+    ]);
   const showTabs = authorCount >= 2;
-  const following = showTabs && feed === "following";
-  const [posts, tags, mayWriteAnonymously, presence, hidden] = await Promise.all([
-    following ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
-    loadTagCloud(db),
-    canPostAnonymously(actor),
-    presenceFor(actor),
-    loadViewerBlocks(db, viewerId),
-  ]);
+  const following = showTabs && wantsFollowing;
+  const posts = wantsFollowing && !following ? await loadFeedFor(db, viewerId) : asked;
   return (
     <main>
       {erased !== undefined && (
@@ -114,7 +119,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             <OnlineNow
               selfId={presence.selfId}
               visible={presence.visible}
-              hiddenIds={[...hidden.keys()]}
+              hiddenIds={[...hidden]}
             />
           )}
           <SubscribeCard
