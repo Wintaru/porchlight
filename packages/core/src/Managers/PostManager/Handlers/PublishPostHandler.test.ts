@@ -30,6 +30,10 @@ import { NotifyFollowersRequest } from "../../../Engines/FollowerNoticeEngine/Re
 import { UnpublishPostHandler } from "./UnpublishPostHandler";
 import { TEST_ORIGIN } from "../../../Composition/FakeEnvironment.test-helper";
 import { TextEvidenceRecordedResponse } from "../../../Engines/EvidenceEngine/Responses/TextEvidenceRecordedResponse";
+import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
+import { FakeProfileState } from "../../../Accessors/ProfileAccessor/FakeProfileState";
+import { FakeListStaffProfilesHandler } from "../../../Accessors/ProfileAccessor/Handlers/FakeListStaffProfilesHandler";
+import { ListStaffProfilesRequest } from "../../../Accessors/ProfileAccessor/Requests/ListStaffProfilesRequest";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 const THEO: Actor = {
@@ -77,7 +81,11 @@ function stateWith(status: PostStatus): FakePostState {
   return state;
 }
 
-function wire(state: FakePostState, noticed: string[] = []) {
+function wire(
+  state: FakePostState,
+  noticed: string[] = [],
+  recorded: RecordTextEvidenceRequest[] = [],
+) {
   const posts = new PostAccessor(
     new HandlerResolverBuilder()
       .register(StorePostChangesRequest, new FakeStorePostChangesHandler(state))
@@ -103,11 +111,16 @@ function wire(state: FakePostState, noticed: string[] = []) {
     siteConfig,
     new RateLimitAccessor(new HandlerResolverBuilder().build()),
   );
-  // Neither test below reaches a draft-to-pending transition, the only path that reads
-  // these, so both stay empty.
+  // The staff list for a draft-to-pending transition: nobody, so no notice is written
+  // and the notification store stays empty.
   const profiles = new ProfileAccessor(
     new HandlerResolverBuilder().build(),
-    new HandlerResolverBuilder().build(),
+    new HandlerResolverBuilder()
+      .register(
+        ListStaffProfilesRequest,
+        new FakeListStaffProfilesHandler(new FakeProfileState()),
+      )
+      .build(),
   );
   const notifications = new NotificationAccessor(
     new HandlerResolverBuilder().build(),
@@ -136,10 +149,14 @@ function wire(state: FakePostState, noticed: string[] = []) {
           return Promise.resolve(new FollowersNotifiedResponse(request.correlationId, 0));
         },
       },
-      // No test here reaches a publish, the only step that writes evidence.
+      // `recorded` keeps each evidence request the handler made.
       {
-        transform: (request) =>
-          Promise.resolve(new TextEvidenceRecordedResponse(request.correlationId)),
+        transform: (request) => {
+          if (request instanceof RecordTextEvidenceRequest) {
+            recorded.push(request);
+          }
+          return Promise.resolve(new TextEvidenceRecordedResponse(request.correlationId));
+        },
       },
     ),
     unpublish: new UnpublishPostHandler(posts, permissions),
@@ -201,5 +218,52 @@ describe("Publish of a post that is already out", () => {
     await publish.handle(new PublishPostRequest(THEO, "p1", TEST_ORIGIN));
 
     expect(noticed).toEqual([]);
+  });
+});
+
+// #65: a probation member's publish goes to pending, and the text that waits for a
+// moderator is recorded as evidence, the same as a trusted member's publish.
+describe("Publish by a member on probation", () => {
+  test("sends the post to pending and records its text as evidence", async () => {
+    const june: Actor = {
+      kind: "member",
+      profile: {
+        id: "u-june",
+        handle: "june",
+        displayName: null,
+        avatarUrl: null,
+        bio: null,
+        role: "member",
+        trustLevel: "probation",
+        status: "active",
+        createdAt: AT,
+      },
+    };
+    const state = stateWith("draft");
+    const draft = state.posts.get("p1");
+    if (draft === undefined) {
+      throw new Error("expected the draft in the fake store");
+    }
+    state.posts.set("p1", {
+      ...draft,
+      author: { kind: "member", profileId: "u-june" },
+      bodyMd: "Waits for a moderator.",
+    });
+    const recorded: RecordTextEvidenceRequest[] = [];
+    const { publish } = wire(state, [], recorded);
+
+    const response = await publish.handle(
+      new PublishPostRequest(june, "p1", TEST_ORIGIN),
+    );
+
+    expect(response).toBeInstanceOf(PostResponse);
+    expect(response).toMatchObject({ post: { status: "pending", publishedAt: null } });
+    expect(recorded).toHaveLength(1);
+    expect(recorded[0]).toMatchObject({
+      subject: { kind: "post", id: "p1" },
+      author: { kind: "member", profileId: "u-june" },
+      origin: TEST_ORIGIN,
+    });
+    expect(recorded[0]?.text).toContain("Waits for a moderator.");
   });
 });
