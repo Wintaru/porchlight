@@ -315,3 +315,18 @@ claim functions to use them. The emails do not change.
 One change that a person can see: an agent's `create_draft` and `update_draft` now
 refuse a body longer than 100,000 characters, the same limit as the editor. Before,
 the tools took a body of any length.
+
+## 17. Private posts (issue #101)
+
+No switch to change. Two migrations go out with the release, like any other, in this
+order: `20260928130000_post_visibility_private` and `20260928131000_private_posts`. The
+first adds the value `private` to the post visibility list. The second uses it, so
+they must stay two files: Postgres cannot use a new list value in the transaction that
+adds it.
+
+The second migration adds two checks to `posts`. Postgres reads every post once to
+test them. On a site with a few thousand posts this takes less than a second.
+
+Deploy the migrations before the app, as the `push-migrations` job does. An app that
+arrives first offers "Private" in the editor, and the database refuses the save until
+the migrations are in.

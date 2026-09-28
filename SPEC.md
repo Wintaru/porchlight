@@ -110,7 +110,7 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 
 - Posts: title, slug, `body_md`, `body_html`, cover image, summary (one line for the
   preview card), tags, `status` (`draft | pending | published | rejected | hidden |
-  removed`), `visibility` (`public | unlisted`), `comments_enabled` (default true, set
+  removed`), `visibility` (`public | unlisted | private`), `comments_enabled` (default true, set
   by the author in the editor; the comment form hides and new comments are refused
   when false, existing comments stay visible).
 - Comments: threaded, `parent_id`, `depth` capped at 6 (deeper replies attach at 6 with
@@ -125,6 +125,17 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 - URL shape: `/@handle/slug`. Author page `/@handle`. Reserved handles: `anon`, `p`,
   `admin`, `mod`, and every top-level route. Erased authors return 410 Gone.
 - Unlisted posts are excluded from feeds, tag pages, sitemap, RSS, and carry `noindex`.
+- Private posts (D27, #101) are a journal: finished and dated, and only the author sees
+  them. The author's own home feed (Everything), profile and post page show one with a
+  lock chip, "Only you". Everyone else gets a 404, staff included, and it is in no
+  other feed, tag page, search, RSS, sitemap, follower notice or reader email. RLS
+  enforces this (`posts_public_read`, and `media_assets_public_read` for its uploads).
+  No comments, reactions or reports. A private post never waits in the queue: Publish
+  puts it up at once, even for a member on probation. Turning a published private post
+  public or unlisted is a publish at that moment: up at once for a trusted member, with
+  the one-time follower notice (#87), or into the queue for a member on probation. A
+  post waiting in the queue that turns private leaves it. Only the author may make a
+  post private, and not while it has a report no moderator has decided. Scanning, evidence, export and erasure treat it like any other post.
 - The editor toolbar offers only what markdown can store.
 - `posts.version` moves by one on every write (#100). An autosave sends the version
   its page last saw and changes nothing when the post was written since. The editor
@@ -215,7 +226,9 @@ retention, the audit log, and scanning always on. "Other" shows the maximum-caut
 defaults and a plain warning to consult local law.
 
 **Queue and tools.** Approval queue for pending posts and comments (anonymous and
-probation). Reports with reasons that match the code of conduct plus a separate "illegal
+probation). Nothing of a private post reaches staff (D27): not the post, not a comment
+on it, not a held upload in it, not a report on it. Its uploads are still scanned and
+held, and a held one joins the queue when its post goes public. Reports with reasons that match the code of conduct plus a separate "illegal
 content" reason that escalates at once. Actions: approve, approve as mature, reject with
 reason, hide, remove, lock thread, suspend, ban, block anonymous token and IP hash,
 escalate, mark member trusted. Every action writes `mod_actions` and the audit log.
@@ -248,7 +261,7 @@ author), `/t/tag/feed.xml` (one tag). The site feed's channel title is `site_nam
 alone; the author and tag feeds lead with their own name and carry `site_name` after it,
 so three feeds in one reader are not indistinguishable. Each also carries
 `<link rel="alternate">` on the matching page, and the same exclusions as the feed
-(unlisted, pending, hidden never appear). Syndication to Discord or any other service
+(unlisted, private, pending, hidden never appear). Syndication to Discord or any other service
 is pull: the author tags the post, and a bot subscribes to that tag's feed. Phase 3
 adds push through `WebhookAccessor` (section 14).
 
@@ -344,7 +357,9 @@ bytes, base64url), scopes, `expires_at`, `revoked_at`, `last_used_at`. Shown onc
 
 **The agent actor.** `Actor` gains `{ kind: "agent", profile, grant }`. `PermissionEngine`
 rules on agents for every action, exhaustively. Agents may create, edit and delete their
-member's **drafts**, upload with the scope, and publish only with the scope. Everything
+member's **drafts**, upload with the scope, and publish only with the scope. A private
+post (D27) is read only by its own member's agent with `posts:draft`, the scope that
+reads the member's drafts. Everything
 else is denied: profile edits, moderation, erasure, token management, deleting a
 published post. The member's trust level carries through unchanged: a probation member's
 agent lands in `pending`. Text moderation and the upload quarantine apply as to any post.
