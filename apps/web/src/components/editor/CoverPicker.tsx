@@ -1,8 +1,9 @@
 "use client";
 
+import { isImageFilename } from "@porchlight/core/client";
 import { useEffect, useState } from "react";
 
-import { getUpload } from "@/app/write/media-actions";
+import { deleteUpload, getUpload } from "@/app/write/media-actions";
 import { RevealImage } from "@/components/RevealImage";
 import type { UploadView } from "@/lib/upload-view";
 import { DropZone } from "./DropZone";
@@ -60,6 +61,12 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
   }, [cover]);
 
   const choose = async (file: File) => {
+    // Refused before any conversion or upload (#91): a dropped video would otherwise be
+    // converted, uploaded and counted against the quota, then turned down.
+    if (!isImageFilename(file.name)) {
+      setError(NOT_AN_IMAGE);
+      return;
+    }
     setBusy(true);
     setError(null);
     const outcome = await uploadFile(file, undefined, postId === "" ? null : postId);
@@ -69,7 +76,19 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
       return;
     }
     if (outcome.upload.kind !== "image") {
-      setError("A cover has to be an image.");
+      // The name said image and the bytes did not. Remove the upload so it does not
+      // count against the quota. If that fails, it waits in "Not in any post".
+      setError(NOT_AN_IMAGE);
+      deleteUpload(outcome.upload.mediaId).then(
+        (deleted) => {
+          if (!deleted.ok) {
+            console.warn("a refused cover upload was not removed", deleted.error);
+          }
+        },
+        (failure: unknown) => {
+          console.error("a refused cover upload was not removed", failure);
+        },
+      );
       return;
     }
     setCover({ kind: "set", upload: outcome.upload });
@@ -155,3 +174,5 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
     </div>
   );
 }
+
+const NOT_AN_IMAGE = "A cover has to be an image.";

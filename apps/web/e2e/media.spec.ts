@@ -22,6 +22,7 @@ import { rest } from "./service-rest";
 const FIXTURES = join(import.meta.dirname, "fixtures");
 const PHOTO = readFileSync(join(FIXTURES, "porch-photo.jpg"));
 const PDF = readFileSync(join(FIXTURES, "sawhorse-cutlist.pdf"));
+const CLIP = readFileSync(join(FIXTURES, "porch-clip.mp4"));
 // FakeClassifyImageHandler's FAKE_FLAG_MARKER: a real image with it at the end scores
 // as flagged on the local stack.
 const FLAGGED_PHOTO = Buffer.concat([
@@ -255,6 +256,27 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   await expect(preview.getByRole("button", { name: "Insert" })).toHaveCount(0);
   await preview.getByRole("button", { name: "Close" }).click();
   await deleteCurrentPost(page);
+});
+
+// #91: the cover picker refuses a video by its name, before it converts or uploads it,
+// so nothing reaches storage and nothing counts against the quota.
+test("the cover picker refuses a video before any upload", async ({ page }) => {
+  const clip = `cover-clip-${Date.now().toString(36)}.mp4`;
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page
+    .getByTestId("cover-drop")
+    .locator('input[type="file"]')
+    .setInputFiles(file(clip, CLIP, "video/mp4"));
+  await expect(page.getByText("A cover has to be an image.")).toBeVisible();
+  await expect(page.getByTestId("cover-drop").getByRole("button")).toBeEnabled();
+  const rows = (await (
+    await rest(
+      `media_assets?select=id&original_filename=eq.${encodeURIComponent(clip)}`,
+      { method: "GET" },
+    )
+  ).json()) as unknown[];
+  expect(rows).toHaveLength(0);
 });
 
 async function mediaIdOf(filename: string): Promise<string> {
