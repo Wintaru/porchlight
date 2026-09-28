@@ -92,7 +92,9 @@ AAC sound, the movie box first, and no metadata such as a location. Then it uplo
 and where the movie box is), then the movie box, and refuses a file with metadata, a
 codec other than H.264 and AAC, or its movie box after the media
 (`video-not-prepared`). Only then does it hash the whole file as a stream and give the
-scanners a signed link. The public copy is a storage copy of the checked file.
+scanners a signed link. All of its own reads go through one short-lived signed link. The
+scanners get a second, separate link, so the link that goes to an outside service is
+used for nothing else. The public copy is a storage copy of the checked file.
 
 An agent that uploads a video through `request_upload` must send a file in that same
 shape, with the `video/mp4` type.

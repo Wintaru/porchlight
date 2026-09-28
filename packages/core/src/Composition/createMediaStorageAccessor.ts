@@ -27,6 +27,9 @@ import { DownloadStorageObjectRangeRequest } from "../Accessors/MediaStorageAcce
 import { FakeDigestStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeDigestStorageObjectHandler";
 import { SupabaseDigestStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseDigestStorageObjectHandler";
 import { DigestStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/DigestStorageObjectRequest";
+import { FakeOpenStorageReadHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeOpenStorageReadHandler";
+import { SupabaseOpenStorageReadHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseOpenStorageReadHandler";
+import { OpenStorageReadRequest } from "../Accessors/MediaStorageAccessor/Requests/OpenStorageReadRequest";
 import { FakeCopyStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeCopyStorageObjectHandler";
 import { SupabaseCopyStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseCopyStorageObjectHandler";
 import { CopyStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/CopyStorageObjectRequest";
@@ -75,11 +78,12 @@ function createSupabaseMediaStorageAccessor(db: DbClient): IMediaStorageAccessor
         LoadStorageObjectInfoRequest,
         new SupabaseLoadStorageObjectInfoHandler(db),
       )
+      .register(OpenStorageReadRequest, new SupabaseOpenStorageReadHandler(db))
       .register(
         DownloadStorageObjectRangeRequest,
-        new SupabaseDownloadStorageObjectRangeHandler(db),
+        new SupabaseDownloadStorageObjectRangeHandler(),
       )
-      .register(DigestStorageObjectRequest, new SupabaseDigestStorageObjectHandler(db))
+      .register(DigestStorageObjectRequest, new SupabaseDigestStorageObjectHandler())
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveStorageObjectRequest, new SupabaseRemoveStorageObjectHandler(db))
@@ -103,6 +107,7 @@ function createFakeMediaStorageAccessor(
         new FakeCreateSignedDownloadUrlHandler(state),
       )
       .register(LoadStorageObjectInfoRequest, new FakeLoadStorageObjectInfoHandler(state))
+      .register(OpenStorageReadRequest, new FakeOpenStorageReadHandler(state))
       .register(
         DownloadStorageObjectRangeRequest,
         new FakeDownloadStorageObjectRangeHandler(state),

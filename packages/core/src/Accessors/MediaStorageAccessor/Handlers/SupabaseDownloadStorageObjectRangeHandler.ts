@@ -1,5 +1,3 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
 import type { DownloadStorageObjectRangeRequest } from "../Requests/DownloadStorageObjectRangeRequest";
 import { MediaStorageAccessFailedResponse } from "../Responses/MediaStorageAccessFailedResponse";
@@ -7,28 +5,18 @@ import { StorageObjectDownloadedResponse } from "../Responses/StorageObjectDownl
 
 type Result = StorageObjectDownloadedResponse | MediaStorageAccessFailedResponse;
 
-// Long enough for one read to start.
-const SIGNED_URL_TTL_SECONDS = 60;
 const PARTIAL_CONTENT = 206;
 
-// The storage client reads whole objects only, so a range goes through a short-lived
-// signed URL with an HTTP Range header.
+// An HTTP Range read through the check's one signed link (#95): no signing of its own.
 export class SupabaseDownloadStorageObjectRangeHandler implements IHandler<
   DownloadStorageObjectRangeRequest,
   Result
 > {
-  constructor(private readonly db: DbClient) {}
-
   async handle(request: DownloadStorageObjectRangeRequest): Promise<Result> {
-    const { bucket, path, offset, length, correlationId } = request;
-    const { data, error } = await this.db.storage
-      .from(bucket)
-      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-    if (error) {
-      return new MediaStorageAccessFailedResponse(correlationId, error.message);
-    }
+    const { link, offset, length, correlationId } = request;
+    const { bucket, path } = link;
     try {
-      const response = await fetch(data.signedUrl, {
+      const response = await fetch(link.url, {
         headers: { range: `bytes=${String(offset)}-${String(offset + length - 1)}` },
       });
       // 200 means the server ignored the range and sent everything: refuse it rather

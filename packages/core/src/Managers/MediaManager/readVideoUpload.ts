@@ -3,10 +3,13 @@ import { CreateSignedDownloadUrlRequest } from "../../Accessors/MediaStorageAcce
 import { DigestStorageObjectRequest } from "../../Accessors/MediaStorageAccessor/Requests/DigestStorageObjectRequest";
 import { DownloadStorageObjectRangeRequest } from "../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRangeRequest";
 import { LoadStorageObjectInfoRequest } from "../../Accessors/MediaStorageAccessor/Requests/LoadStorageObjectInfoRequest";
+import { OpenStorageReadRequest } from "../../Accessors/MediaStorageAccessor/Requests/OpenStorageReadRequest";
 import { SignedDownloadUrlCreatedResponse } from "../../Accessors/MediaStorageAccessor/Responses/SignedDownloadUrlCreatedResponse";
 import { StorageObjectDigestResponse } from "../../Accessors/MediaStorageAccessor/Responses/StorageObjectDigestResponse";
 import { StorageObjectDownloadedResponse } from "../../Accessors/MediaStorageAccessor/Responses/StorageObjectDownloadedResponse";
 import { StorageObjectInfoResponse } from "../../Accessors/MediaStorageAccessor/Responses/StorageObjectInfoResponse";
+import { StorageReadOpenedResponse } from "../../Accessors/MediaStorageAccessor/Responses/StorageReadOpenedResponse";
+import type { StorageReadLink } from "../../Accessors/MediaStorageAccessor/StorageReadLink";
 import type { IAttachmentEngine } from "../../Engines/AttachmentEngine/IAttachmentEngine";
 import { ClassifyAttachmentRequest } from "../../Engines/AttachmentEngine/Requests/ClassifyAttachmentRequest";
 import { EvaluateVideoRequest } from "../../Engines/AttachmentEngine/Requests/EvaluateVideoRequest";
@@ -27,6 +30,8 @@ import { unavailable } from "./unavailable";
 // A video is read in parts, never whole (#21): it can be hundreds of megabytes, more
 // than a request should hold. The file's first bytes prove its type and locate its
 // movie box; the movie box says what the tracks are; a streamed hash covers the rest.
+// Every one of those reads goes through one signed link (#95); the scanners get a second,
+// separate link (C21), so the one an outside service holds is used for nothing else.
 
 // Enough for the `ftyp` box and the start of the movie box that follows it.
 const HEAD_BYTES = 64 * 1024;
@@ -46,6 +51,8 @@ const VIDEO_CONTENT_TYPE = "video/mp4";
 export interface InspectedVideo {
   readonly classified: AttachmentClassifiedResponse;
   readonly bytes: number;
+  // The link the inspection read through, for the hash to read through too.
+  readonly link: StorageReadLink;
 }
 
 export interface SealedVideo {
@@ -82,10 +89,14 @@ export async function inspectVideoUpload(
   if (info.bytes < BOX_HEADER_BYTES) {
     return new MediaRejectedResponse(correlationId, "type-mismatch");
   }
+  const opened = await storage.load(new OpenStorageReadRequest(bucket, path, context));
+  if (!(opened instanceof StorageReadOpenedResponse)) {
+    return unavailable(correlationId, opened, "storage.load");
+  }
+  const { link } = opened;
   const head = await storage.load(
     new DownloadStorageObjectRangeRequest(
-      bucket,
-      path,
+      link,
       0,
       Math.min(HEAD_BYTES, info.bytes),
       context,
@@ -116,7 +127,7 @@ export async function inspectVideoUpload(
       return head.bytes.slice(offset, offset + length);
     }
     const range = await storage.load(
-      new DownloadStorageObjectRangeRequest(bucket, path, offset, length, context),
+      new DownloadStorageObjectRangeRequest(link, offset, length, context),
     );
     return range instanceof StorageObjectDownloadedResponse
       ? range.bytes
@@ -153,21 +164,21 @@ export async function inspectVideoUpload(
   if (!(evaluated instanceof VideoAcceptedResponse)) {
     return unavailable(correlationId, evaluated, "attachments.evaluate");
   }
-  return { classified, bytes: info.bytes };
+  return { classified, bytes: info.bytes, link };
 }
 
-// The hash of the whole file, and a link for the scanners. `bytes` is the size the
-// inspection saw: a file that changed since is not the file that was checked.
+// The hash of the whole file, and a link for the scanners. `bytes` and `link` are what
+// the inspection saw and read through: a file that changed since is not the file that
+// was checked.
 export async function sealVideoUpload(
-  where: Pick<Where, "storage" | "bucket" | "path">,
-  bytes: number,
+  storage: IMediaStorageAccessor,
+  inspected: Pick<InspectedVideo, "bytes" | "link">,
   context: { readonly correlationId: string },
 ): Promise<SealedVideo | MediaUnavailableResponse> {
-  const { storage, bucket, path } = where;
+  const { bytes, link } = inspected;
+  const { bucket, path } = link;
   const { correlationId } = context;
-  const digest = await storage.load(
-    new DigestStorageObjectRequest(bucket, path, context),
-  );
+  const digest = await storage.load(new DigestStorageObjectRequest(link, context));
   if (!(digest instanceof StorageObjectDigestResponse)) {
     return unavailable(correlationId, digest, "storage.load");
   }

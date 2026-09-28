@@ -52,6 +52,27 @@ export default tseslint.config(
     },
     settings: { next: { rootDir: "apps/web" } },
   },
+  {
+    // A storage read link is made only by the accessor that signs it (#95), so a Manager
+    // cannot hand a range read or a hash a URL of its own.
+    files: ["packages/core/src/**/*.ts"],
+    ignores: ["packages/core/src/Accessors/MediaStorageAccessor/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/MediaStorageAccessor/StorageReadLink"],
+              importNames: ["issueStorageReadLink"],
+              message:
+                "Only MediaStorageAccessor issues a StorageReadLink. Ask it with OpenStorageReadRequest.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   boundariesConfig,
   prettier,
 );

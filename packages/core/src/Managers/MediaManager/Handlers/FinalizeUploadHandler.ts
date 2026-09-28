@@ -360,7 +360,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     if (overQuota !== undefined) {
       return overQuota;
     }
-    const sealed = await sealVideoUpload(where, inspected.bytes, context);
+    const sealed = await sealVideoUpload(where.storage, inspected, context);
     if (!("sha256" in sealed)) {
       return sealed;
     }

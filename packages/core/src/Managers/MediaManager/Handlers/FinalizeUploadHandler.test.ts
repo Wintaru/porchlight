@@ -59,11 +59,16 @@ import { FakeCreateSignedDownloadUrlHandler } from "../../../Accessors/MediaStor
 import { FakeDigestStorageObjectHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeDigestStorageObjectHandler";
 import { FakeDownloadStorageObjectRangeHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeDownloadStorageObjectRangeHandler";
 import { FakeLoadStorageObjectInfoHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeLoadStorageObjectInfoHandler";
+import { FakeOpenStorageReadHandler } from "../../../Accessors/MediaStorageAccessor/Handlers/FakeOpenStorageReadHandler";
 import { CopyStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/CopyStorageObjectRequest";
 import { CreateSignedDownloadUrlRequest } from "../../../Accessors/MediaStorageAccessor/Requests/CreateSignedDownloadUrlRequest";
 import { DigestStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DigestStorageObjectRequest";
 import { DownloadStorageObjectRangeRequest } from "../../../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRangeRequest";
 import { LoadStorageObjectInfoRequest } from "../../../Accessors/MediaStorageAccessor/Requests/LoadStorageObjectInfoRequest";
+import { OpenStorageReadRequest } from "../../../Accessors/MediaStorageAccessor/Requests/OpenStorageReadRequest";
+import type { IHandler } from "../../../Common/IHandler";
+import type { RequestBase } from "../../../Common/RequestBase";
+import type { ResponseBase } from "../../../Common/ResponseBase";
 import { MatchMediaUrlRequest } from "../../../Accessors/HashMatchAccessor/Requests/MatchMediaUrlRequest";
 import { FakeClassifyVideoHandler } from "../../../Accessors/ImageClassifierAccessor/Handlers/FakeClassifyVideoHandler";
 import { ClassifyVideoRequest } from "../../../Accessors/ImageClassifierAccessor/Requests/ClassifyVideoRequest";
@@ -122,12 +127,26 @@ function ascii(text: string): Uint8Array {
   return new TextEncoder().encode(text);
 }
 
+// Wraps a handler to count its calls: each one signs a storage link.
+function counted<TRequest extends RequestBase, TResponse extends ResponseBase>(
+  inner: IHandler<TRequest, TResponse>,
+  count: () => void,
+): IHandler<TRequest, TResponse> {
+  return {
+    handle: (request) => {
+      count();
+      return inner.handle(request);
+    },
+  };
+}
+
 function harness(
   hashResult: "clear" | "match" | "fail" = "clear",
   classifierResult: "clear" | "flagged" | "locked" | "fail" = "clear",
   quotaState = new FakeQuotaState(),
 ) {
   const storageState = new FakeMediaStorageState();
+  const signs = { reads: 0, downloads: 0 };
   const storage = new MediaStorageAccessor(
     new HandlerResolverBuilder()
       .register(
@@ -154,8 +173,16 @@ function harness(
         new FakeDigestStorageObjectHandler(storageState),
       )
       .register(
+        OpenStorageReadRequest,
+        counted(new FakeOpenStorageReadHandler(storageState), () => {
+          signs.reads += 1;
+        }),
+      )
+      .register(
         CreateSignedDownloadUrlRequest,
-        new FakeCreateSignedDownloadUrlHandler(storageState),
+        counted(new FakeCreateSignedDownloadUrlHandler(storageState), () => {
+          signs.downloads += 1;
+        }),
       )
       .build(),
     new HandlerResolverBuilder()
@@ -298,7 +325,7 @@ function harness(
     );
   }
 
-  return { handler, storageState, assetState, quotaState, seed, finalize };
+  return { handler, storageState, assetState, quotaState, signs, seed, finalize };
 }
 
 describe("FinalizeUploadHandler", () => {
@@ -619,6 +646,16 @@ describe("FinalizeUploadHandler", () => {
       expect(quotaState.usage.get(THEO.profile.id)).toMatchObject({
         bytesUsed: PREPARED.length,
       });
+    });
+
+    test("a video check signs two links: one for its own reads, one for the scanners (#95, C21)", async () => {
+      const { seed, signs, finalize } = harness();
+      seed(VIDEO_ID, "porch.mp4", PREPARED, "video/mp4");
+
+      const result = await finalize(VIDEO_ID, "porch.mp4");
+
+      expect(result).toBeInstanceOf(MediaFinalizedResponse);
+      expect(signs).toEqual({ reads: 1, downloads: 1 });
     });
 
     test("a video that keeps its metadata is refused and removed", async () => {

@@ -1,7 +1,5 @@
 import { createHash } from "node:crypto";
 
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
 import type { DigestStorageObjectRequest } from "../Requests/DigestStorageObjectRequest";
 import { MediaStorageAccessFailedResponse } from "../Responses/MediaStorageAccessFailedResponse";
@@ -9,27 +7,17 @@ import { StorageObjectDigestResponse } from "../Responses/StorageObjectDigestRes
 
 type Result = StorageObjectDigestResponse | MediaStorageAccessFailedResponse;
 
-// Long enough to read a capped video end to end.
-const SIGNED_URL_TTL_SECONDS = 600;
-
 // Streams the object through the hash one chunk at a time. The storage client would
-// buffer the whole object, so the read goes through a short-lived signed URL.
+// buffer the whole object, so the read goes through the check's one signed link (#95).
 export class SupabaseDigestStorageObjectHandler implements IHandler<
   DigestStorageObjectRequest,
   Result
 > {
-  constructor(private readonly db: DbClient) {}
-
   async handle(request: DigestStorageObjectRequest): Promise<Result> {
-    const { bucket, path, correlationId } = request;
-    const { data, error } = await this.db.storage
-      .from(bucket)
-      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-    if (error) {
-      return new MediaStorageAccessFailedResponse(correlationId, error.message);
-    }
+    const { link, correlationId } = request;
+    const { bucket, path } = link;
     try {
-      const response = await fetch(data.signedUrl);
+      const response = await fetch(link.url);
       if (!response.ok || response.body === null) {
         await response.body?.cancel();
         return new MediaStorageAccessFailedResponse(

@@ -13,7 +13,8 @@ export class FakeDownloadStorageObjectRangeHandler implements IHandler<
   constructor(private readonly state: FakeMediaStorageState) {}
 
   handle(request: DownloadStorageObjectRangeRequest): Promise<Result> {
-    const { bucket, path, offset, length, correlationId } = request;
+    const { link, offset, length, correlationId } = request;
+    const { bucket, path } = link;
     if (this.state.failing) {
       return Promise.resolve(
         new MediaStorageAccessFailedResponse(

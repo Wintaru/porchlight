@@ -14,7 +14,8 @@ export class FakeDigestStorageObjectHandler implements IHandler<
   constructor(private readonly state: FakeMediaStorageState) {}
 
   async handle(request: DigestStorageObjectRequest): Promise<Result> {
-    const { bucket, path, correlationId } = request;
+    const { link, correlationId } = request;
+    const { bucket, path } = link;
     if (this.state.failing) {
       return new MediaStorageAccessFailedResponse(
         correlationId,
