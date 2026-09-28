@@ -93,7 +93,7 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     }
     // An image that will not decode stays tagged and unpublished; nothing to retry.
     const published = await this.publisher.transform(
-      new PublishMediaRequest(stored.asset, undefined, context),
+      new PublishMediaRequest(stored.asset, undefined, undefined, context),
     );
     if (
       !(published instanceof MediaPublishedResponse) &&

@@ -63,7 +63,7 @@ export class RepublishMediaHandler implements IHandler<RepublishMediaRequest, Re
     }
 
     const published = await this.publisher.transform(
-      new PublishMediaRequest(asset, undefined, context),
+      new PublishMediaRequest(asset, undefined, undefined, context),
     );
     if (published instanceof MediaPublishedResponse) {
       return new MediaRepublishedResponse(correlationId, published.asset, null);

@@ -1,6 +1,10 @@
 import sharp, { type Sharp } from "sharp";
 
-import { decodeHeic } from "../../Utilities/media/decodeHeic";
+import {
+  decodeHeic,
+  type HeicPixels,
+  sharpOfHeicPixels,
+} from "../../Utilities/media/decodeHeic";
 import { isHeicMimeType, MAX_IMAGE_INPUT_PIXELS } from "../../Utilities/media/imageInput";
 
 // Also the shape of any public copy: the bytes, their type, and the key's extension.
@@ -56,16 +60,18 @@ const ENCODERS: Readonly<Record<string, Output>> = {
 };
 
 // Undefined for a type with no encoder here, so a new allowlisted type fails closed.
+// `heicPixels` are a HEIC's pixels the scan already decoded (#95); absent, it decodes.
 export async function reencodeImage(
   bytes: Uint8Array,
   mimeType: string,
+  heicPixels?: HeicPixels,
 ): Promise<ReencodedImage | undefined> {
   const encoder = ENCODERS[mimeType];
   if (encoder === undefined) {
     return undefined;
   }
   const decoded = isHeicMimeType(mimeType)
-    ? await decodeHeic(bytes, MAX_IMAGE_INPUT_PIXELS)
+    ? sharpOfHeicPixels(heicPixels ?? (await decodeHeic(bytes, MAX_IMAGE_INPUT_PIXELS)))
     : sharp(bytes, {
         animated: mimeType === "image/gif" || mimeType === "image/webp",
         limitInputPixels: MAX_IMAGE_INPUT_PIXELS,

@@ -105,7 +105,9 @@ describe("TransformPublishMediaHandler", () => {
       await png(),
     );
 
-    const result = await handler.handle(new PublishMediaRequest(start, undefined));
+    const result = await handler.handle(
+      new PublishMediaRequest(start, undefined, undefined),
+    );
 
     expect(result).toBeInstanceOf(MediaPublishedResponse);
     expect(assetState.assets.get(ID)?.publishedPath).toBe(`public-media/${ID}.png`);
@@ -125,7 +127,9 @@ describe("TransformPublishMediaHandler", () => {
     ] as const) {
       const start = asset(overrides);
       const { handler, storageState } = harness(start);
-      const result = await handler.handle(new PublishMediaRequest(start, await png()));
+      const result = await handler.handle(
+        new PublishMediaRequest(start, await png(), undefined),
+      );
       expect(result).toEqual(
         new MediaUnpublishableResponse(result.correlationId, reason),
       );
@@ -142,7 +146,7 @@ describe("TransformPublishMediaHandler", () => {
     });
     const { handler, storageState, assetState } = harness(start);
     const pdf = new TextEncoder().encode("%PDF-1.7 a plan");
-    const result = await handler.handle(new PublishMediaRequest(start, pdf));
+    const result = await handler.handle(new PublishMediaRequest(start, pdf, undefined));
     expect(result).toBeInstanceOf(MediaPublishedResponse);
     expect(assetState.assets.get(ID)?.publishedPath).toBe(`public-media/${ID}.pdf`);
     expect(
@@ -153,7 +157,9 @@ describe("TransformPublishMediaHandler", () => {
   test("an image that is already published is left as it is", async () => {
     const start = asset({ publishedPath: `public-media/${ID}.png` });
     const { handler, storageState } = harness(start);
-    const result = await handler.handle(new PublishMediaRequest(start, await png()));
+    const result = await handler.handle(
+      new PublishMediaRequest(start, await png(), undefined),
+    );
     expect(result).toMatchObject({ asset: { publishedPath: `public-media/${ID}.png` } });
     expect(storageState.objects.size).toBe(0);
   });
@@ -163,7 +169,9 @@ describe("TransformPublishMediaHandler", () => {
     const { handler, storageState, assetState } = harness(start);
     // What a DeleteMedia between the upload and the row write leaves: no row.
     assetState.assets.delete(ID);
-    const result = await handler.handle(new PublishMediaRequest(start, await png()));
+    const result = await handler.handle(
+      new PublishMediaRequest(start, await png(), undefined),
+    );
     expect(result).toMatchObject({
       reason: "unexpected MediaAssetNotFoundResponse from mediaAssets.store",
     });
@@ -173,7 +181,9 @@ describe("TransformPublishMediaHandler", () => {
   test("a failed row write leaves the copy, since the write may have landed", async () => {
     const start = asset({ scanStatus: "clear" });
     const { handler, storageState } = harness(start, true);
-    const result = await handler.handle(new PublishMediaRequest(start, await png()));
+    const result = await handler.handle(
+      new PublishMediaRequest(start, await png(), undefined),
+    );
     expect(result).toMatchObject({ reason: "MEDIA_FAKE_RESULT=fail" });
     expect(storageState.objects.size).toBe(1);
   });
@@ -182,7 +192,9 @@ describe("TransformPublishMediaHandler", () => {
     const start = asset({ scanStatus: "clear" });
     const { handler, assetState } = harness(start);
     const notReallyPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    const result = await handler.handle(new PublishMediaRequest(start, notReallyPng));
+    const result = await handler.handle(
+      new PublishMediaRequest(start, notReallyPng, undefined),
+    );
     expect(result).toMatchObject({ reason: "undecodable" });
     expect(assetState.assets.get(ID)?.publishedPath).toBeNull();
   });

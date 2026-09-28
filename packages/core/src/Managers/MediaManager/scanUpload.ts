@@ -18,6 +18,7 @@ import { EvaluateModerationRequest } from "../../Engines/ModerationPolicyEngine/
 import { ContentClearResponse } from "../../Engines/ModerationPolicyEngine/Responses/ContentClearResponse";
 import { ContentFlaggedResponse } from "../../Engines/ModerationPolicyEngine/Responses/ContentFlaggedResponse";
 import { ContentLockedResponse } from "../../Engines/ModerationPolicyEngine/Responses/ContentLockedResponse";
+import type { HeicPixels } from "../../Utilities/media/decodeHeic";
 import { scannableImage } from "../../Utilities/media/scannableImage";
 import { MediaRejectedResponse } from "./Responses/MediaRejectedResponse";
 import type { MediaUnavailableResponse } from "./Responses/MediaUnavailableResponse";
@@ -42,6 +43,8 @@ export interface ScanVerdict {
   readonly scanStatus: Exclude<ScanStatus, "pending">;
   readonly retainUntil: Date | null;
   readonly auditEvent: MediaAuditEvent | undefined;
+  // A HEIC's pixels as the scanners saw them, for the published copy (#95).
+  readonly heicPixels: HeicPixels | undefined;
 }
 
 export interface ScanDependencies {
@@ -63,6 +66,7 @@ export async function scanUpload(
   const { hashMatch, imageClassifier, siteConfig, moderationPolicy } = dependencies;
   let hashMatched = false;
   let imageClassification: ImageClassification | undefined;
+  let heicPixels: HeicPixels | undefined;
 
   if (subject.kind === "image") {
     // A HEIC goes to the scanners as a JPEG of the same pixels (#21). One that will
@@ -85,6 +89,7 @@ export async function scanUpload(
       return unavailable(context.correlationId, hashResult, "hashMatch.load");
     }
     hashMatched = hashResult.matched;
+    heicPixels = scanned.heicPixels;
 
     const classifyResult = await imageClassifier.load(
       new ClassifyImageRequest(scanned.bytes, scanned.mimeType, context),
@@ -131,13 +136,20 @@ export async function scanUpload(
       scanStatus: "locked",
       retainUntil: new Date(timestamp.getTime() + LOCKED_RETENTION_DAYS * MS_PER_DAY),
       auditEvent: { event: "media.locked", details: { reason: verdict.reason } },
+      // A locked file is never published, so its pixels are not kept.
+      heicPixels: undefined,
     };
   }
   if (verdict instanceof ContentFlaggedResponse) {
-    return { scanStatus: "flagged", retainUntil: null, auditEvent: undefined };
+    return {
+      scanStatus: "flagged",
+      retainUntil: null,
+      auditEvent: undefined,
+      heicPixels: undefined,
+    };
   }
   if (verdict instanceof ContentClearResponse) {
-    return { scanStatus: "clear", retainUntil: null, auditEvent: undefined };
+    return { scanStatus: "clear", retainUntil: null, auditEvent: undefined, heicPixels };
   }
   return unavailable(context.correlationId, verdict, "moderationPolicy.evaluate");
 }

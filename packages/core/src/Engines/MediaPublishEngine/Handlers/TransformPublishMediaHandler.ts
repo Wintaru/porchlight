@@ -21,6 +21,7 @@ import type { PublishMediaRequest } from "../Requests/PublishMediaRequest";
 import { MediaPublishedResponse } from "../Responses/MediaPublishedResponse";
 import { MediaUnpublishableResponse } from "../Responses/MediaUnpublishableResponse";
 import { MediaPublishUnavailableResponse } from "../Responses/MediaPublishUnavailableResponse";
+import type { HeicPixels } from "../../../Utilities/media/decodeHeic";
 import { type ReencodedImage, reencodeImage } from "../reencodeImage";
 
 const DOWNLOAD_ONLY_TYPE = "application/octet-stream";
@@ -47,7 +48,7 @@ export class TransformPublishMediaHandler implements IHandler<
   ) {}
 
   async handle(request: PublishMediaRequest): Promise<Result> {
-    const { correlationId, asset, originalBytes, timestamp } = request;
+    const { correlationId, asset, originalBytes, heicPixels, timestamp } = request;
     const context = { correlationId, timestamp };
     // A flagged image publishes only once a moderator approved it as mature.
     const cleared =
@@ -59,7 +60,7 @@ export class TransformPublishMediaHandler implements IHandler<
       return new MediaPublishedResponse(correlationId, asset);
     }
 
-    const key = await this.writeCopy(asset, originalBytes, context);
+    const key = await this.writeCopy(asset, originalBytes, heicPixels, context);
     if (typeof key !== "string") {
       return key;
     }
@@ -97,6 +98,7 @@ export class TransformPublishMediaHandler implements IHandler<
   private async writeCopy(
     asset: MediaAsset,
     originalBytes: Uint8Array | undefined,
+    heicPixels: HeicPixels | undefined,
     context: { readonly correlationId: string; readonly timestamp: Date },
   ): Promise<string | MediaUnpublishableResponse | MediaPublishUnavailableResponse> {
     const { correlationId } = context;
@@ -134,7 +136,7 @@ export class TransformPublishMediaHandler implements IHandler<
       bytes = downloaded.bytes;
     }
 
-    const copy = await publicCopyOf(asset, bytes, correlationId);
+    const copy = await publicCopyOf(asset, bytes, heicPixels, correlationId);
     if (copy instanceof MediaUnpublishableResponse) {
       return copy;
     }
@@ -161,6 +163,7 @@ export class TransformPublishMediaHandler implements IHandler<
 async function publicCopyOf(
   asset: MediaAsset,
   bytes: Uint8Array,
+  heicPixels: HeicPixels | undefined,
   correlationId: string,
 ): Promise<ReencodedImage | MediaUnpublishableResponse> {
   if (asset.kind !== "image") {
@@ -173,7 +176,7 @@ async function publicCopyOf(
     };
   }
   try {
-    const reencoded = await reencodeImage(bytes, asset.mimeType);
+    const reencoded = await reencodeImage(bytes, asset.mimeType, heicPixels);
     if (reencoded !== undefined) {
       return reencoded;
     }

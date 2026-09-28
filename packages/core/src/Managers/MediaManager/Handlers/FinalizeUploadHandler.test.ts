@@ -7,7 +7,7 @@ import { FakeUploadStorageObjectHandler } from "../../../Accessors/MediaStorageA
 import { UploadStorageObjectRequest } from "../../../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
 import { createMediaPublishEngine } from "../../../Composition/createMediaPublishEngine";
 import sharp from "sharp";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import { FakeHashMatchState } from "../../../Accessors/HashMatchAccessor/FakeHashMatchState";
 import { FakeMatchImageHashHandler } from "../../../Accessors/HashMatchAccessor/Handlers/FakeMatchImageHashHandler";
@@ -80,7 +80,16 @@ import { MediaFinalizedResponse } from "../Responses/MediaFinalizedResponse";
 import { MediaQuotaExceededResponse } from "../Responses/MediaQuotaExceededResponse";
 import { MediaRefusedResponse } from "../Responses/MediaRefusedResponse";
 import { MediaRejectedResponse } from "../Responses/MediaRejectedResponse";
+import type * as DecodeHeicModule from "../../../Utilities/media/decodeHeic";
 import { FinalizeUploadHandler } from "./FinalizeUploadHandler";
+
+// The real decoder, counted: one HEIC upload decodes once (#95).
+const { decodeHeic } = vi.hoisted(() => ({ decodeHeic: vi.fn() }));
+vi.mock("../../../Utilities/media/decodeHeic", async (importOriginal) => {
+  const actual = await importOriginal<typeof DecodeHeicModule>();
+  decodeHeic.mockImplementation(actual.decodeHeic);
+  return { ...actual, decodeHeic };
+});
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 const THEO: Actor & { kind: "member" } = {
@@ -165,18 +174,18 @@ function harness(
         new FakeLoadStorageObjectInfoHandler(storageState),
       )
       .register(
+        OpenStorageReadRequest,
+        counted(new FakeOpenStorageReadHandler(storageState), () => {
+          signs.reads += 1;
+        }),
+      )
+      .register(
         DownloadStorageObjectRangeRequest,
         new FakeDownloadStorageObjectRangeHandler(storageState),
       )
       .register(
         DigestStorageObjectRequest,
         new FakeDigestStorageObjectHandler(storageState),
-      )
-      .register(
-        OpenStorageReadRequest,
-        counted(new FakeOpenStorageReadHandler(storageState), () => {
-          signs.reads += 1;
-        }),
       )
       .register(
         CreateSignedDownloadUrlRequest,
@@ -460,6 +469,25 @@ describe("FinalizeUploadHandler", () => {
     const metadata = await sharp(copy).metadata();
     expect(metadata).toMatchObject({ format: "jpeg", width: 8, height: 6 });
     expect(metadata.exif).toBeUndefined();
+  });
+
+  test("a HEIC is decoded once for its scan and its AVIF copy (#95)", async () => {
+    const { storageState, seed, finalize } = harness();
+    const id = "88888888-8888-4888-8888-888888888889";
+    seed(id, "porch.heic", fixture("small.heic"));
+    decodeHeic.mockClear();
+
+    const result = await finalize(id, "porch.heic");
+
+    expect(result).toMatchObject({
+      asset: { scanStatus: "clear", publishedPath: `${PUBLIC_BUCKET}/${id}.avif` },
+    });
+    expect(decodeHeic).toHaveBeenCalledTimes(1);
+    const copy = storageState.objects.get(storageState.key(PUBLIC_BUCKET, `${id}.avif`));
+    if (copy === undefined) {
+      throw new Error("no public copy was written");
+    }
+    expect(await sharp(copy).metadata()).toMatchObject({ width: 64, height: 48 });
   });
 
   test("an image that will not decode finalizes with no copy and says why (#60)", async () => {

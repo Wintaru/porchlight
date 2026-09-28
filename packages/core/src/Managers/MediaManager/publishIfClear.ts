@@ -4,6 +4,7 @@ import type { MediaUnpublishableReason } from "../../Engines/MediaPublishEngine/
 import { PublishMediaRequest } from "../../Engines/MediaPublishEngine/Requests/PublishMediaRequest";
 import { MediaPublishedResponse } from "../../Engines/MediaPublishEngine/Responses/MediaPublishedResponse";
 import { MediaUnpublishableResponse } from "../../Engines/MediaPublishEngine/Responses/MediaUnpublishableResponse";
+import type { HeicPixels } from "../../Utilities/media/decodeHeic";
 import { unavailable } from "./unavailable";
 
 // A freshly finalized upload the scan cleared gets its public copy at once (#36), so an
@@ -13,11 +14,15 @@ import { unavailable } from "./unavailable";
 // so the upload comes back without a copy and its owner can try again
 // (RepublishMediaRequest). `unpublishable` says why an attempt made no copy, so the
 // editor does not offer a retry that cannot work (#60). `originalBytes` is undefined
-// for a video, which is copied in storage rather than read (#21).
+// for a video, which is copied in storage rather than read (#21). `heicPixels` are the
+// scan's decode of a HEIC, reused for its copy (#95).
 export async function publishIfClear(
   publisher: IMediaPublishEngine,
   asset: MediaAsset,
-  originalBytes: Uint8Array | undefined,
+  original: {
+    readonly bytes: Uint8Array | undefined;
+    readonly heicPixels: HeicPixels | undefined;
+  },
   context: { readonly correlationId: string; readonly timestamp: Date },
 ): Promise<{
   readonly asset: MediaAsset;
@@ -27,7 +32,7 @@ export async function publishIfClear(
     return { asset, unpublishable: null };
   }
   const published = await publisher.transform(
-    new PublishMediaRequest(asset, originalBytes, context),
+    new PublishMediaRequest(asset, original.bytes, original.heicPixels, context),
   );
   if (published instanceof MediaPublishedResponse) {
     return { asset: published.asset, unpublishable: null };

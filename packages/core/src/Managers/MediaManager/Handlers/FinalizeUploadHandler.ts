@@ -253,7 +253,7 @@ export class FinalizeUploadHandler implements IHandler<FinalizeUploadRequest, Re
     const { asset, unpublishable } = await publishIfClear(
       this.publisher,
       stored.asset,
-      originalBytes,
+      { bytes: originalBytes, heicPixels: verdict.heicPixels },
       {
         correlationId,
         timestamp: request.timestamp,

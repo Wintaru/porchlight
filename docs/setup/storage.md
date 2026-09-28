@@ -78,9 +78,10 @@ An iPhone saves photos as HEIC, which few browsers show. Safari usually converts
 to JPEG as it uploads it, but a HEIC file still arrives from a Mac, a file app or some
 Android phones. The server decodes it with `heic-decode` (libheif as WebAssembly: the
 standard `sharp` build leaves HEIC out for patent reasons) and publishes an AVIF copy.
-The scanners get a JPEG of the same pixels. The quarantine keeps the HEIC file. HEVC
-patents cover the decoder; a self-hoster in a strict jurisdiction can untick `heic` in
-the allowlist.
+The scanners get a JPEG of the same pixels, at full size. One upload decodes the file
+once: the JPEG and the AVIF copy start from the same pixels. The quarantine keeps the
+HEIC file. HEVC patents cover the decoder; a self-hoster in a strict jurisdiction can
+untick `heic` in the allowlist.
 
 ## Video (D4b)
 

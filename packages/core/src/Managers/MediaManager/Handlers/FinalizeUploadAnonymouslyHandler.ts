@@ -265,7 +265,7 @@ export class FinalizeUploadAnonymouslyHandler implements IHandler<
     const { asset, unpublishable } = await publishIfClear(
       this.publisher,
       stored.asset,
-      downloaded.bytes,
+      { bytes: downloaded.bytes, heicPixels: verdict.heicPixels },
       {
         correlationId,
         timestamp: request.timestamp,
