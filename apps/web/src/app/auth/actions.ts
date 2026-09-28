@@ -218,9 +218,16 @@ export async function devSignIn(formData: FormData): Promise<void> {
   if (user === undefined) {
     redirect(SIGN_IN_FAILED_PATH);
   }
-  if ((await ensureProfileFor(user)) === undefined) {
+  // A refusal signs out too: since #92 it has also deleted the auth user, so the session
+  // would belong to nobody.
+  const outcome = await ensureProfileFor(user);
+  if (outcome === undefined || outcome === "sign-up-closed") {
     await client.auth.signOut();
-    redirect(SIGN_IN_FAILED_PATH);
+    redirect(
+      outcome === undefined
+        ? SIGN_IN_FAILED_PATH
+        : `${SIGN_IN_FAILED_PATH}?reason=sign-up-closed`,
+    );
   }
   redirect(next);
 }

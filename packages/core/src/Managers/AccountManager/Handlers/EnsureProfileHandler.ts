@@ -13,12 +13,14 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import type { NewProfile } from "../../../Accessors/ProfileAccessor/NewProfile";
 import { CountProfilesRequest } from "../../../Accessors/ProfileAccessor/Requests/CountProfilesRequest";
 import { LoadProfileByIdRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
+import { RemoveOrphanAuthUserRequest } from "../../../Accessors/ProfileAccessor/Requests/RemoveOrphanAuthUserRequest";
 import { StoreNewProfileRequest } from "../../../Accessors/ProfileAccessor/Requests/StoreNewProfileRequest";
 import { ProfileAccessFailedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileAccessFailedResponse";
 import { ProfileCountResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileCountResponse";
 import { ProfileHandleTakenResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileHandleTakenResponse";
 import { ProfileLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileLoadedResponse";
 import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
+import { OrphanAuthUserRemovedResponse } from "../../../Accessors/ProfileAccessor/Responses/OrphanAuthUserRemovedResponse";
 import { ProfileStoredResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileStoredResponse";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
@@ -50,6 +52,8 @@ const NEW_MEMBER: Standing = { role: "member", trustLevel: "probation" };
 // `site_config.sign_up` (D20, #12) only gates an ordinary new member: the site's own
 // bootstrap admin and its configured admin email always get in, or the settings page
 // that closes sign-up could never be reopened.
+// A first sign-in refused before any invite is spent (a closed site, or an invite-only
+// site with no invite cookie) removes the auth user Supabase Auth made for it (#92).
 export class EnsureProfileHandler implements IHandler<
   EnsureProfileRequest,
   ProfileResponse | SignUpClosedResponse | AccountUnavailableResponse
@@ -90,7 +94,7 @@ export class EnsureProfileHandler implements IHandler<
         return unavailable(correlationId, signUp, "load");
       }
       if (signUp.policy === "closed") {
-        return new SignUpClosedResponse(correlationId);
+        return this.refuse(identity.userId, correlationId);
       }
       // Invite-only: a live link lets a friend in at the level the admin chose, and
       // spends one use (#25). `open` ignores invites (SPEC.md §4).
@@ -111,12 +115,15 @@ export class EnsureProfileHandler implements IHandler<
   ): Promise<ProfileResponse | SignUpClosedResponse | AccountUnavailableResponse> {
     const { correlationId, identity, inviteToken } = request;
     if (inviteToken === null) {
-      return new SignUpClosedResponse(correlationId);
+      return this.refuse(identity.userId, correlationId);
     }
     const tokenHash = await inviteTokenHash(inviteToken);
     const redeemed = await this.invites.store(
       new RedeemInviteRequest(tokenHash, context),
     );
+    // No removal here (#92 review): the use may be gone because another request for
+    // this same person spent it a moment ago and is storing the profile now. Deleting
+    // the auth user then would leave that profile with no way to sign in.
     if (redeemed instanceof InviteNotRedeemableResponse) {
       const made = await this.profiles.load(
         new LoadProfileByIdRequest(identity.userId, context),
@@ -145,6 +152,32 @@ export class EnsureProfileHandler implements IHandler<
       }
     }
     return created;
+  }
+
+  // The `sign_up` rule said no to a first sign-in. The auth user Supabase Auth made for
+  // it has no profile, so it goes: an invite email opened in another browser (the invite
+  // cookie is in the first one) or Google on a closed site would otherwise leave an
+  // account behind with every refusal. The accessor reads the profile again right before
+  // the delete. If one exists by then, another request for the same person got in first
+  // (a double submit, a reloaded callback, a second tab), and the answer is that
+  // profile. A failed removal is logged; the refusal stands.
+  private async refuse(
+    userId: string,
+    correlationId: string,
+  ): Promise<ProfileResponse | SignUpClosedResponse> {
+    const removed = await this.profiles.store(
+      new RemoveOrphanAuthUserRequest(userId, { correlationId }),
+    );
+    if (removed instanceof ProfileLoadedResponse) {
+      return new ProfileResponse(correlationId, removed.profile);
+    }
+    if (!(removed instanceof OrphanAuthUserRemovedResponse)) {
+      console.error(
+        `auth user not removed after a refused sign-in [${correlationId}]`,
+        removed,
+      );
+    }
+    return new SignUpClosedResponse(correlationId);
   }
 
   private async storeProfile(

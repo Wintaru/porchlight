@@ -37,6 +37,13 @@ The link opens in any browser, also a private window. A link opened in a browser
 did not ask for it lands on the home page, because the return-page cookie is not
 there.
 
+An invite is different. The invite link is kept in the browser that opened it. When a
+new member opens the sign-in link in another browser (for example, on a phone), the
+sign-in is refused, and the page says to use the same browser. The refusal deletes the
+auth user that Supabase Auth made for the address, so no empty account stays. A
+refused Google sign-in on a closed site deletes its auth user the same way. An auth
+user that has a profile is never deleted.
+
 ## Production
 
 The built-in Supabase sender is for tests only. It sends a few emails each hour, and

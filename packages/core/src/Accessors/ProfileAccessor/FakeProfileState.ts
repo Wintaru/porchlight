@@ -12,6 +12,8 @@ export class FakeProfileState {
   readonly voiceGuideRevisions = new Map<string, VoiceGuideRevision[]>();
   // Members who turned presence off (#75); everyone else shows, the column's default.
   readonly presenceHidden = new Set<string>();
+  // Auth users removed because the `sign_up` rule refused their first sign-in (#92).
+  readonly removedAuthUsers = new Set<string>();
 
   constructor(readonly failing = false) {}
 
