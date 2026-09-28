@@ -363,6 +363,7 @@ export { PresenceSettingResponse } from "./Managers/AccountManager/Responses/Pre
 // Presence through the server (#81, D26): the caller's page reports itself.
 export { AnnouncePresenceRequest } from "./Managers/AccountManager/Requests/AnnouncePresenceRequest";
 export { PresenceAnnouncedResponse } from "./Managers/AccountManager/Responses/PresenceAnnouncedResponse";
+export { PresenceRateLimitedResponse } from "./Managers/AccountManager/Responses/PresenceRateLimitedResponse";
 export { parsePresenceTopic, type PresenceTopic } from "./Common/PresenceTopic";
 export { PRESENCE_SIGNALS, type PresenceSignal } from "./Common/PresenceMessage";
 // The one-time re-render of cached HTML after the render pipeline changes (#77).

@@ -55,7 +55,20 @@ async function setShowPresence(profileId: string, visible: boolean): Promise<voi
   });
 }
 
+// The limits per member per minute (#89) count across tests that share a minute, and
+// the suite loads pages faster than a person does. Each test starts from zero. Only
+// the seed members' presence counters go, which only test runs write.
+async function clearPresenceLimits(): Promise<void> {
+  const subjects = [THEO_ID, JUNE_ID, MIRA_ID].map((id) => `"member:${id}"`).join(",");
+  await rest(
+    `rate_limits?subject=in.(${encodeURIComponent(subjects)})&action=like.presence.*`,
+    { method: "DELETE" },
+  );
+}
+
 test.describe("presence", () => {
+  test.beforeEach(clearPresenceLimits);
+
   test("a member typing a comment shows to another reader, and clears when they stop", async ({
     browser,
   }) => {

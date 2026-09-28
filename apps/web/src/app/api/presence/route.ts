@@ -5,17 +5,22 @@ import {
   parsePresenceTopic,
   PRESENCE_SIGNALS,
   PresenceAnnouncedResponse,
+  PresenceRateLimitedResponse,
   type PresenceSignal,
   type PresenceTopic,
 } from "@porchlight/core";
 
-import { getCurrentActor } from "@/lib/current-actor";
+import { getCurrentUser } from "@/auth/current-user";
 import { getDependencyContainer } from "@/lib/dependency-container";
 
 // Presence through the server (#81, D26). A member's page reports itself here, and the
 // server broadcasts it on the Realtime channel as the signed-in member: the body names
 // a channel and a signal, never a member. The answer says only whether the caller is
 // shown, so a page whose member turned presence off stops reporting.
+//
+// The route reads only the session's verified claims, not the profile: the handler
+// reads the profile and the presence setting in one query (#89). Each member has a
+// limit per minute; over it the answer is 429 with a Retry-After.
 
 interface AnnounceBody {
   readonly topic: PresenceTopic;
@@ -59,15 +64,25 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  const actor = await getCurrentActor();
-  if (actor.kind !== "member") {
+  const user = await getCurrentUser();
+  if (user === undefined) {
     return new Response(null, { status: 401 });
   }
   const response = await getDependencyContainer().accountManager.execute(
-    new AnnouncePresenceRequest(actor, body.topic, body.signal),
+    new AnnouncePresenceRequest(user.id, body.topic, body.signal),
   );
   if (response instanceof PresenceAnnouncedResponse) {
     return Response.json({ shown: response.shown });
+  }
+  if (response instanceof PresenceRateLimitedResponse) {
+    const seconds = Math.max(
+      1,
+      Math.ceil((response.retryAt.getTime() - Date.now()) / 1000),
+    );
+    return new Response(null, {
+      status: 429,
+      headers: { "retry-after": String(seconds) },
+    });
   }
   if (response instanceof ActionForbiddenResponse) {
     return new Response(null, { status: 403 });

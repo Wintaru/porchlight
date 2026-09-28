@@ -363,7 +363,7 @@ export class DependencyContainer {
         )
         .register(
           AnnouncePresenceRequest,
-          new AnnouncePresenceHandler(profiles, presence, permissions),
+          new AnnouncePresenceHandler(profiles, presence, rateLimits, permissions),
         )
         .register(RevokeInviteRequest, new RevokeInviteHandler(invites, permissions))
         .register(

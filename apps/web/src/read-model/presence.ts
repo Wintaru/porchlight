@@ -125,6 +125,10 @@ export function joinPresence(
           stopShowing();
           return;
         }
+        // Over the member's limit for this minute (#89): the next heartbeat tries again.
+        if (response.status === 429) {
+          return;
+        }
         if (!response.ok) {
           console.error(`presence ${signal} on ${topic}: ${String(response.status)}`);
           return;
