@@ -10,13 +10,6 @@ import { expectNoEmail, signInLinkFor } from "./mailbox";
 // Each test asks for a link to its own address: Supabase Auth refuses a second link to
 // the same address inside `max_frequency` (supabase/config.toml).
 
-// The link is built from the local stack's Site URL, http://localhost:3000. A checkout
-// that runs the suite on another port would follow it to a different server.
-test.skip(
-  (process.env.PORT ?? "3000") !== "3000",
-  "The emailed link points at port 3000 (supabase/config.toml site_url).",
-);
-
 // Not in the seed: an address that has never signed in here.
 const NEWCOMER = "newcomer@porchlight.local";
 

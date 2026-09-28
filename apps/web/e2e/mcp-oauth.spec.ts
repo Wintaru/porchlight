@@ -5,6 +5,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { devSignIn, THEO } from "./helpers";
 import { firstText, structured } from "./mcp-client";
 import { rest } from "./service-rest";
+import { openAuthorization } from "./site-link";
 import {
   CALLBACK_ORIGIN,
   deleteOAuthClient,
@@ -27,7 +28,7 @@ async function openConsent(page: Page, authorizationUrl: URL): Promise<void> {
   await page.route(`${CALLBACK_ORIGIN}/**`, (route) =>
     route.fulfill({ status: 200, contentType: "text/plain", body: "callback" }),
   );
-  await page.goto(authorizationUrl.href);
+  await openAuthorization(page, authorizationUrl);
   await expect(page).toHaveURL(/\/oauth\/consent\?authorization_id=/);
 }
 
@@ -174,11 +175,11 @@ test("a consent left at Auth after a revoke is withdrawn, so the member chooses 
 
     // Auth approves without asking; the page withdraws the stale consent instead of
     // sending a code the door would refuse.
-    await page.goto((await startAuthorization(oauth, serverUrl)).href);
+    await openAuthorization(page, await startAuthorization(oauth, serverUrl));
     await expect(page.getByTestId("consent-unusable")).toContainText("Start again");
 
     // Starting again shows the choice.
-    await page.goto((await startAuthorization(oauth, serverUrl)).href);
+    await openAuthorization(page, await startAuthorization(oauth, serverUrl));
     await expect(page.getByTestId("consent-client-name")).toHaveText(name);
   } finally {
     await deleteOAuthClient(oauth.clientId);

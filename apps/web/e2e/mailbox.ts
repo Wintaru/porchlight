@@ -1,5 +1,7 @@
 import { expect } from "@playwright/test";
 
+import { onThisServer } from "./site-link";
+
 // The local stack's mail catcher (Mailpit, supabase/config.toml [local_smtp]). Supabase
 // Auth sends every email there instead of out, so a test can read a sign-in link with
 // no mail provider (D19).
@@ -63,8 +65,9 @@ async function newestEmail(
   return { subject: Subject, text: Text, html: HTML };
 }
 
-// The sign-in link in the newest email to `to` that arrived after `since`. Polls: the
-// email leaves Supabase Auth a moment after the form's redirect.
+// The sign-in link in the newest email to `to` that arrived after `since`, as a path
+// and query for `page.goto` on this suite's server (site-link.ts). Polls: the email
+// leaves Supabase Auth a moment after the form's redirect.
 export async function signInLinkFor(to: string, since: Date): Promise<string> {
   let link: string | undefined;
   await expect
@@ -79,7 +82,7 @@ export async function signInLinkFor(to: string, since: Date): Promise<string> {
   if (link === undefined) {
     throw new Error(`no sign-in email for ${to}`);
   }
-  return link;
+  return onThisServer(link);
 }
 
 async function newestLink(to: string, since: Date): Promise<string | undefined> {

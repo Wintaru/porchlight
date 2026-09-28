@@ -53,6 +53,10 @@ export default defineConfig({
   webServer: {
     command: `pnpm dev --port ${String(PORT)}`,
     url: BASE_URL,
+    // The app builds its own absolute links (the MCP resource, invite links) from
+    // NEXT_PUBLIC_SITE_URL. On any port but 3000 the .env.local value would name
+    // another server, so the suite's own server is told its address (#99).
+    env: { NEXT_PUBLIC_SITE_URL: BASE_URL },
     reuseExistingServer: !IS_CI,
     // A cold Next.js dev server on a CI runner takes longer than the 60 s default.
     timeout: 180_000,

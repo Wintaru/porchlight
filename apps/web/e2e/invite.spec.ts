@@ -12,12 +12,6 @@ import { rest } from "./service-rest";
 // that opened the invite link, so a sign-in link opened in another browser is refused
 // and leaves no account behind.
 
-// The emailed sign-in link is built for port 3000 (see magic-link.spec.ts).
-test.skip(
-  (process.env.PORT ?? "3000") !== "3000",
-  "The emailed link points at port 3000 (supabase/config.toml site_url).",
-);
-
 async function withFreshBrowser(
   browser: Browser,
   run: (page: Page) => Promise<void>,
