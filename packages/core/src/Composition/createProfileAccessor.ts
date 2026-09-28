@@ -1,7 +1,10 @@
+import { FakeLoadPresenceMemberHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadPresenceMemberHandler";
+import { SupabaseLoadPresenceMemberHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadPresenceMemberHandler";
 import { FakeLoadPresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadPresenceSettingHandler";
 import { FakeStorePresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/FakeStorePresenceSettingHandler";
 import { SupabaseLoadPresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadPresenceSettingHandler";
 import { SupabaseStorePresenceSettingHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseStorePresenceSettingHandler";
+import { LoadPresenceMemberRequest } from "../Accessors/ProfileAccessor/Requests/LoadPresenceMemberRequest";
 import { LoadPresenceSettingRequest } from "../Accessors/ProfileAccessor/Requests/LoadPresenceSettingRequest";
 import { StorePresenceSettingRequest } from "../Accessors/ProfileAccessor/Requests/StorePresenceSettingRequest";
 import { FakeLoadVoiceGuideRevisionsHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadVoiceGuideRevisionsHandler";
@@ -75,6 +78,7 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
       .register(LoadVoiceGuideRequest, new SupabaseLoadVoiceGuideHandler(db))
       .register(LoadPresenceSettingRequest, new SupabaseLoadPresenceSettingHandler(db))
+      .register(LoadPresenceMemberRequest, new SupabaseLoadPresenceMemberHandler(db))
       .register(
         LoadVoiceGuideRevisionsRequest,
         new SupabaseLoadVoiceGuideRevisionsHandler(db),
@@ -100,6 +104,7 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))
       .register(LoadVoiceGuideRequest, new FakeLoadVoiceGuideHandler(state))
       .register(LoadPresenceSettingRequest, new FakeLoadPresenceSettingHandler(state))
+      .register(LoadPresenceMemberRequest, new FakeLoadPresenceMemberHandler(state))
       .register(
         LoadVoiceGuideRevisionsRequest,
         new FakeLoadVoiceGuideRevisionsHandler(state),
