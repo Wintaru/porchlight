@@ -268,3 +268,24 @@ After the deploy, open `/mod/queue` and choose **Flagged**. A held upload that i
 the cover of a waiting post is now a queue item. Held uploads from before this release
 show there too. Approve each one as mature, or reject it with a reason. Only a photo can
 be approved as mature, because a mature file can only be a cover.
+
+## 14. Invite links: one rule, and no empty accounts (issue #92)
+
+No switch to change. The migration `20260928070000_invite_is_live` goes out with the
+release, like any other.
+
+After the deploy, a refused first sign-in deletes the auth user that Supabase Auth made
+for it. This is an invite email opened in another browser, or a Google sign-in on a
+closed site. Empty accounts from before this release stay. To see them, run this in the
+SQL editor. It only reads.
+
+```sql
+select u.id, u.email, u.created_at
+from auth.users u
+where not exists (select 1 from public.profiles p where p.id = u.id)
+order by u.created_at;
+```
+
+Some of these are people who asked for an email link and did not open it yet. Delete an
+old one in the dashboard (Authentication, Users) only when you are sure it is not a
+member.
