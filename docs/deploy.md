@@ -289,3 +289,13 @@ order by u.created_at;
 Some of these are people who asked for an email link and did not open it yet. Delete an
 old one in the dashboard (Authentication, Users) only when you are sure it is not a
 member.
+
+## 15. Faster lists and search (issue #93)
+
+No switch to change. Three migrations go out with the release, like any other:
+`20260928080000_author_post_indexes`, `20260928081000_listed_post_ids` and
+`20260928082000_search_newest_matches`.
+
+The first migration builds two indexes on `posts`. While it runs, nobody can save a
+post. On a site with a few thousand posts this takes less than a second. On a much
+larger site, deploy at a quiet time.

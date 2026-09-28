@@ -304,6 +304,48 @@ describe("search_site", () => {
     );
     expect(found.map((row) => row.post_id)).toContain(SEED.publicPost);
   });
+
+  // #93: the candidate step reads past RLS to use the GIN indexes, so it must apply
+  // the listing rule itself.
+  test("search_candidates returns nothing a visitor may not list", async () => {
+    for (const role of BROWSER_ROLES) {
+      for (const word of ["unlisted", "thought", "hike", "account", "sometime"]) {
+        const rows = await asRole(
+          sql,
+          role,
+          (tx) => tx<{ post_id: string }[]>`
+            select post_id from public.search_candidates(${word})`,
+          SEED.trustedMember,
+        );
+        expect({ role, word, rows }).toEqual({ role, word, rows: [] });
+      }
+    }
+    const found = await asRole(
+      sql,
+      "anon",
+      (tx) =>
+        tx<{ post_id: string }[]>`select post_id from public.search_candidates('porch')`,
+    );
+    expect(found.map((row) => row.post_id)).toContain(SEED.publicPost);
+  });
+
+  // #93: one letter matches as a whole word, two or more as a prefix. "h:*" would
+  // match "hello" in the public post; "h" alone does not.
+  test("a one-letter term is a whole word, a longer one a prefix", async () => {
+    const postsFor = async (query: string) =>
+      (
+        await asRole(
+          sql,
+          "anon",
+          (tx) =>
+            tx<
+              { post_id: string }[]
+            >`select post_id from public.search_site(${query}, 200)`,
+        )
+      ).map((row) => row.post_id);
+    expect(await postsFor("h")).not.toContain(SEED.publicPost);
+    expect(await postsFor("he")).toContain(SEED.publicPost);
+  });
 });
 
 // Issue #24: the Following feed runs as the caller and keeps to public published posts

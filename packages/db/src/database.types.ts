@@ -1478,6 +1478,13 @@ export type Database = {
         }
         Returns: string
       }
+      search_candidates: {
+        Args: { p_query: string }
+        Returns: {
+          comment_id: string
+          post_id: string
+        }[]
+      }
       search_query: { Args: { p_query: string }; Returns: unknown }
       search_site: {
         Args: { p_limit?: number; p_query: string }
