@@ -7,7 +7,7 @@ const BASE_URL = `http://localhost:${String(PORT)}`;
 const IS_CI = Boolean(process.env.CI);
 
 // The whole suite runs against one seeded database (supabase/seed.sql) and every test
-// but the erase test puts back what it changed, so two tests that overlap in time still
+// puts back what it changed (#99), so two tests that overlap in time still
 // see each other's half-done state: an admin save writes the whole settings form, a published post
 // changes an author's count. One worker at a time is the only order in which the
 // cleanup discipline holds, and it costs about a minute. Zero retries, in CI and

@@ -83,9 +83,9 @@ locally: the emails go to Mailpit at http://127.0.0.1:58324 (docs/setup/email-si
 Playwright needs a browser once: `pnpm --filter @porchlight/web exec playwright install chromium`.
 
 The e2e suite runs one test at a time, with no retries, because every test shares the
-one seeded database and puts back what it changed. It takes about a minute. Run
-`supabase db reset` before a full run: the export-and-erase test erases the seeded
-member `ivy` for real, so she is there once per seed.
+one seeded database and puts back what it changed. It takes about a minute. You can run
+it again with no `supabase db reset` between runs: the export-and-erase test makes its
+own member and removes her after.
 
 ## Agents
 

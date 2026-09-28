@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 
 import { type Browser, expect, type Page, test } from "@playwright/test";
 
-import { authUserExists, authUserId, deleteAuthUser } from "./auth-admin";
+import { authUserExists } from "./auth-admin";
 import { devSignIn, LAMPLIGHTER } from "./helpers";
 import { expectNoEmail, signInLinkFor } from "./mailbox";
+import { removeMember } from "./members";
 import { rest } from "./service-rest";
 
 // Issue #25: with sign-up by invite, a friend joins through a link and lands trusted;
@@ -77,16 +78,6 @@ async function withInviteOnlySite(
   }
 }
 
-// A member this test made: the profile row first (it has no foreign key to the auth
-// user, and its quota row goes with it), then the auth user.
-async function removeMember(email: string): Promise<void> {
-  const id = await authUserId(email);
-  if (id !== undefined) {
-    await rest(`profiles?id=eq.${id}`, { method: "DELETE" });
-  }
-  await deleteAuthUser(email);
-}
-
 test("a friend joins through an invite link as trusted, and a used link lets nobody else in", async ({
   page,
   browser,
@@ -132,9 +123,9 @@ test("a friend joins through an invite link as trusted, and a used link lets nob
       ).toHaveCount(1);
     });
   } finally {
-    await removeMember(friend);
+    await removeMember({ email: friend });
     // Only there if the check above failed.
-    await removeMember(stranger);
+    await removeMember({ email: stranger });
   }
 });
 
@@ -177,6 +168,6 @@ test("an invite's sign-in link opened in another browser is refused and leaves n
     });
   } finally {
     // Only there if a check above failed.
-    await removeMember(friend);
+    await removeMember({ email: friend });
   }
 });
