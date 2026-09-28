@@ -23,14 +23,16 @@ export class FakeSendEmailsHandler implements IHandler<
   ): Promise<EmailsSentResponse | EmailAccessFailedResponse> {
     const { correlationId, messages } = request;
     if (this.state.failing) {
-      return new EmailAccessFailedResponse(correlationId, "EMAIL_FAKE_RESULT=fail");
+      return new EmailAccessFailedResponse(correlationId, "EMAIL_FAKE_RESULT=fail", 0);
     }
     const { mailpitUrl } = this.state;
     if (mailpitUrl !== null) {
-      for (const message of messages) {
+      for (const [index, message] of messages.entries()) {
         const failed = await this.deliver(mailpitUrl, message);
         if (failed !== undefined) {
-          return new EmailAccessFailedResponse(correlationId, failed);
+          // The ones before it reached the catcher, as a partial Resend send would.
+          this.state.sent.push(...messages.slice(0, index));
+          return new EmailAccessFailedResponse(correlationId, failed, index);
         }
       }
     }
