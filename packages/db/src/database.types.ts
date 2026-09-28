@@ -1318,6 +1318,10 @@ export type Database = {
       }
       comment_search_document: { Args: { p_body_md: string }; Returns: unknown }
       confirm_subscription: { Args: { p_token: string }; Returns: boolean }
+      digest_interval: {
+        Args: { p_schedule: Database["public"]["Enums"]["digest_schedule"] }
+        Returns: string
+      }
       erase_account: { Args: { p_profile_id: string }; Returns: string }
       finalize_media_scan: {
         Args: {
@@ -1385,6 +1389,10 @@ export type Database = {
         Returns: {
           error: true
         } & "the function public.invite_is_live with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
+      }
+      is_staff_role: {
+        Args: { p_role: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
       listed_post_ids: {
