@@ -1371,6 +1371,7 @@ export type Database = {
         }[]
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
+      member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
