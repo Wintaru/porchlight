@@ -16,21 +16,18 @@ import type { BodyInsert } from "./BodyEditor";
 import { DropZone } from "./DropZone";
 import styles from "./editor.module.css";
 import { formatBytes, type UploadProgress, uploadFile } from "./upload-file";
+import {
+  looseAfterRetry,
+  rowsAfterRetry,
+  uploadById,
+  type UploadRow,
+} from "./upload-rows";
 
 interface AttachmentPanelProps {
   readonly onInsert: (item: BodyInsert) => void;
   // The post being edited, or "" while a new post has no id yet.
   readonly postId: string;
 }
-
-type Row =
-  | { readonly id: string; readonly kind: "done"; readonly upload: UploadView }
-  | {
-      readonly id: string;
-      readonly kind: "failed";
-      readonly filename: string;
-      readonly error: string;
-    };
 
 // The editor's uploads (SPEC.md §6, #52): drop or choose a file, see it accepted or
 // refused with why, put it into the post, or remove it. Only this post's uploads are
@@ -41,7 +38,7 @@ type Row =
 // other file as a download card. A file with no public copy yet (a flagged image) cannot
 // go in.
 export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
-  const [rows, setRows] = useState<readonly Row[]>([]);
+  const [rows, setRows] = useState<readonly UploadRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   // Uploads made while the post had no id, and the id once it has one: an upload that
@@ -49,8 +46,10 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const unattached = useRef<string[]>([]);
   const currentPostId = useRef(postId);
   const [loose, setLoose] = useState<readonly UploadView[]>([]);
-  const [previewing, setPreviewing] = useState<UploadView | null>(null);
-  // Why a Remove was refused, by upload (#90): the row stays, with the reason under it.
+  // The id, not a copy: the preview shows the upload as the panel holds it now (#91).
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  // Why a Remove was refused, by upload (#90), or why a "Try again" on an upload in no
+  // post failed (#91): the row stays, with the reason under it.
   const [refusals, setRefusals] = useState<ReadonlyMap<string, string>>(new Map());
 
   useEffect(() => {
@@ -79,7 +78,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
           ...current,
           ...uploads
             .filter((upload) => !current.some((row) => row.id === upload.mediaId))
-            .map((upload): Row => ({ id: upload.mediaId, kind: "done", upload })),
+            .map((upload): UploadRow => ({ id: upload.mediaId, kind: "done", upload })),
         ]);
       });
     return () => {
@@ -117,7 +116,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
         void attachUpload(mediaId, currentPostId.current);
       }
     }
-    const row: Row = outcome.ok
+    const row: UploadRow = outcome.ok
       ? { id: outcome.upload.mediaId, kind: "done", upload: outcome.upload }
       : {
           id: globalThis.crypto.randomUUID(),
@@ -130,20 +129,19 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
 
   const retry = async (upload: UploadView) => {
     const outcome = await republishUpload(upload.mediaId);
-    setRows((current) =>
-      current.map((row) =>
-        row.id !== upload.mediaId
-          ? row
-          : outcome.ok
-            ? { id: row.id, kind: "done", upload: outcome.upload }
-            : {
-                id: row.id,
-                kind: "failed",
-                filename: upload.originalFilename,
-                error: outcome.error,
-              },
-      ),
-    );
+    setRows((current) => rowsAfterRetry(current, upload, outcome));
+    // An upload in no post keeps its line when a retry fails, so the reason goes under
+    // it, as a refused Remove does (#91). A row above shows its own failure instead.
+    setLoose((current) => looseAfterRetry(current, outcome));
+    setRefusals((current) => {
+      const next = new Map(current);
+      if (outcome.ok) {
+        next.delete(upload.mediaId);
+      } else {
+        next.set(upload.mediaId, outcome.error);
+      }
+      return next;
+    });
   };
 
   const remove = async (upload: UploadView) => {
@@ -165,6 +163,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   const shownLoose = loose.filter(
     (upload) => !rows.some((row) => row.id === upload.mediaId),
   );
+  const previewing = previewingId === null ? null : uploadById(rows, loose, previewingId);
   const previewInsert = previewing === null ? null : insertOf(previewing);
 
   return (
@@ -196,7 +195,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
                   upload={row.upload}
                   refusal={refusals.get(row.id)}
                   onPreview={() => {
-                    setPreviewing(row.upload);
+                    setPreviewingId(row.id);
                   }}
                   onRetry={() => {
                     void retry(row.upload);
@@ -222,7 +221,7 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
                   upload={upload}
                   refusal={refusals.get(upload.mediaId)}
                   onPreview={() => {
-                    setPreviewing(upload);
+                    setPreviewingId(upload.mediaId);
                   }}
                   onRetry={() => {
                     void retry(upload);
@@ -243,11 +242,11 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
             ? null
             : () => {
                 onInsert(previewInsert);
-                setPreviewing(null);
+                setPreviewingId(null);
               }
         }
         onClose={() => {
-          setPreviewing(null);
+          setPreviewingId(null);
         }}
       />
     </div>

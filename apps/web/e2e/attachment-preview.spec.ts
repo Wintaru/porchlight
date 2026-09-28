@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, type Route, test } from "@playwright/test";
 
 import { deleteCurrentPost, devSignIn, THEO } from "./helpers";
+import { rest } from "./service-rest";
 
 // Issue #80: pressing an upload in the Attachments panel opens a preview before
 // anything goes in. An image shows, a video plays, and any other file is named with its
@@ -118,4 +119,65 @@ test("an image, a video and a PDF each preview before they go in", async ({ page
   // The Delete link shows on a loaded post, not on one autosave just gave an id.
   await page.reload();
   await deleteCurrentPost(page);
+});
+
+// #91: the preview shows the upload as the panel holds it now, so a "Try again" that
+// finishes while the preview is open shows in it. It also works on an upload in no post.
+test("a Try again that finishes while the preview is open updates it", async ({
+  page,
+}) => {
+  const name = `retry-${Date.now().toString(36)}.jpg`;
+  await devSignIn(page, THEO);
+  // No title, so no post: the upload is in no post.
+  await page.goto("/write");
+  await attach(page, name, PHOTO, "image/jpeg");
+  const [asset] = (await (
+    await rest(`media_assets?select=id&original_filename=eq.${name}`, { method: "GET" })
+  ).json()) as { id: string }[];
+  if (asset === undefined) {
+    throw new Error(`no upload named ${name}`);
+  }
+  // As if the public copy could not be made: the scan cleared it, so it can be retried.
+  await rest(`media_assets?id=eq.${asset.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ published_path: null }),
+  });
+
+  await page.goto("/write");
+  await page.getByTestId("unattached-uploads").locator("summary").click();
+  const row = page.getByTestId("unattached-upload").filter({ hasText: name });
+  await expect(row).toContainText("not ready to show yet");
+
+  // The retry's answer waits until the preview is open. Only the call for this upload
+  // is held, so no other call can queue behind it.
+  const held: Route[] = [];
+  await page.route("**/*", async (route) => {
+    const request = route.request();
+    if (
+      request.method() === "POST" &&
+      request.headers()["next-action"] !== undefined &&
+      (request.postData() ?? "").includes(asset.id)
+    ) {
+      held.push(route);
+      return;
+    }
+    await route.fallback();
+  });
+  await row.getByRole("button", { name: "Try again" }).click();
+  await expect.poll(() => held.length).toBe(1);
+  const preview = await openPreview(page, row);
+  await expect(preview).toContainText("It is not ready to show yet.");
+  await held[0]?.continue();
+  await expect(preview.getByRole("img", { name })).toHaveAttribute(
+    "src",
+    /\/storage\/v1\/object\/public\/public-media\//,
+  );
+  await expect(preview.getByRole("button", { name: "Insert" })).toBeVisible();
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await preview.getByRole("button", { name: "Close" }).click();
+  await expect(row).not.toContainText("not ready to show yet");
+  await expect(row.getByRole("button", { name: "Try again" })).toHaveCount(0);
+
+  await row.getByRole("button", { name: "Remove" }).click();
+  await expect(row).toHaveCount(0);
 });
