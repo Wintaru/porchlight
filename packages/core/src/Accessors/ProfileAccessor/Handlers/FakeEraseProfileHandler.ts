@@ -34,6 +34,8 @@ export class FakeEraseProfileHandler implements IHandler<EraseProfileRequest, Re
       bio: null,
     });
     this.state.voiceGuides.delete(id);
+    // `erase_account` deletes voice_guide_revisions too (#83).
+    this.state.voiceGuideRevisions.delete(id);
     return Promise.resolve(new ProfileErasedResponse(correlationId));
   }
 }

@@ -1,4 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
+import { VOICE_GUIDE_REVISIONS_KEPT } from "../../../Common/VoiceGuideRevision";
 import type { FakeProfileState } from "../FakeProfileState";
 import type { StoreVoiceGuideRequest } from "../Requests/StoreVoiceGuideRequest";
 import { ProfileAccessFailedResponse } from "../Responses/ProfileAccessFailedResponse";
@@ -25,12 +26,18 @@ export class FakeStoreVoiceGuideHandler implements IHandler<
     if (!this.state.profiles.has(profileId)) {
       return Promise.resolve(new ProfileNotFoundResponse(correlationId));
     }
-    // What the trigger does: keep the replaced text when it changes.
+    // What the trigger does: keep the replaced text when it changes, the newest
+    // VOICE_GUIDE_REVISIONS_KEPT only.
     const before = this.state.voiceGuides.get(profileId);
     if (before !== undefined && before !== guideMd) {
-      const kept = this.state.voiceGuideRevisions.get(profileId) ?? [];
-      kept.push({ guideMd: before, replacedAt: request.timestamp });
-      this.state.voiceGuideRevisions.set(profileId, kept);
+      const kept = [
+        ...(this.state.voiceGuideRevisions.get(profileId) ?? []),
+        { guideMd: before, replacedAt: request.timestamp },
+      ];
+      this.state.voiceGuideRevisions.set(
+        profileId,
+        kept.slice(-VOICE_GUIDE_REVISIONS_KEPT),
+      );
     }
     if (guideMd === null) {
       this.state.voiceGuides.delete(profileId);
