@@ -1,14 +1,17 @@
 import type { DbClient } from "@porchlight/db";
 
+import { FakeCountOpenReportsOnPostHandler } from "../Accessors/ReportAccessor/Handlers/FakeCountOpenReportsOnPostHandler";
 import { FakeFileReportHandler } from "../Accessors/ReportAccessor/Handlers/FakeFileReportHandler";
 import { FakeListReportsHandler } from "../Accessors/ReportAccessor/Handlers/FakeListReportsHandler";
 import { FakeResolveReportsForTargetHandler } from "../Accessors/ReportAccessor/Handlers/FakeResolveReportsForTargetHandler";
+import { SupabaseCountOpenReportsOnPostHandler } from "../Accessors/ReportAccessor/Handlers/SupabaseCountOpenReportsOnPostHandler";
 import { SupabaseFileReportHandler } from "../Accessors/ReportAccessor/Handlers/SupabaseFileReportHandler";
 import { SupabaseListReportsHandler } from "../Accessors/ReportAccessor/Handlers/SupabaseListReportsHandler";
 import { SupabaseResolveReportsForTargetHandler } from "../Accessors/ReportAccessor/Handlers/SupabaseResolveReportsForTargetHandler";
 import { FakeReportState } from "../Accessors/ReportAccessor/FakeReportState";
 import type { IReportAccessor } from "../Accessors/ReportAccessor/IReportAccessor";
 import { ReportAccessor } from "../Accessors/ReportAccessor/ReportAccessor";
+import { CountOpenReportsOnPostRequest } from "../Accessors/ReportAccessor/Requests/CountOpenReportsOnPostRequest";
 import { FileReportRequest } from "../Accessors/ReportAccessor/Requests/FileReportRequest";
 import { ListReportsRequest } from "../Accessors/ReportAccessor/Requests/ListReportsRequest";
 import { ResolveReportsForTargetRequest } from "../Accessors/ReportAccessor/Requests/ResolveReportsForTargetRequest";
@@ -43,6 +46,10 @@ function createSupabaseReportAccessor(db: DbClient): IReportAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(ListReportsRequest, new SupabaseListReportsHandler(db))
+      .register(
+        CountOpenReportsOnPostRequest,
+        new SupabaseCountOpenReportsOnPostHandler(db),
+      )
       .build(),
   );
 }
@@ -58,6 +65,10 @@ export function createFakeReportAccessor(state: FakeReportState): IReportAccesso
       .build(),
     new HandlerResolverBuilder()
       .register(ListReportsRequest, new FakeListReportsHandler(state))
+      .register(
+        CountOpenReportsOnPostRequest,
+        new FakeCountOpenReportsOnPostHandler(state),
+      )
       .build(),
   );
 }
