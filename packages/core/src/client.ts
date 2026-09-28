@@ -5,6 +5,7 @@
 // a pure function in Common with no imports outside Common.
 export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/AgentScope";
 export { AGENT_TOKEN_NAME_MAX_LENGTH } from "./Common/AgentToken";
+export { isImageFilename } from "./Common/AttachmentTypeCatalog";
 export { BLOCKED_REPLY_TEXT } from "./Common/BlockedReplyText";
 export { EMBED_PLAYER_PREFIXES } from "./Common/EmbedPlayers";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";

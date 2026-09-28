@@ -1,3 +1,4 @@
+import { extensionOf } from "./FileExtension";
 import type { MediaKind } from "./MediaKind";
 
 // What the server knows about one allowed extension: which kind it counts as and which
@@ -74,5 +75,15 @@ export function attachmentTypeForExtension(
 ): AttachmentType | undefined {
   return KNOWN_ATTACHMENT_TYPES.find(
     (type) => type.extension === extension.toLowerCase(),
+  );
+}
+
+// Whether a file's name claims an image (#91). The cover picker asks this before it
+// converts or uploads anything, so a dropped video is refused at once and never counts
+// against the quota. The name is only a claim: finalize still checks the bytes.
+export function isImageFilename(filename: string): boolean {
+  const extension = extensionOf(filename);
+  return (
+    extension !== undefined && attachmentTypeForExtension(extension)?.kind === "image"
   );
 }
