@@ -9,11 +9,16 @@ import type { IRateLimitAccessor } from "../../../Accessors/RateLimitAccessor/IR
 import { BumpRateLimitRequest } from "../../../Accessors/RateLimitAccessor/Requests/BumpRateLimitRequest";
 import { RateLimitBumpedResponse } from "../../../Accessors/RateLimitAccessor/Responses/RateLimitBumpedResponse";
 import type { ISubscriberAccessor } from "../../../Accessors/SubscriberAccessor/ISubscriberAccessor";
+import { RemovePendingSubscriptionRequest } from "../../../Accessors/SubscriberAccessor/Requests/RemovePendingSubscriptionRequest";
 import { StorePendingSubscriptionRequest } from "../../../Accessors/SubscriberAccessor/Requests/StorePendingSubscriptionRequest";
+import { SubscriberRemovedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriberRemovedResponse";
 import { SubscriptionAskedResponse } from "../../../Accessors/SubscriberAccessor/Responses/SubscriptionAskedResponse";
 import type { ITurnstileAccessor } from "../../../Accessors/TurnstileAccessor/ITurnstileAccessor";
 import { VerifyTurnstileRequest } from "../../../Accessors/TurnstileAccessor/Requests/VerifyTurnstileRequest";
 import { TurnstileVerifiedResponse } from "../../../Accessors/TurnstileAccessor/Responses/TurnstileVerifiedResponse";
+import type { AfterResponse } from "../../../Common/AfterResponse";
+import type { DigestSchedule } from "../../../Common/DigestSchedule";
+import type { EmailSite } from "../../../Common/EmailSite";
 import type { IHandler } from "../../../Common/IHandler";
 import type { RequestContext } from "../../../Common/RequestContext";
 import { UNTRUSTED_CLIENT_IP } from "../../../Common/Retention";
@@ -48,8 +53,22 @@ const PER_EMAIL_PER_HOUR = 5;
 const PER_IP_PER_HOUR = 10;
 const MS_PER_HOUR = 3_600_000;
 
+// What the confirmation email needs, fixed before the response goes out.
+interface Confirmation {
+  readonly email: string;
+  readonly confirmToken: string;
+  readonly authorHandle: string | null;
+  readonly digest: Exclude<DigestSchedule, "off">;
+  readonly site: EmailSite;
+  readonly context: Ctx;
+}
+
 // Turnstile, then the limits, then the author, then the store and the opt-in email
-// (#22, D20). Every accepted request answers the same, whatever the store found.
+// (#22, D20). Every accepted request answers the same, whatever the store found. The
+// email goes out after the response (#84): a new address and a subscribed one then
+// answer in the same time, and a mail vendor that is down still shows "check your
+// email". A failed send removes the pending row, so the reader can ask again at once
+// (#86, C4 A); the failure goes to the log.
 export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
   constructor(
     private readonly subscribers: ISubscriberAccessor,
@@ -59,6 +78,7 @@ export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
     private readonly email: IEmailAccessor,
     private readonly compose: IEmailComposeEngine,
     private readonly options: SubscribeOptions,
+    private readonly afterResponse: AfterResponse,
   ) {}
 
   async handle(request: SubscribeRequest): Promise<Result> {
@@ -119,26 +139,70 @@ export class SubscribeHandler implements IHandler<SubscribeRequest, Result> {
       return new SubscriptionRequestedResponse(correlationId);
     }
 
-    const composed = await this.compose.transform(
-      new ComposeSubscriptionConfirmationRequest(
-        email,
-        confirmToken,
-        authorHandle,
-        digest,
-        site,
-        context,
-      ),
-    );
-    if (!(composed instanceof EmailComposedResponse)) {
-      return unavailable(correlationId, composed, "compose.transform");
-    }
-    const sent = await this.email.store(
-      new SendEmailsRequest([composed.message], context),
-    );
-    if (!(sent instanceof EmailsSentResponse)) {
-      return unavailable(correlationId, sent, "email.store");
-    }
+    const confirmation: Confirmation = {
+      email,
+      confirmToken,
+      authorHandle,
+      digest,
+      site,
+      context,
+    };
+    await this.afterResponse(() => this.sendConfirmation(confirmation));
     return new SubscriptionRequestedResponse(correlationId);
+  }
+
+  // Never throws: it runs after the response, where nobody would catch it. A vendor
+  // that times out after it took the message still counts as a failure, so the reader
+  // can get a link whose row is gone. That is the known cost of C4 A: they ask again.
+  private async sendConfirmation(confirmation: Confirmation): Promise<void> {
+    const { email, confirmToken, authorHandle, digest, site, context } = confirmation;
+    const { correlationId } = context;
+    try {
+      const composed = await this.compose.transform(
+        new ComposeSubscriptionConfirmationRequest(
+          email,
+          confirmToken,
+          authorHandle,
+          digest,
+          site,
+          context,
+        ),
+      );
+      const sent =
+        composed instanceof EmailComposedResponse
+          ? await this.email.store(new SendEmailsRequest([composed.message], context))
+          : composed;
+      if (sent instanceof EmailsSentResponse) {
+        return;
+      }
+      console.error(
+        `[subscribe] the confirmation email did not go out [${correlationId}]: ${unavailable(correlationId, sent, "the confirmation send").reason}`,
+      );
+    } catch (error: unknown) {
+      console.error(
+        `[subscribe] the confirmation email did not go out [${correlationId}]`,
+        error,
+      );
+    }
+    await this.releasePending(confirmToken, context);
+  }
+
+  private async releasePending(confirmToken: string, context: Ctx): Promise<void> {
+    try {
+      const released = await this.subscribers.remove(
+        new RemovePendingSubscriptionRequest(confirmToken, context),
+      );
+      if (!(released instanceof SubscriberRemovedResponse)) {
+        console.error(
+          `[subscribe] could not release the pending subscription [${context.correlationId}]: ${unavailable(context.correlationId, released, "subscribers.remove").reason}`,
+        );
+      }
+    } catch (error: unknown) {
+      console.error(
+        `[subscribe] could not release the pending subscription [${context.correlationId}]`,
+        error,
+      );
+    }
   }
 
   private async overLimit(

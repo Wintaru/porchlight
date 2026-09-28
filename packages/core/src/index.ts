@@ -14,6 +14,8 @@
 // accessors stay inside.
 
 export { DependencyContainer } from "./Composition/DependencyContainer";
+export type { DependencyContainerOptions } from "./Composition/DependencyContainerOptions";
+export type { AfterResponse } from "./Common/AfterResponse";
 
 export { RequestBase } from "./Common/RequestBase";
 export type { RequestContext } from "./Common/RequestContext";

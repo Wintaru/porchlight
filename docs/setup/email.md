@@ -59,8 +59,13 @@ That is a missing feature, not an unsafe fake, so it shows no red row.
 ## The sweep
 
 Digests and reader emails leave the site from one route, `/api/email/digest`. The
-subscription confirmation is the only email sent at once, from the subscribe form. A
-scheduler calls the route every few minutes with the header
+subscription confirmation is the only email sent at once, from the subscribe form. It
+goes out after the page answers, so the answer takes the same time for a new address and
+for one that is subscribed already (#84). The page says "check your email" even when the
+send fails. The failure goes to the log, and the reader can ask again at once. Emails to
+readers name an author by `@handle` only, never by display name.
+
+A scheduler calls the route every few minutes with the header
 `Authorization: Bearer <CRON_SECRET>`, and each call sends what is due. An empty
 `CRON_SECRET` turns the route off. [deploy.md](../deploy.md), step 10, sets up the
 schedule. Locally, run it by hand:

@@ -88,6 +88,10 @@ Copy `.env.example` as the starting point and set these on the host:
 | `GREETING_PROVIDER`             | Leave unset. The greeting example has no production provider. |
 | `ALLOW_FAKE_PROVIDERS`          | Leave unset. Setting it to `1` lifts the production refusal on a `*_PROVIDER=fake` (hash matching, the image classifier, Turnstile, media storage) for a deliberate degraded launch — the admin checklist (`/admin`) then shows that provider red, "not yet active" (issue #12). |
 
+The host must run Next.js `after()`: the subscribe form sends its email after the
+response (issue #84). Vercel and `next start` do. A host that
+stops the function when the response ends drops that email.
+
 Every other variable in `.env.example` belongs to a service whose production setup is a
 later step below. Region and every other D20 setting are not environment variables —
 step 8 sets them from the admin settings page after first sign-in.

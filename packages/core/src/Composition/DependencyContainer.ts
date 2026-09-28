@@ -96,6 +96,7 @@ import { SendDigestsRequest } from "../Managers/NotificationManager/Requests/Sen
 import { SetEmailSettingsRequest } from "../Managers/NotificationManager/Requests/SetEmailSettingsRequest";
 import { UnsubscribeRequest } from "../Managers/NotificationManager/Requests/UnsubscribeRequest";
 import { ConfirmSubscriptionHandler } from "../Managers/NotificationManager/Handlers/ConfirmSubscriptionHandler";
+import { RUN_INLINE } from "../Common/AfterResponse";
 import { SubscribeHandler } from "../Managers/NotificationManager/Handlers/SubscribeHandler";
 import { ConfirmSubscriptionRequest } from "../Managers/NotificationManager/Requests/ConfirmSubscriptionRequest";
 import { SubscribeRequest } from "../Managers/NotificationManager/Requests/SubscribeRequest";
@@ -257,6 +258,7 @@ import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
 import { createTurnstileAccessor } from "./createTurnstileAccessor";
+import type { DependencyContainerOptions } from "./DependencyContainerOptions";
 import type { Environment } from "./Environment";
 
 // The composition root. Every handler in the system is registered in this folder and
@@ -273,7 +275,7 @@ export class DependencyContainer {
   readonly siteConfigManager: ISiteConfigManager;
   readonly notificationManager: INotificationManager;
 
-  constructor(env: Environment) {
+  constructor(env: Environment, options: DependencyContainerOptions = {}) {
     // One service-role client for every Supabase accessor, built on the first that
     // asks for it, so a container of fakes never needs the keys.
     let serviceDb: DbClient | undefined;
@@ -917,6 +919,7 @@ export class DependencyContainer {
             email,
             emailCompose,
             { ...emailOptions, ipHashSalt: readIpHashSalt(env) },
+            options.afterResponse ?? RUN_INLINE,
           ),
         )
         .register(ConfirmSubscriptionRequest, new ConfirmSubscriptionHandler(subscribers))
