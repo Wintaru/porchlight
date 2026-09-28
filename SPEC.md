@@ -183,7 +183,9 @@ goes as a JPEG of the same pixels.
 
 - `clear` — proceeds to the normal approval queue.
 - `flagged` — held. Shown blurred and grayscale in the queue with click-to-reveal.
-  Cannot publish until a moderator decides.
+  Cannot publish until a moderator decides. A held upload that is not a waiting post's
+  cover is its own queue item (#90): approve as mature (then it is a cover only) or
+  reject with a reason (it stays held, and its owner is told).
 - `locked` — a high-confidence hash match or minors-related hit. Frozen, hashed,
   audit-logged, hidden from moderators except an escalation view with metadata, and
   undeletable until `retain_until`. Thresholds tune only toward more caution.

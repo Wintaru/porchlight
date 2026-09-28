@@ -9,7 +9,8 @@ import { unavailable } from "./unavailable";
 
 // A cover is the author's own image, and never one a scan locked or has not scanned
 // (#52). A flagged one is allowed: it shows once a moderator approves it as mature, and
-// publishing the post sends it to the queue until then.
+// publishing the post sends it to the queue until then. One a moderator turned down
+// never is (#90).
 export async function checkCover(
   mediaAssets: IMediaAssetAccessor,
   authorId: string,
@@ -31,6 +32,7 @@ export async function checkCover(
     asset.kind === "image" &&
     asset.owner.kind === "member" &&
     asset.owner.profileId === authorId &&
-    (asset.scanStatus === "clear" || asset.scanStatus === "flagged");
+    (asset.scanStatus === "clear" || asset.scanStatus === "flagged") &&
+    asset.rejectedAt === null;
   return usable ? undefined : new PostRejectedResponse(context.correlationId, "cover");
 }

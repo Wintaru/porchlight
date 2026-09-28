@@ -5,9 +5,11 @@ import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/
 import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
 import { LoadEscalatedTargetsRequest } from "../../../Accessors/ModActionAccessor/Requests/LoadEscalatedTargetsRequest";
 import { EscalatedTargetsLoadedResponse } from "../../../Accessors/ModActionAccessor/Responses/EscalatedTargetsLoadedResponse";
+import { LoadHeldMediaRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadHeldMediaRequest";
 import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
 import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
+import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { LoadPostsByStatusRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
@@ -18,6 +20,7 @@ import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Resp
 import type { ContentAuthor } from "../../../Common/ContentAuthor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { LiveComment } from "../../../Common/LiveComment";
+import type { MediaAsset } from "../../../Common/MediaAsset";
 import type { Post } from "../../../Common/Post";
 import type { TrustLevel } from "../../../Common/TrustLevel";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
@@ -34,7 +37,11 @@ import { unavailable } from "../unavailable";
 
 type Result = QueueResponse | ModerationForbiddenResponse | ModerationUnavailableResponse;
 
-// ListQueue (SPEC.md §7): pending posts and comments, newest first. The queue is a
+// The most held uploads one read of the queue shows (#90). A working set: more wait for
+// the next read once these are decided.
+const HELD_UPLOADS_LIMIT = 100;
+
+// ListQueue (SPEC.md §7): pending posts and comments, and held uploads (#90), newest first. The queue is a
 // bounded working set by construction, so resolving each distinct author's trust level
 // and each distinct cover image's scan status is a small, deduped fan-out rather than a
 // query-per-row over an unbounded table — the "bounded fanned-out N+1 can be the
@@ -65,9 +72,10 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
       return refused;
     }
 
-    const [loadedPosts, loadedComments] = await Promise.all([
+    const [loadedPosts, loadedComments, loadedHeld] = await Promise.all([
       this.posts.load(new LoadPostsByStatusRequest("pending", context)),
       this.comments.load(new LoadCommentsByStatusRequest("pending", context)),
+      this.mediaAssets.load(new LoadHeldMediaRequest(HELD_UPLOADS_LIMIT, context)),
     ]);
     if (!(loadedPosts instanceof PostsLoadedResponse)) {
       return unavailable(correlationId, loadedPosts, "posts.load");
@@ -75,14 +83,20 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     if (!(loadedComments instanceof CommentsLoadedResponse)) {
       return unavailable(correlationId, loadedComments, "comments.load");
     }
+    if (!(loadedHeld instanceof MediaAssetsLoadedResponse)) {
+      return unavailable(correlationId, loadedHeld, "mediaAssets.load");
+    }
     const pendingComments = loadedComments.comments.filter(
       (comment): comment is LiveComment => comment.status !== "tombstone",
     );
+    // A pending post's held cover is decided on the post's own card, with the post.
+    const pendingCovers = new Set(loadedPosts.posts.map((post) => post.coverMediaId));
+    const heldUploads = loadedHeld.assets.filter((asset) => !pendingCovers.has(asset.id));
 
     // Three lookups that do not depend on each other, so none waits on another. The
     // escalation read is one request per hundred items, not one per item.
     const [trustLevels, flaggedCovers, escalated, inertBodies] = await Promise.all([
-      this.loadTrustLevels(loadedPosts.posts, pendingComments, context),
+      this.loadTrustLevels(loadedPosts.posts, pendingComments, heldUploads, context),
       this.loadFlaggedCovers(loadedPosts.posts, context),
       this.modActions.load(
         new LoadEscalatedTargetsRequest(
@@ -123,6 +137,12 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
         authorTrustLevel: trustLevelOf(comment.author, trustLevels),
         escalated: escalated.commentIds.has(comment.id),
         displayHtml: inertBodies.get(comment.id) ?? comment.bodyHtml,
+      })),
+      ...heldUploads.map((asset): QueueItem => ({
+        kind: "upload",
+        asset,
+        authorTrustLevel: trustLevelOf(asset.owner, trustLevels),
+        escalated: false,
       })),
     ]
       .filter((item) => matchesFilter(item, filter))
@@ -166,12 +186,14 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
   private async loadTrustLevels(
     posts: readonly Post[],
     comments: readonly LiveComment[],
+    uploads: readonly MediaAsset[],
     context: { readonly correlationId: string },
   ): Promise<ReadonlyMap<string, TrustLevel> | ModerationUnavailableResponse> {
     const profileIds = new Set<string>();
     for (const author of [
       ...posts.map((post) => post.author),
       ...comments.map((c) => c.author),
+      ...uploads.map((upload) => upload.owner),
     ]) {
       if (author.kind === "member") {
         profileIds.add(author.profileId);
@@ -237,7 +259,25 @@ function trustLevelOf(
 }
 
 function createdAtOf(item: QueueItem): Date {
-  return item.kind === "post" ? item.post.createdAt : item.comment.createdAt;
+  switch (item.kind) {
+    case "post":
+      return item.post.createdAt;
+    case "comment":
+      return item.comment.createdAt;
+    case "upload":
+      return item.asset.createdAt;
+  }
+}
+
+function authorOf(item: QueueItem): ContentAuthor {
+  switch (item.kind) {
+    case "post":
+      return item.post.author;
+    case "comment":
+      return item.comment.author;
+    case "upload":
+      return item.asset.owner;
+  }
 }
 
 function matchesFilter(item: QueueItem, filter: ListQueueRequest["filter"]): boolean {
@@ -245,13 +285,10 @@ function matchesFilter(item: QueueItem, filter: ListQueueRequest["filter"]): boo
     case "all":
       return true;
     case "anonymous":
-      return (
-        (item.kind === "post" ? item.post.author : item.comment.author).kind ===
-        "anonymous"
-      );
+      return authorOf(item).kind === "anonymous";
     case "probation":
       return item.authorTrustLevel === "probation";
     case "flagged":
-      return item.kind === "post" && item.flagged;
+      return (item.kind === "post" && item.flagged) || item.kind === "upload";
   }
 }

@@ -12,9 +12,11 @@ import {
   type ModerationTarget,
   ModerationForbiddenResponse,
   MatureApprovedResponse,
+  MediaRejectedByModeratorResponse,
   ModerationItemResponse,
   ReasonRequiredResponse,
   RejectItemRequest,
+  RejectMediaRequest,
   RemoveItemRequest,
 } from "@porchlight/core";
 import { revalidatePath } from "next/cache";
@@ -79,6 +81,45 @@ export async function approveAsMature(formData: FormData): Promise<void> {
     new ApproveItemRequest(actor, target),
   );
   finish(response, path, "approved");
+}
+
+// A held upload that is not a pending post's cover (#90, C13): approved with the mature
+// tag, which publishes its blurred-by-default copy and makes it a cover only.
+export async function approveUploadAsMature(formData: FormData): Promise<void> {
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
+  const mediaId = mediaIdOf(formData);
+  if (mediaId === undefined) {
+    redirect(withError(path, "unavailable"));
+  }
+  const response = await getDependencyContainer().moderationManager.execute(
+    new ApproveAsMatureRequest(actor, mediaId),
+  );
+  if (response instanceof MatureApprovedResponse) {
+    revalidatePath(path);
+    redirect(withCode(path, "done", "approved-mature"));
+  }
+  finish(response, path, "approved-mature");
+}
+
+// The other answer to a held upload (#90, C13): it stays held, leaves the queue, and
+// its owner is told why. The reason is required.
+export async function rejectUpload(formData: FormData): Promise<void> {
+  const path = staffPathOf(formData);
+  const actor = await requireStaff(path);
+  const mediaId = mediaIdOf(formData);
+  const reason = formData.get("reason");
+  if (mediaId === undefined || typeof reason !== "string") {
+    redirect(withError(path, "unavailable"));
+  }
+  const response = await getDependencyContainer().moderationManager.execute(
+    new RejectMediaRequest(actor, mediaId, reason),
+  );
+  if (response instanceof MediaRejectedByModeratorResponse) {
+    revalidatePath(path);
+    redirect(withCode(path, "done", "rejected"));
+  }
+  finish(response, path, "rejected");
 }
 
 export async function rejectItem(formData: FormData): Promise<void> {
@@ -197,6 +238,11 @@ function targetOf(formData: FormData): ModerationTarget | undefined {
     return undefined;
   }
   return { kind, id };
+}
+
+function mediaIdOf(formData: FormData): string | undefined {
+  const mediaId = formData.get("mediaId");
+  return typeof mediaId === "string" && isEntityId(mediaId) ? mediaId : undefined;
 }
 
 function optionalReasonOf(formData: FormData): string | null {

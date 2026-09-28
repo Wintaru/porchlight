@@ -18,7 +18,12 @@ import { refuse } from "./tool-result";
 export interface UploadStatusView {
   readonly mediaId: string;
   readonly filename: string;
-  readonly status: "ready" | "held for review" | "unreadable image" | "not published";
+  readonly status:
+    | "ready"
+    | "held for review"
+    | "turned down by a moderator"
+    | "unreadable image"
+    | "not published";
   // The public copy's address, to put in a draft's markdown. Null until it exists.
   readonly url: string | null;
   readonly markdown: string | null;
@@ -37,9 +42,11 @@ export function uploadStatusOf(
       ? "ready"
       : view.awaitingReview
         ? "held for review"
-        : view.unreadable
-          ? "unreadable image"
-          : "not published";
+        : view.rejected
+          ? "turned down by a moderator"
+          : view.unreadable
+            ? "unreadable image"
+            : "not published";
   return {
     mediaId: view.mediaId,
     filename: view.originalFilename,

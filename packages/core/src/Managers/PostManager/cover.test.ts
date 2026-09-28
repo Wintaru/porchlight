@@ -60,13 +60,18 @@ describe("checkCover", () => {
     }
   });
 
-  test("someone else's image, a document, a locked or unknown upload is refused", async () => {
+  test("someone else's image, a document, a locked, turned-down or unknown upload is refused", async () => {
     const media = accessor(
       asset("theirs", { owner: { kind: "member", profileId: "someone-else" } }),
       asset("doc", { kind: "document", mimeType: "application/pdf" }),
       asset("locked", { scanStatus: "locked", publishedPath: null }),
+      asset("turned-down", {
+        scanStatus: "flagged",
+        publishedPath: null,
+        rejectedAt: AT,
+      }),
     );
-    for (const id of ["theirs", "doc", "locked", "missing"]) {
+    for (const id of ["theirs", "doc", "locked", "turned-down", "missing"]) {
       const verdict = await checkCover(media, THEO, id, CONTEXT);
       expect(verdict).toBeInstanceOf(PostRejectedResponse);
       expect(verdict).toMatchObject({ reason: "cover" });

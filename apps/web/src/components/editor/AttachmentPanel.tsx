@@ -271,13 +271,15 @@ function AttachmentRow({
 }: AttachmentRowProps) {
   const note = upload.awaitingReview
     ? " · a moderator looks at it first"
-    : upload.mature
-      ? " · mature: it can be the cover, where it is blurred"
-      : upload.retryable
-        ? " · not ready to show yet"
-        : upload.unreadable
-          ? " · this image could not be read, so upload a different file"
-          : "";
+    : upload.rejected
+      ? " · a moderator turned it down, so it cannot go in a post"
+      : upload.mature
+        ? " · mature: it can be the cover, where it is blurred"
+        : upload.retryable
+          ? " · not ready to show yet"
+          : upload.unreadable
+            ? " · this image could not be read, so upload a different file"
+            : "";
   return (
     <div className={styles.attachmentRow}>
       <button

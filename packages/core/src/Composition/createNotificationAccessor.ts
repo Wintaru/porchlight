@@ -51,7 +51,7 @@ function createSupabaseNotificationAccessor(db: DbClient): INotificationAccessor
   );
 }
 
-function createFakeNotificationAccessor(
+export function createFakeNotificationAccessor(
   state: FakeNotificationState,
 ): INotificationAccessor {
   return new NotificationAccessor(

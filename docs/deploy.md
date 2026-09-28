@@ -258,3 +258,13 @@ Watch the cost of presence after launch. Each open page calls `/api/presence` ab
 times a minute. In the Vercel dashboard, open Usage and look at the function
 invocations for `/api/presence`. If the count is too high, a later release can make
 the interval longer (decision C8 in issue #89 kept it at 20 seconds).
+
+## 13. Held uploads in the queue (issue #90)
+
+No switch to change. The migration `20260928060000_upload_gaps` goes out with the
+release, like any other.
+
+After the deploy, open `/mod/queue` and choose **Flagged**. A held upload that is not
+the cover of a waiting post is now a queue item. Held uploads from before this release
+show there too. Approve each one as mature, or reject it with a reason. Only a photo can
+be approved as mature, because a mature file can only be a cover.

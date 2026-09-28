@@ -9,7 +9,8 @@ import { publicMediaUrl } from "@/lib/media-url";
 // Only a finalize or a retry knows the image will not decode; a listed upload is
 // retryable until one says so (#60).
 // A `mature` image is only ever a cover, where the post page blurs it; in the body it
-// would show unblurred.
+// would show unblurred. A `rejected` upload is one a moderator turned down (#90): it
+// stays held and never gets a copy, so it no longer waits for review.
 export interface UploadView {
   readonly mediaId: string;
   readonly originalFilename: string;
@@ -19,6 +20,7 @@ export interface UploadView {
   readonly bytes: number;
   readonly publicUrl: string | null;
   readonly awaitingReview: boolean;
+  readonly rejected: boolean;
   readonly retryable: boolean;
   readonly unreadable: boolean;
   readonly mature: boolean;
@@ -38,7 +40,11 @@ export function uploadViewOf(
     bytes: asset.bytes,
     publicUrl:
       asset.publishedPath === null ? null : publicUrlOf(asset, asset.publishedPath),
-    awaitingReview: asset.scanStatus === "flagged" && asset.publishedPath === null,
+    awaitingReview:
+      asset.scanStatus === "flagged" &&
+      asset.publishedPath === null &&
+      asset.rejectedAt === null,
+    rejected: asset.rejectedAt !== null,
     retryable: missingCopy && !unreadable,
     unreadable,
     mature: asset.mature,

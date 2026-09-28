@@ -2,6 +2,7 @@ import type { DbClient } from "@porchlight/db";
 
 import { FakeMediaAssetState } from "../Accessors/MediaAssetAccessor/FakeMediaAssetState";
 import { FakeCountMediaForAnonymousAuthorHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeCountMediaForAnonymousAuthorHandler";
+import { FakeLoadHeldMediaHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadHeldMediaHandler";
 import { FakeLoadMediaAssetByIdHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadMediaAssetByIdHandler";
 import { FakeLoadMediaAssetsByOwnerHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadMediaAssetsByOwnerHandler";
 import { FakeLoadMediaInUseHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadMediaInUseHandler";
@@ -10,6 +11,7 @@ import { FakeRemoveMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Han
 import { FakeStoreMediaAssetChangesHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeStoreMediaAssetChangesHandler";
 import { FakeStoreNewMediaAssetHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeStoreNewMediaAssetHandler";
 import { SupabaseCountMediaForAnonymousAuthorHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseCountMediaForAnonymousAuthorHandler";
+import { SupabaseLoadHeldMediaHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadHeldMediaHandler";
 import { SupabaseLoadMediaAssetByIdHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadMediaAssetByIdHandler";
 import { SupabaseLoadMediaAssetsByOwnerHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadMediaAssetsByOwnerHandler";
 import { SupabaseLoadMediaInUseHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadMediaInUseHandler";
@@ -20,6 +22,7 @@ import { SupabaseStoreNewMediaAssetHandler } from "../Accessors/MediaAssetAccess
 import type { IMediaAssetAccessor } from "../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
 import { MediaAssetAccessor } from "../Accessors/MediaAssetAccessor/MediaAssetAccessor";
 import { CountMediaForAnonymousAuthorRequest } from "../Accessors/MediaAssetAccessor/Requests/CountMediaForAnonymousAuthorRequest";
+import { LoadHeldMediaRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadHeldMediaRequest";
 import { LoadMediaAssetByIdRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
 import { LoadMediaAssetsByOwnerRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByOwnerRequest";
 import { LoadMediaInUseRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaInUseRequest";
@@ -67,6 +70,7 @@ function createSupabaseMediaAssetAccessor(db: DbClient): IMediaAssetAccessor {
       )
       .register(LoadUnusedMediaRequest, new SupabaseLoadUnusedMediaHandler(db))
       .register(LoadMediaInUseRequest, new SupabaseLoadMediaInUseHandler(db))
+      .register(LoadHeldMediaRequest, new SupabaseLoadHeldMediaHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveMediaAssetRequest, new SupabaseRemoveMediaAssetHandler(db))
@@ -74,7 +78,9 @@ function createSupabaseMediaAssetAccessor(db: DbClient): IMediaAssetAccessor {
   );
 }
 
-function createFakeMediaAssetAccessor(state: FakeMediaAssetState): IMediaAssetAccessor {
+export function createFakeMediaAssetAccessor(
+  state: FakeMediaAssetState,
+): IMediaAssetAccessor {
   return new MediaAssetAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewMediaAssetRequest, new FakeStoreNewMediaAssetHandler(state))
@@ -95,6 +101,7 @@ function createFakeMediaAssetAccessor(state: FakeMediaAssetState): IMediaAssetAc
       )
       .register(LoadUnusedMediaRequest, new FakeLoadUnusedMediaHandler(state))
       .register(LoadMediaInUseRequest, new FakeLoadMediaInUseHandler(state))
+      .register(LoadHeldMediaRequest, new FakeLoadHeldMediaHandler(state))
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveMediaAssetRequest, new FakeRemoveMediaAssetHandler(state))

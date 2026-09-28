@@ -253,6 +253,8 @@ export type { IMediaManager } from "./Managers/MediaManager/IMediaManager";
 export { DeleteMediaRequest } from "./Managers/MediaManager/Requests/DeleteMediaRequest";
 export { PruneMediaRequest } from "./Managers/MediaManager/Requests/PruneMediaRequest";
 export { PrunePostMediaRequest } from "./Managers/MediaManager/Requests/PrunePostMediaRequest";
+export { GetViewableImageRequest } from "./Managers/MediaManager/Requests/GetViewableImageRequest";
+export { ViewableImageResponse } from "./Managers/MediaManager/Responses/ViewableImageResponse";
 export { MediaInUseResponse } from "./Managers/MediaManager/Responses/MediaInUseResponse";
 export { AttachMediaToPostRequest } from "./Managers/MediaManager/Requests/AttachMediaToPostRequest";
 export { FinalizeUploadAnonymouslyRequest } from "./Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
@@ -289,6 +291,7 @@ export {
 export type { QueueItem } from "./Managers/ModerationManager/QueueItem";
 export type { ReportedItem } from "./Managers/ModerationManager/ReportedItem";
 export { ApproveAsMatureRequest } from "./Managers/ModerationManager/Requests/ApproveAsMatureRequest";
+export { RejectMediaRequest } from "./Managers/ModerationManager/Requests/RejectMediaRequest";
 export { ApproveItemRequest } from "./Managers/ModerationManager/Requests/ApproveItemRequest";
 export { BanMemberRequest } from "./Managers/ModerationManager/Requests/BanMemberRequest";
 export { BlockAnonymousRequest } from "./Managers/ModerationManager/Requests/BlockAnonymousRequest";
@@ -308,6 +311,7 @@ export { SuspendMemberRequest } from "./Managers/ModerationManager/Requests/Susp
 export { AnonymousAuthorBlockedResponse } from "./Managers/ModerationManager/Responses/AnonymousAuthorBlockedResponse";
 export { AuditLogListResponse } from "./Managers/ModerationManager/Responses/AuditLogListResponse";
 export { MatureApprovedResponse } from "./Managers/ModerationManager/Responses/MatureApprovedResponse";
+export { MediaRejectedByModeratorResponse } from "./Managers/ModerationManager/Responses/MediaRejectedByModeratorResponse";
 export { ModerationForbiddenResponse } from "./Managers/ModerationManager/Responses/ModerationForbiddenResponse";
 export { ModerationItemResponse } from "./Managers/ModerationManager/Responses/ModerationItemResponse";
 export { ModerationUnavailableResponse } from "./Managers/ModerationManager/Responses/ModerationUnavailableResponse";

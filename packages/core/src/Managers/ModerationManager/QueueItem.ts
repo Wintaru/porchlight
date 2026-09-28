@@ -1,4 +1,5 @@
 import type { LiveComment } from "../../Common/LiveComment";
+import type { MediaAsset } from "../../Common/MediaAsset";
 import type { Post } from "../../Common/Post";
 import type { TrustLevel } from "../../Common/TrustLevel";
 
@@ -11,7 +12,9 @@ import type { TrustLevel } from "../../Common/TrustLevel";
 // went back to draft and was submitted again keeps the mark from its first visit.
 // `displayHtml` is the body as the moderator reads it: an anonymous author's with its
 // links and images made plain text until it is approved (SPEC.md §4, #34), anyone
-// else's as stored.
+// else's as stored. An `upload` is a held file that is not a pending post's cover (#90,
+// C13): the moderator approves it as mature or turns it down. It has no body and is
+// never escalated.
 export type QueueItem =
   | {
       readonly kind: "post";
@@ -27,4 +30,10 @@ export type QueueItem =
       readonly authorTrustLevel: TrustLevel | null;
       readonly escalated: boolean;
       readonly displayHtml: string;
+    }
+  | {
+      readonly kind: "upload";
+      readonly asset: MediaAsset;
+      readonly authorTrustLevel: TrustLevel | null;
+      readonly escalated: false;
     };

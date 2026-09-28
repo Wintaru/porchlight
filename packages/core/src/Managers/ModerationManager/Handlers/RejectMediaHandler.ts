@@ -1,39 +1,39 @@
 import type { IAuditAccessor } from "../../../Accessors/AuditAccessor/IAuditAccessor";
-import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
 import type { IMediaAssetAccessor } from "../../../Accessors/MediaAssetAccessor/IMediaAssetAccessor";
-import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
 import { StoreMediaAssetChangesRequest } from "../../../Accessors/MediaAssetAccessor/Requests/StoreMediaAssetChangesRequest";
 import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
 import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
 import { MediaAssetStoredResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetStoredResponse";
+import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IModActionAccessor";
+import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import type { IHandler } from "../../../Common/IHandler";
-import type { IMediaPublishEngine } from "../../../Engines/MediaPublishEngine/IMediaPublishEngine";
-import { PublishMediaRequest } from "../../../Engines/MediaPublishEngine/Requests/PublishMediaRequest";
-import { MediaPublishedResponse } from "../../../Engines/MediaPublishEngine/Responses/MediaPublishedResponse";
-import { MediaUnpublishableResponse } from "../../../Engines/MediaPublishEngine/Responses/MediaUnpublishableResponse";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
 import { actorId } from "../actorId";
 import { permit } from "../permit";
 import { recordModeration } from "../recordModeration";
-import type { ApproveAsMatureRequest } from "../Requests/ApproveAsMatureRequest";
-import { MatureApprovedResponse } from "../Responses/MatureApprovedResponse";
+import type { RejectMediaRequest } from "../Requests/RejectMediaRequest";
+import { MediaRejectedByModeratorResponse } from "../Responses/MediaRejectedByModeratorResponse";
 import type { ModerationForbiddenResponse } from "../Responses/ModerationForbiddenResponse";
 import type { ModerationUnavailableResponse } from "../Responses/ModerationUnavailableResponse";
 import { NoSuchItemResponse } from "../Responses/NoSuchItemResponse";
+import { ReasonRequiredResponse } from "../Responses/ReasonRequiredResponse";
 import { unavailable } from "../unavailable";
 
 type Result =
-  | MatureApprovedResponse
+  | MediaRejectedByModeratorResponse
   | NoSuchItemResponse
   | ModerationForbiddenResponse
+  | ReasonRequiredResponse
   | ModerationUnavailableResponse;
 
-// Artistic nudity is approved only with this mandatory tag (SPEC.md §7). The tag goes on
-// first, then the image gets its re-encoded public copy (#36) — so the copy never
-// exists without the tag that makes every page blur it.
-export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, Result> {
+// The other answer to a held upload (#90, C13), beside ApproveAsMature. Nothing is
+// deleted: the upload stays held as it arrived, so the owner can still remove it and
+// free the space, and it can never publish. Only an upload still waiting: a clear one
+// needs no decision, nobody decides a locked one (SPEC.md §7), and one already approved
+// as mature or turned down has had its answer.
+export class RejectMediaHandler implements IHandler<RejectMediaRequest, Result> {
   constructor(
     private readonly mediaAssets: IMediaAssetAccessor,
     private readonly modActions: IModActionAccessor,
@@ -41,12 +41,15 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     private readonly reports: IReportAccessor,
     private readonly notifications: INotificationAccessor,
     private readonly permissions: IPermissionEngine,
-    private readonly publisher: IMediaPublishEngine,
   ) {}
 
-  async handle(request: ApproveAsMatureRequest): Promise<Result> {
+  async handle(request: RejectMediaRequest): Promise<Result> {
     const { correlationId, actor, mediaId, timestamp } = request;
     const context = { correlationId, timestamp };
+    const reason = request.reason.trim();
+    if (reason === "") {
+      return new ReasonRequiredResponse(correlationId);
+    }
 
     const loaded = await this.mediaAssets.load(
       new LoadMediaAssetByIdRequest(mediaId, context),
@@ -57,6 +60,7 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
     if (!(loaded instanceof MediaAssetLoadedResponse)) {
       return unavailable(correlationId, loaded, "mediaAssets.load");
     }
+    const { asset } = loaded;
 
     const refused = await permit(
       this.permissions,
@@ -64,45 +68,31 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
       "moderation.act",
       {
         kind: "media",
-        id: loaded.asset.id,
-        owner: loaded.asset.owner,
-        publishedPath: loaded.asset.publishedPath,
-        scanStatus: loaded.asset.scanStatus,
+        id: asset.id,
+        owner: asset.owner,
+        publishedPath: asset.publishedPath,
+        scanStatus: asset.scanStatus,
       },
       context,
     );
     if (refused !== undefined) {
       return refused;
     }
-    // Only a held image (#90): a mature file can only be a cover, which is an image, and
-    // one a moderator turned down stays turned down.
-    const { asset: held } = loaded;
     if (
-      held.kind !== "image" ||
-      held.scanStatus !== "flagged" ||
-      held.rejectedAt !== null
+      asset.scanStatus !== "flagged" ||
+      asset.mature ||
+      asset.publishedPath !== null ||
+      asset.rejectedAt !== null
     ) {
       return new NoSuchItemResponse(correlationId);
     }
 
     const stored = await this.mediaAssets.store(
-      new StoreMediaAssetChangesRequest(mediaId, { mature: true }, context),
+      new StoreMediaAssetChangesRequest(mediaId, { rejectedAt: timestamp }, context),
     );
     if (!(stored instanceof MediaAssetStoredResponse)) {
       return unavailable(correlationId, stored, "mediaAssets.store");
     }
-    // An image that will not decode stays tagged and unpublished; nothing to retry.
-    const published = await this.publisher.transform(
-      new PublishMediaRequest(stored.asset, undefined, context),
-    );
-    if (
-      !(published instanceof MediaPublishedResponse) &&
-      !(published instanceof MediaUnpublishableResponse)
-    ) {
-      return unavailable(correlationId, published, "publisher.transform");
-    }
-    const asset =
-      published instanceof MediaPublishedResponse ? published.asset : stored.asset;
 
     const recorded = await recordModeration(
       this.modActions,
@@ -111,18 +101,28 @@ export class ApproveAsMatureHandler implements IHandler<ApproveAsMatureRequest, 
       this.notifications,
       {
         actorId: actorId(actor),
-        action: "approve_mature",
+        action: "reject",
         target: { kind: "media", id: mediaId },
-        reason: null,
+        reason,
         event: "mod.action",
         auditSubject: { kind: "media", id: mediaId },
-        auditDetails: { action: "approve_mature" },
+        auditDetails: { action: "reject_media" },
+        notify:
+          asset.owner.kind === "member"
+            ? [
+                {
+                  recipientId: asset.owner.profileId,
+                  kind: "mod.action",
+                  payload: { action: "reject_media", mediaId, reason },
+                },
+              ]
+            : [],
       },
       context,
     );
     if (recorded !== undefined) {
       return recorded;
     }
-    return new MatureApprovedResponse(correlationId, asset);
+    return new MediaRejectedByModeratorResponse(correlationId, stored.asset);
   }
 }

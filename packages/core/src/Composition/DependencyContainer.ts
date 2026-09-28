@@ -105,6 +105,7 @@ import { GetEmailAvailabilityRequest } from "../Managers/NotificationManager/Req
 import { DeleteMediaHandler } from "../Managers/MediaManager/Handlers/DeleteMediaHandler";
 import { PruneMediaHandler } from "../Managers/MediaManager/Handlers/PruneMediaHandler";
 import { PrunePostMediaHandler } from "../Managers/MediaManager/Handlers/PrunePostMediaHandler";
+import { GetViewableImageHandler } from "../Managers/MediaManager/Handlers/GetViewableImageHandler";
 import { AttachMediaToPostHandler } from "../Managers/MediaManager/Handlers/AttachMediaToPostHandler";
 import { FinalizeUploadAnonymouslyHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadAnonymouslyHandler";
 import { FinalizeUploadHandler } from "../Managers/MediaManager/Handlers/FinalizeUploadHandler";
@@ -118,6 +119,7 @@ import { MediaManager } from "../Managers/MediaManager/MediaManager";
 import { DeleteMediaRequest } from "../Managers/MediaManager/Requests/DeleteMediaRequest";
 import { PruneMediaRequest } from "../Managers/MediaManager/Requests/PruneMediaRequest";
 import { PrunePostMediaRequest } from "../Managers/MediaManager/Requests/PrunePostMediaRequest";
+import { GetViewableImageRequest } from "../Managers/MediaManager/Requests/GetViewableImageRequest";
 import { AttachMediaToPostRequest } from "../Managers/MediaManager/Requests/AttachMediaToPostRequest";
 import { FinalizeUploadAnonymouslyRequest } from "../Managers/MediaManager/Requests/FinalizeUploadAnonymouslyRequest";
 import { FinalizeUploadRequest } from "../Managers/MediaManager/Requests/FinalizeUploadRequest";
@@ -157,6 +159,7 @@ import { RerenderCommentBodiesRequest } from "../Managers/CommentManager/Request
 import { UnpublishPostRequest } from "../Managers/PostManager/Requests/UnpublishPostRequest";
 import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
 import { ApproveAsMatureHandler } from "../Managers/ModerationManager/Handlers/ApproveAsMatureHandler";
+import { RejectMediaHandler } from "../Managers/ModerationManager/Handlers/RejectMediaHandler";
 import { ApproveItemHandler } from "../Managers/ModerationManager/Handlers/ApproveItemHandler";
 import { BanMemberHandler } from "../Managers/ModerationManager/Handlers/BanMemberHandler";
 import { BlockAnonymousHandler } from "../Managers/ModerationManager/Handlers/BlockAnonymousHandler";
@@ -176,6 +179,7 @@ import { SuspendMemberHandler } from "../Managers/ModerationManager/Handlers/Sus
 import type { IModerationManager } from "../Managers/ModerationManager/IModerationManager";
 import { ModerationManager } from "../Managers/ModerationManager/ModerationManager";
 import { ApproveAsMatureRequest } from "../Managers/ModerationManager/Requests/ApproveAsMatureRequest";
+import { RejectMediaRequest } from "../Managers/ModerationManager/Requests/RejectMediaRequest";
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { BanMemberRequest } from "../Managers/ModerationManager/Requests/BanMemberRequest";
 import { BlockAnonymousRequest } from "../Managers/ModerationManager/Requests/BlockAnonymousRequest";
@@ -691,6 +695,15 @@ export class DependencyContainer {
           GetMediaRequest,
           new GetMediaHandler(mediaStorage, mediaAssets, permissions, mediaOptions),
         )
+        .register(
+          GetViewableImageRequest,
+          new GetViewableImageHandler(
+            mediaStorage,
+            mediaAssets,
+            permissions,
+            mediaOptions,
+          ),
+        )
         .register(ListMediaRequest, new ListMediaHandler(mediaAssets))
         .build(),
     );
@@ -721,6 +734,17 @@ export class DependencyContainer {
             notifications,
             permissions,
             mediaPublisher,
+          ),
+        )
+        .register(
+          RejectMediaRequest,
+          new RejectMediaHandler(
+            mediaAssets,
+            modActions,
+            auditLog,
+            reports,
+            notifications,
+            permissions,
           ),
         )
         .register(

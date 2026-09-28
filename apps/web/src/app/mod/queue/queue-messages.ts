@@ -21,6 +21,7 @@ const ERROR_TEXT: Readonly<Record<QueueErrorCode, string>> = {
 // by it, so a misspelt outcome is a type error rather than a silent "Done."
 export type StaffOutcome =
   | "approved"
+  | "approved-mature"
   | "rejected"
   | "rejected-blocked"
   | "hidden"

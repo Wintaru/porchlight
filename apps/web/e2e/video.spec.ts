@@ -8,8 +8,10 @@ import {
   devSignIn,
   fillBodyMarkdown,
   insertUpload,
+  MIRA,
   THEO,
 } from "./helpers";
+import { rest } from "./service-rest";
 
 // Issue #21: an iPhone photo (HEIC) goes up and is published as AVIF; a video is
 // prepared in the browser (its metadata dropped, its movie box moved first), checked,
@@ -99,4 +101,70 @@ test("a video is prepared in the browser, checked, and plays in the post", async
   expect(bytes.subarray(ftypSize + 4, ftypSize + 8).toString("latin1")).toBe("moov");
 
   await deletePost(page, title);
+});
+
+// Issue #90: the queue shows a held HEIC photo and a held video properly. The fake
+// scanner cannot flag either (it never sees the marker through a conversion), so the
+// test marks both flagged in the database, the state a real scanner leaves.
+test("the queue shows a held HEIC photo as an image and a held video as a player", async ({
+  page,
+  browser,
+}) => {
+  const stamp = Date.now().toString(36);
+  const photo = `held-photo-${stamp}.heic`;
+  const clip = `held-clip-${stamp}.mp4`;
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.getByLabel("Title").fill(`Held media ${stamp}`);
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]{36}$/);
+  const editor = page.url();
+  for (const [name, bytes, type] of [
+    [photo, HEIC, "image/heic"],
+    [clip, CLIP, "video/mp4"],
+  ] as const) {
+    const row = await attach(page, name, bytes, type);
+    await expect(row.getByRole("button", { name: "Remove" })).toBeVisible();
+  }
+  const rows = (await (
+    await rest(`media_assets?select=id,kind&original_filename=like.held-*-${stamp}.*`, {
+      method: "GET",
+    })
+  ).json()) as { id: string; kind: string }[];
+  const photoId = rows.find((row) => row.kind === "image")?.id ?? "";
+  const clipId = rows.find((row) => row.kind === "video")?.id ?? "";
+  expect(photoId).not.toBe("");
+  expect(clipId).not.toBe("");
+  await rest(`media_assets?id=in.(${photoId},${clipId})`, {
+    method: "PATCH",
+    body: JSON.stringify({ scan_status: "flagged" }),
+  });
+
+  const mira = await browser.newPage();
+  await devSignIn(mira, MIRA);
+  await mira.goto("/mod/queue?filter=flagged");
+
+  const heldPhoto = mira.locator(`[data-media-id="${photoId}"]`).locator("img");
+  await expect(heldPhoto).toHaveAttribute("src", `/mod/queue/held/${photoId}`);
+  await expect
+    .poll(() => heldPhoto.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  const served = await mira.request.get(`/mod/queue/held/${photoId}`);
+  expect(served.headers()["content-type"]).toBe("image/jpeg");
+  // Nobody but its owner and staff gets the original.
+  expect((await page.request.get(`/mod/queue/held/${photoId}`)).ok()).toBe(true);
+  const visitor = await browser.newPage();
+  expect((await visitor.request.get(`/mod/queue/held/${photoId}`)).status()).toBe(404);
+
+  const heldClip = mira.locator(`[data-media-id="${clipId}"]`);
+  const player = heldClip.locator("video");
+  await expect
+    .poll(() => player.evaluate((video: HTMLVideoElement) => video.readyState))
+    .toBeGreaterThan(0);
+  // A video cannot be a cover, so the only answer is to turn it down.
+  await expect(heldClip.getByTestId("queue-approve-mature")).toHaveCount(0);
+  await expect(heldClip.getByTestId("queue-reject")).toBeVisible();
+
+  // The post's uploads go with it (#80).
+  await page.goto(editor);
+  await deleteCurrentPost(page);
 });

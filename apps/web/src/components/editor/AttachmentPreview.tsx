@@ -90,6 +90,13 @@ function PreviewMedia({ upload }: { readonly upload: UploadView }) {
         </p>
       );
     }
+    if (upload.rejected) {
+      return (
+        <p className={styles.hint}>
+          A moderator turned it down, so it cannot go in a post.
+        </p>
+      );
+    }
     return (
       <p className={styles.hint}>
         {upload.unreadable

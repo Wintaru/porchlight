@@ -11,6 +11,7 @@ import {
   MIRA,
   THEO,
 } from "./helpers";
+import { rest } from "./service-rest";
 
 // Issues #36 and #52: an image goes up, gets a re-encoded public copy with its metadata
 // stripped, and goes into a post as its cover and in its body; a PDF goes in as a
@@ -214,6 +215,81 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
   await deleteCurrentPost(page);
+});
+
+async function mediaIdOf(filename: string): Promise<string> {
+  const response = await rest(
+    `media_assets?select=id&original_filename=eq.${encodeURIComponent(filename)}`,
+    { method: "GET" },
+  );
+  const rows = (await response.json()) as { id: string }[];
+  const id = rows[0]?.id;
+  if (id === undefined) {
+    throw new Error(`no upload named ${filename}`);
+  }
+  return id;
+}
+
+// Issue #90 (C13): a flagged picture that is not a pending post's cover waits in the
+// queue. The moderator turns it down (it stays held, and its owner is told why) or
+// approves it as mature (then it can only be a cover).
+test("a flagged picture in the body waits in the queue for a moderator", async ({
+  page,
+  browser,
+}) => {
+  const stamp = Date.now().toString(36);
+  const [turnedDown, approved] = [`held-a-${stamp}.jpg`, `held-b-${stamp}.jpg`];
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.getByLabel("Title").fill(`Held pictures ${stamp}`);
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]{36}$/);
+  const editor = page.url();
+  for (const name of [turnedDown, approved]) {
+    const row = await attach(page, name, FLAGGED_PHOTO, "image/jpeg");
+    await expect(row).toContainText("a moderator looks at it first");
+  }
+  const turnedDownId = await mediaIdOf(turnedDown);
+  const approvedId = await mediaIdOf(approved);
+
+  const mira = await queueAsMira(browser);
+  const first = mira.locator(`[data-media-id="${turnedDownId}"]`);
+  await expect(first).toContainText("flagged image, needs review");
+  const held = first.getByTestId("reveal-image");
+  await expect(held).toHaveAttribute("data-mode", "review");
+  expect(
+    await held.locator("img").evaluate((img) => getComputedStyle(img).filter),
+  ).toContain("grayscale");
+  await first.getByLabel(/Reason/).fill("Not for this site.");
+  await first.getByTestId("queue-reject").click();
+  await expect(mira.getByTestId("queue-status")).toHaveText("Rejected.");
+  await expect(mira.locator(`[data-media-id="${turnedDownId}"]`)).toHaveCount(0);
+
+  const second = mira.locator(`[data-media-id="${approvedId}"]`);
+  await second.getByTestId("queue-approve-mature").click();
+  await expect(mira.getByTestId("queue-status")).toContainText("Approved as mature");
+  await expect(mira.locator(`[data-media-id="${approvedId}"]`)).toHaveCount(0);
+
+  // The owner is told, and the editor says where each one stands.
+  const notices = (await (
+    await rest(
+      `notifications?select=id&kind=eq.mod.action&payload->>mediaId=eq.${turnedDownId}`,
+      { method: "GET" },
+    )
+  ).json()) as { id: string }[];
+  expect(notices).toHaveLength(1);
+  await page.goto(editor);
+  await expect(
+    page.getByTestId("attachment").filter({ hasText: turnedDown }),
+  ).toContainText("a moderator turned it down");
+  await expect(
+    page.getByTestId("attachment").filter({ hasText: approved }),
+  ).toContainText("mature: it can be the cover");
+
+  // The post's uploads go with it (#80).
+  await deleteCurrentPost(page);
+  for (const notice of notices) {
+    await rest(`notifications?id=eq.${notice.id}`, { method: "DELETE" });
+  }
 });
 
 // A visible element's box. A hidden one has none, and a check against a made-up zero

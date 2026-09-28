@@ -2,6 +2,7 @@ import {
   type Actor,
   GetMediaRequest,
   GetSiteConfigRequest,
+  type MediaAsset,
   MediaResponse,
   ModerationForbiddenResponse,
   type QueueFilter,
@@ -27,9 +28,11 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import {
   approveAsMature,
   approveItem,
+  approveUploadAsMature,
   blockAnonymous,
   escalateItem,
   hideItem,
+  rejectUpload,
   removeItem,
   rejectItem,
 } from "./actions";
@@ -53,6 +56,7 @@ const FILTER_LABEL: Record<QueueFilter, string> = {
 
 const DONE_TEXT: Readonly<Record<string, string>> = {
   approved: "Approved.",
+  "approved-mature": "Approved as mature. It can be a cover, where it is blurred.",
   rejected: "Rejected.",
   "rejected-blocked":
     "Not approved. A member in that thread blocked the writer, so it was rejected.",
@@ -62,8 +66,9 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   blocked: "Blocked. Nothing more from that writer or their address reaches the queue.",
 } satisfies Partial<Record<StaffOutcome, string>>;
 
-// The moderation queue (SPEC.md §7): pending posts and comments, newest first,
-// filterable to anonymous, probation or flagged. A member who is not staff never
+// The moderation queue (SPEC.md §7): pending posts and comments, and held uploads that
+// are not a pending post's cover (#90), newest first, filterable to anonymous,
+// probation or flagged. A member who is not staff never
 // learns this route exists.
 export default async function QueuePage({ searchParams }: QueuePageProps) {
   const actor = await getCurrentActor();
@@ -87,7 +92,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
   }
 
   const doneText = done !== undefined ? (DONE_TEXT[done] ?? "Done.") : undefined;
-  const heldImages = await heldImagesFor(actor, response.items);
+  const heldMedia = await heldMediaFor(actor, response.items);
 
   return (
     <StaffShell
@@ -129,7 +134,11 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
         <ul className={styles.items} data-testid="queue-items">
           {response.items.map((item) => (
             <li key={`${item.kind}-${itemId(item)}`} data-testid="queue-item">
-              <QueueItemCard item={item} heldImageUrl={heldImages.get(itemId(item))} />
+              {item.kind === "upload" ? (
+                <HeldUploadCard item={item} held={heldMedia.get(itemId(item))} />
+              ) : (
+                <QueueItemCard item={item} held={heldMedia.get(itemId(item))} />
+              )}
             </li>
           ))}
         </ul>
@@ -151,29 +160,52 @@ async function dutiesFor(actor: Actor) {
   return { region: response.config.region, items: response.dutyChecklist };
 }
 
-// A flagged cover's original, for the moderator deciding it (SPEC.md §7): a short-lived
-// signed link to the quarantine copy, shown blurred and grey until they choose to look.
-// One lookup per flagged item — a held image is rare, and the queue a working set.
-async function heldImagesFor(
+// A held file as the moderator sees it: where to load it from, and whether it plays.
+interface HeldMedia {
+  readonly src: string;
+  readonly media: "image" | "video";
+}
+
+// A flagged cover's or held upload's original, for the moderator deciding it (SPEC.md
+// §7), shown blurred and grey until they choose to look. An image comes through the
+// held-image route, which checks who may see it and sends a HEIC photo as a JPEG any
+// browser shows (#90); a cover is always an image. A video plays from a short-lived
+// signed link to the quarantine copy: one lookup per held video — a held file is rare,
+// and the queue a working set. Keyed by the item's id.
+async function heldMediaFor(
   actor: Actor,
   items: readonly QueueItem[],
-): Promise<ReadonlyMap<string, string>> {
-  const held = items.flatMap((item) =>
-    item.kind === "post" && item.flagged && item.post.coverMediaId !== null
-      ? [{ postId: item.post.id, mediaId: item.post.coverMediaId }]
-      : [],
-  );
-  const urls = await Promise.all(
-    held.map(async ({ postId, mediaId }) => {
+): Promise<ReadonlyMap<string, HeldMedia>> {
+  const entries = await Promise.all(
+    items.map(async (item) => {
+      if (item.kind === "post") {
+        return item.flagged && item.post.coverMediaId !== null
+          ? ([item.post.id, heldImage(item.post.coverMediaId)] as const)
+          : undefined;
+      }
+      if (item.kind !== "upload") {
+        return undefined;
+      }
+      const { asset } = item;
+      if (asset.kind === "image") {
+        return [asset.id, heldImage(asset.id)] as const;
+      }
+      if (asset.kind !== "video") {
+        return undefined;
+      }
       const response = await getDependencyContainer().mediaManager.query(
-        new GetMediaRequest(actor, mediaId),
+        new GetMediaRequest(actor, asset.id),
       );
       return response instanceof MediaResponse
-        ? ([postId, response.downloadUrl] as const)
+        ? ([asset.id, { src: response.downloadUrl, media: "video" }] as const)
         : undefined;
     }),
   );
-  return new Map(urls.filter((entry) => entry !== undefined));
+  return new Map<string, HeldMedia>(entries.filter((entry) => entry !== undefined));
+}
+
+function heldImage(mediaId: string): HeldMedia {
+  return { src: `/mod/queue/held/${mediaId}`, media: "image" };
 }
 
 // Every post in the queue says who wrote its first draft (SPEC.md §17).
@@ -188,11 +220,11 @@ const TRUST_CHIP: Readonly<Record<TrustLevel, string>> = {
 };
 
 interface QueueItemCardProps {
-  readonly item: QueueItem;
-  readonly heldImageUrl: string | undefined;
+  readonly item: Exclude<QueueItem, { kind: "upload" }>;
+  readonly held: HeldMedia | undefined;
 }
 
-function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
+function QueueItemCard({ item, held }: QueueItemCardProps) {
   const target = { kind: item.kind, id: itemId(item) };
   const author = item.kind === "post" ? item.post.author : item.comment.author;
   const anonymousAuthorId = author.kind === "anonymous" ? author.anonymousAuthorId : null;
@@ -238,12 +270,13 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
           {item.post.title}
         </h2>
       )}
-      {heldImageUrl !== undefined && (
+      {held !== undefined && (
         <RevealImage
           id={`held-${target.id}`}
-          src={heldImageUrl}
+          src={held.src}
           alt="The cover image the classifier held"
           mode="review"
+          media={held.media}
           className={styles.heldImage}
         />
       )}
@@ -341,8 +374,94 @@ function QueueItemCard({ item, heldImageUrl }: QueueItemCardProps) {
   );
 }
 
+const MEDIA_KIND_TEXT: Readonly<Record<MediaAsset["kind"], string>> = {
+  image: "Photo",
+  video: "Video",
+  document: "Document",
+  model: "3D model",
+  track: "Track",
+};
+
+interface HeldUploadCardProps {
+  readonly item: Extract<QueueItem, { kind: "upload" }>;
+  readonly held: HeldMedia | undefined;
+}
+
+// A held upload in no pending post (#90, C13). The moderator approves it as mature,
+// which makes it a cover only (SPEC.md §7), or turns it down with a reason its owner
+// sees. A video cannot be a cover, so it can only be turned down.
+function HeldUploadCard({ item, held }: HeldUploadCardProps) {
+  const { asset } = item;
+  return (
+    <article className={styles.item} data-escalated={false} data-media-id={asset.id}>
+      <p className={styles.meta} data-testid="queue-item-meta">
+        {item.authorTrustLevel === null ? (
+          <span className="chip chip--warm">anonymous</span>
+        ) : (
+          <span className="chip">{TRUST_CHIP[item.authorTrustLevel]}</span>
+        )}
+        <span className={`chip ${styles.flagged ?? ""}`}>
+          flagged {asset.kind === "video" ? "video" : "image"}, needs review
+        </span>
+        <span>
+          Upload · {MEDIA_KIND_TEXT[asset.kind]} not in a waiting post ·{" "}
+          {formatDate(asset.createdAt.toISOString())}
+        </span>
+      </p>
+      {held !== undefined && (
+        <RevealImage
+          id={`held-${asset.id}`}
+          src={held.src}
+          alt={
+            held.media === "video"
+              ? "The video the classifier held"
+              : "The image the classifier held"
+          }
+          mode="review"
+          media={held.media}
+          className={styles.heldImage}
+        />
+      )}
+      <form action={rejectUpload} className={styles.decide}>
+        <input type="hidden" name="mediaId" value={asset.id} />
+        <label className="field">
+          <span className="field-label">Reason (required to reject)</span>
+          <input className="text-input" type="text" name="reason" />
+        </label>
+        <div className={styles.actions}>
+          {asset.kind === "image" && (
+            <button
+              type="submit"
+              formAction={approveUploadAsMature}
+              className="pill-button pill-button--amber"
+              data-testid="queue-approve-mature"
+            >
+              Approve as mature
+            </button>
+          )}
+          <button
+            type="submit"
+            formAction={rejectUpload}
+            className="pill-button"
+            data-testid="queue-reject"
+          >
+            Reject with reason
+          </button>
+        </div>
+      </form>
+    </article>
+  );
+}
+
 function itemId(item: QueueItem): string {
-  return item.kind === "post" ? item.post.id : item.comment.id;
+  switch (item.kind) {
+    case "post":
+      return item.post.id;
+    case "comment":
+      return item.comment.id;
+    case "upload":
+      return item.asset.id;
+  }
 }
 
 function isQueueFilter(value: string | undefined): value is QueueFilter {
