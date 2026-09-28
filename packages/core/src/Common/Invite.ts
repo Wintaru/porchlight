@@ -12,13 +12,7 @@ export interface Invite {
   readonly usedCount: number;
   readonly trustLevel: TrustLevel;
   readonly revokedAt: Date | null;
-}
-
-// Whether a link still lets someone in at `now`.
-export function isInviteLive(invite: Invite, now: Date): boolean {
-  return (
-    invite.revokedAt === null &&
-    (invite.expiresAt === null || invite.expiresAt > now) &&
-    (invite.maxUses === null || invite.usedCount < invite.maxUses)
-  );
+  // Whether the link still lets someone in, as the database's `invite_is_live` answered
+  // when this was read (#92). The rule lives in SQL only.
+  readonly live: boolean;
 }

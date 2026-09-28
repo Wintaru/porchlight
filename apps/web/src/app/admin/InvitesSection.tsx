@@ -3,7 +3,6 @@ import {
   GetInvitesRequest,
   type Invite,
   InvitesResponse,
-  isInviteLive,
   type SignUpPolicy,
 } from "@porchlight/core";
 
@@ -18,7 +17,9 @@ interface InvitesSectionProps {
   readonly signUp: SignUpPolicy;
 }
 
-function describe(invite: Invite, now: Date): string {
+// `live` comes from the database's rule (#92): the page does not judge a link by its own
+// clock.
+function describe(invite: Invite): string {
   const uses =
     invite.maxUses === null
       ? `${String(invite.usedCount)} joined`
@@ -26,7 +27,7 @@ function describe(invite: Invite, now: Date): string {
   if (invite.revokedAt !== null) {
     return `${uses} · revoked`;
   }
-  if (!isInviteLive(invite, now)) {
+  if (!invite.live) {
     return `${uses} · no longer works`;
   }
   return invite.expiresAt === null
@@ -40,7 +41,6 @@ export async function InvitesSection({ actor, signUp }: InvitesSectionProps) {
     new GetInvitesRequest(actor),
   );
   const invites = response instanceof InvitesResponse ? response.invites : undefined;
-  const now = new Date();
   return (
     <section id="invites" className={styles.card} aria-labelledby="invites-heading">
       <h2 id="invites-heading">Invite links</h2>
@@ -61,7 +61,7 @@ export async function InvitesSection({ actor, signUp }: InvitesSectionProps) {
           {invites.map((invite) => (
             <li key={invite.id} data-testid="invite-row">
               Made {invite.createdAt.toISOString().slice(0, 10)} · joins as{" "}
-              {invite.trustLevel} · {describe(invite, now)}{" "}
+              {invite.trustLevel} · {describe(invite)}{" "}
               {invite.revokedAt === null && (
                 <form action={revokeInvite} style={{ display: "inline" }}>
                   <input type="hidden" name="inviteId" value={invite.id} />

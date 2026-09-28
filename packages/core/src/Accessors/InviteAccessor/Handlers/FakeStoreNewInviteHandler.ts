@@ -29,6 +29,11 @@ export class FakeStoreNewInviteHandler implements IHandler<
       revokedAt: null,
     };
     this.state.invites.set(invite.id, { tokenHash, invite });
-    return Promise.resolve(new InviteStoredResponse(request.correlationId, invite));
+    return Promise.resolve(
+      new InviteStoredResponse(
+        request.correlationId,
+        this.state.read(invite, request.timestamp),
+      ),
+    );
   }
 }

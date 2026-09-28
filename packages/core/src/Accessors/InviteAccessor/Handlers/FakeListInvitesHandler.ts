@@ -19,7 +19,7 @@ export class FakeListInvitesHandler implements IHandler<
       );
     }
     const invites = [...this.state.invites.values()]
-      .map((row) => row.invite)
+      .map((row) => this.state.read(row.invite, request.timestamp))
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return Promise.resolve(new InvitesLoadedResponse(request.correlationId, invites));
   }

@@ -1,5 +1,4 @@
 import type { IHandler } from "../../../Common/IHandler";
-import { isInviteLive } from "../../../Common/Invite";
 import type { FakeInviteState } from "../FakeInviteState";
 import type { RedeemInviteRequest } from "../Requests/RedeemInviteRequest";
 import { InviteAccessFailedResponse } from "../Responses/InviteAccessFailedResponse";
@@ -25,7 +24,7 @@ export class FakeRedeemInviteHandler implements IHandler<
     for (const row of this.state.invites.values()) {
       if (
         row.tokenHash === request.tokenHash &&
-        isInviteLive(row.invite, request.timestamp)
+        this.state.isLive(row.invite, request.timestamp)
       ) {
         row.invite = { ...row.invite, usedCount: row.invite.usedCount + 1 };
         return Promise.resolve(

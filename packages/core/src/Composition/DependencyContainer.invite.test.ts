@@ -85,7 +85,7 @@ describe("DependencyContainer: invite links (#25)", () => {
     expect(second).toBeInstanceOf(SignUpClosedResponse);
     expect(
       await container.accountManager.query(new GetInvitesRequest(admin)),
-    ).toMatchObject({ invites: [{ usedCount: 1, maxUses: 1 }] });
+    ).toMatchObject({ invites: [{ usedCount: 1, maxUses: 1, live: false }] });
   });
 
   test("a link can grant probation, and a revoked link lets nobody in", async () => {

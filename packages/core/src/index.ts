@@ -361,7 +361,7 @@ export {
   INVITE_MAX_USES,
   type InviteTerms,
 } from "./Managers/AccountManager/InviteTerms";
-export { type Invite, isInviteLive } from "./Common/Invite";
+export type { Invite } from "./Common/Invite";
 // Presence (#75): a member's choice to be seen online and typing.
 export { GetPresenceSettingRequest } from "./Managers/AccountManager/Requests/GetPresenceSettingRequest";
 export { SetPresenceSettingRequest } from "./Managers/AccountManager/Requests/SetPresenceSettingRequest";

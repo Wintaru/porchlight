@@ -1,5 +1,4 @@
 import type { IHandler } from "../../../Common/IHandler";
-import { isInviteLive } from "../../../Common/Invite";
 import type { FakeInviteState } from "../FakeInviteState";
 import type { CheckInviteRequest } from "../Requests/CheckInviteRequest";
 import { InviteAccessFailedResponse } from "../Responses/InviteAccessFailedResponse";
@@ -22,7 +21,7 @@ export class FakeCheckInviteHandler implements IHandler<
     const live = [...this.state.invites.values()].some(
       (row) =>
         row.tokenHash === request.tokenHash &&
-        isInviteLive(row.invite, request.timestamp),
+        this.state.isLive(row.invite, request.timestamp),
     );
     return Promise.resolve(new InviteCheckedResponse(request.correlationId, live));
   }
