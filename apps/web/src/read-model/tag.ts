@@ -1,7 +1,11 @@
 import type { DbClient } from "@porchlight/db";
 
-import { notByAuthors } from "./member-blocks";
-import { type PostCard, POST_CARD_COLUMNS, PAGE_SIZE } from "./post-card";
+import {
+  type PostCard,
+  POST_CARD_COLUMNS,
+  PAGE_SIZE,
+  listedPostCards,
+} from "./post-card";
 
 export interface TagPage {
   readonly id: string;
@@ -65,25 +69,33 @@ export async function loadTag(db: DbClient, slug: string): Promise<TagPage | und
 // The public posts under one tag, newest first. `matched:post_tags!inner` is a second,
 // aliased embed of post_tags that acts as a join: the filter on `matched.tag_id` keeps
 // only posts that carry the tag, while the card's own `post_tags` embed still lists
-// every tag on each post.
-// A signed-in viewer's muted and blocked members are left out (#23).
+// every tag on each post. The tag's RSS feed and a visitor read this one.
 export async function loadTagPosts(
   db: DbClient,
   tagId: string,
-  hiddenAuthors: Iterable<string> = [],
 ): Promise<readonly PostCard[]> {
-  const query = db
+  const { data, error } = await db
     .from("posts")
     .select(`${POST_CARD_COLUMNS}, matched:post_tags!inner(tag_id)`)
     .eq("matched.tag_id", tagId)
     .eq("status", "published")
-    .eq("visibility", "public");
-  const hidden = notByAuthors(hiddenAuthors);
-  const { data, error } = await (hidden === undefined ? query : query.or(hidden))
+    .eq("visibility", "public")
     .order("published_at", { ascending: false })
     .limit(PAGE_SIZE);
   if (error) {
     throw new Error(`tag posts ${tagId}: ${error.message}`);
   }
   return data;
+}
+
+// The tag page for one viewer: a signed-in viewer's muted and blocked members are left
+// out in the database (#23, #93). A visitor has none, so theirs is one query.
+export async function loadTagPostsFor(
+  db: DbClient,
+  tagId: string,
+  viewerId: string | undefined,
+): Promise<readonly PostCard[]> {
+  return viewerId === undefined
+    ? loadTagPosts(db, tagId)
+    : listedPostCards(db, tagId, `tag posts ${tagId}`);
 }

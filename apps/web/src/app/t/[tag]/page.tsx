@@ -17,8 +17,7 @@ import { getSiteIdentity } from "@/lib/site-identity";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isFollowingTag } from "@/read-model/follows";
-import { loadViewerBlocks } from "@/read-model/member-blocks";
-import { loadTag, loadTagPosts } from "@/read-model/tag";
+import { loadTag, loadTagPostsFor } from "@/read-model/tag";
 
 import { saveTagDescription } from "./actions";
 import styles from "./tag.module.css";
@@ -88,11 +87,10 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
     );
   }
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [blocks, following] = await Promise.all([
-    loadViewerBlocks(db, viewerId),
+  const [posts, following] = await Promise.all([
+    loadTagPostsFor(db, tag.id, viewerId),
     viewerId === undefined ? false : isFollowingTag(db, viewerId, tag.id),
   ]);
-  const posts = await loadTagPosts(db, tag.id, blocks.keys());
   const followText = followTextFor(follow);
   // Own keys only: `?described=constructor` must not find Object.prototype's function.
   const describedText =

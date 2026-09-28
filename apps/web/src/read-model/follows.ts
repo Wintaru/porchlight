@@ -1,6 +1,6 @@
 import type { DbClient } from "@porchlight/db";
 
-import { PAGE_SIZE, POST_CARD_COLUMNS, type PostCard } from "./post-card";
+import { PAGE_SIZE, type PostCard, cardsInOrder } from "./post-card";
 
 // Whether the viewer follows this author, or this tag (#24): one row of their own
 // under RLS, by the unique (follower, target) index. Only a member sees the button.
@@ -41,27 +41,13 @@ export async function isFollowingTag(
 // The Following feed: `following_post_ids` picks the posts (followed authors and tags,
 // minus muted members), then one query loads their cards in the same order.
 export async function loadFollowingFeed(db: DbClient): Promise<readonly PostCard[]> {
-  const { data: picked, error } = await db.rpc("following_post_ids", {
+  const { data, error } = await db.rpc("following_post_ids", {
     p_limit: PAGE_SIZE,
   });
   if (error) {
     throw new Error(`following feed: ${error.message}`);
   }
-  if (picked.length === 0) {
-    return [];
-  }
-  const { data: cards, error: cardError } = await db
-    .from("posts")
-    .select(POST_CARD_COLUMNS)
-    .in(
-      "id",
-      picked.map((row) => row.id),
-    );
-  if (cardError) {
-    throw new Error(`following feed cards: ${cardError.message}`);
-  }
-  const byId = new Map(cards.map((card) => [card.id, card]));
-  return picked.flatMap((row) => byId.get(row.id) ?? []);
+  return cardsInOrder(db, data, "following feed");
 }
 
 // How many members have a public post out: the Following tab shows from two (D20).

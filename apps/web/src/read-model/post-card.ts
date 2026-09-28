@@ -1,7 +1,5 @@
 import type { DbClient } from "@porchlight/db";
 
-import { notByAuthors } from "./member-blocks";
-
 // The shape every list on the site shows for one post: the feed, an author's page, a
 // tag page. Names its columns (never `select *`, the grants are column lists) and the
 // three embeds: the author through the posts→profiles key, the tags through post_tags,
@@ -43,16 +41,55 @@ export const PAGE_SIZE = 20;
 // Every public list starts here: published, public, newest first (SPEC.md §5). RLS
 // already hides anything unpublished; `visibility` is the listing rule this module
 // applies on top, so an unlisted post is reachable by link and appears in no list.
-// `hiddenAuthors` is the viewer's mutes and blocks (#23), dropped at the source so a
-// page still holds PAGE_SIZE cards.
-export function publicPostCards(db: DbClient, hiddenAuthors: Iterable<string> = []) {
-  const query = db
+// A signed-in viewer's lists leave out their muted and blocked members (#23) in the
+// database instead: `listed_post_ids` picks the ids and `cardsInOrder` loads them.
+export function publicPostCards(db: DbClient) {
+  return db
     .from("posts")
     .select(POST_CARD_COLUMNS)
     .eq("status", "published")
-    .eq("visibility", "public");
-  const hidden = notByAuthors(hiddenAuthors);
-  return (hidden === undefined ? query : query.or(hidden))
+    .eq("visibility", "public")
     .order("published_at", { ascending: false })
     .limit(PAGE_SIZE);
+}
+
+// The cards for ids a database function picked, in the function's order, in one query.
+// `label` names the list in an error.
+export async function cardsInOrder(
+  db: DbClient,
+  picked: readonly { readonly id: string }[],
+  label: string,
+): Promise<readonly PostCard[]> {
+  if (picked.length === 0) {
+    return [];
+  }
+  const { data, error } = await db
+    .from("posts")
+    .select(POST_CARD_COLUMNS)
+    .in(
+      "id",
+      picked.map((row) => row.id),
+    );
+  if (error) {
+    throw new Error(`${label} cards: ${error.message}`);
+  }
+  const byId = new Map(data.map((card) => [card.id, card]));
+  return picked.flatMap((row) => byId.get(row.id) ?? []);
+}
+
+// A signed-in viewer's list as cards, newest first, minus the members they muted or
+// blocked (#93): the whole site (no tag), or one tag's posts.
+export async function listedPostCards(
+  db: DbClient,
+  tagId: string | null,
+  label: string,
+): Promise<readonly PostCard[]> {
+  const { data, error } = await db.rpc("listed_post_ids", {
+    ...(tagId === null ? {} : { p_tag_id: tagId }),
+    p_limit: PAGE_SIZE,
+  });
+  if (error) {
+    throw new Error(`${label}: ${error.message}`);
+  }
+  return cardsInOrder(db, data, label);
 }

@@ -46,17 +46,6 @@ export async function loadViewerBlockOf(
   return data?.level;
 }
 
-// The PostgREST filter that drops posts by these authors from a list. Anonymous posts
-// have a null `author_id`, and `not.in` alone would drop them too (NULL NOT IN (…) is
-// not true), so the filter keeps a null author explicitly. Ids are profile uuids from
-// the viewer's own rows, never user text.
-export function notByAuthors(authorIds: Iterable<string>): string | undefined {
-  const ids = [...authorIds];
-  return ids.length === 0
-    ? undefined
-    : `author_id.is.null,author_id.not.in.(${ids.join(",")})`;
-}
-
 // The settings page's list: each muted or blocked member with the level, newest first.
 export interface BlockedMember {
   readonly level: MemberBlockLevel;
