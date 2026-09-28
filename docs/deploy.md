@@ -239,6 +239,12 @@ Maintenance, and press **Re-render posts and comments** once. It is safe to pres
 again: a body that is already current is left as it is. A post it changes gets a new
 "last updated" time, which the sitemap shows.
 
+One press renders about a thousand posts and comments (issue #98,
+`RERENDER_BODIES_PER_PRESS`). On a larger site the page shows "Stopped part way" and a
+**Continue** button. Press Continue until the page shows "Re-rendered". The counts are
+for each press. "Skipped" counts a body that someone
+saved during the run: the save already wrote the new HTML.
+
 ## 12. Realtime: private channels only (issue #89)
 
 Porchlight uses only private Realtime channels: presence, and the notification bell.
