@@ -1,6 +1,7 @@
 import type { DbClient } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
+import { STAFF_ROLES } from "../../../Common/UserRole";
 import type { ListStaffProfilesRequest } from "../Requests/ListStaffProfilesRequest";
 import { ProfileAccessFailedResponse } from "../Responses/ProfileAccessFailedResponse";
 import { StaffProfilesLoadedResponse } from "../Responses/StaffProfilesLoadedResponse";
@@ -18,7 +19,7 @@ export class SupabaseListStaffProfilesHandler implements IHandler<
     const { data, error } = await this.db
       .from("profiles")
       .select(PROFILE_COLUMNS)
-      .in("role", ["admin", "moderator"])
+      .in("role", STAFF_ROLES)
       .eq("status", "active");
     if (error) {
       return new ProfileAccessFailedResponse(request.correlationId, error.message);

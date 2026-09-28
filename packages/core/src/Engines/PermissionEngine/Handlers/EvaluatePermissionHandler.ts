@@ -13,6 +13,7 @@ import type { CommentPolicy } from "../../../Common/CommentPolicy";
 import type { IHandler } from "../../../Common/IHandler";
 import type { PostingPolicy } from "../../../Common/PostingPolicy";
 import type { Profile } from "../../../Common/Profile";
+import { isStaffRole } from "../../../Common/UserRole";
 import type { RequestContext } from "../../../Common/RequestContext";
 import type { PermissionAction } from "../PermissionAction";
 import type { PermissionDenialReason } from "../PermissionDenialReason";
@@ -189,7 +190,7 @@ function verdict(allowed: boolean): Denial {
 }
 
 function isStaff(profile: Profile): boolean {
-  return profile.role === "admin" || profile.role === "moderator";
+  return isStaffRole(profile.role);
 }
 
 // A post or a live comment the member wrote. A tombstone has no author, so it is
@@ -452,8 +453,7 @@ function mayViewMedia(actor: PersonActor, subject: PermissionSubject): Promise<D
     return Promise.resolve(gate);
   }
   const isOwner = subject.owner.kind === "member" && subject.owner.profileId === gate.id;
-  const isStaff = gate.role === "admin" || gate.role === "moderator";
-  return Promise.resolve(verdict(isOwner || isStaff));
+  return Promise.resolve(verdict(isOwner || isStaffRole(gate.role)));
 }
 
 // The owner, or an admin. An anonymous author's upload has no member to authorize a

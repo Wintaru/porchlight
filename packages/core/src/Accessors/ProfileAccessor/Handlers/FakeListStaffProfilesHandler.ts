@@ -1,4 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
+import { isStaffRole } from "../../../Common/UserRole";
 import type { FakeProfileState } from "../FakeProfileState";
 import type { ListStaffProfilesRequest } from "../Requests/ListStaffProfilesRequest";
 import { ProfileAccessFailedResponse } from "../Responses/ProfileAccessFailedResponse";
@@ -22,9 +23,7 @@ export class FakeListStaffProfilesHandler implements IHandler<
       );
     }
     const staff = [...this.state.profiles.values()].filter(
-      (profile) =>
-        (profile.role === "admin" || profile.role === "moderator") &&
-        profile.status === "active",
+      (profile) => isStaffRole(profile.role) && profile.status === "active",
     );
     return Promise.resolve(new StaffProfilesLoadedResponse(request.correlationId, staff));
   }

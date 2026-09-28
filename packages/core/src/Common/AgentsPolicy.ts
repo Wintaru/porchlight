@@ -1,4 +1,5 @@
 import type { Profile } from "./Profile";
+import { isStaffRole } from "./UserRole";
 
 // Who may use agents at all, from `site_config.agents` (SPEC.md §17, D22). `members`
 // opens the Agents section and the MCP door to every active member, `staff` to admins
@@ -21,7 +22,7 @@ export function agentsOpenTo(
     case "members":
       return true;
     case "staff":
-      return profile.role === "admin" || profile.role === "moderator";
+      return isStaffRole(profile.role);
     case "off":
       return false;
   }

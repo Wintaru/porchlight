@@ -1,4 +1,5 @@
-import type { Actor, UserRole } from "@porchlight/core";
+import type { Actor } from "@porchlight/core";
+import { isStaffRole } from "@porchlight/core/client";
 import Link from "next/link";
 
 import { signOut } from "@/app/auth/actions";
@@ -70,7 +71,7 @@ export async function SessionBar() {
               </li>
               {/* Which links show is presentation only: each route checks the role
                   itself and answers 404 to anyone else. */}
-              {STAFF_ROLES.has(actor.profile.role) && (
+              {isStaffRole(actor.profile.role) && (
                 <li>
                   <Link href="/mod/queue">Moderation queue</Link>
                 </li>
@@ -119,8 +120,6 @@ export async function SessionBar() {
     </header>
   );
 }
-
-const STAFF_ROLES: ReadonlySet<UserRole> = new Set(["admin", "moderator"]);
 
 // The board's amber Write button; on a phone only its plus sign shows, and the word
 // stays for screen readers.
