@@ -49,7 +49,9 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Per hour. The address limit stops one inbox being flooded from many places; the
 // database also holds a repeat for ten minutes. The IP limit applies only behind a
 // trusted proxy: without one every visitor shares one placeholder address.
-const PER_EMAIL_PER_HOUR = 5;
+// docs/setup/email.md names PER_EMAIL_PER_HOUR in words; packages/core/test/
+// doc-numbers.test.ts fails when the two differ.
+export const PER_EMAIL_PER_HOUR = 5;
 const PER_IP_PER_HOUR = 10;
 const MS_PER_HOUR = 3_600_000;
 

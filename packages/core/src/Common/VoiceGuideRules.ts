@@ -22,4 +22,5 @@ export const DEFAULT_BANNED_PHRASES = [
 export const VOICE_SAMPLE_COUNT = 5;
 
 // The longest guide the store takes (`profiles_voice_guide_length`).
+// packages/db/test/mirrors.test.ts fails when the two differ.
 export const VOICE_GUIDE_MAX_LENGTH = 20_000;
