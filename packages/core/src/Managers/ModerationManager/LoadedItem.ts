@@ -1,3 +1,4 @@
+import type { ContentAuthor } from "../../Common/ContentAuthor";
 import type { LiveComment } from "../../Common/LiveComment";
 import type { Post } from "../../Common/Post";
 import type { PostStatus } from "../../Common/PostStatus";
@@ -11,4 +12,6 @@ export type LoadedItem =
       readonly kind: "comment";
       readonly comment: LiveComment;
       readonly postStatus: PostStatus;
+      // Whose post the comment is on: their block stops the comment's approval (#85).
+      readonly postAuthor: ContentAuthor;
     };

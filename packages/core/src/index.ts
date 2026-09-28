@@ -46,6 +46,7 @@ export {
   type AutoPromoteAfterApprovedPosts,
 } from "./Common/AutoPromoteRule";
 export type { AuditLogEntry } from "./Common/AuditLogEntry";
+export { BLOCKED_REPLY_TEXT } from "./Common/BlockedReplyText";
 export { type Comment, MAX_COMMENT_DEPTH } from "./Common/Comment";
 export { COMMENT_STATUSES, type CommentStatus } from "./Common/CommentStatus";
 export { COMMENT_POLICIES, type CommentPolicy } from "./Common/CommentPolicy";

@@ -1,12 +1,6 @@
-import type { ICommentAccessor } from "../../Accessors/CommentAccessor/ICommentAccessor";
-import { LoadCommentByIdRequest } from "../../Accessors/CommentAccessor/Requests/LoadCommentByIdRequest";
-import { CommentLoadedResponse } from "../../Accessors/CommentAccessor/Responses/CommentLoadedResponse";
-import type { IMemberBlockAccessor } from "../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
-import { LoadMemberBlocksOfTargetRequest } from "../../Accessors/MemberBlockAccessor/Requests/LoadMemberBlocksOfTargetRequest";
-import { MemberBlocksLoadedResponse } from "../../Accessors/MemberBlockAccessor/Responses/MemberBlocksLoadedResponse";
 import type { NotificationKind } from "../../Common/NotificationKind";
-import type { RequestContext } from "../../Common/RequestContext";
 import type { LoadedItem } from "./LoadedItem";
+import type { ThreadHolds } from "./threadHolds";
 import type { NotificationToSend } from "./recordModeration";
 
 // The item's own author, told a decision was made about their post or comment (SPEC.md
@@ -34,46 +28,24 @@ export function authorNotice(
 // telling the reply's own author their comment is now visible. Silent when the two
 // are the same person (a reply to your own comment) — nobody notifies themself — and
 // when the parent's author muted or blocked the reply's author (#23), the same rule
-// CreateComment applies to a reply that is visible at once. Like a parent that cannot
-// be loaded, a mute check that cannot be read sends no notice: the approval stands.
-export async function replyNotice(
-  comments: ICommentAccessor,
-  memberBlocks: IMemberBlockAccessor,
-  item: LoadedItem,
-  context: Required<Pick<RequestContext, "correlationId">>,
-): Promise<NotificationToSend[]> {
-  if (item.kind !== "comment" || item.comment.parentId === null) {
+// CreateComment applies to a reply that is visible at once.
+export function replyNotice(item: LoadedItem, thread: ThreadHolds): NotificationToSend[] {
+  const { parent } = thread;
+  if (item.kind !== "comment" || parent?.author.kind !== "member") {
     return [];
   }
-  const parent = await comments.load(
-    new LoadCommentByIdRequest(item.comment.parentId, context),
-  );
+  const parentAuthorId = parent.author.profileId;
+  const replier = item.comment.author;
   if (
-    !(parent instanceof CommentLoadedResponse) ||
-    parent.comment.status === "tombstone" ||
-    parent.comment.author.kind !== "member"
+    replier.kind === "member" &&
+    (replier.profileId === parentAuthorId ||
+      thread.holds.some((hold) => hold.memberId === parentAuthorId))
   ) {
     return [];
   }
-  const replier = item.comment.author;
-  if (replier.kind === "member") {
-    if (replier.profileId === parent.comment.author.profileId) {
-      return [];
-    }
-    const held = await memberBlocks.load(
-      new LoadMemberBlocksOfTargetRequest(
-        replier.profileId,
-        [parent.comment.author.profileId],
-        context,
-      ),
-    );
-    if (!(held instanceof MemberBlocksLoadedResponse) || held.blocks.length > 0) {
-      return [];
-    }
-  }
   return [
     {
-      recipientId: parent.comment.author.profileId,
+      recipientId: parentAuthorId,
       kind: "reply.created",
       postId: item.comment.postId,
       commentId: item.comment.id,

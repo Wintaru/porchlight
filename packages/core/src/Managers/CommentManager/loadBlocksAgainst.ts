@@ -9,6 +9,8 @@ import { unavailable } from "./unavailable";
 
 // The mutes and blocks the given authors hold against the commenting member (#23), in
 // one read. An anonymous author, a missing one, or the member themselves holds none.
+// ModerationManager's loadThreadHolds asks the same holders when a moderator approves a
+// held comment (#85): keep the two sets equal.
 export async function loadBlocksAgainst(
   memberBlocks: IMemberBlockAccessor,
   memberId: string,

@@ -49,7 +49,12 @@ export async function loadItem(
       ? new NoSuchItemResponse(context.correlationId)
       : unavailable(context.correlationId, post, "posts.load");
   }
-  return { kind: "comment", comment: loaded.comment, postStatus: post.post.status };
+  return {
+    kind: "comment",
+    comment: loaded.comment,
+    postStatus: post.post.status,
+    postAuthor: post.post.author,
+  };
 }
 
 export function isLoadedItem(

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Actor } from "../Common/Actor";
+import { BLOCKED_REPLY_TEXT } from "../Common/BlockedReplyText";
 import type { Comment } from "../Common/Comment";
 import type { MemberBlockLevel } from "../Common/MemberBlockLevel";
 import type { Post } from "../Common/Post";
@@ -11,12 +12,15 @@ import { ActionForbiddenResponse } from "../Managers/AccountManager/Responses/Ac
 import { MemberBlockRejectedResponse } from "../Managers/AccountManager/Responses/MemberBlockRejectedResponse";
 import { MemberBlockSetResponse } from "../Managers/AccountManager/Responses/MemberBlockSetResponse";
 import { NoSuchProfileResponse } from "../Managers/AccountManager/Responses/NoSuchProfileResponse";
+import type { CommentNode } from "../Managers/CommentManager/CommentNode";
 import { CheckCanCommentRequest } from "../Managers/CommentManager/Requests/CheckCanCommentRequest";
 import { CreateCommentRequest } from "../Managers/CommentManager/Requests/CreateCommentRequest";
+import { ListCommentsForPostRequest } from "../Managers/CommentManager/Requests/ListCommentsForPostRequest";
 import { CanCommentResponse } from "../Managers/CommentManager/Responses/CanCommentResponse";
 import { CannotCommentResponse } from "../Managers/CommentManager/Responses/CannotCommentResponse";
 import { CommentRejectedResponse } from "../Managers/CommentManager/Responses/CommentRejectedResponse";
 import { CommentResponse } from "../Managers/CommentManager/Responses/CommentResponse";
+import { CommentsResponse } from "../Managers/CommentManager/Responses/CommentsResponse";
 import { ApproveItemRequest } from "../Managers/ModerationManager/Requests/ApproveItemRequest";
 import { ModerationItemResponse } from "../Managers/ModerationManager/Responses/ModerationItemResponse";
 import { ListNotificationsRequest } from "../Managers/NotificationManager/Requests/ListNotificationsRequest";
@@ -171,6 +175,43 @@ async function replyNoticesFor(container: DependencyContainer, actor: Actor) {
   return listed.notifications.filter((n) => n.kind === "reply.created");
 }
 
+async function noticesFor(container: DependencyContainer, actor: Actor) {
+  const listed = await container.notificationManager.query(
+    new ListNotificationsRequest(actor),
+  );
+  if (!(listed instanceof NotificationsResponse)) {
+    throw new Error(`expected NotificationsResponse, got ${listed.constructor.name}`);
+  }
+  return listed.notifications;
+}
+
+async function visibleCommentIds(
+  container: DependencyContainer,
+  postId: string,
+): Promise<string[]> {
+  const listed = await container.commentManager.query(
+    new ListCommentsForPostRequest(VISITOR, postId),
+  );
+  if (!(listed instanceof CommentsResponse)) {
+    throw new Error(`expected CommentsResponse, got ${listed.constructor.name}`);
+  }
+  return flatten(listed.comments).map((c) => c.id);
+}
+
+function flatten(nodes: readonly CommentNode[]): Comment[] {
+  return nodes.flatMap((node) => [node.comment, ...flatten(node.replies)]);
+}
+
+async function approve(container: DependencyContainer, commentId: string) {
+  const approved = await container.moderationManager.execute(
+    new ApproveItemRequest(MIRA, { kind: "comment", id: commentId }),
+  );
+  if (!(approved instanceof ModerationItemResponse)) {
+    throw new Error(`expected ModerationItemResponse, got ${approved.constructor.name}`);
+  }
+  return approved.item;
+}
+
 describe("DependencyContainer: member mutes and blocks (#23)", () => {
   test("a member sets, raises and takes back a level", async () => {
     const container = await containerWithProfiles();
@@ -278,5 +319,59 @@ describe("DependencyContainer: member mutes and blocks (#23)", () => {
     );
     expect(approved).toBeInstanceOf(ModerationItemResponse);
     expect(await replyNoticesFor(container, THEO)).toEqual([]);
+  });
+
+  test("a held comment the post's author blocked is rejected, not approved (#85)", async () => {
+    const container = await containerWithProfiles();
+    const post = await publishedPostBy(container, THEO);
+    // Ivy is on probation: her comment waits. Theo blocks her before a moderator looks.
+    const held = await comment(container, IVY, post.id);
+    expect(held.status).toBe("pending");
+    await setLevel(container, THEO, IVY, "block");
+
+    const item = await approve(container, held.id);
+    expect(item).toMatchObject({
+      kind: "comment",
+      comment: { status: "rejected", rejectionReason: BLOCKED_REPLY_TEXT },
+    });
+    expect(await visibleCommentIds(container, post.id)).not.toContain(held.id);
+    // Ivy hears of a rejection with the neutral text, never an approval.
+    const ivyHears = (await noticesFor(container, IVY)).map((n) => n.kind);
+    expect(ivyHears).toContain("item.rejected");
+    expect(ivyHears).not.toContain("item.approved");
+  });
+
+  test("a held reply to a comment whose author blocked the writer is rejected (#85)", async () => {
+    const container = await containerWithProfiles();
+    const post = await publishedPostBy(container, MIRA);
+    const root = await comment(container, THEO, post.id);
+    const held = await comment(container, IVY, post.id, root.id);
+    await setLevel(container, THEO, IVY, "block");
+
+    const item = await approve(container, held.id);
+    expect(item).toMatchObject({ comment: { status: "rejected" } });
+    expect(await visibleCommentIds(container, post.id)).not.toContain(held.id);
+    expect(await replyNoticesFor(container, THEO)).toEqual([]);
+
+    // A top-level comment on the same post is Mira's to decide: Theo's block is not in
+    // its thread, so it is approved.
+    const topLevel = await comment(container, IVY, post.id);
+    await expect(approve(container, topLevel.id)).resolves.toMatchObject({
+      comment: { status: "visible" },
+    });
+  });
+
+  test("a mute alone does not stop the approval (#85)", async () => {
+    const container = await containerWithProfiles();
+    const post = await publishedPostBy(container, THEO);
+    const held = await comment(container, IVY, post.id);
+    await setLevel(container, THEO, IVY, "block");
+    await setLevel(container, THEO, IVY, "mute");
+
+    // A mute is not a block: the comment shows.
+    await expect(approve(container, held.id)).resolves.toMatchObject({
+      comment: { status: "visible" },
+    });
+    expect(await visibleCommentIds(container, post.id)).toContain(held.id);
   });
 });
