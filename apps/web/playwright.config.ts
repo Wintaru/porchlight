@@ -1,9 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// PORT lets parallel checkouts on one machine run their own server.
-const PORT = Number(process.env.PORT ?? 3000);
-// localhost, not 127.0.0.1: Next.js dev blocks cross-origin requests to its HMR endpoint.
-const BASE_URL = `http://localhost:${String(PORT)}`;
+import {
+  BASE_URL,
+  PORT,
+  TURNSTILE_BASE_URL,
+  TURNSTILE_FORCED_CHALLENGE_SITE_KEY,
+  TURNSTILE_PORT,
+} from "./e2e/servers";
+
 const IS_CI = Boolean(process.env.CI);
 
 // The whole suite runs against one seeded database (supabase/seed.sql) and every test
@@ -50,15 +54,30 @@ export default defineConfig({
       testMatch: /\.headed\.spec\.ts$/,
     },
   ],
-  webServer: {
-    command: `pnpm dev --port ${String(PORT)}`,
-    url: BASE_URL,
-    // The app builds its own absolute links (the MCP resource, invite links) from
-    // NEXT_PUBLIC_SITE_URL. On any port but 3000 the .env.local value would name
-    // another server, so the suite's own server is told its address (#99).
-    env: { NEXT_PUBLIC_SITE_URL: BASE_URL },
-    reuseExistingServer: !IS_CI,
-    // A cold Next.js dev server on a CI runner takes longer than the 60 s default.
-    timeout: 180_000,
-  },
+  webServer: [
+    {
+      command: `pnpm dev --port ${String(PORT)}`,
+      url: BASE_URL,
+      // The app builds its own absolute links (the MCP resource, invite links) from
+      // NEXT_PUBLIC_SITE_URL. On any port but 3000 the .env.local value would name
+      // another server, so the suite's own server is told its address (#99).
+      env: { NEXT_PUBLIC_SITE_URL: BASE_URL },
+      reuseExistingServer: !IS_CI,
+      // A cold Next.js dev server on a CI runner takes longer than the 60 s default.
+      timeout: 180_000,
+    },
+    // The Turnstile box's own server (e2e/servers.ts, #103). Next allows one dev server
+    // per build folder, so this one builds into .next/turnstile (next.config.ts).
+    {
+      command: `pnpm dev --port ${String(TURNSTILE_PORT)}`,
+      url: TURNSTILE_BASE_URL,
+      env: {
+        NEXT_PUBLIC_SITE_URL: TURNSTILE_BASE_URL,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: TURNSTILE_FORCED_CHALLENGE_SITE_KEY,
+        PORCHLIGHT_DIST_DIR: ".next/turnstile",
+      },
+      reuseExistingServer: !IS_CI,
+      timeout: 180_000,
+    },
+  ],
 });
