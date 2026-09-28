@@ -75,6 +75,9 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.release_subscriber_email(uuid, timestamptz, timestamptz)",
   "public.redeem_invite(text)",
   "public.release_invite(text)",
+  // #92: the live-link rule and the check that uses it. Only the server asks.
+  "public.check_invite(text)",
+  "public.invite_is_live(public.invites)",
   // #87: the follower notice fan-out. A browser call would spam every follower.
   "public.announce_post(uuid, timestamptz)",
   // #86: a failed send puts its windows back in one call.

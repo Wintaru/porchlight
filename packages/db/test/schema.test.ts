@@ -875,7 +875,7 @@ describe("sweep_rate_limits (#43)", () => {
 
 // Issue #25: an invite link is spent one use at a time, and a revoked, expired or used
 // up link grants nothing.
-describe("redeem_invite (#25)", () => {
+describe("redeem_invite (#25, #92)", () => {
   const redeem = (tx: TransactionSql, hash: string) =>
     tx<{ trust: string | null }[]>`select public.redeem_invite(${hash}) as trust`.then(
       (rows) => rows[0]?.trust ?? null,
@@ -927,6 +927,46 @@ describe("redeem_invite (#25)", () => {
       return [first, row?.used_count, await redeem(tx, "h-release")];
     });
     expect(answers).toEqual(["trusted", 0, "trusted"]);
+  });
+
+  // #92: one rule, `invite_is_live`. The check, the redeem and the admin list's
+  // computed column answer the same for every kind of link.
+  test("check_invite and the live column agree with redeem_invite", async () => {
+    const answers = await asService(async (tx) => {
+      await tx`
+        insert into public.invites
+          (token_hash, created_by, max_uses, used_count, revoked_at, expires_at) values
+          ('h-live', ${SEED.admin}, 1, 0, null, now() + interval '1 day'),
+          ('h-full', ${SEED.admin}, 1, 1, null, null),
+          ('h-gone', ${SEED.admin}, null, 0, now(), null),
+          ('h-late', ${SEED.admin}, null, 0, null, now() - interval '1 second')
+      `;
+      const hashes = ["h-live", "h-full", "h-gone", "h-late", "h-none"];
+      const rows = [];
+      for (const hash of hashes) {
+        const [checked] = await tx<{ live: boolean }[]>`
+          select public.check_invite(${hash}) as live
+        `;
+        const [column] = await tx<{ live: boolean }[]>`
+          select public.invite_is_live(i) as live from public.invites i
+          where i.token_hash = ${hash}
+        `;
+        rows.push({
+          hash,
+          checked: checked?.live,
+          column: column?.live ?? false,
+          redeemed: (await redeem(tx, hash)) !== null,
+        });
+      }
+      return rows;
+    });
+    expect(answers).toEqual([
+      { hash: "h-live", checked: true, column: true, redeemed: true },
+      { hash: "h-full", checked: false, column: false, redeemed: false },
+      { hash: "h-gone", checked: false, column: false, redeemed: false },
+      { hash: "h-late", checked: false, column: false, redeemed: false },
+      { hash: "h-none", checked: false, column: false, redeemed: false },
+    ]);
   });
 
   test("a link with no limit defaults to trusted", async () => {

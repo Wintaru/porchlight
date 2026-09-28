@@ -346,6 +346,7 @@ export type Database = {
           token_hash: string
           trust_level: Database["public"]["Enums"]["trust_level"]
           used_count: number
+          invite_is_live: boolean | null
         }
         Insert: {
           created_at?: string
@@ -1287,6 +1288,7 @@ export type Database = {
         Args: { p_action: string; p_subject: string; p_window_start: string }
         Returns: number
       }
+      check_invite: { Args: { p_token_hash: string }; Returns: boolean }
       claim_anonymous_author: {
         Args: { p_anonymous_author_id: string; p_profile_id: string }
         Returns: string
@@ -1377,6 +1379,12 @@ export type Database = {
           id: string
           published_at: string
         }[]
+      }
+      invite_is_live: {
+        Args: { "": Database["public"]["Tables"]["invites"]["Row"] }
+        Returns: {
+          error: true
+        } & "the function public.invite_is_live with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
       media_in_use: { Args: { p_media_id: string }; Returns: boolean }
