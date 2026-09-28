@@ -102,6 +102,9 @@ approves a client again without asking when the member consented before, so the 
 page shows only on a first connection. A revoke in settings also withdraws the consent
 at Auth, so the next connection shows the page again.
 
+A second press on **Allow** replaces the grant from the first press. The last press
+wins, and both presses succeed (issue #88).
+
 ## What the token can do outside the door
 
 The access token is a Supabase session token for the member. With the project's anon

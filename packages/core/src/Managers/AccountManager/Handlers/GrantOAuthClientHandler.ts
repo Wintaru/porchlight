@@ -1,10 +1,5 @@
 import type { IAgentTokenAccessor } from "../../../Accessors/AgentTokenAccessor/IAgentTokenAccessor";
-import { LoadLiveOAuthGrantRequest } from "../../../Accessors/AgentTokenAccessor/Requests/LoadLiveOAuthGrantRequest";
-import { MarkAgentTokenRevokedRequest } from "../../../Accessors/AgentTokenAccessor/Requests/MarkAgentTokenRevokedRequest";
-import { StoreNewAgentTokenRequest } from "../../../Accessors/AgentTokenAccessor/Requests/StoreNewAgentTokenRequest";
-import { AgentTokenLoadedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenLoadedResponse";
-import { AgentTokenNotFoundResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenNotFoundResponse";
-import { AgentTokenRevokedResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenRevokedResponse";
+import { ReplaceOAuthGrantRequest } from "../../../Accessors/AgentTokenAccessor/Requests/ReplaceOAuthGrantRequest";
 import { AgentTokenStoredResponse } from "../../../Accessors/AgentTokenAccessor/Responses/AgentTokenStoredResponse";
 import { isAgentScope } from "../../../Common/AgentScope";
 import { AGENT_TOKEN_NAME_MAX_LENGTH } from "../../../Common/AgentToken";
@@ -73,32 +68,15 @@ export class GrantOAuthClientHandler implements IHandler<
         "must name known scopes only",
       );
     }
-    const ownerId = actor.profile.id;
-
-    // Consenting again replaces the grant, so the scopes are the ones just picked.
-    const earlier = await this.agentTokens.load(
-      new LoadLiveOAuthGrantRequest(ownerId, clientId, context),
-    );
-    if (earlier instanceof AgentTokenLoadedResponse) {
-      const revoked = await this.agentTokens.store(
-        new MarkAgentTokenRevokedRequest(earlier.token.id, ownerId, context),
-      );
-      if (!(revoked instanceof AgentTokenRevokedResponse)) {
-        return unavailable(correlationId, revoked, "store");
-      }
-    } else if (!(earlier instanceof AgentTokenNotFoundResponse)) {
-      return unavailable(correlationId, earlier, "load");
-    }
-
+    // Consenting again replaces the grant, so the scopes are the ones just picked. One
+    // store call: a failure keeps the earlier grant, and of two presses on Allow at the
+    // same moment the last one wins (#88, decision C6).
     const stored = await this.agentTokens.store(
-      new StoreNewAgentTokenRequest(
-        {
-          ownerId,
-          name: grantName(request.clientName),
-          credential: { kind: "oauth", clientId },
-          scopes: withDraftScope(request.scopes),
-          expiresAt: null,
-        },
+      new ReplaceOAuthGrantRequest(
+        actor.profile.id,
+        clientId,
+        grantName(request.clientName),
+        withDraftScope(request.scopes),
         context,
       ),
     );
