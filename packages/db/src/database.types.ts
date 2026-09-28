@@ -1263,6 +1263,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      announce_post: {
+        Args: { p_at: string; p_post_id: string }
+        Returns: number
+      }
       anonymous_status: {
         Args: { p_anonymous_author_id: string }
         Returns: {

@@ -1053,3 +1053,148 @@ describe("agent_tokens OAuth grants (#79, D25)", () => {
     expect(afterRevoked).toBeNull();
   });
 });
+
+// Issue #87 (D13, D20): one call claims a post's announcement and writes its follower
+// notices. The seed's posts have no announcement yet on a fresh reset, but a stack
+// that ran the #87 backfill after seeding has them marked, so each test clears the
+// mark first. Each test also clears the follows it depends on, so rows other test runs
+// left behind do not change the counts.
+const MAKING_TAG = "00000000-0000-4000-8000-0000000000e3";
+const ANNOUNCE_AT = new Date("2026-09-28T12:00:00.000Z");
+
+class RollbackAnnounce extends Error {}
+
+describe("announce_post (#87)", () => {
+  const announce = (tx: TransactionSql, postId: string) =>
+    tx<{ notified: number }[]>`
+      select public.announce_post(${postId}, ${ANNOUNCE_AT}) as notified
+    `.then((rows) => rows[0]?.notified);
+  const noticesFor = (tx: TransactionSql, postId: string) =>
+    tx<{ recipient_id: string }[]>`
+      select recipient_id from public.notifications
+      where post_id = ${postId} and kind = 'post.published'
+      order by recipient_id
+    `.then((rows) => rows.map((row) => row.recipient_id));
+  const reset = (tx: TransactionSql, postIds: readonly string[]) => tx`
+    update public.posts set announced_at = null where id = any(${sql.array([...postIds])}::uuid[])
+  `;
+
+  test("tells author and tag followers once each, minus the author, muters and blockers", async () => {
+    const result = await asService(async (tx) => {
+      await reset(tx, [SEED.publicPost]);
+      await tx`
+        delete from public.follows
+        where author_id = ${SEED.trustedMember} or tag_id = ${MAKING_TAG}
+      `;
+      await tx`
+        insert into public.follows (follower_id, author_id, tag_id) values
+          (${SEED.moderator}, ${SEED.trustedMember}, null),
+          (${SEED.moderator}, null, ${MAKING_TAG}),
+          (${SEED.admin}, null, ${MAKING_TAG}),
+          (${SEED.trustedMember}, null, ${MAKING_TAG}),
+          (${SEED.probationMember}, ${SEED.trustedMember}, null),
+          (${SEED.erasedMember}, null, ${MAKING_TAG})
+      `;
+      await tx`
+        insert into public.member_blocks (member_id, target_id, level) values
+          (${SEED.probationMember}, ${SEED.trustedMember}, 'mute'),
+          (${SEED.erasedMember}, ${SEED.trustedMember}, 'block')
+      `;
+      const first = await announce(tx, SEED.publicPost);
+      const recipients = await noticesFor(tx, SEED.publicPost);
+      const [{ announced_at } = { announced_at: null }] = await tx<
+        { announced_at: Date | null }[]
+      >`select announced_at from public.posts where id = ${SEED.publicPost}`;
+      const second = await announce(tx, SEED.publicPost);
+      const after = await noticesFor(tx, SEED.publicPost);
+      return { first, recipients, announced_at, second, after };
+    });
+    expect(result.first).toBe(2);
+    expect(result.recipients).toEqual([SEED.admin, SEED.moderator].sort());
+    expect(result.announced_at).toEqual(ANNOUNCE_AT);
+    expect(result.second).toBe(0);
+    expect(result.after).toEqual(result.recipients);
+  });
+
+  test("announces no draft, unlisted or pending post", async () => {
+    const posts = [SEED.draftPost, SEED.unlistedPost, SEED.pendingPost];
+    const result = await asService(async (tx) => {
+      await reset(tx, posts);
+      await tx`
+        insert into public.follows (follower_id, author_id) values
+          (${SEED.admin}, ${SEED.trustedMember}),
+          (${SEED.admin}, ${SEED.probationMember})
+        on conflict do nothing
+      `;
+      const answers = [];
+      for (const post of posts) {
+        answers.push(await announce(tx, post));
+        answers.push((await noticesFor(tx, post)).length);
+      }
+      const marked = await tx`
+        select 1 from public.posts
+        where id = any(${sql.array(posts)}::uuid[]) and announced_at is not null
+      `;
+      return { answers, marked: marked.length };
+    });
+    expect(result.answers).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(result.marked).toBe(0);
+  });
+
+  test("an anonymous post reaches its tags' followers", async () => {
+    const recipients = await asService(async (tx) => {
+      await tx`
+        update public.posts set status = 'published', published_at = now(), announced_at = null
+        where id = ${SEED.anonymousPendingPost}
+      `;
+      await tx`
+        insert into public.post_tags (post_id, tag_id)
+        values (${SEED.anonymousPendingPost}, ${MAKING_TAG})
+      `;
+      await tx`delete from public.follows where tag_id = ${MAKING_TAG}`;
+      await tx`
+        insert into public.follows (follower_id, tag_id) values (${SEED.admin}, ${MAKING_TAG})
+      `;
+      await announce(tx, SEED.anonymousPendingPost);
+      return noticesFor(tx, SEED.anonymousPendingPost);
+    });
+    expect(recipients).toEqual([SEED.admin]);
+  });
+
+  // A trigger that refuses the notice insert stands in for any failure there. It is
+  // made as `postgres` (the service role cannot own a trigger) inside a transaction
+  // that always rolls back.
+  test("a failed notice insert leaves the post unclaimed", async () => {
+    let seen: { code: string | null; announcedAt: Date | null } | undefined;
+    try {
+      await sql.begin(async (tx) => {
+        await tx`update public.posts set announced_at = null where id = ${SEED.publicPost}`;
+        await tx`
+          insert into public.follows (follower_id, author_id)
+          values (${SEED.admin}, ${SEED.trustedMember})
+          on conflict do nothing
+        `;
+        await tx.unsafe(`
+          create function pg_temp.refuse_notice() returns trigger language plpgsql as $$
+          begin raise exception 'no notices today'; end; $$;
+          create trigger refuse_notice before insert on public.notifications
+            for each row execute function pg_temp.refuse_notice();
+        `);
+        await tx.unsafe("set local role service_role");
+        const code = await errorCodeOf(() =>
+          tx.savepoint(
+            (sp) => sp`select public.announce_post(${SEED.publicPost}, now())`,
+          ),
+        );
+        const [row] = await tx<{ announced_at: Date | null }[]>`
+          select announced_at from public.posts where id = ${SEED.publicPost}
+        `;
+        seen = { code, announcedAt: row?.announced_at ?? null };
+        throw new RollbackAnnounce();
+      });
+    } catch (error: unknown) {
+      if (!(error instanceof RollbackAnnounce)) throw error;
+    }
+    expect(seen).toEqual({ code: "P0001", announcedAt: null });
+  });
+});

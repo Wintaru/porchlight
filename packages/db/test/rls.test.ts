@@ -75,6 +75,8 @@ const SERVER_ONLY_FUNCTIONS = [
   "public.release_subscriber_email(uuid, timestamptz, timestamptz)",
   "public.redeem_invite(text)",
   "public.release_invite(text)",
+  // #87: the follower notice fan-out. A browser call would spam every follower.
+  "public.announce_post(uuid, timestamptz)",
 ] as const;
 
 // The only tables a browser role may read at all. Every other table in `public`, now or
