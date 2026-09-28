@@ -731,6 +731,7 @@ export type Database = {
           comments_enabled: boolean
           cover_media_id: string | null
           created_at: string
+          excerpt: string | null
           id: string
           origin: Database["public"]["Enums"]["post_origin"]
           published_at: string | null
@@ -755,6 +756,7 @@ export type Database = {
           comments_enabled?: boolean
           cover_media_id?: string | null
           created_at?: string
+          excerpt?: string | null
           id?: string
           origin?: Database["public"]["Enums"]["post_origin"]
           published_at?: string | null
@@ -779,6 +781,7 @@ export type Database = {
           comments_enabled?: boolean
           cover_media_id?: string | null
           created_at?: string
+          excerpt?: string | null
           id?: string
           origin?: Database["public"]["Enums"]["post_origin"]
           published_at?: string | null
@@ -1408,6 +1411,7 @@ export type Database = {
       media_in_use: { Args: { p_media_id: string }; Returns: boolean }
       member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
+      post_excerpt: { Args: { p_body_md: string }; Returns: string }
       post_is_private: { Args: { p_post_id: string }; Returns: boolean }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
