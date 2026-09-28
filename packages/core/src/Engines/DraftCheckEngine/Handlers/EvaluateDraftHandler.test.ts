@@ -46,7 +46,6 @@ describe("EvaluateDraftHandler", () => {
       "banned-phrase",
       "banned-phrase",
       "banned-phrase",
-      "banned-phrase",
       "uniform-sentences",
       "tricolons",
       "headings",
@@ -83,6 +82,32 @@ describe("EvaluateDraftHandler", () => {
     expect(
       warnings.map((warning) => warning.kind === "banned-phrase" && warning.phrase),
     ).toEqual(["it's worth noting", "honestly", "super excited"]);
+  });
+});
+
+describe("EvaluateDraftHandler on a closing summary (#97)", () => {
+  test('a closing "In conclusion" is one warning, not two', async () => {
+    expect(await warningsOf("We fixed the step.\n\nIn conclusion, it holds.")).toEqual([
+      { kind: "closing-summary", opening: "in conclusion" },
+    ]);
+  });
+
+  test("the same phrase earlier in the draft is still named", async () => {
+    expect(
+      await warningsOf(
+        "In conclusion, I had no plan.\n\nIn\nconclusion, the step holds.",
+      ),
+    ).toEqual([
+      { kind: "banned-phrase", phrase: "in conclusion", count: 1 },
+      { kind: "closing-summary", opening: "in conclusion" },
+    ]);
+  });
+
+  test("a phrase split over two lines still counts", async () => {
+    expect(await warningsOf("We delve\ninto it. It is\na testament to us.")).toEqual([
+      { kind: "banned-phrase", phrase: "delve", count: 1 },
+      { kind: "banned-phrase", phrase: "a testament to", count: 1 },
+    ]);
   });
 });
 

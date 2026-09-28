@@ -75,7 +75,9 @@ function shapeOf(bodyMd: string): Shape {
 }
 
 function countOf(haystack: string, phrase: string): number {
-  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Any run of white space between the words matches, so a phrase that a hard-wrapped
+  // line splits still counts, and the closing summary's opening is always counted once.
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
   // Anchored at a word start only, so "delve" also catches "delves" and "delved": the
   // same tell. "Undelve" does not match.
   return haystack.match(new RegExp(`(?<![\\p{L}])${escaped}`, "giu"))?.length ?? 0;
@@ -92,13 +94,20 @@ export class EvaluateDraftHandler implements IHandler<
     const lowered = text.toLowerCase();
     const warnings: DraftWarning[] = [];
 
+    // Read first, so the phrase that opens a closing summary is named once, as the
+    // summary (#97, C23): "In conclusion" at the end is one tell, not two.
+    const last = paragraphs.at(-1)?.toLowerCase() ?? "";
+    const opening = SUMMARY_OPENINGS.find((words) =>
+      new RegExp(`^${words}\\b`).test(last),
+    );
+
     const phrases = new Set(
       [...DEFAULT_BANNED_PHRASES, ...guideBannedPhrases(guideMd)].map((phrase) =>
         phrase.toLowerCase().replace(/’/g, "'"),
       ),
     );
     for (const phrase of phrases) {
-      const count = countOf(lowered, phrase);
+      const count = countOf(lowered, phrase) - (phrase === opening ? 1 : 0);
       if (count > 0) {
         warnings.push({ kind: "banned-phrase", phrase, count });
       }
@@ -139,10 +148,6 @@ export class EvaluateDraftHandler implements IHandler<
       warnings.push({ kind: "headings", headings, paragraphs: paragraphs.length });
     }
 
-    const last = paragraphs.at(-1)?.toLowerCase() ?? "";
-    const opening = SUMMARY_OPENINGS.find((words) =>
-      new RegExp(`^${words}\\b`).test(last),
-    );
     if (opening !== undefined) {
       warnings.push({ kind: "closing-summary", opening });
     }

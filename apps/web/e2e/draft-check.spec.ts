@@ -142,6 +142,10 @@ test("check_draft gives an agent the same warnings", async ({ page, baseURL }) =
     expect(structured(slop).warnings).toContainEqual(
       expect.objectContaining({ kind: "closing-summary", opening: "in conclusion" }),
     );
+    // #97: the closing "In conclusion" is named once, as the summary.
+    expect(structured(slop).warnings).not.toContainEqual(
+      expect.objectContaining({ kind: "banned-phrase", phrase: "in conclusion" }),
+    );
     const clean = await client.callTool({
       name: "check_draft",
       arguments: { body_md: CLEAN },
