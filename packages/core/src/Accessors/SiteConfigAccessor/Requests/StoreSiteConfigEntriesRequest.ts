@@ -1,3 +1,4 @@
+import type { ProfileId } from "../../../Common/ProfileId";
 import { RequestBase } from "../../../Common/RequestBase";
 import type { RequestContext } from "../../../Common/RequestContext";
 import type { SiteConfigEntry } from "../SiteConfigEntry";
@@ -9,7 +10,7 @@ import type { SiteConfigEntry } from "../SiteConfigEntry";
 export class StoreSiteConfigEntriesRequest extends RequestBase {
   constructor(
     readonly entries: readonly SiteConfigEntry[],
-    readonly updatedBy: string,
+    readonly updatedBy: ProfileId,
     context?: RequestContext,
   ) {
     super(context);
