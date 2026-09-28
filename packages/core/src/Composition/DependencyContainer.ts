@@ -254,6 +254,7 @@ import { createMemberBlockAccessor } from "./createMemberBlockAccessor";
 import { createFollowAccessor } from "./createFollowAccessor";
 import { createTagAccessor } from "./createTagAccessor";
 import { createFollowerNoticeEngine } from "./createFollowerNoticeEngine";
+import { createFakeAnnounceFanOut } from "./createFakeAnnounceFanOut";
 import { createReportAccessor } from "./createReportAccessor";
 import { createServiceDbClient } from "./createServiceDbClient";
 import { createSiteConfigAccessor } from "./createSiteConfigAccessor";
@@ -283,11 +284,16 @@ export class DependencyContainer {
 
     const greetings = createGreetingAccessor(env);
     const profiles = createProfileAccessor(env, db);
-    const posts = createPostAccessor(env, db);
-    const comments = createCommentAccessor(env, db);
-    const reactions = createReactionAccessor(env, db);
     const memberBlocks = createMemberBlockAccessor(env, db);
     const follows = createFollowAccessor(env, db);
+    const notifications = createNotificationAccessor(env, db);
+    const posts = createPostAccessor(
+      env,
+      db,
+      createFakeAnnounceFanOut(follows, memberBlocks, notifications),
+    );
+    const comments = createCommentAccessor(env, db);
+    const reactions = createReactionAccessor(env, db);
     const tags = createTagAccessor(env, db);
     const siteConfig = createSiteConfigAccessor(env, db);
     const invites = createInviteAccessor(env, db);
@@ -318,13 +324,7 @@ export class DependencyContainer {
     const reports = createReportAccessor(env, db);
     const modActions = createModActionAccessor(env, db);
     const auditLog = createAuditAccessor(env, db);
-    const notifications = createNotificationAccessor(env, db);
-    const followerNotice = createFollowerNoticeEngine(
-      posts,
-      follows,
-      memberBlocks,
-      notifications,
-    );
+    const followerNotice = createFollowerNoticeEngine(posts);
     const email = createEmailAccessor(env);
     const emailPreferences = createEmailPreferenceAccessor(env, db);
     const emailCompose = createEmailComposeEngine();

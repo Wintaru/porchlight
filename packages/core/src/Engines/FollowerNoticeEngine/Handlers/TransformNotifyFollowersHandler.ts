@@ -1,105 +1,42 @@
-import type { IFollowAccessor } from "../../../Accessors/FollowAccessor/IFollowAccessor";
-import { LoadFollowerIdsRequest } from "../../../Accessors/FollowAccessor/Requests/LoadFollowerIdsRequest";
-import { FollowerIdsLoadedResponse } from "../../../Accessors/FollowAccessor/Responses/FollowerIdsLoadedResponse";
-import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
-import { LoadMemberBlocksOfTargetRequest } from "../../../Accessors/MemberBlockAccessor/Requests/LoadMemberBlocksOfTargetRequest";
-import { MemberBlocksLoadedResponse } from "../../../Accessors/MemberBlockAccessor/Responses/MemberBlocksLoadedResponse";
-import type { INotificationAccessor } from "../../../Accessors/NotificationAccessor/INotificationAccessor";
-import { RecordNotificationsRequest } from "../../../Accessors/NotificationAccessor/Requests/RecordNotificationsRequest";
-import { NotificationsRecordedResponse } from "../../../Accessors/NotificationAccessor/Responses/NotificationsRecordedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
-import { ClaimPostAnnouncementRequest } from "../../../Accessors/PostAccessor/Requests/ClaimPostAnnouncementRequest";
-import { PostAlreadyAnnouncedResponse } from "../../../Accessors/PostAccessor/Responses/PostAlreadyAnnouncedResponse";
-import { PostAnnouncementClaimedResponse } from "../../../Accessors/PostAccessor/Responses/PostAnnouncementClaimedResponse";
+import { AnnouncePostRequest } from "../../../Accessors/PostAccessor/Requests/AnnouncePostRequest";
+import { PostAnnouncedResponse } from "../../../Accessors/PostAccessor/Responses/PostAnnouncedResponse";
 import type { IHandler } from "../../../Common/IHandler";
-import type { ResponseBase } from "../../../Common/ResponseBase";
 import type { NotifyFollowersRequest } from "../Requests/NotifyFollowersRequest";
 import { FollowerNoticeUnavailableResponse } from "../Responses/FollowerNoticeUnavailableResponse";
 import { FollowersNotifiedResponse } from "../Responses/FollowersNotifiedResponse";
 
 type Result = FollowersNotifiedResponse | FollowerNoticeUnavailableResponse;
 
-// Followers of the author and of every tag on the post, each once, minus the author
-// and minus anyone who muted or blocked the author: they asked not to see this member.
-// An unlisted post is not announced: it is out, but only to people with the link. A
-// post is announced once, ever: the claim on `announced_at` stops a re-publish, a
-// double-click and two moderators approving together from telling followers again.
+// The one path that tells a post's followers it is out (#24, #87). An unlisted post is
+// not announced: it is out, but only to people with the link. A post is announced once,
+// ever: the store's claim stops a re-publish, a retry, a double-click and two
+// moderators approving together from telling followers again, so a caller may ask
+// after every move to `published`. The store claims and writes the notices together.
+// A failure is logged here and does not fail the caller: the post is already out, and
+// failing now would make its author or moderator try again for nothing.
 export class TransformNotifyFollowersHandler implements IHandler<
   NotifyFollowersRequest,
   Result
 > {
-  constructor(
-    private readonly posts: IPostAccessor,
-    private readonly follows: IFollowAccessor,
-    private readonly memberBlocks: IMemberBlockAccessor,
-    private readonly notifications: INotificationAccessor,
-  ) {}
+  constructor(private readonly posts: IPostAccessor) {}
 
   async handle(request: NotifyFollowersRequest): Promise<Result> {
     const { correlationId, post, timestamp } = request;
-    const context = { correlationId, timestamp };
     if (post.status !== "published" || post.visibility !== "public") {
       return new FollowersNotifiedResponse(correlationId, 0);
     }
-    const claimed = await this.posts.store(
-      new ClaimPostAnnouncementRequest(post.id, context),
+    const announced = await this.posts.store(
+      new AnnouncePostRequest(post.id, { correlationId, timestamp }),
     );
-    if (claimed instanceof PostAlreadyAnnouncedResponse) {
-      return new FollowersNotifiedResponse(correlationId, 0);
+    if (announced instanceof PostAnnouncedResponse) {
+      return new FollowersNotifiedResponse(correlationId, announced.count);
     }
-    if (!(claimed instanceof PostAnnouncementClaimedResponse)) {
-      return unavailable(correlationId, claimed, "posts.store");
-    }
-    const authorId = post.author.kind === "member" ? post.author.profileId : null;
-
-    const loaded = await this.follows.load(
-      new LoadFollowerIdsRequest(
-        authorId,
-        post.tags.map((tag) => tag.slug),
-        context,
-      ),
-    );
-    if (!(loaded instanceof FollowerIdsLoadedResponse)) {
-      return unavailable(correlationId, loaded, "follows.load");
-    }
-    let recipients = loaded.followerIds.filter((id) => id !== authorId);
-    if (authorId !== null && recipients.length > 0) {
-      const held = await this.memberBlocks.load(
-        new LoadMemberBlocksOfTargetRequest(authorId, recipients, context),
-      );
-      if (!(held instanceof MemberBlocksLoadedResponse)) {
-        return unavailable(correlationId, held, "memberBlocks.load");
-      }
-      const shut = new Set(held.blocks.map((block) => block.memberId));
-      recipients = recipients.filter((id) => !shut.has(id));
-    }
-    if (recipients.length === 0) {
-      return new FollowersNotifiedResponse(correlationId, 0);
-    }
-    const stored = await this.notifications.store(
-      new RecordNotificationsRequest(
-        recipients,
-        "post.published",
-        { postId: post.id },
-        {},
-        context,
-      ),
-    );
-    if (!(stored instanceof NotificationsRecordedResponse)) {
-      return unavailable(correlationId, stored, "notifications.store");
-    }
-    return new FollowersNotifiedResponse(correlationId, stored.count);
+    const reason =
+      "reason" in announced && typeof announced.reason === "string"
+        ? announced.reason
+        : `unexpected ${announced.constructor.name} from posts.store`;
+    console.error(`followers of post ${post.id} not notified [${correlationId}]`, reason);
+    return new FollowerNoticeUnavailableResponse(correlationId, reason);
   }
-}
-
-function unavailable(
-  correlationId: string,
-  response: ResponseBase,
-  method: string,
-): FollowerNoticeUnavailableResponse {
-  const reason =
-    "reason" in response && typeof response.reason === "string"
-      ? response.reason
-      : `unexpected ${response.constructor.name} from ${method}`;
-  return new FollowerNoticeUnavailableResponse(correlationId, reason);
 }

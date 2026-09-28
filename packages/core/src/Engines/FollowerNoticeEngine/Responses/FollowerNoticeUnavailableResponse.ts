@@ -1,6 +1,7 @@
 import { ResponseBase } from "../../../Common/ResponseBase";
 
-// A follow, block or notification store could not be reached. `reason` is for the log.
+// The post store could not announce the post. `reason` is for the log, which the
+// engine already wrote.
 export class FollowerNoticeUnavailableResponse extends ResponseBase {
   constructor(
     correlationId: string,

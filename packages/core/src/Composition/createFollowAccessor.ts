@@ -6,7 +6,6 @@ import { FakeLoadFollowerIdsHandler } from "../Accessors/FollowAccessor/Handlers
 import { FakeLoadFollowsByMemberHandler } from "../Accessors/FollowAccessor/Handlers/FakeLoadFollowsByMemberHandler";
 import { FakeRemoveFollowHandler } from "../Accessors/FollowAccessor/Handlers/FakeRemoveFollowHandler";
 import { FakeStoreFollowHandler } from "../Accessors/FollowAccessor/Handlers/FakeStoreFollowHandler";
-import { SupabaseLoadFollowerIdsHandler } from "../Accessors/FollowAccessor/Handlers/SupabaseLoadFollowerIdsHandler";
 import { SupabaseLoadFollowsByMemberHandler } from "../Accessors/FollowAccessor/Handlers/SupabaseLoadFollowsByMemberHandler";
 import { SupabaseRemoveFollowHandler } from "../Accessors/FollowAccessor/Handlers/SupabaseRemoveFollowHandler";
 import { SupabaseStoreFollowHandler } from "../Accessors/FollowAccessor/Handlers/SupabaseStoreFollowHandler";
@@ -36,7 +35,6 @@ export function createFollowAccessor(
             LoadFollowsByMemberRequest,
             new SupabaseLoadFollowsByMemberHandler(client),
           )
-          .register(LoadFollowerIdsRequest, new SupabaseLoadFollowerIdsHandler(client))
           .build(),
         new HandlerResolverBuilder()
           .register(RemoveFollowRequest, new SupabaseRemoveFollowHandler(client))

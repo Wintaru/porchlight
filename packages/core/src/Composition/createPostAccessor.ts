@@ -45,21 +45,32 @@ import { LoadPostsByStatusRequest } from "../Accessors/PostAccessor/Requests/Loa
 import { RemovePostRequest } from "../Accessors/PostAccessor/Requests/RemovePostRequest";
 import { StoreNewPostRequest } from "../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { StorePostChangesRequest } from "../Accessors/PostAccessor/Requests/StorePostChangesRequest";
-import { ClaimPostAnnouncementRequest } from "../Accessors/PostAccessor/Requests/ClaimPostAnnouncementRequest";
-import { FakeClaimPostAnnouncementHandler } from "../Accessors/PostAccessor/Handlers/FakeClaimPostAnnouncementHandler";
-import { SupabaseClaimPostAnnouncementHandler } from "../Accessors/PostAccessor/Handlers/SupabaseClaimPostAnnouncementHandler";
+import { AnnouncePostRequest } from "../Accessors/PostAccessor/Requests/AnnouncePostRequest";
+import { FakeAnnouncePostHandler } from "../Accessors/PostAccessor/Handlers/FakeAnnouncePostHandler";
+import { SupabaseAnnouncePostHandler } from "../Accessors/PostAccessor/Handlers/SupabaseAnnouncePostHandler";
+import type { AnnounceFanOut } from "../Accessors/PostAccessor/AnnounceFanOut";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
 import { readFakeResult, readStoreProvider } from "./readStoreProvider";
 
-// The store behind every post read and write (SPEC.md §5).
-export function createPostAccessor(env: Environment, db: () => DbClient): IPostAccessor {
+// A fake store with nobody following anyone.
+const NO_FOLLOWERS: AnnounceFanOut = () =>
+  Promise.resolve({ kind: "recorded", count: 0 });
+
+// The store behind every post read and write (SPEC.md §5). `fanOut` serves the fake
+// store only (see AnnounceFanOut): the Supabase one announces in the database.
+export function createPostAccessor(
+  env: Environment,
+  db: () => DbClient,
+  fanOut: AnnounceFanOut,
+): IPostAccessor {
   switch (readStoreProvider(env, "POST_PROVIDER")) {
     case "supabase":
       return createSupabasePostAccessor(db());
     case "fake":
       return createFakePostAccessor(
         new FakePostState(readFakeResult(env, "POST_FAKE_RESULT") === "fail"),
+        fanOut,
       );
   }
 }
@@ -70,10 +81,7 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
       .register(StoreNewPostRequest, new SupabaseStoreNewPostHandler(db))
       .register(StorePostBodyHtmlRequest, new SupabaseStorePostBodyHtmlHandler(db))
       .register(StorePostChangesRequest, new SupabaseStorePostChangesHandler(db))
-      .register(
-        ClaimPostAnnouncementRequest,
-        new SupabaseClaimPostAnnouncementHandler(db),
-      )
+      .register(AnnouncePostRequest, new SupabaseAnnouncePostHandler(db))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new SupabaseLoadPostByIdHandler(db))
@@ -96,13 +104,16 @@ function createSupabasePostAccessor(db: DbClient): IPostAccessor {
   );
 }
 
-export function createFakePostAccessor(state: FakePostState): IPostAccessor {
+export function createFakePostAccessor(
+  state: FakePostState,
+  fanOut: AnnounceFanOut = NO_FOLLOWERS,
+): IPostAccessor {
   return new PostAccessor(
     new HandlerResolverBuilder()
       .register(StoreNewPostRequest, new FakeStoreNewPostHandler(state))
       .register(StorePostBodyHtmlRequest, new FakeStorePostBodyHtmlHandler(state))
       .register(StorePostChangesRequest, new FakeStorePostChangesHandler(state))
-      .register(ClaimPostAnnouncementRequest, new FakeClaimPostAnnouncementHandler(state))
+      .register(AnnouncePostRequest, new FakeAnnouncePostHandler(state, fanOut))
       .build(),
     new HandlerResolverBuilder()
       .register(LoadPostByIdRequest, new FakeLoadPostByIdHandler(state))
