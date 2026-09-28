@@ -12,16 +12,15 @@ import type { RerenderCommentBodiesRequest } from "../Requests/RerenderCommentBo
 import { CommentBodiesRerenderedResponse } from "../Responses/CommentBodiesRerenderedResponse";
 import type { CommentForbiddenResponse } from "../Responses/CommentForbiddenResponse";
 import type { CommentUnavailableResponse } from "../Responses/CommentUnavailableResponse";
+import { rerenderAll } from "../../../Utilities/rerender/rerenderAll";
 import { unavailable } from "../unavailable";
 
 type Result =
   CommentBodiesRerenderedResponse | CommentForbiddenResponse | CommentUnavailableResponse;
 
-// Pages through every comment in id order. The same render a save runs (D3), so the new
-// HTML is what the next save would write anyway. The same loop lives in the other
-// Manager for the other table (a Manager may not call another): keep the two in step.
-const PAGE = 100;
-
+// Pages through every comment in id order (Utilities/rerender/rerenderAll, shared with
+// the posts). The same render a save runs (D3), so the new HTML is what the next save
+// would write anyway.
 export class RerenderCommentBodiesHandler implements IHandler<
   RerenderCommentBodiesRequest,
   Result
@@ -45,37 +44,35 @@ export class RerenderCommentBodiesHandler implements IHandler<
     if (refused !== undefined) {
       return refused;
     }
-    let checked = 0;
-    let changed = 0;
-    let afterId: string | null = null;
-    for (;;) {
-      const loaded = await this.comments.load(
-        new LoadCommentBodiesRequest(afterId, PAGE, context),
-      );
-      if (!(loaded instanceof CommentBodiesLoadedResponse)) {
-        return unavailable(correlationId, loaded, "comments.load");
-      }
-      if (loaded.bodies.length === 0) {
-        break;
-      }
-      for (const body of loaded.bodies) {
-        checked += 1;
-        const html = await renderBody(this.content, body.bodyMd, context);
-        if (typeof html !== "string") {
-          return html;
-        }
-        if (html !== body.bodyHtml) {
-          const stored = await this.comments.store(
-            new StoreCommentBodyHtmlRequest(body.id, html, body.bodyMd, context),
-          );
-          if (!(stored instanceof CommentBodyHtmlStoredResponse)) {
-            return unavailable(correlationId, stored, "comments.store");
-          }
-          changed += 1;
-        }
-      }
-      afterId = loaded.bodies.at(-1)?.id ?? null;
+    const outcome = await rerenderAll<CommentUnavailableResponse>({
+      loadPage: async (afterId, pageSize) => {
+        const loaded = await this.comments.load(
+          new LoadCommentBodiesRequest(afterId, pageSize, context),
+        );
+        return loaded instanceof CommentBodiesLoadedResponse
+          ? loaded.bodies
+          : { failure: unavailable(correlationId, loaded, "comments.load") };
+      },
+      render: async (bodyMd) => {
+        const html = await renderBody(this.content, bodyMd, context);
+        return typeof html === "string" ? html : { failure: html };
+      },
+      store: async (body, html) => {
+        const stored = await this.comments.store(
+          new StoreCommentBodyHtmlRequest(body.id, html, body.bodyMd, context),
+        );
+        return stored instanceof CommentBodyHtmlStoredResponse
+          ? undefined
+          : { failure: unavailable(correlationId, stored, "comments.store") };
+      },
+    });
+    if (outcome.kind === "failed") {
+      return outcome.failure;
     }
-    return new CommentBodiesRerenderedResponse(correlationId, checked, changed);
+    return new CommentBodiesRerenderedResponse(
+      correlationId,
+      outcome.checked,
+      outcome.changed,
+    );
   }
 }

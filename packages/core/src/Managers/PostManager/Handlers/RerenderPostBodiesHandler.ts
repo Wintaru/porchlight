@@ -12,16 +12,15 @@ import type { RerenderPostBodiesRequest } from "../Requests/RerenderPostBodiesRe
 import { PostBodiesRerenderedResponse } from "../Responses/PostBodiesRerenderedResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
+import { rerenderAll } from "../../../Utilities/rerender/rerenderAll";
 import { unavailable } from "../unavailable";
 
 type Result =
   PostBodiesRerenderedResponse | PostForbiddenResponse | PostUnavailableResponse;
 
-// Pages through every post in id order. The same render a save runs (D3), so the new
-// HTML is what the next save would write anyway. The same loop lives in the other
-// Manager for the other table (a Manager may not call another): keep the two in step.
-const PAGE = 100;
-
+// Pages through every post in id order (Utilities/rerender/rerenderAll, shared with
+// the comments). The same render a save runs (D3), so the new HTML is what the next
+// save would write anyway.
 export class RerenderPostBodiesHandler implements IHandler<
   RerenderPostBodiesRequest,
   Result
@@ -45,37 +44,35 @@ export class RerenderPostBodiesHandler implements IHandler<
     if (refused !== undefined) {
       return refused;
     }
-    let checked = 0;
-    let changed = 0;
-    let afterId: string | null = null;
-    for (;;) {
-      const loaded = await this.posts.load(
-        new LoadPostBodiesRequest(afterId, PAGE, context),
-      );
-      if (!(loaded instanceof PostBodiesLoadedResponse)) {
-        return unavailable(correlationId, loaded, "posts.load");
-      }
-      if (loaded.bodies.length === 0) {
-        break;
-      }
-      for (const body of loaded.bodies) {
-        checked += 1;
-        const html = await renderBody(this.content, body.bodyMd, context);
-        if (typeof html !== "string") {
-          return html;
-        }
-        if (html !== body.bodyHtml) {
-          const stored = await this.posts.store(
-            new StorePostBodyHtmlRequest(body.id, html, body.bodyMd, context),
-          );
-          if (!(stored instanceof PostBodyHtmlStoredResponse)) {
-            return unavailable(correlationId, stored, "posts.store");
-          }
-          changed += 1;
-        }
-      }
-      afterId = loaded.bodies.at(-1)?.id ?? null;
+    const outcome = await rerenderAll<PostUnavailableResponse>({
+      loadPage: async (afterId, pageSize) => {
+        const loaded = await this.posts.load(
+          new LoadPostBodiesRequest(afterId, pageSize, context),
+        );
+        return loaded instanceof PostBodiesLoadedResponse
+          ? loaded.bodies
+          : { failure: unavailable(correlationId, loaded, "posts.load") };
+      },
+      render: async (bodyMd) => {
+        const html = await renderBody(this.content, bodyMd, context);
+        return typeof html === "string" ? html : { failure: html };
+      },
+      store: async (body, html) => {
+        const stored = await this.posts.store(
+          new StorePostBodyHtmlRequest(body.id, html, body.bodyMd, context),
+        );
+        return stored instanceof PostBodyHtmlStoredResponse
+          ? undefined
+          : { failure: unavailable(correlationId, stored, "posts.store") };
+      },
+    });
+    if (outcome.kind === "failed") {
+      return outcome.failure;
     }
-    return new PostBodiesRerenderedResponse(correlationId, checked, changed);
+    return new PostBodiesRerenderedResponse(
+      correlationId,
+      outcome.checked,
+      outcome.changed,
+    );
   }
 }
