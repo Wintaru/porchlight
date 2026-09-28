@@ -10,11 +10,12 @@ import {
 } from "@playwright/test";
 
 import { localValue } from "./auth-admin";
-import { devSignIn, JUNE, type SeedMember, THEO } from "./helpers";
+import { devSignIn, JUNE, MIRA, type SeedMember, THEO } from "./helpers";
 import { rest } from "./service-rest";
 
 // Issue #75: typing indicators and who is online, seen from a second signed-in browser.
 // Issue #81 (D26): the server vouches for who that is.
+// Issue #89: a blocked member on a post's typing line, and a member with two tabs.
 
 const POST = "/@theo/hello-from-the-porch";
 const THEO_ID = "00000000-0000-4000-8000-000000000003";
@@ -22,6 +23,9 @@ const JUNE_ID = "00000000-0000-4000-8000-000000000004";
 const MIRA_ID = "00000000-0000-4000-8000-000000000002";
 // The seeded post at POST.
 const POST_ID = "00000000-0000-4000-8000-0000000000b2";
+// A seeded post by neither Theo nor June: a block closes the comment form on the
+// blocker's own posts, so June can type here while Theo blocks her.
+const LAMPLIGHTER_POST = "/@lamplighter/welcome-to-porchlight";
 
 // supabase-js's browser build, for a test page to talk to Realtime directly, the way a
 // modified browser could. The web app has no direct dependency on it; the db package
@@ -265,6 +269,52 @@ test.describe("presence", () => {
     } finally {
       await theo.context.close();
       await june.context.close();
+    }
+  });
+
+  test("a member the viewer blocked never shows on the typing line", async ({
+    browser,
+  }) => {
+    const theo = await signedIn(browser, THEO);
+    const june = await signedIn(browser, JUNE);
+    const mira = await signedIn(browser, MIRA);
+    try {
+      await rest("member_blocks", {
+        method: "POST",
+        body: JSON.stringify({ member_id: THEO_ID, target_id: JUNE_ID, level: "block" }),
+      });
+      await theo.page.goto(LAMPLIGHTER_POST);
+      await june.page.goto(LAMPLIGHTER_POST);
+      await mira.page.goto(LAMPLIGHTER_POST);
+      const indicator = theo.page.getByTestId("typing-indicator");
+      await expect(indicator).toHaveText("");
+
+      await june.page
+        .getByTestId("comment-form")
+        .getByLabel("Your comment")
+        .pressSequentially("Hello");
+      // The same wait a shown member needs to show, and then some.
+      await theo.page.waitForTimeout(3000);
+      await expect(indicator).toHaveText("");
+
+      // The line is live: Mira, whom Theo did not block, shows. June is typing still,
+      // within four seconds of her last key, and is still not named.
+      await mira.page
+        .getByTestId("comment-form")
+        .getByLabel("Your comment")
+        .pressSequentially("Hi");
+      await june.page
+        .getByTestId("comment-form")
+        .getByLabel("Your comment")
+        .pressSequentially(" there");
+      await expect(indicator).toHaveText("@mira is replying…", { timeout: 10_000 });
+    } finally {
+      await rest(`member_blocks?member_id=eq.${THEO_ID}&target_id=eq.${JUNE_ID}`, {
+        method: "DELETE",
+      });
+      await theo.context.close();
+      await june.context.close();
+      await mira.context.close();
     }
   });
 
