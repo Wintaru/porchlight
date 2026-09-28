@@ -1,4 +1,5 @@
 import {
+  createDbClient,
   createSessionDbClient,
   type DbClient,
   type SessionCookieStore,
@@ -50,4 +51,11 @@ export function createProxySessionClient(
   };
   const { url, anonKey } = readSupabasePublicEnv();
   return createSessionDbClient(url, anonKey, store);
+}
+
+// A client that holds no session and reads or writes no cookies, for Auth calls that run
+// after the response has gone (`after()`, #84), where no cookie can reach the browser.
+export function createCookielessAuthClient(): DbClient {
+  const { url, anonKey } = readSupabasePublicEnv();
+  return createDbClient(url, anonKey);
 }

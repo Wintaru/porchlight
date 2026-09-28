@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { CheckNewAccountRequest, NewAccountCheckedResponse } from "@porchlight/core";
 
@@ -15,7 +16,7 @@ import {
   SIGN_IN_NEXT_MAX_AGE_SECONDS,
 } from "@/auth/email-link";
 import { safeNextPath } from "@/lib/safe-next-path";
-import { createSessionClient } from "@/auth/session-client";
+import { createCookielessAuthClient, createSessionClient } from "@/auth/session-client";
 import { toSessionUser } from "@/auth/session-user";
 import { ensureProfileFor } from "@/lib/ensure-profile";
 import { getDependencyContainer } from "@/lib/dependency-container";
@@ -80,33 +81,70 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     console.error(`sign-up check failed [${checked.correlationId}]`, checked);
     back("error=failed");
   }
+  if (!checked.allowed) {
+    // A closed site mails a member's address and refuses a new one, and the refusal
+    // comes back at once. So the send runs after the response, and both answer in the
+    // same time (#84). The form cannot report a failure it no longer waits for: the
+    // log has it.
+    after(() => sendClosedSiteLink(email));
+    await rememberNext(next);
+    back("sent=1");
+  }
   const client = await createSessionClient();
   const { error } = await client.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: checked.allowed },
+    options: { shouldCreateUser: true },
   });
   if (error !== null) {
     if (error.status === HTTP_TOO_MANY_REQUESTS) {
-      // On a site that refused new addresses, only a member's address can reach the
-      // send limit: "wait" would tell a stranger the address has an account (#68).
-      back(checked.allowed ? "error=wait" : "sent=1");
+      back("error=wait");
     }
     if (error.status === HTTP_BAD_REQUEST) {
       back("error=email");
     }
     if (error.code !== undefined && NEW_ACCOUNTS_REFUSED.has(error.code)) {
-      // Expected when this site refused the new address itself; a hint for the
-      // operator only when Supabase refused one this site would have let in.
-      if (checked.allowed) {
-        console.warn(
-          "Supabase Auth refuses new accounts by email: turn on 'Allow new users to sign up'",
-        );
-      }
+      // This site would let the address in, but Supabase refused it: a hint for the
+      // operator. The form still says "sent", as it does for a member.
+      console.warn(
+        "Supabase Auth refuses new accounts by email: turn on 'Allow new users to sign up'",
+      );
       back("sent=1");
     }
     console.error("sign-in link could not be sent", error);
     back("error=failed");
   }
+  await rememberNext(next);
+  back("sent=1");
+}
+
+// The closed-site send, after the response. A client with no cookies: the response has
+// gone, so nothing can be written to the browser, and the emailed link carries its own
+// token hash, so no code verifier needs to be kept. A refused new address and an
+// address Auth calls malformed are expected. The send limit is logged without the
+// address, so the operator sees why members get no link.
+async function sendClosedSiteLink(email: string): Promise<void> {
+  const { error } = await createCookielessAuthClient().auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false },
+  });
+  if (error === null || error.status === HTTP_BAD_REQUEST) {
+    return;
+  }
+  if (error.code !== undefined && NEW_ACCOUNTS_REFUSED.has(error.code)) {
+    return;
+  }
+  if (error.status === HTTP_TOO_MANY_REQUESTS) {
+    console.warn("closed-site sign-in link held back: Supabase Auth's send limit");
+    return;
+  }
+  console.error(
+    "closed-site sign-in link could not be sent",
+    error.code ?? error.message,
+  );
+}
+
+// The page to land on after the link, for the callback to read.
+async function rememberNext(next: string): Promise<void> {
   const jar = await cookies();
   jar.set(SIGN_IN_NEXT_COOKIE, next, {
     httpOnly: true,
@@ -115,7 +153,6 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     path: EMAIL_LINK_PATH,
     maxAge: SIGN_IN_NEXT_MAX_AGE_SECONDS,
   });
-  back("sent=1");
 }
 
 // The button on `/auth/confirm` (#67). The one-time token is spent here, on a POST a

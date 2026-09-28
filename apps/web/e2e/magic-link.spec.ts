@@ -124,8 +124,14 @@ test("a closed site mails no new address, and the form still says it sent", asyn
 
     // A member of the closed site still gets a link. Mira, since every test asks for
     // its own address (see the top of this file).
+    // The link goes out after the page answers (#84), from a client with no cookies,
+    // so follow it to the end.
     const since = await askForLink(page, MIRA.email, "/");
-    await signInLinkFor(MIRA.email, since);
+    const link = await signInLinkFor(MIRA.email, since);
+    await inFreshBrowser(browser, async (member) => {
+      await finishSigningIn(member, link);
+      await expect(member.getByTestId("session-handle")).toHaveText(`@${MIRA.handle}`);
+    });
   } finally {
     await page.goto("/admin");
     await page.getByTestId("preset-open_porch").click();
