@@ -26,10 +26,37 @@ export function isVideoFile(file: File): boolean {
   return file.type.startsWith("video/") || VIDEO_EXTENSIONS.includes(extension);
 }
 
+// What the converter hands back: the finished MP4's bytes, or why there are none.
+type Converted =
+  | { readonly ok: true; readonly bytes: ArrayBuffer }
+  | { readonly ok: false; readonly error: string };
+
 export async function prepareVideo(
   file: File,
   onProgress: (fraction: number) => void,
 ): Promise<PreparedVideo> {
+  const converted = await convert(file, onProgress);
+  if (!converted.ok) {
+    return converted;
+  }
+  // The converter, its output and its working buffer went out of reach when `convert`
+  // returned, so the garbage collector may free that buffer before the File copies the
+  // finished bytes. Built inside `convert`, the File would be a third full copy of the
+  // video in memory, beside the working buffer and the finished bytes (#95).
+  const name = `${file.name.replace(/\.[^.]*$/, "") || "video"}.mp4`;
+  try {
+    return { ok: true, file: new File([converted.bytes], name, { type: "video/mp4" }) };
+  } catch (error: unknown) {
+    // A browser short of memory may refuse the copy.
+    console.warn("converted video did not fit in memory", error);
+    return { ok: false, error: "The video could not be converted. Try another file." };
+  }
+}
+
+async function convert(
+  file: File,
+  onProgress: (fraction: number) => void,
+): Promise<Converted> {
   // Loaded only when someone picks a video: the library is large.
   const {
     ALL_FORMATS,
@@ -89,8 +116,7 @@ export async function prepareVideo(
     if (target.buffer === null) {
       return { ok: false, error: "The video could not be converted. Try again." };
     }
-    const name = `${file.name.replace(/\.[^.]*$/, "") || "video"}.mp4`;
-    return { ok: true, file: new File([target.buffer], name, { type: "video/mp4" }) };
+    return { ok: true, bytes: target.buffer };
   } catch (error: unknown) {
     console.warn("video conversion failed", error);
     return { ok: false, error: "The video could not be converted. Try another file." };
