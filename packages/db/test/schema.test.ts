@@ -72,6 +72,22 @@ describe("posts", () => {
     );
     expect(code).toBe(UNIQUE_VIOLATION);
   });
+
+  // #97: `now()` gave every revision in one transaction the same time.
+  test("revisions saved in one transaction keep their order", async () => {
+    const kept = await asService(async (tx) => {
+      for (const title of ["First", "Second", "Third"]) {
+        await tx`update public.posts set title = ${title} where id = ${SEED.publicPost}`;
+      }
+      return tx<{ title: string }[]>`
+        select title from public.post_revisions
+        where post_id = ${SEED.publicPost}
+        order by replaced_at desc, id desc
+        limit 2
+      `;
+    });
+    expect(kept.map((row) => row.title)).toEqual(["Second", "First"]);
+  });
 });
 
 describe("comments", () => {
@@ -821,6 +837,29 @@ describe("voice_guide_revisions (#32)", () => {
       return guides(tx);
     });
     expect(kept.length).toBe(50);
+    // #97: the cap drops the oldest, even when every save is in one transaction.
+    const texts = kept.map((row) => row.guide_md);
+    expect(texts).toContain("v53");
+    expect(texts).not.toContain("v3");
+  });
+
+  // #97: `now()` gave every save in one transaction the same time.
+  test("saves in one transaction keep their order", async () => {
+    const kept = await asService(async (tx) => {
+      for (const text of ["first", "second", "third"]) {
+        await tx`
+          update public.profiles set voice_guide_md = ${text}
+          where id = ${SEED.trustedMember}
+        `;
+      }
+      return tx<{ guide_md: string }[]>`
+        select guide_md from public.voice_guide_revisions
+        where profile_id = ${SEED.trustedMember}
+        order by replaced_at desc, id desc
+        limit 2
+      `;
+    });
+    expect(kept.map((row) => row.guide_md)).toEqual(["second", "first"]);
   });
 
   test("erasure keeps no version, and does not keep the last guide either", async () => {

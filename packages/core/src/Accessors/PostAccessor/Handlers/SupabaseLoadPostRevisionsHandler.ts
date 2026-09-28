@@ -24,6 +24,7 @@ export class SupabaseLoadPostRevisionsHandler implements IHandler<
       .select(POST_REVISION_COLUMNS)
       .eq("post_id", request.postId)
       .order("replaced_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(POST_REVISIONS_PAGE);
     if (error) {
       return new PostAccessFailedResponse(request.correlationId, error.message);

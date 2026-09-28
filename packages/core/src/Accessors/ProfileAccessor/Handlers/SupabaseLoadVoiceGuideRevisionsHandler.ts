@@ -19,7 +19,8 @@ export class SupabaseLoadVoiceGuideRevisionsHandler implements IHandler<
       .from("voice_guide_revisions")
       .select("guide_md, replaced_at")
       .eq("profile_id", request.profileId)
-      .order("replaced_at", { ascending: false });
+      .order("replaced_at", { ascending: false })
+      .order("id", { ascending: false });
     if (error) {
       return new ProfileAccessFailedResponse(request.correlationId, error.message);
     }
