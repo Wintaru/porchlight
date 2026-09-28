@@ -2,7 +2,8 @@ import { type Browser, expect, type Page, test } from "@playwright/test";
 
 import { authUserExists, deleteAuthUser } from "./auth-admin";
 import { devSignIn, JUNE, LAMPLIGHTER, MIRA, THEO } from "./helpers";
-import { expectNoEmail, signInLinkFor } from "./mailbox";
+import { expectNoEmail, expectOneEmail, signInLinkFor } from "./mailbox";
+import { createMember, removeMember } from "./members";
 
 // Issue #67: sign-in by a one-time email link, beside Google. The local stack sends the
 // email to Mailpit, where the test reads the link.
@@ -131,6 +132,44 @@ test("a closed site mails no new address, and the form still says it sent", asyn
     await expect(page).toHaveURL(/\/admin\?done=saved$/);
     // Only if the check above failed: so the next run takes the new-address path.
     await deleteAuthUser(NEWCOMER);
+  }
+});
+
+// #68: a member who presses twice quickly on a closed site. Each send runs after its
+// answer (#84), and the second meets Auth's send limit (max_frequency, one second). The
+// form says "sent" both times, as it does for a stranger, and one email goes out. Two
+// emails mean the limit was never met. The server log shows "held back: Supabase Auth's
+// send limit" for the second press. The second press waits for the first answer: two
+// requests in the same instant both pass Auth's check, and both send.
+test("on a closed site, two quick presses both say sent, and one email goes out", async ({
+  page,
+  browser,
+}) => {
+  const member = await createMember(`twice-${Date.now().toString(36)}`);
+  await devSignIn(page, LAMPLIGHTER);
+  await page.goto("/admin");
+  const context = await browser.newContext();
+  try {
+    await page.getByTestId("preset-just_me").click();
+    await expect(page).toHaveURL(/\/admin\?done=saved$/);
+
+    const tabs = [await context.newPage(), await context.newPage()];
+    for (const tab of tabs) {
+      await tab.goto("/auth/sign-in");
+      await tab.getByLabel("Email").fill(member.email);
+    }
+    const since = new Date(Math.floor(Date.now() / 1000) * 1000);
+    for (const tab of tabs) {
+      await tab.getByRole("button", { name: "Email me a sign-in link" }).click();
+      await expect(tab.getByTestId("sign-in-link-sent")).toBeVisible();
+    }
+    await expectOneEmail(member.email, since);
+  } finally {
+    await context.close();
+    await page.goto("/admin");
+    await page.getByTestId("preset-open_porch").click();
+    await expect(page).toHaveURL(/\/admin\?done=saved$/);
+    await removeMember(member);
   }
 });
 

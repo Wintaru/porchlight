@@ -109,3 +109,23 @@ export async function expectNoEmail(to: string, since: Date): Promise<void> {
   const { messages } = (await search.json()) as { messages: readonly MailpitSummary[] };
   expect(messages.filter((message) => new Date(message.Created) >= since)).toEqual([]);
 }
+
+// Waits for the first email to `to` after `since`, then long enough for a second one to
+// arrive, and checks that exactly one came.
+export async function expectOneEmail(to: string, since: Date): Promise<void> {
+  await expect
+    .poll(() => countEmails(to, since), {
+      message: `no email for ${to}`,
+      timeout: 10_000,
+    })
+    .toBeGreaterThan(0);
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  expect(await countEmails(to, since)).toBe(1);
+}
+
+async function countEmails(to: string, since: Date): Promise<number> {
+  const query = encodeURIComponent(`to:"${to}"`);
+  const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}&limit=20`);
+  const { messages } = (await search.json()) as { messages: readonly MailpitSummary[] };
+  return messages.filter((message) => new Date(message.Created) >= since).length;
+}
