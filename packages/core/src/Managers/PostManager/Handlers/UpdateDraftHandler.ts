@@ -19,7 +19,7 @@ import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
-import { renderBody, shapeTags } from "../shapeDraft";
+import { checkBodyLength, renderBody, shapeTags } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 type UpdateDraftResult =
@@ -76,6 +76,10 @@ export class UpdateDraftHandler implements IHandler<
       shaped.title = title;
     }
     if (changes.bodyMd !== undefined) {
+      const tooLong = checkBodyLength(changes.bodyMd, context);
+      if (tooLong !== undefined) {
+        return tooLong;
+      }
       const bodyHtml = await renderBody(this.content, changes.bodyMd, context);
       if (typeof bodyHtml !== "string") {
         return bodyHtml;

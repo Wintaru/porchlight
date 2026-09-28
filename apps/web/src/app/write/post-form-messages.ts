@@ -3,6 +3,7 @@ import type {
   PostRejectionReason,
   PostStatus,
 } from "@porchlight/core";
+import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
 
 import {
   type PostFormError,
@@ -27,12 +28,13 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "title-blank": "A post needs a title.",
   "title-length": `A title is at most ${String(TITLE_MAX_LENGTH)} characters.`,
   "summary-length": `A summary is at most ${String(SUMMARY_MAX_LENGTH)} characters.`,
-  "body-length": "The body is too long.",
+  "body-length": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "tags-count": `At most ${String(TAGS_MAX_COUNT)} tags.`,
   "tag-length": `A tag is at most ${String(TAG_MAX_LENGTH)} characters.`,
   "rejected-title": "The title needs at least one letter or digit.",
   "rejected-tag": "Every tag needs at least one letter or digit.",
   "rejected-cover": "That file cannot be the cover. Choose one of your own images.",
+  "rejected-body": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "posting-closed": "Posting is closed to members on this site.",
   // Never reached by a post action; the table is keyed by every denial reason.
   "comments-closed": "Comments are closed here.",

@@ -3,6 +3,7 @@ import {
   NoSuchPostResponse,
   PostDeletedResponse,
   PostForbiddenResponse,
+  POST_BODY_MAX_LENGTH,
   PostNotPublishableResponse,
   PostRateLimitedResponse,
   PostRejectedResponse,
@@ -48,7 +49,11 @@ export function refusalFor(response: ResponseBase, what: string) {
     return refuse("No such post, or it is not yours.");
   }
   if (response instanceof PostRejectedResponse) {
-    return refuse(`The ${response.reason} is not usable. Fix it and try once more.`);
+    return refuse(
+      response.reason === "body"
+        ? `The body is longer than ${String(POST_BODY_MAX_LENGTH)} characters. Shorten it and try once more.`
+        : `The ${response.reason} is not usable. Fix it and try once more.`,
+    );
   }
   if (response instanceof PostNotPublishableResponse) {
     return refuse(`This post is ${response.status}, so it cannot be published.`);

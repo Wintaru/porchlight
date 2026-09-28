@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 
+import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
+
 import {
-  BODY_MAX_LENGTH,
   parseIntent,
   parsePostForm,
   SUMMARY_MAX_LENGTH,
@@ -72,7 +73,7 @@ describe("parsePostForm", () => {
       [{ ...base, title: "  " }, "title-blank"],
       [{ ...base, title: "t".repeat(TITLE_MAX_LENGTH + 1) }, "title-length"],
       [{ ...base, summary: "s".repeat(SUMMARY_MAX_LENGTH + 1) }, "summary-length"],
-      [{ ...base, bodyMd: "b".repeat(BODY_MAX_LENGTH + 1) }, "body-length"],
+      [{ ...base, bodyMd: "b".repeat(POST_BODY_MAX_LENGTH + 1) }, "body-length"],
       [
         {
           ...base,

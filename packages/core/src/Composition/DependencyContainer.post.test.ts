@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Actor } from "../Common/Actor";
+import { POST_BODY_MAX_LENGTH } from "../Common/PostBody";
 import type { Post } from "../Common/Post";
 import type { Profile } from "../Common/Profile";
 import { UnhandledRequestResponse } from "../Common/UnhandledRequestResponse";
@@ -132,6 +133,25 @@ describe("DependencyContainer: PostManager", () => {
     expect(title).toBeInstanceOf(PostRejectedResponse);
     expect(title).toMatchObject({ reason: "title" });
     expect(tag).toMatchObject({ reason: "tag" });
+  });
+
+  // C19: the limit holds for every door, not only the ones that check it first.
+  test("a body over POST_BODY_MAX_LENGTH is rejected on create and on update", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const longest = "b".repeat(POST_BODY_MAX_LENGTH);
+    const post = await draft(container, THEO, { bodyMd: longest });
+
+    const created = await container.postManager.execute(
+      new CreateDraftRequest(THEO, { ...DRAFT, bodyMd: `${longest}b` }, TEST_ORIGIN),
+    );
+    const updated = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, post.id, { bodyMd: `${longest}b` }),
+    );
+
+    expect(post.bodyMd).toHaveLength(POST_BODY_MAX_LENGTH);
+    expect(created).toBeInstanceOf(PostRejectedResponse);
+    expect(created).toMatchObject({ reason: "body" });
+    expect(updated).toMatchObject({ reason: "body" });
   });
 
   test("a visitor may not draft, and neither may a suspended member", async () => {

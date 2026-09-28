@@ -7,7 +7,6 @@ import {
   AgentLimitsResponse,
   agentsOpenTo,
   CheckDraftRequest,
-  DRAFT_CHECK_MAX_LENGTH,
   DraftCheckResponse,
   draftWarningText,
   CreateDraftRequest,
@@ -19,6 +18,7 @@ import {
   GetPostRequest,
   GetVoiceGuideRequest,
   ListPostsForAuthorRequest,
+  POST_BODY_MAX_LENGTH,
   POST_STATUSES,
   POST_VISIBILITIES,
   publishesAtOnce,
@@ -199,7 +199,7 @@ function registerTools(
     {
       description:
         "Check a draft's markdown against the member's voice guide and a few tells of generated text: banned phrases, sentences all the same length, many lists of three, a heading on every paragraph, a closing summary. Warnings only. Run it before create_draft or update_draft and fix what it finds.",
-      inputSchema: z.object({ body_md: z.string().max(DRAFT_CHECK_MAX_LENGTH) }),
+      inputSchema: z.object({ body_md: z.string().max(POST_BODY_MAX_LENGTH) }),
     },
     async ({ body_md }) => {
       const response = await accountManager.query(new CheckDraftRequest(actor, body_md));
@@ -386,7 +386,7 @@ function registerTools(
         "Start a draft for the member to read. It is not published. Write from their notes and voice guide only.",
       inputSchema: z.object({
         title: z.string().min(1),
-        body_md: z.string().min(1),
+        body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH),
         summary: z.string().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.enum(POST_VISIBILITIES).optional(),
@@ -425,7 +425,7 @@ function registerTools(
       inputSchema: z.object({
         id: z.string().min(1),
         title: z.string().min(1).optional(),
-        body_md: z.string().min(1).optional(),
+        body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH).optional(),
         // Nullable, so an agent can clear a summary it wrote.
         summary: z.string().nullable().optional(),
         tags: z.array(z.string()).optional(),

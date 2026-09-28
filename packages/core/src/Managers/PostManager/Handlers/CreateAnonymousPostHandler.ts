@@ -27,7 +27,7 @@ import { PostGuardRefusedResponse } from "../Responses/PostGuardRefusedResponse"
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
-import { renderBody } from "../shapeDraft";
+import { checkBodyLength, renderBody } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 // How many slug candidates to try before giving up (the same bound CreateDraftHandler
@@ -73,6 +73,12 @@ export class CreateAnonymousPostHandler implements IHandler<
     );
     if (refused !== undefined) {
       return refused;
+    }
+
+    // Before the guard, so a body no door accepts does not spend a submission.
+    const tooLong = checkBodyLength(draft.bodyMd, context);
+    if (tooLong !== undefined) {
+      return tooLong;
     }
 
     const admitted = await this.guard.evaluate(

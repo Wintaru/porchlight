@@ -1,3 +1,4 @@
+import { POST_BODY_MAX_LENGTH } from "../../Common/PostBody";
 import type { RequestContext } from "../../Common/RequestContext";
 import type { Tag } from "../../Common/Tag";
 import type { IContentRenderEngine } from "../../Engines/ContentRenderEngine/IContentRenderEngine";
@@ -11,6 +12,17 @@ import type { PostUnavailableResponse } from "./Responses/PostUnavailableRespons
 import { unavailable } from "./unavailable";
 
 type Context = Required<Pick<RequestContext, "correlationId">>;
+
+// A body longer than the one limit every door shares (C19). The web forms and the MCP
+// tools check it first; this is the check no caller can skip.
+export function checkBodyLength(
+  bodyMd: string,
+  context: Context,
+): PostRejectedResponse | undefined {
+  return bodyMd.length > POST_BODY_MAX_LENGTH
+    ? new PostRejectedResponse(context.correlationId, "body")
+    : undefined;
+}
 
 // Markdown to the HTML that is cached beside it (D3).
 export async function renderBody(

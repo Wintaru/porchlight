@@ -299,3 +299,13 @@ No switch to change. Three migrations go out with the release, like any other:
 The first migration builds two indexes on `posts`. While it runs, nobody can save a
 post. On a site with a few thousand posts this takes less than a second. On a much
 larger site, deploy at a quiet time.
+
+## 16. One source for shared rules (issue #94)
+
+No switch to change. The migration `20260928090000_one_source_rules` goes out with the
+release, like any other. It adds two small helper functions and changes the two email
+claim functions to use them. The emails do not change.
+
+One change that a person can see: an agent's `create_draft` and `update_draft` now
+refuse a body longer than 100,000 characters, the same limit as the editor. Before,
+the tools took a body of any length.

@@ -22,6 +22,7 @@ import {
   UnpublishPostRequest,
   UpdateDraftRequest,
 } from "@porchlight/core";
+import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -33,7 +34,7 @@ import { pruneDeletedPostUploads, pruneSavedPostUploads } from "@/lib/prune-uplo
 import { currentRequestMeta } from "@/lib/request-meta";
 import { returnPathOf } from "@/lib/return-path";
 import type { AutosaveResult, CheckResult, PreviewResult } from "./editor-results";
-import { BODY_MAX_LENGTH, parseIntent, parsePostForm } from "./parse-post-form";
+import { parseIntent, parsePostForm } from "./parse-post-form";
 
 // The editor's Server Functions. The Manager owns every rule (who may write, what a
 // slug is, where a post lands on publish); these parse the form, call it, and map the
@@ -99,7 +100,7 @@ export async function autosavePost(formData: FormData): Promise<AutosaveResult> 
 // (D3). Nothing is stored.
 export async function previewPost(bodyMd: unknown): Promise<PreviewResult> {
   // A Server Function argument is client input: check it as the form parser would.
-  if (typeof bodyMd !== "string" || bodyMd.length > BODY_MAX_LENGTH) {
+  if (typeof bodyMd !== "string" || bodyMd.length > POST_BODY_MAX_LENGTH) {
     return { ok: false };
   }
   const actor = await getCurrentActor();
@@ -119,7 +120,7 @@ export async function previewPost(bodyMd: unknown): Promise<PreviewResult> {
 // The Check button (#32): the draft check against the member's own voice guide. Warnings
 // only, nothing stored, the same check an agent runs with check_draft.
 export async function checkDraft(bodyMd: unknown): Promise<CheckResult> {
-  if (typeof bodyMd !== "string" || bodyMd.length > BODY_MAX_LENGTH) {
+  if (typeof bodyMd !== "string" || bodyMd.length > POST_BODY_MAX_LENGTH) {
     return { ok: false };
   }
   const actor = await getCurrentActor();

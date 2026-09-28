@@ -25,7 +25,7 @@ import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import { evidenceTextOf } from "../evidenceTextOf";
-import { renderBody, shapeTags } from "../shapeDraft";
+import { checkBodyLength, renderBody, shapeTags } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 // How many slug candidates to try before giving up. Every candidate after the first
@@ -79,6 +79,11 @@ export class CreateDraftHandler implements IHandler<
       );
     }
 
+    // Before the agent's daily count, so a body no door accepts does not spend one.
+    const tooLong = checkBodyLength(draft.bodyMd, context);
+    if (tooLong !== undefined) {
+      return tooLong;
+    }
     const capped = await admitAgent(this.agentGuard, actor, "agent:draft", context);
     if (capped !== undefined) {
       return capped;

@@ -37,6 +37,8 @@ import { PostGuardRefusedResponse } from "../Managers/PostManager/Responses/Post
 import { AnonymousPostCreatedResponse } from "../Managers/PostManager/Responses/AnonymousPostCreatedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { UNTRUSTED_CLIENT_IP } from "../Common/Retention";
+import { POST_BODY_MAX_LENGTH } from "../Common/PostBody";
+import { PostRejectedResponse } from "../Managers/PostManager/Responses/PostRejectedResponse";
 import { DependencyContainer } from "./DependencyContainer";
 import { FAKE_ENV, TEST_ORIGIN } from "./FakeEnvironment.test-helper";
 
@@ -159,6 +161,26 @@ async function reportedItems(
 // The post flows through the real wiring with the fake stores, the real
 // PermissionEngine, ContentRenderEngine and AnonymousGuardEngine (SPEC.md §7, issue #11).
 describe("DependencyContainer: ModerationManager", () => {
+  // C19: the anonymous door gets the same body limit as a member's editor.
+  test("an anonymous post over POST_BODY_MAX_LENGTH is rejected", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+
+    const refused = await container.postManager.execute(
+      new CreateAnonymousPostRequest(
+        VISITOR,
+        {
+          title: "Too long",
+          bodyMd: "b".repeat(POST_BODY_MAX_LENGTH + 1),
+          summary: null,
+        },
+        VISITOR_SUBMISSION,
+      ),
+    );
+
+    expect(refused).toBeInstanceOf(PostRejectedResponse);
+    expect(refused).toMatchObject({ reason: "body" });
+  });
+
   test("an anonymous post reaches the queue and a moderator approves it", async () => {
     const container = new DependencyContainer(FAKE_ENV);
 

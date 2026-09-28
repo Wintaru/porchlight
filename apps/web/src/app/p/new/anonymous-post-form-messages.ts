@@ -1,4 +1,5 @@
 import type { CannotPostResponse } from "@porchlight/core";
+import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
 
 import {
   type AnonymousPostFormError,
@@ -14,14 +15,16 @@ type ErrorCode =
   | CannotPostResponse["reason"]
   | "guard-refused"
   | "rejected-title"
+  | "rejected-body"
   | "unavailable";
 
 export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "title-blank": "A post needs a title.",
   "title-length": `A title is at most ${String(TITLE_MAX_LENGTH)} characters.`,
   "summary-length": `A summary is at most ${String(SUMMARY_MAX_LENGTH)} characters.`,
-  "body-length": "The body is too long.",
+  "body-length": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "rejected-title": "The title needs at least one letter or digit.",
+  "rejected-body": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "guard-refused": "That could not be posted. Try again in a moment.",
   "posting-closed": "Anonymous posting is closed on this site right now.",
   "comments-closed": "Comments are closed here.",

@@ -28,9 +28,9 @@ export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
 export type { RequestOrigin } from "./Common/RequestOrigin";
 export type { VoiceGuide } from "./Common/VoiceGuide";
 export type { VoiceSample } from "./Common/VoiceSample";
+export { POST_BODY_MAX_LENGTH } from "./Common/PostBody";
 export {
   DEFAULT_BANNED_PHRASES,
-  DRAFT_CHECK_MAX_LENGTH,
   VOICE_GUIDE_MAX_LENGTH,
   VOICE_SAMPLE_COUNT,
 } from "./Common/VoiceGuideRules";

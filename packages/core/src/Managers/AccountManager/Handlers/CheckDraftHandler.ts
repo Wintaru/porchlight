@@ -2,7 +2,7 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import { LoadVoiceGuideRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadVoiceGuideRequest";
 import { VoiceGuideLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/VoiceGuideLoadedResponse";
 import type { IHandler } from "../../../Common/IHandler";
-import { DRAFT_CHECK_MAX_LENGTH } from "../../../Common/VoiceGuideRules";
+import { POST_BODY_MAX_LENGTH } from "../../../Common/PostBody";
 import type { IDraftCheckEngine } from "../../../Engines/DraftCheckEngine/IDraftCheckEngine";
 import { EvaluateDraftRequest } from "../../../Engines/DraftCheckEngine/Requests/EvaluateDraftRequest";
 import { DraftEvaluatedResponse } from "../../../Engines/DraftCheckEngine/Responses/DraftEvaluatedResponse";
@@ -53,7 +53,7 @@ export class CheckDraftHandler implements IHandler<CheckDraftRequest, Result> {
     }
     const evaluated = await this.draftCheck.evaluate(
       new EvaluateDraftRequest(
-        bodyMd.slice(0, DRAFT_CHECK_MAX_LENGTH),
+        bodyMd.slice(0, POST_BODY_MAX_LENGTH),
         guide.guideMd,
         context,
       ),

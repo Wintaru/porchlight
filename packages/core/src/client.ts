@@ -12,6 +12,7 @@ export { hasSlugShape } from "./Common/SlugShape";
 export { EMBED_PLAYER_PREFIXES } from "./Common/EmbedPlayers";
 export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export { NOTIFICATION_SENTENCES } from "./Common/NotificationSentences";
+export { POST_BODY_MAX_LENGTH } from "./Common/PostBody";
 export { isStaffRole } from "./Common/UserRole";
 export { isUuid } from "./Common/Uuid";
 export { draftWarningText, type DraftWarning } from "./Common/DraftWarning";
