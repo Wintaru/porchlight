@@ -268,6 +268,31 @@ test.describe("presence", () => {
     }
   });
 
+  test("a member with two tabs stays online when one tab leaves", async ({ browser }) => {
+    const theo = await signedIn(browser, THEO);
+    const june = await signedIn(browser, JUNE);
+    try {
+      await theo.page.goto("/");
+      await june.page.goto("/");
+      const second = await june.context.newPage();
+      await second.goto("/");
+      const online = theo.page.getByTestId("online-member");
+      await expect(online).toHaveCount(2, { timeout: 10_000 });
+
+      // The second tab leaves the page, and says `gone` for June. Her first tab hears
+      // it and says she is here at once, well before its next 20-second heartbeat.
+      await second.goto("/settings");
+      await theo.page.waitForTimeout(3000);
+      await expect(theo.page.getByTestId("online-now")).toContainText("@june", {
+        timeout: 2000,
+      });
+      await expect(online).toHaveCount(2);
+    } finally {
+      await theo.context.close();
+      await june.context.close();
+    }
+  });
+
   test("a visitor sees no one online", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByTestId("online-now")).toHaveCount(0);

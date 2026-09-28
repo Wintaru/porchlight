@@ -246,6 +246,12 @@ export function joinPresence(
     }
     if (payload.kind === "gone") {
       heard.delete(payload.memberId);
+      // Another tab of this member went out of view or closed, and every page dropped
+      // the member (#89, C10). This tab is still here: say so at once, not at the next
+      // heartbeat up to 20 seconds later. The others see a short blink.
+      if (payload.memberId === selfId && active && showing) {
+        announce(current());
+      }
     } else {
       heard.set(payload.memberId, { typing: payload.typing, at: Date.now() });
       if (payload.rollCall && payload.memberId !== selfId) {
