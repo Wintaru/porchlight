@@ -231,7 +231,7 @@ async function countPointingAt(
 }
 
 // At least one row for every delete/null key, on top of what the seed gives the member
-// (posts, comments, reactions, evidence), and reader subscriptions under the
+// (posts, comments, reactions), and reader subscriptions under the
 // member's address next to a stranger's.
 async function arrangeEverything(tx: TransactionSql, member: string): Promise<void> {
   const other = SEED.moderator;
@@ -246,6 +246,17 @@ async function arrangeEverything(tx: TransactionSql, member: string): Promise<vo
     ) values (
       ${member}, 'erasure/fixture.jpg', 'image', 'image/jpeg', 'fixture.jpg', 1,
       repeat('b', 64)
+    )
+  `;
+  // The seed gives the member no evidence of their own, so a run on a fresh database
+  // needs this row. No retain_until, so erasure must delete it.
+  await tx`
+    insert into public.submission_evidence (
+      subject_kind, subject_id, author_id, raw_ip_expires_at, ip_hash,
+      turnstile_result, request_id
+    ) values (
+      'post', ${SEED.publicPost}, ${member}, now(), 'hash', 'not_required',
+      'erasure-open'
     )
   `;
   await tx`
