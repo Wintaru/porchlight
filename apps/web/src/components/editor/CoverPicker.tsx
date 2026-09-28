@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { getUpload } from "@/app/write/media-actions";
+import { RevealImage } from "@/components/RevealImage";
 import type { UploadView } from "@/lib/upload-view";
 import { DropZone } from "./DropZone";
 import styles from "./editor.module.css";
@@ -101,6 +102,15 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
                 ? "A moderator looks at this image first. Publishing sends the post to them."
                 : "This image could not be prepared for the site."}
             </p>
+          ) : cover.upload.mature ? (
+            // Blurred behind a click, as the post page shows it (SPEC.md §7, #91).
+            <RevealImage
+              id={`cover-${cover.upload.mediaId}`}
+              src={cover.upload.publicUrl}
+              alt="The cover image"
+              mode="mature"
+              className={styles.coverImage}
+            />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image
             <img

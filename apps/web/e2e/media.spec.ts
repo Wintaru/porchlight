@@ -171,6 +171,8 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
   await page.goto("/write");
   await page.getByLabel("Title").fill(title);
   await fillBodyMarkdown(page, "Charcoal, twenty minutes.");
+  // The post has its id first, so the cover is one of its uploads (#80).
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]{36}$/);
   await chooseCover(page, cover, FLAGGED_PHOTO);
   await expect(page.getByTestId("cover-held")).toContainText("A moderator looks at this");
 
@@ -231,8 +233,27 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
     await expect(row.locator("a, input").first()).toHaveAttribute("type", "checkbox");
   }
 
+  // The editor blurs the mature cover too, and so does its upload's preview (#91).
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
+  const editorCover = page.getByTestId("cover-set").getByTestId("reveal-image");
+  await expect(editorCover).toHaveAttribute("data-mode", "mature");
+  expect(
+    await editorCover.locator("img").evaluate((el) => getComputedStyle(el).filter),
+  ).toContain("blur");
+  await page
+    .getByTestId("attachment")
+    .filter({ hasText: cover })
+    .locator('button[aria-haspopup="dialog"]')
+    .click();
+  const preview = page.getByTestId("attachment-preview");
+  const previewImage = preview.getByTestId("reveal-image");
+  await expect(previewImage).toHaveAttribute("data-mode", "mature");
+  expect(
+    await previewImage.locator("img").evaluate((el) => getComputedStyle(el).filter),
+  ).toContain("blur");
+  await expect(preview.getByRole("button", { name: "Insert" })).toHaveCount(0);
+  await preview.getByRole("button", { name: "Close" }).click();
   await deleteCurrentPost(page);
 });
 

@@ -503,6 +503,12 @@
   border-radius: 10px;
 }
 
+/* A mature cover's wrapper takes the class; the image inside is cropped the same way. */
+.coverImage img {
+  max-height: 200px;
+  object-fit: cover;
+}
+
 .coverHeld {
   margin: 0;
   padding: 12px 14px;
