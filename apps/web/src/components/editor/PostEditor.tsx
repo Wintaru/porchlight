@@ -1,12 +1,22 @@
 "use client";
 
 import type { Post, TrustLevel } from "@porchlight/core";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type SubmitEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { unstable_rethrow } from "next/navigation";
 
 import {
   autosavePost,
   checkDraft,
   previewPost,
+  savePost,
   submitPost,
   unpublishPost,
 } from "@/app/write/actions";
@@ -100,9 +110,10 @@ export function PostEditor({
   // an answer that arrives after a close cannot open the dialog again.
   const previewRequestRef = useRef(0);
   const checkRequestRef = useRef(0);
-  // Set by a Save or Publish and never cleared: the redirect remounts the editor. It
-  // stops the timer and the buttons, so one draft is never created twice.
-  const [submitting, setSubmitting] = useState(false);
+  // A Save, Publish or Unpublish in flight. It stops the timer and the buttons, so one
+  // draft is never created twice. A stored write remounts the editor (the page keys it
+  // on the version); a refused one comes back with its error and the page as typed.
+  const [submitting, startSubmit] = useTransition();
   // Bumped by every save attempt and every submit, so an autosave answer that arrives
   // after a newer attempt (or after a timeout) changes nothing.
   const generationRef = useRef(0);
@@ -256,22 +267,40 @@ export function PostEditor({
     );
   };
 
+  // The server functions run here, not through the form's own action: React clears a
+  // form's fields when its action finishes, and a refused save must leave the page as
+  // typed. `action` and `formAction` stay on the form for a browser without JS.
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const formData = new FormData(event.currentTarget, submitter);
+    const unpublishing = submitter?.dataset.action === "unpublish";
+    // A submit takes over from the timer.
+    generationRef.current += 1;
+    startSubmit(async () => {
+      try {
+        if (unpublishing) {
+          await unpublishPost(formData);
+          return;
+        }
+        const refused = await savePost(formData);
+        setSave({ kind: "failed", error: refused.error });
+      } catch (error: unknown) {
+        // A stored write's redirect passes through; a dropped connection or a server
+        // error keeps the page as typed, like a refusal.
+        unstable_rethrow(error);
+        console.error("post submit failed", error);
+        setSave({ kind: "failed", error: "unavailable" });
+      }
+    });
+  };
+
   const allTags = mature ? [...tags, MATURE_TAG] : tags;
   const locked = submitting || save.kind === "saving";
   const status = statusText(save, isDraft, title);
 
   return (
-    <form
-      ref={formRef}
-      action={submitPost}
-      onChange={markDirty}
-      onSubmit={() => {
-        // A submit takes over from the timer; the redirect brings the saved state.
-        generationRef.current += 1;
-        setSubmitting(true);
-        setSave({ kind: "clean" });
-      }}
-    >
+    <form ref={formRef} action={submitPost} onChange={markDirty} onSubmit={submit}>
       <input type="hidden" name="postId" value={postId} />
       <input type="hidden" name="version" value={version ?? ""} />
       <input type="hidden" name="tags" value={allTags.join(", ")} />
@@ -285,6 +314,7 @@ export function PostEditor({
               className={styles.status}
               data-state={save.kind}
               data-testid="save-state"
+              role={save.kind === "failed" ? "alert" : undefined}
             >
               {status}
             </span>
@@ -310,6 +340,7 @@ export function PostEditor({
             <button
               type="submit"
               formAction={unpublishPost}
+              data-action="unpublish"
               className={styles.button}
               disabled={locked || save.kind === "dirty" || save.kind === "failed"}
             >

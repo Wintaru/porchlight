@@ -6,6 +6,12 @@ export type AutosaveResult =
   | { readonly ok: true; readonly postId: string; readonly version: number }
   | { readonly ok: false; readonly error: string };
 
+// A Save or Publish with JS: a stored save redirects, so only a refusal comes back.
+export interface SaveRefusedResult {
+  readonly ok: false;
+  readonly error: string;
+}
+
 export type PreviewResult =
   { readonly ok: true; readonly bodyHtml: string } | { readonly ok: false };
 

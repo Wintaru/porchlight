@@ -116,9 +116,10 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   };
   return (
     <main>
-      {/* A Save or Unpublish redirects back to this same page, which keeps the editor
-          mounted: the key remounts it on every stored write, so its fields and version
-          start again from the post as saved. An autosave does not re-render. */}
+      {/* A Save or Unpublish redirects back to this page. A second redirect to the same
+          address keeps the editor mounted: the key remounts it on every stored write,
+          so its fields and version start again from the post as saved. An autosave
+          does not re-render. */}
       <PostEditor
         key={post.version}
         heading={post.title === "" ? "Edit post" : post.title}

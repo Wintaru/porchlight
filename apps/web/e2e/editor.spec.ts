@@ -235,6 +235,42 @@ test("after a Save and an Unpublish the editor shows the post as saved", async (
   await deleteCurrentPost(page);
 });
 
+// #104: a Save the server refuses comes back with its error. The page keeps what was
+// typed, and Save works again once the problem is fixed.
+test("after a refused Save the editor can save again", async ({ page }) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  const stamp = Date.now().toString(36);
+  const title = `Refused once ${stamp}`;
+  await page.getByLabel("Title").fill(title);
+  await page.getByLabel(/^Unlisted/).check();
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page).toHaveURL(new RegExp(`/@theo/refused-once-${stamp}$`));
+  await page.getByTestId("post-edit").click();
+
+  // The field's own limit stops a person; the server's check is what this exercises.
+  const summary = page.getByLabel("Summary");
+  await summary.evaluate((input) => {
+    input.removeAttribute("maxlength");
+  });
+  await summary.fill("x".repeat(201));
+  const save = page.getByRole("button", { name: "Save", exact: true });
+  await page.getByLabel("Title").fill(`${title} edited`);
+  await save.click();
+  await expect(page.getByTestId("save-state")).toHaveText(/A summary is at most 200/);
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]+$/);
+  await expect(summary).toHaveValue("x".repeat(201));
+  await expect(page.getByLabel("Title")).toHaveValue(`${title} edited`);
+  await expect(save).toBeEnabled();
+
+  await summary.fill("Short now.");
+  await save.click();
+  await expect(page.getByTestId("form-status")).toHaveText("Saved.");
+  await expect(summary).toHaveValue("Short now.");
+  await expect(page.getByLabel("Title")).toHaveValue(`${title} edited`);
+  await deleteCurrentPost(page);
+});
+
 // #66: the editor opens only for someone who may edit the post. June may read Theo's
 // published post on its own page, but not open it here.
 test("another member's published post does not open in the editor", async ({ page }) => {

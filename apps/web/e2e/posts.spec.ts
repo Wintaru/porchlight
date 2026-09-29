@@ -197,7 +197,8 @@ test("the editor refuses a blank title and saves a draft that only its author se
     input.removeAttribute("required");
   });
   await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByTestId("form-error")).toHaveText("A post needs a title.");
+  await expect(page.getByTestId("save-state")).toHaveText("A post needs a title.");
+  await expect(page.getByLabel("Body (markdown)")).toHaveValue("no title");
 
   const stamp = Date.now().toString(36);
   const title = `Half done ${stamp}`;

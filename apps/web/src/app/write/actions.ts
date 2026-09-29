@@ -34,7 +34,12 @@ import { isEntityId } from "@/lib/entity-id";
 import { pruneDeletedPostUploads, pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { currentRequestMeta } from "@/lib/request-meta";
 import { returnPathOf } from "@/lib/return-path";
-import type { AutosaveResult, CheckResult, PreviewResult } from "./editor-results";
+import type {
+  AutosaveResult,
+  CheckResult,
+  PreviewResult,
+  SaveRefusedResult,
+} from "./editor-results";
 import { parseIntent, parsePostForm } from "./parse-post-form";
 
 // The editor's Server Functions. The Manager owns every rule (who may write, what a
@@ -45,16 +50,35 @@ import { parseIntent, parsePostForm } from "./parse-post-form";
 // create the draft under the new-post page, after which the page's own buttons carry
 // the id and must update, not create again. A button press sends no version: it is the
 // person's last word, and it is how they keep their text after a conflict (#100).
+// This is the form's own action, for a browser without JS: a refusal redirects back
+// with its code.
 export async function submitPost(formData: FormData): Promise<void> {
+  const refused = await saveFromForm(formData);
+  redirect(`${refused.returnTo}?error=${refused.error}`);
+}
+
+// The editor's Save and Publish with JS. A refusal comes back to the page instead: a
+// redirect to the same page with new search params remounts the editor, which would
+// drop what the author typed and wants to fix (#104).
+export async function savePost(formData: FormData): Promise<SaveRefusedResult> {
+  const refused = await saveFromForm(formData);
+  return { ok: false, error: refused.error };
+}
+
+// A stored save always redirects (to the editor, the post, or the queue note); only a
+// refusal returns.
+async function saveFromForm(
+  formData: FormData,
+): Promise<{ readonly returnTo: string; readonly error: string }> {
   const postId = optionalIdOf(formData);
   if (postId === INVALID_ID) {
-    redirect("/write?error=unavailable");
+    return { returnTo: "/write", error: "unavailable" };
   }
   const returnTo = postId === undefined ? "/write" : `/write/${postId}`;
   const actor = await requireMember(returnTo);
   const parsed = parsePostForm(formData);
   if (!parsed.ok) {
-    redirect(`${returnTo}?error=${parsed.error}`);
+    return { returnTo, error: parsed.error };
   }
   // A save that turns a private post public is a publish (D27), so it carries the
   // request's origin for the evidence row, as Publish does.
@@ -65,7 +89,7 @@ export async function submitPost(formData: FormData): Promise<void> {
       : new UpdateDraftRequest(actor, postId, parsed.draft, undefined, undefined, origin),
   );
   if (!(response instanceof PostResponse)) {
-    redirect(`${returnTo}?error=${errorCode(response)}`);
+    return { returnTo, error: errorCode(response) };
   }
   await pruneSavedPostUploads(actor, response.post);
   if (parseIntent(formData) === "publish") {
