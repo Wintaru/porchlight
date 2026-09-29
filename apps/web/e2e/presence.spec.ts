@@ -244,8 +244,18 @@ test.describe("presence", () => {
       await expect(theoHome.getByTestId("online-now")).not.toContainText("@mira");
       await expect(theoHome.getByTestId("online-now")).toContainText("@june");
 
-      // The channel is live: June, as herself, does show.
+      // The channel is live: June, as herself, does show. Her page reports itself once
+      // it hydrates. Keys typed before that never reach its presence code, and a cold
+      // CI runner is slow enough for the test to type first.
+      const reported = june.page.waitForResponse(
+        (response) =>
+          response.ok() &&
+          response.url().endsWith("/api/presence") &&
+          (response.request().postData() ?? "").includes(`presence:post:${POST_ID}`),
+        { timeout: 15_000 },
+      );
       await june.page.goto(POST);
+      await reported;
       await june.page
         .getByTestId("comment-form")
         .getByLabel("Your comment")
