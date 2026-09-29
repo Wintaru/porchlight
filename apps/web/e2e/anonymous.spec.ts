@@ -30,8 +30,9 @@ test("a visitor posts anonymously, checks its status, claims it after signing in
     "Waiting for approval",
   );
   await expect(item).toContainText("0 replies");
-  const anonymousUrl = await item.getByTestId("anonymous-item-link").getAttribute("href");
-  expect(anonymousUrl).toMatch(/^\/p\//);
+  // Nothing to open while it waits: /p/slug answers 404 until approval (#110).
+  await expect(item.getByTestId("anonymous-item-link")).toHaveCount(0);
+  const anonymousUrl = `/p/anonymous-post-${stamp}`;
 
   // Sign in, then come back to the same cookie's status page and claim it.
   await devSignIn(page, THEO);
@@ -42,7 +43,7 @@ test("a visitor posts anonymously, checks its status, claims it after signing in
   );
 
   // The old URL now redirects to the claiming member's own post page.
-  await page.goto(anonymousUrl ?? "/p/not-a-real-slug");
+  await page.goto(anonymousUrl);
   await expect(page).toHaveURL(new RegExp(`/@${THEO.handle}/`));
   await expect(page.getByTestId("post-status-note")).toContainText(
     "Waiting for approval",
@@ -73,12 +74,6 @@ test("links in an anonymous post stay inert until a moderator approves it", asyn
     );
   await page.getByRole("button", { name: "Post anonymously" }).click();
   await expect(page).toHaveURL(/\/anon$/);
-  const anonymousUrl =
-    (await page
-      .getByTestId("anonymous-item")
-      .filter({ hasText: title })
-      .getByTestId("anonymous-item-link")
-      .getAttribute("href")) ?? "";
 
   const mira = await browser.newPage();
   await devSignIn(mira, MIRA);
@@ -91,7 +86,14 @@ test("links in an anonymous post stay inert until a moderator approves it", asyn
   await item.getByTestId("queue-approve").click();
   await expect(mira.getByTestId("queue-status")).toHaveText("Approved.");
 
-  // Approved, it reads as written: a real link and a real image.
+  // Approved, it has a page to open, and reads as written: a real link and an image.
+  await page.goto("/anon");
+  const anonymousUrl =
+    (await page
+      .getByTestId("anonymous-item")
+      .filter({ hasText: title })
+      .getByTestId("anonymous-item-link")
+      .getAttribute("href")) ?? "";
   await page.goto(anonymousUrl);
   const published = page.getByTestId("post-body");
   await expect(published.getByRole("link", { name: "my plans" })).toHaveAttribute(

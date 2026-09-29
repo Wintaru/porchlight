@@ -14,6 +14,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { claimAnonymousPosts } from "./actions";
 import styles from "./anon.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 interface AnonymousStatusPageProps {
   readonly searchParams: Promise<{ readonly code?: string; readonly claim?: string }>;
@@ -38,6 +39,10 @@ const STATUS_TEXT = {
   visible: "Published",
   tombstone: "Deleted",
 } satisfies Record<PostStatus | CommentStatus, string>;
+
+export function generateMetadata() {
+  return pageTitle("Your anonymous posts");
+}
 
 // The status page a cookie or a claim code is worth (SPEC.md §4, D13): everything one
 // anonymous author wrote, where it stands, and — once signed in — a way to claim it.
@@ -141,15 +146,23 @@ export default async function AnonymousStatusPage({
               <span className="chip" data-testid="anonymous-item-status">
                 {STATUS_TEXT[item.status]}
               </span>
-              <Link href={itemHref(item)} data-testid="anonymous-item-link">
-                view
-              </Link>
+              {isReadable(item) && (
+                <Link href={itemHref(item)} data-testid="anonymous-item-link">
+                  view
+                </Link>
+              )}
             </li>
           ))}
         </ul>
       )}
     </SimplePage>
   );
+}
+
+// Only an approved item has a page to open: a pending, rejected or removed one would
+// land on a 404 or a missing anchor (#110).
+function isReadable(item: AnonymousStatusItem): boolean {
+  return item.status === "published" || item.status === "visible";
 }
 
 function itemHref(item: AnonymousStatusItem): string {
