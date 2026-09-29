@@ -14,7 +14,7 @@ import { ClassifyVideoRequest } from "../Accessors/ImageClassifierAccessor/Reque
 import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { HandlerResolverBuilder } from "../Common/HandlerResolverBuilder";
 import type { Environment } from "./Environment";
-import { assertFakeAllowedHere } from "./readStoreProvider";
+import { assertFakeAllowedHere, isFakeAllowedHere } from "./readStoreProvider";
 
 const IMAGE_CLASSIFIER_PROVIDERS = ["fake", "hive", "sightengine"] as const;
 type ImageClassifierProvider = (typeof IMAGE_CLASSIFIER_PROVIDERS)[number];
@@ -80,7 +80,12 @@ export function createImageClassifierAccessor(
         ClassifyImageRequest,
         new SightengineClassifyImageHandler(apiUser, apiSecret),
       )
-      .register(ClassifyVideoRequest, new UnsupportedClassifyVideoHandler(provider))
+      .register(
+        ClassifyVideoRequest,
+        videoClassifierMode(env) === "fake"
+          ? new FakeClassifyVideoHandler(new FakeImageClassifierState("clear"))
+          : new UnsupportedClassifyVideoHandler(provider),
+      )
       .build(),
   );
 }
@@ -98,6 +103,24 @@ export function imageClassifierDutyStatus(env: Environment): DutyChecklistItem {
         : env.NODE_ENV === "production"
           ? "fakeInProduction"
           : "fake",
+    setupGuidePath: "docs/setup/classifiers.md",
+  };
+}
+
+// No real provider scans video yet. Where fakes may run, a video gets the fake's
+// "clear" (hash matching still runs); elsewhere every video upload is refused. The
+// factory and the duty row both read this, so a real video scan changes both.
+function videoClassifierMode(env: Environment): "fake" | "unsupported" {
+  return isFakeAllowedHere(env) ? "fake" : "unsupported";
+}
+
+export function videoClassifierDutyStatus(env: Environment): DutyChecklistItem {
+  const notActive =
+    videoClassifierMode(env) === "unsupported" || env.NODE_ENV === "production";
+  return {
+    id: "video-classifier",
+    label: "Video classifier (the image classifier's checks, for video)",
+    status: notActive ? "fakeInProduction" : "fake",
     setupGuidePath: "docs/setup/classifiers.md",
   };
 }

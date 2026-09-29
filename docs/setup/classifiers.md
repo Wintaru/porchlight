@@ -36,9 +36,12 @@ in the deployment's environment.
 
 1. For an image attachment, `ImageClassifierAccessor.load` answers a severity score
    and a separate minors signal. A video goes by a signed link. The Sightengine video
-   scan is not built yet, so with `IMAGE_CLASSIFIER_PROVIDER=sightengine` every video
-   upload fails with "try again": no video goes up unscanned. The fake answers for a
-   video the same as for an image.
+   scan is not built yet. With `IMAGE_CLASSIFIER_PROVIDER=sightengine`, every video
+   upload fails with "try again", unless `ALLOW_FAKE_PROVIDERS=1` is set. With that
+   switch, the fake answers "clear" for video, hash matching still runs, and the admin
+   checklist shows the video classifier as not yet active. With
+   `IMAGE_CLASSIFIER_PROVIDER=fake`, the fake answers for a video the same as for an
+   image.
 2. `ModerationPolicyEngine` compares the score against `site_config.moderation_thresholds`
    (defaults: flag at 0.5, lock at 0.9 — an admin may only lower these, never raise
    them, once #12 builds the editor). A minors signal always locks, regardless of the

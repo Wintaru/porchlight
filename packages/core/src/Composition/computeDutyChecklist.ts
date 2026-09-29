@@ -1,6 +1,9 @@
 import type { DutyChecklistItem } from "../Common/DutyChecklistItem";
 import { hashMatchDutyStatus } from "./createHashMatchAccessor";
-import { imageClassifierDutyStatus } from "./createImageClassifierAccessor";
+import {
+  imageClassifierDutyStatus,
+  videoClassifierDutyStatus,
+} from "./createImageClassifierAccessor";
 import { mediaStorageDutyStatus } from "./createMediaStorageAccessor";
 import { turnstileDutyStatus } from "./createTurnstileAccessor";
 import type { Environment } from "./Environment";
@@ -12,6 +15,7 @@ export function computeDutyChecklist(env: Environment): readonly DutyChecklistIt
   return [
     hashMatchDutyStatus(env),
     imageClassifierDutyStatus(env),
+    videoClassifierDutyStatus(env),
     turnstileDutyStatus(env),
     mediaStorageDutyStatus(env),
   ];
