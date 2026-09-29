@@ -45,6 +45,7 @@ import { pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
+import { draftSummary } from "./draft-summary";
 import { MCP_INSTRUCTIONS } from "./instructions";
 import { listenRefusal } from "./listen-refusal";
 import {
@@ -400,7 +401,7 @@ function registerTools(
           {
             title: input.title,
             bodyMd: input.body_md,
-            summary: input.summary ?? null,
+            summary: draftSummary(input.summary ?? null),
             tags: input.tags ?? [],
             visibility: input.visibility ?? "public",
             commentsEnabled: input.comments_enabled ?? true,
@@ -438,7 +439,9 @@ function registerTools(
         new UpdateDraftRequest(actor, id, {
           ...(input.title === undefined ? {} : { title: input.title }),
           ...(input.body_md === undefined ? {} : { bodyMd: input.body_md }),
-          ...(input.summary === undefined ? {} : { summary: input.summary }),
+          ...(input.summary === undefined
+            ? {}
+            : { summary: draftSummary(input.summary) }),
           ...(input.tags === undefined ? {} : { tags: input.tags }),
           ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
           ...(input.comments_enabled === undefined
