@@ -729,7 +729,10 @@ export type Database = {
           body_html: string
           body_md: string
           comments_enabled: boolean
+          cover_focus_x: number
+          cover_focus_y: number
           cover_media_id: string | null
+          cover_zoom: number
           created_at: string
           excerpt: string | null
           id: string
@@ -754,7 +757,10 @@ export type Database = {
           body_html?: string
           body_md?: string
           comments_enabled?: boolean
+          cover_focus_x?: number
+          cover_focus_y?: number
           cover_media_id?: string | null
+          cover_zoom?: number
           created_at?: string
           excerpt?: string | null
           id?: string
@@ -779,7 +785,10 @@ export type Database = {
           body_html?: string
           body_md?: string
           comments_enabled?: boolean
+          cover_focus_x?: number
+          cover_focus_y?: number
           cover_media_id?: string | null
+          cover_zoom?: number
           created_at?: string
           excerpt?: string | null
           id?: string

@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import type { Sql, TransactionSql } from "postgres";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { COVER_ZOOM_MAX } from "../../core/src/Common/CoverFrame";
 import { HANDLE_PATTERN } from "../../core/src/Common/HandleShape";
 import { SLUG_PATTERN } from "../../core/src/Common/SlugShape";
 import { STAFF_ROLES } from "../../core/src/Common/UserRole";
@@ -83,6 +84,13 @@ describe("length limits", () => {
 
   test("a voice guide is capped where the profiles CHECK caps it", async () => {
     expect(await maxLengthOf("profiles_voice_guide_length")).toBe(VOICE_GUIDE_MAX_LENGTH);
+  });
+
+  test("a cover zoom is capped where the posts CHECK caps it", async () => {
+    const match = /cover_zoom <= \(?([\d.]+)\)?/.exec(
+      await checkOf("posts_cover_zoom_range"),
+    );
+    expect(Number(match?.[1])).toBe(COVER_ZOOM_MAX);
   });
 
   test("the trigger keeps as many voice guide revisions as the fake store", async () => {
