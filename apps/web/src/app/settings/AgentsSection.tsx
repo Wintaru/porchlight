@@ -99,6 +99,7 @@ export async function AgentsSection({
                     type="submit"
                     className="pill-button"
                     data-testid="token-revoke"
+                    aria-label={`Revoke ${token.name}`}
                   >
                     Revoke
                   </button>

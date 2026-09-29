@@ -37,7 +37,8 @@ test("a member mints a token, sees it once, and revokes it", async ({ page }) =>
   await expect(row).toContainText("expires");
   await expect(page.getByText(rawToken)).toHaveCount(0);
 
-  await row.getByTestId("token-revoke").click();
+  // Each Revoke names its token, so a list of them reads apart (#116).
+  await page.getByRole("button", { name: `Revoke Laptop ${stamp}` }).click();
   await expect(page).toHaveURL(/\/settings\?agentRevoked=1$/);
   await expect(page.getByTestId("agent-status")).toHaveText("Token revoked.");
   const revoked = page.getByTestId("token-row").filter({ hasText: `Laptop ${stamp}` });
