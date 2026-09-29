@@ -42,7 +42,7 @@ export function OnlineNow({ selfId, visible, hiddenIds }: OnlineNowProps) {
       <ul className={styles.avatars}>
         {shown.map((member) => (
           <li key={member.id} data-testid="online-member" title={`@${member.handle}`}>
-            <Avatar src={member.avatarUrl} name={`@${member.handle}`} size={32} />
+            <Avatar src={member.avatarUrl} name={member.handle} size={32} />
             <span className="visually-hidden">@{member.handle}</span>
           </li>
         ))}

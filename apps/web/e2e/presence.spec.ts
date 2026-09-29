@@ -109,6 +109,8 @@ test.describe("presence", () => {
       await june.page.goto("/");
       const online = theo.page.getByTestId("online-member");
       await expect(online).toHaveCount(2, { timeout: 10_000 });
+      // Each avatar shows the member's initial (#112).
+      await expect(online.locator(".avatar")).toHaveText(["J", "T"]);
       await expect(june.page.getByTestId("online-member")).toHaveCount(2, {
         timeout: 10_000,
       });
