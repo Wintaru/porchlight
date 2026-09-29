@@ -1,16 +1,14 @@
 "use client";
 
 import { NOTIFICATION_SENTENCES } from "@porchlight/core/client";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
-import {
-  markAllNotificationsRead,
-  markNotificationRead,
-} from "@/app/notification-actions";
+import { markAllNotificationsRead, openNotification } from "@/app/notification-actions";
 import { useDropdown } from "@/components/header/use-dropdown";
 import { classNames } from "@/lib/class-names";
 import { getBrowserDbClient } from "@/read-model/browser-client";
-import type { NotificationRow } from "@/read-model/notifications";
+import { loadNoticePostTitle, type NotificationRow } from "@/read-model/notifications";
 
 import styles from "../header/header.module.css";
 
@@ -25,7 +23,8 @@ interface NotificationBellProps {
 // `reply.created` row an approval writes, most notably.
 export function NotificationBell({ recipientId, initial }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<readonly NotificationRow[]>(initial);
-  const { open, toggle, rootRef, triggerRef } = useDropdown();
+  const { open: isOpen, toggle, rootRef, triggerRef } = useDropdown();
+  const router = useRouter();
   const panelId = useId();
 
   useEffect(() => {
@@ -58,6 +57,15 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
           (payload) => {
             const row = payload.new as NotificationRow;
             setNotifications((current) => [row, ...current]);
+            if (row.post_id !== null) {
+              void loadNoticePostTitle(db, row.post_id).then((title) => {
+                if (title !== null) {
+                  setNotifications((current) =>
+                    current.map((n) => (n.id === row.id ? { ...n, post: { title } } : n)),
+                  );
+                }
+              });
+            }
           },
         )
         .subscribe();
@@ -71,11 +79,14 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
 
   const unreadCount = notifications.filter((n) => n.read_at === null).length;
 
-  async function markOne(id: string): Promise<void> {
+  async function open(id: string): Promise<void> {
     setNotifications((current) =>
       current.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
     );
-    await markNotificationRead(id);
+    const destination = await openNotification(id);
+    if (destination !== null) {
+      router.push(destination);
+    }
   }
 
   async function markAll(): Promise<void> {
@@ -93,7 +104,7 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
         type="button"
         className={styles.menuButton}
         data-testid="notification-bell"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         aria-controls={panelId}
         onClick={toggle}
       >
@@ -112,7 +123,7 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
         id={panelId}
         className={styles.panel}
         aria-label="Notifications"
-        hidden={!open}
+        hidden={!isOpen}
       >
         <p className={styles.panelTitle}>
           Notifications
@@ -143,10 +154,10 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
                   data-kind={notification.kind}
                   data-read={notification.read_at !== null}
                   onClick={() => {
-                    void markOne(notification.id);
+                    void open(notification.id);
                   }}
                 >
-                  {NOTIFICATION_SENTENCES[notification.kind]}
+                  {noticeText(notification)}
                 </button>
               </li>
             ))}
@@ -155,6 +166,18 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
       </section>
     </div>
   );
+}
+
+// The kind's sentence, the post's title when the bell could read it, and a moderator's
+// reason when there is one (#109).
+function noticeText(notification: NotificationRow): string {
+  const sentence = NOTIFICATION_SENTENCES[notification.kind];
+  const title = notification.post?.title;
+  const reason = notification.payload.reason;
+  return [
+    title === undefined ? sentence : `${sentence}: "${title}"`,
+    typeof reason === "string" && reason !== "" ? ` Reason: ${reason}` : "",
+  ].join("");
 }
 
 function BellIcon() {

@@ -99,13 +99,15 @@ test("a pending reply does not light the bell; approving it does, without a relo
   // Approve wrote landed through the open subscription, not a fresh page load.
   await expect(author.getByTestId("notification-unread-count")).toHaveText("(1)");
   const notice = author.getByTestId("notification-item");
-  await expect(notice).toHaveText("Someone replied to your comment");
+  // A live notice names its post too, once the bell has read the title (#109).
+  await expect(notice).toHaveText(`Someone replied to your comment: "${title}"`);
   await expect(notice).toHaveAttribute("data-kind", "reply.created");
   await expect(notice).toHaveAttribute("data-read", "false");
 
-  // Clicking it marks it read, still with no reload.
+  // Clicking it marks it read and opens the reply (#109).
   await notice.click();
-  await expect(notice).toHaveAttribute("data-read", "true");
+  await expect(author).toHaveURL(/#comment-[0-9a-f-]+$/);
+  await expect(author.getByTestId("notification-unread-count")).toHaveCount(0);
 
   await author.goto(`/write/${postId}`);
   await deleteCurrentPost(author);
@@ -210,4 +212,43 @@ test("a member can join their own bell's channel, and not another member's", asy
   );
   expect(joins.own).toBe("SUBSCRIBED");
   expect(joins.theirs).toBe("CHANNEL_ERROR");
+});
+
+// #109: a rejection names the post and gives the moderator's reason, and the notice
+// opens the author's editor, which shows the rejection.
+test("a rejection notice names the post, gives the reason and opens it", async ({
+  browser,
+}) => {
+  const author = await browser.newPage();
+  await devSignIn(author, JUNE);
+  const stamp = Date.now().toString(36);
+  const title = `Turned back ${stamp}`;
+  await author.goto("/write");
+  await author.getByLabel("Title").fill(title);
+  await fillBodyMarkdown(author, "Waiting for a moderator.");
+  await author.getByRole("button", { name: "Publish" }).click();
+  await expect(author).toHaveURL(/\/write\/[0-9a-f-]+\?saved=pending$/);
+  const editor = new URL(author.url()).pathname;
+
+  const mod = await browser.newPage();
+  await devSignIn(mod, MIRA);
+  await mod.goto("/mod/queue?filter=probation");
+  const item = mod.getByTestId("queue-item").filter({ hasText: title });
+  await item.getByLabel(/^Reason/).fill(`Off topic ${stamp}`);
+  await item.getByTestId("queue-reject").click();
+  await expect(mod).toHaveURL(/done=rejected$/);
+  await mod.close();
+
+  await author.goto("/");
+  await author.getByTestId("notification-bell").click();
+  const notice = author
+    .getByTestId("notification-item")
+    .filter({ hasText: `Off topic ${stamp}` });
+  await expect(notice).toHaveText(
+    `Your post or comment was rejected: "${title}" Reason: Off topic ${stamp}`,
+  );
+  await notice.click();
+  await expect(author).toHaveURL(new RegExp(`${editor}$`));
+  await deleteCurrentPost(author);
+  await author.close();
 });
