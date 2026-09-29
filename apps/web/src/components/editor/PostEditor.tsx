@@ -58,6 +58,7 @@ export type EditorPost = Pick<
 
 interface PostEditorProps {
   readonly post?: EditorPost;
+  readonly knownTags: readonly string[];
   readonly canPublish: boolean;
   readonly canUnpublish?: boolean;
   readonly trustLevel: TrustLevel;
@@ -81,6 +82,7 @@ type SaveState =
 // published post edits it live, and that is a choice a person makes with the button.
 export function PostEditor({
   post,
+  knownTags,
   canPublish,
   canUnpublish = false,
   trustLevel,
@@ -407,6 +409,7 @@ export function PostEditor({
           </label>
           <TagInput
             tags={tags}
+            knownTags={knownTags}
             max={TAGS_MAX_COUNT - (mature ? 1 : 0)}
             onChange={(next) => {
               setTags(next);

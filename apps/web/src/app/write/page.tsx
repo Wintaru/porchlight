@@ -7,6 +7,7 @@ import {
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { createSessionClient } from "@/auth/session-client";
 import { PostEditor } from "@/components/editor/PostEditor";
 import styles from "@/components/editor/editor.module.css";
 import { Toast } from "@/components/toast/Toast";
@@ -17,6 +18,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { errorTextFor } from "./post-form-messages";
 import { PrivateChip } from "@/components/PrivateChip";
 import { pageTitle } from "@/lib/page-title";
+import { loadSuggestedTagNames } from "@/read-model/tag";
 
 interface WritePageProps {
   readonly searchParams: Promise<{ readonly error?: string; readonly deleted?: string }>;
@@ -45,11 +47,12 @@ export default async function WritePage({ searchParams }: WritePageProps) {
   const { postManager } = getDependencyContainer();
   // The header already asked `canPost` this request; the second query runs only to
   // name the reason when the answer was no.
-  const [refusal, listed] = await Promise.all([
+  const [refusal, listed, knownTags] = await Promise.all([
     (await canPost(actor))
       ? undefined
       : postManager.query(new CheckCanPostRequest(actor)),
     postManager.query(new ListPostsForAuthorRequest(actor, actor.profile.id)),
+    loadSuggestedTagNames(await createSessionClient()),
   ]);
   const { error, deleted } = await searchParams;
   const errorText = errorTextFor(error);
@@ -74,6 +77,7 @@ export default async function WritePage({ searchParams }: WritePageProps) {
       {refusal === undefined ? (
         <PostEditor
           heading="New post"
+          knownTags={knownTags}
           canPublish
           trustLevel={actor.profile.trustLevel}
           notices={notices}

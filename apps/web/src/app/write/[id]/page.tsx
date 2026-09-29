@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { createSessionClient } from "@/auth/session-client";
 import { type EditorPost, PostEditor } from "@/components/editor/PostEditor";
 import styles from "@/components/editor/editor.module.css";
 import { Toast } from "@/components/toast/Toast";
@@ -21,6 +22,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
 import { PrivateChip } from "@/components/PrivateChip";
 import { pageTitle } from "@/lib/page-title";
+import { loadSuggestedTagNames } from "@/read-model/tag";
 
 interface EditPageProps {
   readonly params: Promise<{ readonly id: string }>;
@@ -67,7 +69,10 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   const { error, saved } = await searchParams;
   const errorText = errorTextFor(error);
   const savedText = savedTextFor(saved);
-  const authorHandle = await handleOfAuthor(post, actor);
+  const [authorHandle, knownTags] = await Promise.all([
+    handleOfAuthor(post, actor),
+    loadSuggestedTagNames(await createSessionClient()),
+  ]);
   const notices = (
     <>
       <p data-testid="post-status">
@@ -130,6 +135,7 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
         key={post.version}
         heading={post.title === "" ? "Edit post" : post.title}
         post={editable}
+        knownTags={knownTags}
         canPublish={post.status === "draft"}
         canUnpublish={post.status === "published" || post.status === "pending"}
         trustLevel={actor.profile.trustLevel}

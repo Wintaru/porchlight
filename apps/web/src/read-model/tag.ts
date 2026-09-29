@@ -1,3 +1,4 @@
+import { MATURE_TAG } from "@porchlight/core/client";
 import type { DbClient } from "@porchlight/db";
 
 import {
@@ -55,6 +56,13 @@ export async function loadAllTags(db: DbClient): Promise<readonly TagPage[]> {
     throw new Error(`all tags: ${error.message}`);
   }
   return data.map(toTagPage);
+}
+
+// The editor's suggestions as a member types a tag: public names only, so a draft's new
+// tag is never offered to anyone else. The content note has its own checkbox.
+export async function loadSuggestedTagNames(db: DbClient): Promise<readonly string[]> {
+  const tags = await loadAllTags(db);
+  return tags.filter((tag) => tag.slug !== MATURE_TAG).map((tag) => tag.name);
 }
 
 // Undefined for a tag no public post carries, so /t/<slug> and its feed are a 404.

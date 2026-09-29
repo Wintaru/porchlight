@@ -163,6 +163,48 @@ test("a pause saves the draft on its own, with the tags and the content note", a
   await deleteCurrentPost(page);
 });
 
+test("typing a tag offers the site's public tags that match", async ({ page }) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  const box = page.getByLabel("Add a tag");
+  const options = page
+    .getByRole("listbox", { name: "Matching tags" })
+    .getByRole("option");
+
+  // "Making" is on a public post. "Mature" is the content note, never a suggestion.
+  await box.fill("ma");
+  await expect(options).toHaveText(["Making"]);
+  await box.press("ArrowDown");
+  await expect(options.first()).toHaveAttribute("aria-selected", "true");
+  await box.press("Enter");
+  await expect(page.getByTestId("tag-chip")).toHaveText(["Making"]);
+  await expect(box).toHaveValue("");
+  await expect(options).toHaveCount(0);
+
+  // Escape closes the list and keeps the text. A click picks one too, and a tag the
+  // post has is not offered again.
+  await box.fill("porch");
+  await expect(options).toHaveText(["Porch talk"]);
+  await box.press("Escape");
+  await expect(options).toHaveCount(0);
+  await expect(box).toHaveValue("porch");
+  await box.fill("porc");
+  await options.filter({ hasText: "Porch talk" }).click();
+  await expect(page.getByTestId("tag-chip")).toHaveText(["Making", "Porch talk"]);
+  await box.fill("ma");
+  await expect(options).toHaveCount(0);
+
+  // Enter with nothing highlighted adds the text as typed.
+  await box.fill("xyz-no-such-tag");
+  await expect(options).toHaveCount(0);
+  await box.press("Enter");
+  await expect(page.getByTestId("tag-chip")).toHaveText([
+    "Making",
+    "Porch talk",
+    "xyz-no-such-tag",
+  ]);
+});
+
 test("an untouched body is saved as it was loaded, and a published post does not autosave", async ({
   page,
 }) => {
