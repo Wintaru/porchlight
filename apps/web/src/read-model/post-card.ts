@@ -1,5 +1,7 @@
 import type { DbClient, Enums } from "@porchlight/db";
 
+import { carriesMatureTag } from "@porchlight/core/client";
+
 // The shape every list on the site shows for one post: the feed, an author's page, a
 // tag page. Names its columns (never `select *`, the grants are column lists) and the
 // three embeds: the author through the posts→profiles key, the tags through post_tags,
@@ -40,12 +42,14 @@ export interface PostCard {
 }
 
 // The one line a card, a share preview or a feed item shows: the author's summary, else
-// the body's first sentence (D18), which the database keeps in `excerpt`.
+// the body's first sentence (D18), which the database keeps in `excerpt`. A mature post
+// shows none, since its text is blurred until the reader asks (#117).
 export function summaryLine(post: {
   readonly summary: string | null;
   readonly excerpt: string | null;
+  readonly post_tags: readonly { readonly tag: { readonly slug: string } | null }[];
 }): string | null {
-  return post.summary ?? post.excerpt;
+  return carriesMatureTag(post.post_tags) ? null : (post.summary ?? post.excerpt);
 }
 
 // How many cards one list shows. Paging arrives with #16's feed board.

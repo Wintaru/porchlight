@@ -1,4 +1,5 @@
 import type { AgentDisclosure } from "@porchlight/core";
+import { carriesMatureTag } from "@porchlight/core/client";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -18,6 +19,7 @@ import type { PostPage } from "@/read-model/post-page";
 import type { ItemReactions } from "@/read-model/reactions";
 
 import { AuthorMenu } from "./AuthorMenu";
+import { MatureReveal } from "./MatureReveal";
 import styles from "./post.module.css";
 
 interface PostArticleProps {
@@ -36,7 +38,8 @@ interface PostArticleProps {
 
 // The Post board's article, the same for a member's post and an anonymous one: tags
 // over the title, the byline with Share, the cover, the body, the reaction row. A cover
-// shows only once it has a published copy (#36), blurred behind a click when mature.
+// shows only once it has a published copy (#36), blurred behind a click when mature;
+// a post with the mature tag is blurred whole, cover and body, behind one click (#117).
 export function PostArticle({
   post,
   note,
@@ -85,12 +88,18 @@ export function PostArticle({
           </div>
         </div>
       </header>
-      <Cover post={post} />
-      <div
-        className={`prose ${styles.body ?? ""}`}
-        data-testid="post-body"
-        dangerouslySetInnerHTML={{ __html: post.body_html }}
-      />
+      {carriesMatureTag(post.post_tags) ? (
+        // One click reveals the whole post, so its cover needs no click of its own.
+        <MatureReveal id={post.id}>
+          <Cover post={post} insideReveal />
+          <Body post={post} />
+        </MatureReveal>
+      ) : (
+        <>
+          <Cover post={post} insideReveal={false} />
+          <Body post={post} />
+        </>
+      )}
       {agentLine !== undefined && (
         <p className={styles.disclosure} data-testid="agent-disclosure">
           {agentLine}
@@ -163,7 +172,13 @@ function agentLineFor(post: PostPage): string | undefined {
     : `Drafted with an assistant, edited by ${handle}`;
 }
 
-function Cover({ post }: { readonly post: PostPage }) {
+function Cover({
+  post,
+  insideReveal,
+}: {
+  readonly post: PostPage;
+  readonly insideReveal: boolean;
+}) {
   const cover = shownCover(post);
   if (cover === undefined) {
     return null;
@@ -171,13 +186,23 @@ function Cover({ post }: { readonly post: PostPage }) {
   const { src } = cover;
   return (
     <figure className={styles.cover} data-testid="post-cover">
-      {cover.mature ? (
+      {cover.mature && !insideReveal ? (
         <RevealImage id={post.id} src={src} alt="" mode="mature" />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image
         <img src={src} alt="" />
       )}
     </figure>
+  );
+}
+
+function Body({ post }: { readonly post: PostPage }) {
+  return (
+    <div
+      className={`prose ${styles.body ?? ""}`}
+      data-testid="post-body"
+      dangerouslySetInnerHTML={{ __html: post.body_html }}
+    />
   );
 }
 

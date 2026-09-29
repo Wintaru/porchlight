@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 import { createSessionClient } from "@/auth/session-client";
 import { parseHandleParam } from "@/lib/handle-param";
-import { publicMediaUrl } from "@/lib/media-url";
+import { shownCover } from "@/lib/post-cover";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadPostPreview } from "@/read-model/post-page";
 
@@ -16,8 +16,8 @@ interface ImageProps {
 
 // The preview card every post gets when pasted into Discord or another link-unfurling
 // client (SPEC.md §9, D18): the cover image with the title and author over it, or —
-// a mature cover always, and everything else until it has one — the branded card
-// alone. `cover.published_path` stays null for every post today: nothing yet writes it
+// for a mature cover or a mature post's cover always (#117), and everything else until
+// it has one — the branded card alone. `cover.published_path` stays null for every post today: nothing yet writes it
 // (#36 builds that pipeline), so this branch is exercised only by the seeded post that
 // carries one directly.
 export default async function Image({ params }: ImageProps) {
@@ -29,11 +29,8 @@ export default async function Image({ params }: ImageProps) {
       : loadPostPreview(await createSessionClient(), handle, slug),
     getSiteIdentity(),
   ]);
-  const cover = post?.cover;
-  const coverUrl =
-    cover?.published_path == null || cover.mature
-      ? undefined
-      : publicMediaUrl(cover.published_path);
+  const cover = post === undefined ? undefined : shownCover(post);
+  const coverUrl = cover === undefined || cover.mature ? undefined : cover.src;
 
   return new ImageResponse(
     <div

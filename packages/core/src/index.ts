@@ -28,6 +28,7 @@ export type { AnonymousSubmission } from "./Common/AnonymousSubmission";
 export type { RequestOrigin } from "./Common/RequestOrigin";
 export type { VoiceGuide } from "./Common/VoiceGuide";
 export type { VoiceSample } from "./Common/VoiceSample";
+export { carriesMatureTag, MATURE_TAG } from "./Common/MatureTag";
 export { POST_BODY_MAX_LENGTH } from "./Common/PostBody";
 export {
   DEFAULT_BANNED_PHRASES,

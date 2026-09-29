@@ -1,5 +1,6 @@
 import type { AnnouncedPost } from "../../../Common/AnnouncedPost";
 import type { IHandler } from "../../../Common/IHandler";
+import { MATURE_TAG } from "../../../Common/MatureTag";
 import type { FakePostState } from "../FakePostState";
 import type { LoadAnnouncedPostsRequest } from "../Requests/LoadAnnouncedPostsRequest";
 import { AnnouncedPostsLoadedResponse } from "../Responses/AnnouncedPostsLoadedResponse";
@@ -39,7 +40,7 @@ export class FakeLoadAnnouncedPostsHandler implements IHandler<
       posts.push({
         id: post.id,
         title: post.title,
-        summary: post.summary,
+        summary: post.tags.some((tag) => tag.slug === MATURE_TAG) ? null : post.summary,
         slug: post.slug,
         authorId,
         authorHandle: authorId,

@@ -11,7 +11,7 @@ import { commentFormStateFor } from "@/lib/can-comment";
 import { getAgentDisclosure } from "@/lib/agent-disclosure";
 import { getCurrentActor } from "@/lib/current-actor";
 import { parseHandleParam } from "@/lib/handle-param";
-import { publicMediaUrl } from "@/lib/media-url";
+import { shownCover } from "@/lib/post-cover";
 import { presenceFor } from "@/lib/presence";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
@@ -185,14 +185,14 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
 // SPEC.md §9's JSON-LD `Article`, one flavor for every post. `image` is the post's own
 // cover (SPEC.md §7) once one is publicly servable (#36) — never the branded card
 // `opengraph-image.tsx` falls back to, which is not this post's own artwork, and never
-// a mature cover, which D18 always keeps out of an unfurl.
+// a mature cover or a mature post's cover (#117), which D18 always keeps out of an unfurl.
 function articleJsonLd(
   post: PostPage,
   url: string,
   siteName: string,
 ): Record<string, unknown> {
-  const cover = post.cover;
-  const coverPath = cover != null && !cover.mature ? cover.published_path : null;
+  const cover = shownCover(post);
+  const coverUrl = cover === undefined || cover.mature ? undefined : cover.src;
   const description = summaryLine(post);
   return {
     "@context": "https://schema.org",
@@ -201,7 +201,7 @@ function articleJsonLd(
     url,
     ...(description !== null && { description }),
     ...(post.published_at !== null && { datePublished: post.published_at }),
-    ...(coverPath != null && { image: publicMediaUrl(coverPath) }),
+    ...(coverUrl !== undefined && { image: coverUrl }),
     ...(post.author !== null && {
       author: { "@type": "Person", name: post.author.display_name ?? post.author.handle },
     }),

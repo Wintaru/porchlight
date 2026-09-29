@@ -224,3 +224,68 @@ a.name:hover {
   font-size: 14px;
   font-style: italic;
 }
+
+/* See MatureReveal.tsx: the cover and body stay blurred and cut short until its
+   checkbox is checked. */
+.mature {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+}
+
+.matureToggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.matureLabel {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  max-width: calc(100% - 16px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 60%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+}
+
+.matureToggle:focus-visible + .matureLabel {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.matureContent {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-height: 320px;
+  overflow: hidden;
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
+
+.matureToggle:checked ~ .matureLabel {
+  display: none;
+}
+
+.matureToggle:checked ~ .matureContent {
+  max-height: none;
+  overflow: visible;
+  filter: none;
+  user-select: auto;
+  pointer-events: auto;
+  mask-image: none;
+}

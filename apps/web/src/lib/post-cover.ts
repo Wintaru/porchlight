@@ -1,4 +1,4 @@
-import { MATURE_TAG } from "@/lib/mature-tag";
+import { carriesMatureTag } from "@porchlight/core/client";
 import { publicMediaUrl } from "@/lib/media-url";
 
 interface CoverSource {
@@ -26,7 +26,6 @@ export function shownCover(post: CoverSource): ShownCover | undefined {
   }
   return {
     src: publicMediaUrl(path),
-    mature:
-      post.cover.mature || post.post_tags.some((link) => link.tag?.slug === MATURE_TAG),
+    mature: post.cover.mature || carriesMatureTag(post.post_tags),
   };
 }

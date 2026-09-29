@@ -209,7 +209,9 @@ goes as a JPEG of the same pixels.
 
 **Site policy.** No gore, no self-harm imagery, no pornography. Artistic nudity is allowed
 only when a moderator approves it with a mandatory `mature` tag. Mature items render
-blurred with click-to-reveal and use the branded preview card, never the image.
+blurred with click-to-reveal and use the branded preview card, never the image. A post
+with the `mature` content note is blurred whole, cover and body, behind one click, and
+no card, feed, digest or unfurl shows its summary (#117).
 
 **Evidence envelope.** Every post, comment and upload writes `submission_evidence`: an
 upload in the same transaction, a post or comment right after it is stored, and a post

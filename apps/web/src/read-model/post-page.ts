@@ -69,19 +69,20 @@ export async function loadPostPage(
 }
 
 const POST_PREVIEW_COLUMNS =
-  "slug, title, author:profiles!posts_author_id_fkey(handle), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "slug, title, author:profiles!posts_author_id_fkey(handle), post_tags(tag:tags(slug)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostPreview {
   readonly slug: string;
   readonly title: string;
   readonly author: { readonly handle: string } | null;
+  readonly post_tags: readonly { readonly tag: { readonly slug: string } | null }[];
   readonly cover: {
     readonly published_path: string | null;
     readonly mature: boolean;
   } | null;
 }
 
-// `opengraph-image.tsx`'s own read: title, author handle and cover, nothing else — a
+// `opengraph-image.tsx`'s own read: title, author handle, tags and cover, nothing else — a
 // crawler or an unfurling chat client fetches this route on its own, independently of
 // the HTML page, so it should not also pay for `body_html` and everything else
 // `PostPage` carries. Same handle check as `loadPostPage`.

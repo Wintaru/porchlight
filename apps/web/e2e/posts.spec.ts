@@ -245,3 +245,43 @@ test("a tag on a draft only shows nowhere a visitor can see", async ({
     .click();
   await deleteCurrentPost(page);
 });
+
+// #117: the content note blurs a post with no cover too. The text stays behind one
+// click on the post page, and no card or share preview shows its first sentence.
+test("a mature text-only post is blurred until the reader asks", async ({
+  page,
+  browser,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  const stamp = Date.now().toString(36);
+  const title = `Night swim ${stamp}`;
+  const firstSentence = `Cold water at midnight ${stamp}.`;
+  await fillPost(page, { title, body: `${firstSentence} More after that.` });
+  await page.getByLabel("Mark as mature (blurred until clicked)").check();
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page).toHaveURL(new RegExp(`/@theo/night-swim-${stamp}$`));
+
+  const visitor = await browser.newPage();
+  await visitor.goto(`/@theo/night-swim-${stamp}`);
+  const reveal = visitor.getByTestId("mature-reveal");
+  const blurred = reveal.getByTestId("mature-content");
+  await expect(blurred.getByTestId("post-body")).toContainText(firstSentence);
+  await expect(blurred).not.toHaveCSS("filter", "none");
+  // Hidden from a screen reader and from Tab too, not just from the eye.
+  await expect(blurred).toHaveAttribute("inert", "");
+  await expect(visitor.locator('meta[name="description"]')).toHaveCount(0);
+  await reveal.getByText("Mature content. Show post").click();
+  await expect(blurred).toHaveCSS("filter", "none");
+  await expect(blurred).not.toHaveAttribute("inert");
+
+  await visitor.goto("/");
+  const card = visitor.getByTestId("post-card").filter({ hasText: title });
+  await expect(card).toBeVisible();
+  await expect(card).not.toContainText(firstSentence);
+  await visitor.close();
+
+  await page.goto("/write");
+  await page.getByRole("link", { name: title }).click();
+  await deleteCurrentPost(page);
+});

@@ -1,6 +1,7 @@
 import type { DbClient } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
+import { carriesMatureTag } from "../../../Common/MatureTag";
 import type { LoadAnnouncedPostsRequest } from "../Requests/LoadAnnouncedPostsRequest";
 import { AnnouncedPostsLoadedResponse } from "../Responses/AnnouncedPostsLoadedResponse";
 import { PostAccessFailedResponse } from "../Responses/PostAccessFailedResponse";
@@ -18,7 +19,7 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
     const query = this.db
       .from("posts")
       .select(
-        "id, title, summary, excerpt, slug, author_id, announced_at, author:profiles!posts_author_id_fkey(handle)",
+        "id, title, summary, excerpt, slug, author_id, announced_at, author:profiles!posts_author_id_fkey(handle), post_tags(tag:tags(slug))",
       )
       .eq("status", "published")
       .eq("visibility", "public")
@@ -41,7 +42,10 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
               {
                 id: row.id,
                 title: row.title,
-                summary: row.summary ?? row.excerpt,
+                // A mature post's text stays behind its click, out of the email (#117).
+                summary: carriesMatureTag(row.post_tags)
+                  ? null
+                  : (row.summary ?? row.excerpt),
                 slug: row.slug,
                 authorId: row.author_id,
                 authorHandle: row.author?.handle ?? null,

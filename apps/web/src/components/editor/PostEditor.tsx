@@ -31,7 +31,7 @@ import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor, type BodyInsert } from "./BodyEditor";
 import { CoverPicker } from "./CoverPicker";
 import { classNames } from "@/lib/class-names";
-import { MATURE_TAG } from "@/lib/mature-tag";
+import { MATURE_TAG } from "@porchlight/core/client";
 import styles from "./editor.module.css";
 import { CheckDialog, type CheckState } from "./CheckDialog";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";

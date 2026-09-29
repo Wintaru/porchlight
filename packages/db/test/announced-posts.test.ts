@@ -8,6 +8,7 @@ import { createDbClient } from "../src/index";
 import { connect, LOCAL_STACK, SEED } from "./local-stack";
 
 // #105: a digest lists a post with no summary by its first sentence, as the feed does.
+// #117: a mature post lists no summary at all, since its text is blurred on the site.
 
 let sql: Sql;
 // A fixed prefix, so a run that died before its cleanup is cleaned by the next one.
@@ -28,7 +29,13 @@ beforeAll(async () => {
       (${SEED.trustedMember}, ${`${SLUG_PREFIX}no-summary`}, 'No summary', 'The first line. The rest.',
        null, 'published', 'public', ${announcedAt}, ${announcedAt}),
       (${SEED.trustedMember}, ${`${SLUG_PREFIX}with-summary`}, 'With summary', 'Body first line.',
-       'Written by hand.', 'published', 'public', ${announcedAt}, ${announcedAt})
+       'Written by hand.', 'published', 'public', ${announcedAt}, ${announcedAt}),
+      (${SEED.trustedMember}, ${`${SLUG_PREFIX}mature`}, 'Mature', 'Blurred first line.',
+       'Blurred summary.', 'published', 'public', ${announcedAt}, ${announcedAt})
+  `;
+  await sql`
+    insert into public.post_tags (post_id, tag_id)
+    select id, ${SEED.matureTag} from public.posts where slug = ${`${SLUG_PREFIX}mature`}
   `;
 });
 
@@ -38,7 +45,7 @@ afterAll(async () => {
 });
 
 describe("SupabaseLoadAnnouncedPostsHandler", () => {
-  test("uses the summary, else the first sentence", async () => {
+  test("uses the summary, else the first sentence, and none for a mature post", async () => {
     const handler = new SupabaseLoadAnnouncedPostsHandler(
       createDbClient(LOCAL_STACK.apiUrl, LOCAL_STACK.serviceRoleKey),
     );
@@ -58,6 +65,7 @@ describe("SupabaseLoadAnnouncedPostsHandler", () => {
     expect(summaries).toEqual({
       "No summary": "The first line.",
       "With summary": "Written by hand.",
+      Mature: null,
     });
   });
 });
