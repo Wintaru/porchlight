@@ -50,6 +50,20 @@ test("a post carries OpenGraph, Twitter and JSON-LD Article tags, and its own pr
   expect(parsed.image).toContain("porch-at-dusk.jpg");
 });
 
+test("a post with no cover still gets the branded preview image", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/@lamplighter/welcome-to-porchlight");
+  const imageUrl = await page
+    .locator('meta[property="og:image"]')
+    .getAttribute("content");
+  expect(imageUrl).not.toBeNull();
+  const imageResponse = await request.get(imageUrl ?? "");
+  expect(imageResponse.status()).toBe(200);
+  expect(imageResponse.headers()["content-type"]).toBe("image/png");
+});
+
 test("the share button copies the post's link", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-write", "clipboard-read"]);
   await page.goto("/@theo/hello-from-the-porch");

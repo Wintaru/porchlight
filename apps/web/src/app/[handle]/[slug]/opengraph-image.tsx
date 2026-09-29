@@ -42,9 +42,13 @@ export default async function Image({ params }: ImageProps) {
         justifyContent: "flex-end",
         padding: "80px",
         backgroundColor: "#2b2420",
-        backgroundImage: coverUrl === undefined ? undefined : `url(${coverUrl})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        // Satori throws on backgroundSize or backgroundPosition with no backgroundImage,
+        // so a post with no cover gets none of the three.
+        ...(coverUrl !== undefined && {
+          backgroundImage: `url(${coverUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }),
         color: "#f6efe6",
         fontFamily: "sans-serif",
       }}
