@@ -1,0 +1,71 @@
+# Counts the last hour of production requests and opens (or comments on) one issue
+# labelled `traffic` when the count passes TRAFFIC_ALERT_PER_HOUR. The Hobby plan keeps
+# request logs for one hour, so the job runs every hour and reads exactly that hour.
+# Setup: docs/deploy.md, "Traffic watch".
+name: traffic-watch
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: traffic-watch
+  cancel-in-progress: false
+
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
+      THRESHOLD: ${{ vars.TRAFFIC_ALERT_PER_HOUR || '500' }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Skip when the token is not set
+        id: guard
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_SCOPE" ]; then
+            echo "VERCEL_TOKEN or VERCEL_SCOPE is not set; nothing to count." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Count the last hour
+        if: steps.guard.outputs.ready == 'true'
+        id: count
+        run: |
+          npx --yes vercel@59.25.0 logs --token "$VERCEL_TOKEN" --scope "$VERCEL_SCOPE" \
+            -p porchlight-web --environment production --since 1h -n 10000 --json \
+            > logs.jsonl
+          total=$(jq -s 'unique_by(.id) | length' logs.jsonl)
+          top=$(jq -rs 'unique_by(.id) | group_by(.requestPath)
+            | map({n: length, path: .[0].requestPath}) | sort_by(-.n) | .[0:10][]
+            | "| \(.n) | `\(.path)` |"' logs.jsonl)
+          {
+            echo "Requests in the last hour: **$total** (alert above $THRESHOLD)"
+            echo
+            echo "| Requests | Path |"
+            echo "| ---: | --- |"
+            echo "$top"
+          } > report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+
+      - name: Raise the alert
+        if: steps.guard.outputs.ready == 'true' && fromJSON(steps.count.outputs.total) > fromJSON(env.THRESHOLD)
+        run: |
+          open=$(gh issue list --label traffic --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file report.md
+          else
+            gh issue create --label traffic \
+              --title "Traffic spike: ${{ steps.count.outputs.total }} requests in one hour" \
+              --body-file report.md
+          fi

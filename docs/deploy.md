@@ -330,3 +330,21 @@ test them. On a site with a few thousand posts this takes less than a second.
 Deploy the migrations before the app, as the `push-migrations` job does. An app that
 arrives first offers "Private" in the editor, and the database refuses the save until
 the migrations are in.
+
+## 18. Traffic watch
+
+The `traffic-watch` workflow counts the last hour of production requests every hour.
+When the count is above the limit, it opens one issue with the `traffic` label and the
+ten busiest paths. While that issue is open, each new spike adds a comment to it. Close
+the issue when the spike is explained. The Hobby plan keeps request logs for one hour
+only, so the workflow cannot read further back.
+
+The workflow does nothing until you give it a Vercel token:
+
+1. In Vercel, open **Account Settings → Tokens** and make a token with the team scope.
+2. In GitHub, add it as the repository secret `VERCEL_TOKEN`.
+3. Add the repository variable `VERCEL_SCOPE` with the team id, for example
+   `josh-donners-projects` (`vercel teams ls` shows it).
+4. Optional: add the variable `TRAFFIC_ALERT_PER_HOUR`. The default is 500.
+5. Create the `traffic` label, then run the workflow once from the **Actions** tab to
+   see the count in its summary.
