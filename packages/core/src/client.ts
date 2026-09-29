@@ -14,6 +14,7 @@ export { LINK_PROTOCOLS } from "./Common/LinkProtocols";
 export { NOTIFICATION_SENTENCES } from "./Common/NotificationSentences";
 export { carriesMatureTag, MATURE_TAG } from "./Common/MatureTag";
 export { POST_BODY_MAX_LENGTH } from "./Common/PostBody";
+export { POST_SUMMARY_MAX_LENGTH } from "./Common/PostSummary";
 export { POST_VISIBILITIES, type PostVisibility } from "./Common/PostVisibility";
 export { publicObjectUrl } from "./Common/PublicStorage";
 export { isStaffRole } from "./Common/UserRole";

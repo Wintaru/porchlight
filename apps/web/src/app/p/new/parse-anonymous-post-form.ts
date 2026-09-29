@@ -1,13 +1,12 @@
 import type { AnonymousPostDraft } from "@porchlight/core";
-import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
+import { POST_BODY_MAX_LENGTH, POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
 
 // The edge of the anonymous form: trims, caps lengths, turns empty text into `null`
 // where the shape allows it. Same limits `parse-post-form.ts` uses for a member's
-// title and summary, and the one body limit every door shares (POST_BODY_MAX_LENGTH);
+// title, and the limits every door shares (POST_BODY_MAX_LENGTH, POST_SUMMARY_MAX_LENGTH);
 // the anonymous draft has no tags and no visibility choice (SPEC.md §4), so there is
 // nothing to parse for either.
 export const TITLE_MAX_LENGTH = 200;
-export const SUMMARY_MAX_LENGTH = 200;
 
 export const ANONYMOUS_POST_FORM_ERRORS = [
   "title-blank",
@@ -32,7 +31,7 @@ export function parseAnonymousPostForm(formData: FormData): AnonymousPostFormRes
   if (title.length > TITLE_MAX_LENGTH) {
     return { ok: false, error: "title-length" };
   }
-  if (summary.length > SUMMARY_MAX_LENGTH) {
+  if (summary.length > POST_SUMMARY_MAX_LENGTH) {
     return { ok: false, error: "summary-length" };
   }
   if (bodyMd.length > POST_BODY_MAX_LENGTH) {

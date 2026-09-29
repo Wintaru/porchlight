@@ -3,6 +3,7 @@ import {
   CanPostResponse,
   CheckCanPostAnonymouslyRequest,
 } from "@porchlight/core";
+import { POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -12,7 +13,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { submitAnonymousPost } from "./actions";
 import { errorTextFor } from "./anonymous-post-form-messages";
-import { SUMMARY_MAX_LENGTH, TITLE_MAX_LENGTH } from "./parse-anonymous-post-form";
+import { TITLE_MAX_LENGTH } from "./parse-anonymous-post-form";
 import styles from "./new-post.module.css";
 import { pageTitle } from "@/lib/page-title";
 
@@ -87,7 +88,7 @@ export default async function NewAnonymousPostPage({
             className="text-input"
             type="text"
             name="summary"
-            maxLength={SUMMARY_MAX_LENGTH}
+            maxLength={POST_SUMMARY_MAX_LENGTH}
             placeholder="One line. Otherwise the first sentence is used."
           />
         </label>

@@ -30,6 +30,7 @@ export type { VoiceGuide } from "./Common/VoiceGuide";
 export type { VoiceSample } from "./Common/VoiceSample";
 export { carriesMatureTag, MATURE_TAG } from "./Common/MatureTag";
 export { POST_BODY_MAX_LENGTH } from "./Common/PostBody";
+export { POST_SUMMARY_MAX_LENGTH } from "./Common/PostSummary";
 export {
   DEFAULT_BANNED_PHRASES,
   VOICE_GUIDE_MAX_LENGTH,

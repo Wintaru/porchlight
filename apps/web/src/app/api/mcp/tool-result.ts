@@ -5,6 +5,7 @@ import {
   PostForbiddenResponse,
   PostListRejectedResponse,
   POST_BODY_MAX_LENGTH,
+  POST_SUMMARY_MAX_LENGTH,
   PostNotPublishableResponse,
   PostRateLimitedResponse,
   PostRejectedResponse,
@@ -50,11 +51,7 @@ export function refusalFor(response: ResponseBase, what: string) {
     return refuse("No such post, or it is not yours.");
   }
   if (response instanceof PostRejectedResponse) {
-    return refuse(
-      response.reason === "body"
-        ? `The body is longer than ${String(POST_BODY_MAX_LENGTH)} characters. Shorten it and try once more.`
-        : `The ${response.reason} is not usable. Fix it and try once more.`,
-    );
+    return refuse(rejectionText(response.reason));
   }
   if (response instanceof PostListRejectedResponse) {
     return refuse(
@@ -66,6 +63,17 @@ export function refusalFor(response: ResponseBase, what: string) {
   }
   console.error(`mcp ${what} failed [${response.correlationId}]`, response);
   return refuse("Porchlight could not do that right now. Tell your member and stop.");
+}
+
+function rejectionText(reason: PostRejectedResponse["reason"]): string {
+  switch (reason) {
+    case "body":
+      return `The body is longer than ${String(POST_BODY_MAX_LENGTH)} characters. Shorten it and try once more.`;
+    case "summary":
+      return `The summary is longer than ${String(POST_SUMMARY_MAX_LENGTH)} characters. Shorten it and try once more.`;
+    default:
+      return `The ${reason} is not usable. Fix it and try once more.`;
+  }
 }
 
 // The voice guide tools' refusals (SPEC.md §17). Changing the guide needs its own

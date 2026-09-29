@@ -35,7 +35,7 @@ import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
-import { checkBodyLength, renderBody, shapeTags } from "../shapeDraft";
+import { checkBodyLength, renderBody, shapeSummary, shapeTags } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 import { visibilityMoveOf } from "../visibilityMove";
 
@@ -173,7 +173,13 @@ export class UpdateDraftHandler implements IHandler<
       }
       shaped.tags = tags;
     }
-    if (changes.summary !== undefined) shaped.summary = changes.summary;
+    if (changes.summary !== undefined) {
+      const summary = shapeSummary(changes.summary, context);
+      if (summary instanceof PostRejectedResponse) {
+        return summary;
+      }
+      shaped.summary = summary;
+    }
     if (
       changes.coverMediaId !== undefined &&
       changes.coverMediaId !== current.coverMediaId

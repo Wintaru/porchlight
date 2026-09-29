@@ -1,4 +1,5 @@
 import { POST_BODY_MAX_LENGTH } from "../../Common/PostBody";
+import { POST_SUMMARY_MAX_LENGTH } from "../../Common/PostSummary";
 import type { RequestContext } from "../../Common/RequestContext";
 import type { Tag } from "../../Common/Tag";
 import type { IContentRenderEngine } from "../../Engines/ContentRenderEngine/IContentRenderEngine";
@@ -22,6 +23,19 @@ export function checkBodyLength(
   return bodyMd.length > POST_BODY_MAX_LENGTH
     ? new PostRejectedResponse(context.correlationId, "body")
     : undefined;
+}
+
+// The summary as every door stores it (D18, #118): trimmed, and null when empty so the
+// post falls back to its first sentence. A longer one than the shared limit is refused.
+export function shapeSummary(
+  summary: string | null,
+  context: Context,
+): string | null | PostRejectedResponse {
+  const trimmed = summary?.trim() ?? "";
+  if (trimmed.length > POST_SUMMARY_MAX_LENGTH) {
+    return new PostRejectedResponse(context.correlationId, "summary");
+  }
+  return trimmed === "" ? null : trimmed;
 }
 
 // Markdown to the HTML that is cached beside it (D3).

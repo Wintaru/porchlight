@@ -25,7 +25,7 @@ import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import { evidenceTextOf } from "../evidenceTextOf";
-import { checkBodyLength, renderBody, shapeTags } from "../shapeDraft";
+import { checkBodyLength, renderBody, shapeSummary, shapeTags } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 // How many slug candidates to try before giving up. Every candidate after the first
@@ -84,6 +84,10 @@ export class CreateDraftHandler implements IHandler<
     if (tooLong !== undefined) {
       return tooLong;
     }
+    const summary = shapeSummary(draft.summary, context);
+    if (summary instanceof PostRejectedResponse) {
+      return summary;
+    }
     const capped = await admitAgent(this.agentGuard, actor, "agent:draft", context);
     if (capped !== undefined) {
       return capped;
@@ -125,7 +129,7 @@ export class CreateDraftHandler implements IHandler<
             title: draft.title.trim(),
             bodyMd: draft.bodyMd,
             bodyHtml,
-            summary: draft.summary,
+            summary,
             visibility: draft.visibility,
             commentsEnabled: draft.commentsEnabled,
             coverMediaId: draft.coverMediaId ?? null,

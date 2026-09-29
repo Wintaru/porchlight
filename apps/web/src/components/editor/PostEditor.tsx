@@ -20,18 +20,14 @@ import {
   submitPost,
   unpublishPost,
 } from "@/app/write/actions";
-import {
-  SUMMARY_MAX_LENGTH,
-  TAGS_MAX_COUNT,
-  TITLE_MAX_LENGTH,
-} from "@/app/write/parse-post-form";
+import { TAGS_MAX_COUNT, TITLE_MAX_LENGTH } from "@/app/write/parse-post-form";
 import { errorTextFor } from "@/app/write/post-form-messages";
 import { AttachmentPanel } from "./AttachmentPanel";
 import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor, type BodyInsert } from "./BodyEditor";
 import { CoverPicker } from "./CoverPicker";
 import { classNames } from "@/lib/class-names";
-import { MATURE_TAG } from "@porchlight/core/client";
+import { MATURE_TAG, POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
 import styles from "./editor.module.css";
 import { CheckDialog, type CheckState } from "./CheckDialog";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
@@ -398,7 +394,7 @@ export function PostEditor({
               type="text"
               name="summary"
               defaultValue={post?.summary ?? ""}
-              maxLength={SUMMARY_MAX_LENGTH}
+              maxLength={POST_SUMMARY_MAX_LENGTH}
               placeholder="One line. Otherwise the first sentence is used."
             />
           </label>

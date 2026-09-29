@@ -3,11 +3,10 @@ import type {
   PostRejectionReason,
   PostStatus,
 } from "@porchlight/core";
-import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
+import { POST_BODY_MAX_LENGTH, POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
 
 import {
   type PostFormError,
-  SUMMARY_MAX_LENGTH,
   TAG_MAX_LENGTH,
   TAGS_MAX_COUNT,
   TITLE_MAX_LENGTH,
@@ -28,7 +27,7 @@ type ErrorCode =
 export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "title-blank": "A post needs a title.",
   "title-length": `A title is at most ${String(TITLE_MAX_LENGTH)} characters.`,
-  "summary-length": `A summary is at most ${String(SUMMARY_MAX_LENGTH)} characters.`,
+  "summary-length": `A summary is at most ${String(POST_SUMMARY_MAX_LENGTH)} characters.`,
   "body-length": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "tags-count": `At most ${String(TAGS_MAX_COUNT)} tags.`,
   "tag-length": `A tag is at most ${String(TAG_MAX_LENGTH)} characters.`,
@@ -38,6 +37,7 @@ export const ERROR_TEXT: Readonly<Record<ErrorCode, string>> = {
   "rejected-reported":
     "This post has a report a moderator has not decided yet, so it cannot be made private now.",
   "rejected-visibility": "Press Save to make this post public or unlisted.",
+  "rejected-summary": `A summary is at most ${String(POST_SUMMARY_MAX_LENGTH)} characters.`,
   "rejected-body": `The body is at most ${POST_BODY_MAX_LENGTH.toLocaleString("en-US")} characters.`,
   "posting-closed": "Posting is closed to members on this site.",
   // Never reached by a post action; the table is keyed by every denial reason.

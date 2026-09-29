@@ -27,7 +27,7 @@ import { PostGuardRefusedResponse } from "../Responses/PostGuardRefusedResponse"
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
-import { checkBodyLength, renderBody } from "../shapeDraft";
+import { checkBodyLength, renderBody, shapeSummary } from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 // How many slug candidates to try before giving up (the same bound CreateDraftHandler
@@ -80,6 +80,10 @@ export class CreateAnonymousPostHandler implements IHandler<
     if (tooLong !== undefined) {
       return tooLong;
     }
+    const summary = shapeSummary(draft.summary, context);
+    if (summary instanceof PostRejectedResponse) {
+      return summary;
+    }
 
     const admitted = await this.guard.evaluate(
       new AdmitAnonymousSubmissionRequest("post", submission, context),
@@ -101,7 +105,7 @@ export class CreateAnonymousPostHandler implements IHandler<
       draft.title,
       draft.bodyMd,
       bodyHtml,
-      draft.summary,
+      summary,
       context,
     );
     if (!(stored instanceof PostStoredResponse)) {

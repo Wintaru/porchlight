@@ -19,6 +19,7 @@ import {
   GetVoiceGuideRequest,
   ListPostsForAuthorRequest,
   POST_BODY_MAX_LENGTH,
+  POST_SUMMARY_MAX_LENGTH,
   POST_STATUSES,
   POST_VISIBILITIES,
   publishesAtOnce,
@@ -45,7 +46,6 @@ import { pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
-import { draftSummary } from "./draft-summary";
 import { MCP_INSTRUCTIONS } from "./instructions";
 import { listenRefusal } from "./listen-refusal";
 import {
@@ -388,7 +388,7 @@ function registerTools(
       inputSchema: z.object({
         title: z.string().min(1),
         body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH),
-        summary: z.string().optional(),
+        summary: z.string().max(POST_SUMMARY_MAX_LENGTH).optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.enum(POST_VISIBILITIES).optional(),
         comments_enabled: z.boolean().optional(),
@@ -401,7 +401,7 @@ function registerTools(
           {
             title: input.title,
             bodyMd: input.body_md,
-            summary: draftSummary(input.summary ?? null),
+            summary: input.summary ?? null,
             tags: input.tags ?? [],
             visibility: input.visibility ?? "public",
             commentsEnabled: input.comments_enabled ?? true,
@@ -428,7 +428,7 @@ function registerTools(
         title: z.string().min(1).optional(),
         body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH).optional(),
         // Nullable, so an agent can clear a summary it wrote.
-        summary: z.string().nullable().optional(),
+        summary: z.string().max(POST_SUMMARY_MAX_LENGTH).nullable().optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.enum(POST_VISIBILITIES).optional(),
         comments_enabled: z.boolean().optional(),
@@ -439,9 +439,7 @@ function registerTools(
         new UpdateDraftRequest(actor, id, {
           ...(input.title === undefined ? {} : { title: input.title }),
           ...(input.body_md === undefined ? {} : { bodyMd: input.body_md }),
-          ...(input.summary === undefined
-            ? {}
-            : { summary: draftSummary(input.summary) }),
+          ...(input.summary === undefined ? {} : { summary: input.summary }),
           ...(input.tags === undefined ? {} : { tags: input.tags }),
           ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
           ...(input.comments_enabled === undefined

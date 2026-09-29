@@ -1,6 +1,7 @@
 import type { PostDraft } from "@porchlight/core";
 import {
   POST_BODY_MAX_LENGTH,
+  POST_SUMMARY_MAX_LENGTH,
   POST_VISIBILITIES,
   type PostVisibility,
 } from "@porchlight/core/client";
@@ -11,7 +12,6 @@ import { isEntityId } from "@/lib/entity-id";
 // into `null` where the column is nullable. The rules of a post (slug, HTML, who may
 // write) belong to the PostManager; only the sizes are decided here.
 export const TITLE_MAX_LENGTH = 200;
-export const SUMMARY_MAX_LENGTH = 200;
 export const TAGS_MAX_COUNT = 10;
 export const TAG_MAX_LENGTH = 40;
 
@@ -44,7 +44,7 @@ export function parsePostForm(formData: FormData): PostFormResult {
   if (title.length > TITLE_MAX_LENGTH) {
     return { ok: false, error: "title-length" };
   }
-  if (summary.length > SUMMARY_MAX_LENGTH) {
+  if (summary.length > POST_SUMMARY_MAX_LENGTH) {
     return { ok: false, error: "summary-length" };
   }
   if (bodyMd.length > POST_BODY_MAX_LENGTH) {

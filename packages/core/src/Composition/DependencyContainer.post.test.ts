@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import type { Actor } from "../Common/Actor";
 import { POST_BODY_MAX_LENGTH } from "../Common/PostBody";
+import { POST_SUMMARY_MAX_LENGTH } from "../Common/PostSummary";
 import type { Post } from "../Common/Post";
 import type { Profile } from "../Common/Profile";
 import { UnhandledRequestResponse } from "../Common/UnhandledRequestResponse";
@@ -158,6 +159,34 @@ describe("DependencyContainer: PostManager", () => {
     expect(created).toBeInstanceOf(PostRejectedResponse);
     expect(created).toMatchObject({ reason: "body" });
     expect(updated).toMatchObject({ reason: "body" });
+  });
+
+  // #118: one summary rule for every door. Trimmed, blank means none (the first
+  // sentence stands in, D18), and longer than the limit is refused.
+  test("a summary is trimmed, blank is none, and over POST_SUMMARY_MAX_LENGTH is rejected", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const longest = "s".repeat(POST_SUMMARY_MAX_LENGTH);
+    const trimmed = await draft(container, THEO, { summary: "  One line.  " });
+    const blank = await draft(container, THEO, { summary: "   " });
+    const atLimit = await draft(container, THEO, { summary: ` ${longest} ` });
+
+    const created = await container.postManager.execute(
+      new CreateDraftRequest(THEO, { ...DRAFT, summary: `${longest}s` }, TEST_ORIGIN),
+    );
+    const updated = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, trimmed.id, { summary: `${longest}s` }),
+    );
+    const cleared = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, trimmed.id, { summary: " " }),
+    );
+
+    expect(trimmed.summary).toBe("One line.");
+    expect(blank.summary).toBeNull();
+    expect(atLimit.summary).toBe(longest);
+    expect(created).toMatchObject({ reason: "summary" });
+    expect(updated).toMatchObject({ reason: "summary" });
+    expect(cleared).toBeInstanceOf(PostResponse);
+    expect(cleared).toMatchObject({ post: { summary: null } });
   });
 
   test("a visitor may not draft, and neither may a suspended member", async () => {

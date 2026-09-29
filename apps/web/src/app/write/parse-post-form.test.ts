@@ -1,11 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { POST_BODY_MAX_LENGTH } from "@porchlight/core/client";
+import { POST_BODY_MAX_LENGTH, POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
 
 import {
   parseIntent,
   parsePostForm,
-  SUMMARY_MAX_LENGTH,
   TAG_MAX_LENGTH,
   TAGS_MAX_COUNT,
   TITLE_MAX_LENGTH,
@@ -78,7 +77,7 @@ describe("parsePostForm", () => {
     const cases: readonly [Record<string, string>, string][] = [
       [{ ...base, title: "  " }, "title-blank"],
       [{ ...base, title: "t".repeat(TITLE_MAX_LENGTH + 1) }, "title-length"],
-      [{ ...base, summary: "s".repeat(SUMMARY_MAX_LENGTH + 1) }, "summary-length"],
+      [{ ...base, summary: "s".repeat(POST_SUMMARY_MAX_LENGTH + 1) }, "summary-length"],
       [{ ...base, bodyMd: "b".repeat(POST_BODY_MAX_LENGTH + 1) }, "body-length"],
       [
         {

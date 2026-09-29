@@ -1,6 +1,7 @@
 import type { Sql } from "postgres";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { POST_SUMMARY_MAX_LENGTH } from "../../core/src/Common/PostSummary";
 import { SupabaseLoadAnnouncedPostsHandler } from "../../core/src/Accessors/PostAccessor/Handlers/SupabaseLoadAnnouncedPostsHandler";
 import { LoadAnnouncedPostsRequest } from "../../core/src/Accessors/PostAccessor/Requests/LoadAnnouncedPostsRequest";
 import { AnnouncedPostsLoadedResponse } from "../../core/src/Accessors/PostAccessor/Responses/AnnouncedPostsLoadedResponse";
@@ -68,4 +69,12 @@ describe("SupabaseLoadAnnouncedPostsHandler", () => {
       Mature: null,
     });
   });
+});
+
+// #118: `post_excerpt` keeps its own copy of the summary limit in SQL. A first sentence
+// with no break is cut to exactly that length, so the two cannot drift apart unseen.
+test("post_excerpt cuts at POST_SUMMARY_MAX_LENGTH", async () => {
+  const [row] = await sql<{ length: number }[]>`
+    select char_length(public.post_excerpt(repeat('a', 1000))) as length`;
+  expect(row?.length).toBe(POST_SUMMARY_MAX_LENGTH);
 });
