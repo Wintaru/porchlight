@@ -235,14 +235,15 @@ test("a flagged cover holds the post until a moderator approves it as mature", a
     await expect(row.locator("a, input").first()).toHaveAttribute("type", "checkbox");
   }
 
-  // The editor blurs the mature cover too, and so does its upload's preview (#91).
+  // The editor's framer blurs the mature cover too until the author asks, and so does
+  // its upload's preview (#91).
   await page.goto("/write");
   await page.getByTestId("my-posts").getByRole("link", { name: title }).click();
-  const editorCover = page.getByTestId("cover-set").getByTestId("reveal-image");
-  await expect(editorCover).toHaveAttribute("data-mode", "mature");
-  expect(
-    await editorCover.locator("img").evaluate((el) => getComputedStyle(el).filter),
-  ).toContain("blur");
+  const editorCover = page.getByTestId("cover-set").getByTestId("cover-image");
+  await expect(editorCover).toHaveAttribute("data-blurred", "true");
+  expect(await editorCover.evaluate((el) => getComputedStyle(el).filter)).toContain(
+    "blur",
+  );
   const preview = await openUploadPreview(
     page.getByTestId("attachment").filter({ hasText: cover }),
   );

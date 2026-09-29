@@ -26,8 +26,13 @@ import { AttachmentPanel } from "./AttachmentPanel";
 import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor, type BodyInsert } from "./BodyEditor";
 import { CoverPicker } from "./CoverPicker";
+import { useCover } from "./use-cover";
 import { classNames } from "@/lib/class-names";
-import { MATURE_TAG, POST_SUMMARY_MAX_LENGTH } from "@porchlight/core/client";
+import {
+  CENTERED_COVER_FRAME,
+  MATURE_TAG,
+  POST_SUMMARY_MAX_LENGTH,
+} from "@porchlight/core/client";
 import styles from "./editor.module.css";
 import { CheckDialog, type CheckState } from "./CheckDialog";
 import { PreviewDialog, type PreviewState } from "./PreviewDialog";
@@ -46,6 +51,7 @@ export type EditorPost = Pick<
   | "visibility"
   | "commentsEnabled"
   | "coverMediaId"
+  | "coverFrame"
   | "status"
   | "version"
 >;
@@ -125,6 +131,11 @@ export function PostEditor({
     setEdits(editsRef.current);
     setSave((current) => (current.kind === "saving" ? current : { kind: "dirty" }));
   }, []);
+  const coverState = useCover(
+    post?.coverMediaId ?? null,
+    post?.coverFrame ?? CENTERED_COVER_FRAME,
+    markDirty,
+  );
 
   // The timer: a pause after the last change saves, when there is a title to save.
   useEffect(() => {
@@ -382,11 +393,7 @@ export function PostEditor({
           />
         </div>
         <aside className={styles.side}>
-          <CoverPicker
-            initialMediaId={post?.coverMediaId ?? null}
-            onChange={markDirty}
-            postId={postId}
-          />
+          <CoverPicker state={coverState} postId={postId} />
           <label className={styles.field}>
             <span className={styles.label}>Summary for the preview card</span>
             <input

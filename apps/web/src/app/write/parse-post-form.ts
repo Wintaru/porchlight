@@ -1,4 +1,4 @@
-import type { PostDraft } from "@porchlight/core";
+import type { CoverFrame, PostDraft } from "@porchlight/core";
 import {
   POST_BODY_MAX_LENGTH,
   POST_SUMMARY_MAX_LENGTH,
@@ -66,6 +66,7 @@ export function parsePostForm(formData: FormData): PostFormResult {
       visibility: visibilityOf(formData),
       commentsEnabled: formData.get("commentsEnabled") === "on",
       coverMediaId: coverOf(formData),
+      ...coverFrameOf(formData),
     },
   };
 }
@@ -83,6 +84,28 @@ function visibilityOf(formData: FormData): PostVisibility {
 function coverOf(formData: FormData): string | null {
   const value = formData.get("coverMediaId");
   return typeof value === "string" && isEntityId(value) ? value : null;
+}
+
+// The cover framer's hidden fields. A form without all three (no JavaScript, an older
+// page) leaves the framing as it is; whether the numbers are in range is the Manager's
+// check.
+function coverFrameOf(formData: FormData): { readonly coverFrame?: CoverFrame } {
+  const focusX = numberOf(formData, "coverFocusX");
+  const focusY = numberOf(formData, "coverFocusY");
+  const zoom = numberOf(formData, "coverZoom");
+  if (focusX === undefined || focusY === undefined || zoom === undefined) {
+    return {};
+  }
+  return { coverFrame: { focusX, focusY, zoom } };
+}
+
+function numberOf(formData: FormData, name: string): number | undefined {
+  const value = formData.get(name);
+  if (typeof value !== "string" || value.trim() === "") {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 // What the submit button asked for. Two buttons share the form; the one clicked sends

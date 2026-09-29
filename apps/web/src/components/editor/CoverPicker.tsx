@@ -1,64 +1,30 @@
 "use client";
 
-import { isImageFilename } from "@porchlight/core/client";
-import { useEffect, useState } from "react";
+import { CENTERED_COVER_FRAME, isImageFilename } from "@porchlight/core/client";
+import { useState } from "react";
 
-import { deleteUpload, getUpload } from "@/app/write/media-actions";
-import { RevealImage } from "@/components/RevealImage";
-import type { UploadView } from "@/lib/upload-view";
+import { deleteUpload } from "@/app/write/media-actions";
+import { CoverFramer } from "./CoverFramer";
 import { DropZone } from "./DropZone";
 import styles from "./editor.module.css";
 import { uploadFile } from "./upload-file";
+import type { CoverState } from "./use-cover";
 
 interface CoverPickerProps {
-  readonly initialMediaId: string | null;
-  readonly onChange: () => void;
+  readonly state: CoverState;
   // The post being edited, or "" while a new post has no id: a cover joins its post
   // (#80).
   readonly postId: string;
 }
 
-type Cover =
-  | { readonly kind: "none" }
-  | { readonly kind: "loading"; readonly mediaId: string }
-  | { readonly kind: "unseen"; readonly mediaId: string }
-  | { readonly kind: "set"; readonly upload: UploadView };
-
 // The Editor board's "Cover image" (#52): one of the author's images, shown on the post
-// above the body and on the share card. The hidden field carries its id with the rest
-// of the form; the Manager checks it is the author's own image.
-export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerProps) {
-  const [cover, setCover] = useState<Cover>(
-    initialMediaId === null
-      ? { kind: "none" }
-      : { kind: "loading", mediaId: initialMediaId },
-  );
+// above the body and on the share card, and framed for the feed card. The hidden fields
+// carry its id and framing with the rest of the form; the Manager checks it is the
+// author's own image.
+export function CoverPicker({ state, postId }: CoverPickerProps) {
+  const { cover, frame } = state;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // A saved cover arrives as an id: look it up once for its picture.
-  useEffect(() => {
-    if (cover.kind !== "loading") {
-      return;
-    }
-    let live = true;
-    void getUpload(cover.mediaId).then((lookup) => {
-      if (!live) {
-        return;
-      }
-      if (lookup.status === "found") {
-        setCover({ kind: "set", upload: lookup.upload });
-      } else if (lookup.status === "gone") {
-        setCover({ kind: "none" });
-      } else {
-        // The cover stays set, unseen: a failed lookup must not clear it on the next save.
-        setCover({ kind: "unseen", mediaId: cover.mediaId });
-      }
-    });
-    return () => {
-      live = false;
-    };
-  }, [cover]);
 
   const choose = async (file: File) => {
     // Refused before any conversion or upload (#91): a dropped video would otherwise be
@@ -91,23 +57,18 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
       );
       return;
     }
-    setCover({ kind: "set", upload: outcome.upload });
-    onChange();
+    state.choose(outcome.upload);
   };
-
-  const mediaId =
-    cover.kind === "set"
-      ? cover.upload.mediaId
-      : cover.kind === "none"
-        ? ""
-        : cover.mediaId;
 
   return (
     <div className={styles.field}>
       <span className={styles.label} id="cover-label">
         Cover image
       </span>
-      <input type="hidden" name="coverMediaId" value={mediaId} />
+      <input type="hidden" name="coverMediaId" value={state.mediaId} />
+      <input type="hidden" name="coverFocusX" value={frame.focusX} />
+      <input type="hidden" name="coverFocusY" value={frame.focusY} />
+      <input type="hidden" name="coverZoom" value={frame.zoom} />
       {cover.kind === "unseen" && (
         <p className={styles.coverHeld} role="status">
           The cover could not be shown just now. It stays on the post.
@@ -121,34 +82,31 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
                 ? "A moderator looks at this image first. Publishing sends the post to them."
                 : "This image could not be prepared for the site."}
             </p>
-          ) : cover.upload.mature ? (
-            // Blurred behind a click, as the post page shows it (SPEC.md §7, #91).
-            <RevealImage
-              id={`cover-${cover.upload.mediaId}`}
-              src={cover.upload.publicUrl}
-              alt="The cover image"
-              mode="mature"
-              className={styles.coverImage}
-            />
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element -- storage origin, not optimised by next/image
-            <img
-              className={styles.coverImage}
+            <CoverFramer
+              key={cover.upload.mediaId}
               src={cover.upload.publicUrl}
-              alt="The cover image"
-              data-testid="cover-image"
+              mature={cover.upload.mature}
+              frame={frame}
+              onReframe={state.reframe}
             />
           )}
-          <button
-            type="button"
-            className={styles.linkButton}
-            onClick={() => {
-              setCover({ kind: "none" });
-              onChange();
-            }}
-          >
-            Remove cover
-          </button>
+          <div className={styles.coverActions}>
+            {cover.upload.publicUrl !== null && (
+              <button
+                type="button"
+                className={styles.linkButton}
+                onClick={() => {
+                  state.reframe(() => CENTERED_COVER_FRAME);
+                }}
+              >
+                Reset framing
+              </button>
+            )}
+            <button type="button" className={styles.linkButton} onClick={state.clear}>
+              Remove cover
+            </button>
+          </div>
         </div>
       ) : cover.kind === "unseen" ? null : (
         <DropZone
@@ -169,7 +127,7 @@ export function CoverPicker({ initialMediaId, onChange, postId }: CoverPickerPro
         </span>
       )}
       <span className={styles.hint}>
-        Used on the post and on the card when you share a link.
+        Used on the post, on the feed card and on the card when you share a link.
       </span>
     </div>
   );

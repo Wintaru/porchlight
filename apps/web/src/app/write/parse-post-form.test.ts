@@ -72,6 +72,22 @@ describe("parsePostForm", () => {
     }
   });
 
+  test("reads the cover framing, and leaves it out unless all three numbers are there", () => {
+    const framed = { coverFocusX: "0.25", coverFocusY: "1", coverZoom: "1.5" };
+    expect(parsePostForm(form({ title: "x", bodyMd: "", ...framed }))).toMatchObject({
+      ok: true,
+      draft: { coverFrame: { focusX: 0.25, focusY: 1, zoom: 1.5 } },
+    });
+    for (const partial of [
+      { coverFocusX: "0.25", coverFocusY: "1" },
+      { ...framed, coverZoom: "" },
+      { ...framed, coverFocusX: "left" },
+    ]) {
+      const parsed = parsePostForm(form({ title: "x", bodyMd: "", ...partial }));
+      expect(parsed.ok && "coverFrame" in parsed.draft).toBe(false);
+    }
+  });
+
   test("refuses a blank title and every over-long field", () => {
     const base = { title: "x", bodyMd: "", summary: "", tags: "" };
     const cases: readonly [Record<string, string>, string][] = [
