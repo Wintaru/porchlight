@@ -1,11 +1,16 @@
 import { confirmSignInLink } from "@/app/auth/actions";
 import { SimplePage } from "@/components/SimplePage";
+import { pageTitle } from "@/lib/page-title";
 
 interface ConfirmPageProps {
   readonly searchParams: Promise<{
     readonly token_hash?: string;
     readonly type?: string;
   }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Confirm sign-in");
 }
 
 // Where the emailed sign-in link lands (#67). Opening it does nothing: mail scanners

@@ -38,6 +38,7 @@ import {
 } from "./actions";
 import styles from "./queue.module.css";
 import { queueErrorTextFor, type StaffOutcome } from "./queue-messages";
+import { pageTitle } from "@/lib/page-title";
 
 interface QueuePageProps {
   readonly searchParams: Promise<{
@@ -65,6 +66,10 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   escalated: "Escalated.",
   blocked: "Blocked. Nothing more from that writer or their address reaches the queue.",
 } satisfies Partial<Record<StaffOutcome, string>>;
+
+export function generateMetadata() {
+  return pageTitle("Moderation queue");
+}
 
 // The moderation queue (SPEC.md §7): pending posts and comments, and held uploads that
 // are not a pending post's cover (#90), newest first, filterable to anonymous,

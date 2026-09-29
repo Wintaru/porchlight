@@ -1,6 +1,7 @@
 import { SimplePage } from "@/components/SimplePage";
 
 import { unsubscribe } from "../actions";
+import { pageTitle } from "@/lib/page-title";
 
 interface UnsubscribePageProps {
   readonly searchParams: Promise<{
@@ -8,6 +9,10 @@ interface UnsubscribePageProps {
     readonly done?: string;
     readonly error?: string;
   }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Unsubscribe");
 }
 
 // Where an email's unsubscribe link lands (#22). A member's link stops all of their

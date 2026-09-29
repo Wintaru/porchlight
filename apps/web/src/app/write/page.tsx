@@ -16,6 +16,7 @@ import { getDependencyContainer } from "@/lib/dependency-container";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { errorTextFor } from "./post-form-messages";
 import { PrivateChip } from "@/components/PrivateChip";
+import { pageTitle } from "@/lib/page-title";
 
 interface WritePageProps {
   readonly searchParams: Promise<{ readonly error?: string; readonly deleted?: string }>;
@@ -29,6 +30,10 @@ const STATUS_TEXT = {
   hidden: "hidden",
   removed: "removed",
 } as const;
+
+export function generateMetadata() {
+  return pageTitle("Write");
+}
 
 // A new post, and the member's own list underneath. When the site's `posting` key
 // closes writing to this member, the form is replaced by the reason (D20).

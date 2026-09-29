@@ -19,6 +19,7 @@ import { foldUnchanged, lineDiff } from "@/lib/line-diff";
 import { signInPathFor } from "@/lib/sign-in-path";
 
 import styles from "./history.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 interface HistoryPageProps {
   readonly params: Promise<{ readonly id: string }>;
@@ -34,6 +35,10 @@ interface Version {
 
 function textOf(version: Version): string {
   return [`# ${version.title}`, version.summary ?? "", version.bodyMd].join("\n\n");
+}
+
+export function generateMetadata() {
+  return pageTitle("Post history");
 }
 
 // A post's history (#23): each earlier version readers saw, newest first, with how the

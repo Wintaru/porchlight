@@ -4,6 +4,7 @@ import { isDevSignInEnabled } from "@/auth/dev-sign-in";
 import { SimplePage } from "@/components/SimplePage";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { devSignIn } from "@/app/auth/actions";
+import { pageTitle } from "@/lib/page-title";
 
 interface DevSignInPageProps {
   readonly searchParams: Promise<{ readonly error?: string; readonly next?: string }>;
@@ -13,6 +14,10 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   missing: "Enter both the email and the password.",
   refused: "Supabase Auth refused that email and password.",
 };
+
+export function generateMetadata() {
+  return pageTitle("Dev sign-in");
+}
 
 // Dev only (D19). Signs in as one of the seeded members (docs/setup/supabase.md) with
 // the local password, so a developer and Playwright never need Google.

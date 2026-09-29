@@ -1,6 +1,7 @@
 import { SimplePage } from "@/components/SimplePage";
 
 import { confirmSubscription } from "../confirm-actions";
+import { pageTitle } from "@/lib/page-title";
 
 interface ConfirmPageProps {
   readonly searchParams: Promise<{
@@ -9,6 +10,10 @@ interface ConfirmPageProps {
     readonly invalid?: string;
     readonly error?: string;
   }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Confirm subscription");
 }
 
 // Where a subscription's confirmation link lands (#22, D20). Opening it changes nothing:

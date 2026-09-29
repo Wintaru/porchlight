@@ -1,9 +1,14 @@
 import Link from "next/link";
 
 import { SimplePage } from "@/components/SimplePage";
+import { pageTitle } from "@/lib/page-title";
 
 interface SignInFailedPageProps {
   readonly searchParams: Promise<{ readonly reason?: string }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Sign-in failed");
 }
 
 // Two failures get a message of their own because the visitor can act on them:

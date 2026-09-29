@@ -16,6 +16,7 @@ import { EmailSection } from "./EmailSection";
 import { PresenceSection } from "./PresenceSection";
 import styles from "./settings.module.css";
 import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "./parse-profile-form";
+import { pageTitle } from "@/lib/page-title";
 
 interface SettingsPageProps {
   readonly searchParams: Promise<{
@@ -58,6 +59,10 @@ const TRUST_TEXT = {
   probation: "On probation: posts and comments wait for approval.",
   trusted: "Trusted member: posts and comments publish at once.",
 } as const;
+
+export function generateMetadata() {
+  return pageTitle("Settings");
+}
 
 // The Settings board: a side menu and one card per section — profile, agents (when
 // the site's `agents` key allows them, D22), email (#22), anonymous posts to claim,

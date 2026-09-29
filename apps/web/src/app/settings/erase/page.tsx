@@ -6,6 +6,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 import { classNames } from "@/lib/class-names";
 import { confirmErase } from "../actions";
 import styles from "../settings.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 interface EraseAccountPageProps {
   readonly searchParams: Promise<{ readonly error?: string }>;
@@ -16,6 +17,10 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   forbidden: "This account cannot be erased right now.",
   unavailable: "The account could not be erased. Try again in a moment.",
 };
+
+export function generateMetadata() {
+  return pageTitle("Erase account");
+}
 
 // The erase card and its confirmation step from the Settings board (SPEC.md §10). A
 // separate page rather than a client-side confirm dialog, matching every other

@@ -27,6 +27,7 @@ import { InvitesSection } from "./InvitesSection";
 import { rerenderBodies } from "./rerender-actions";
 import { parseRerenderCursor } from "./rerender-press";
 import styles from "./admin.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 interface AdminPageProps {
   readonly searchParams: Promise<{
@@ -70,6 +71,10 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   agentLimits: `Each agent limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}.`,
   agentDisclosure: "Pick a disclosure setting from the list.",
 };
+
+export function generateMetadata() {
+  return pageTitle("Admin");
+}
 
 // The admin settings page (SPEC.md §4, §7): region and the duty checklist, site
 // identity, the D20 access keys and their presets, attachments, moderation, and

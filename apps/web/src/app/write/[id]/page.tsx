@@ -20,6 +20,7 @@ import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
 import { PrivateChip } from "@/components/PrivateChip";
+import { pageTitle } from "@/lib/page-title";
 
 interface EditPageProps {
   readonly params: Promise<{ readonly id: string }>;
@@ -34,6 +35,10 @@ const STATUS_TEXT = {
   hidden: "Hidden by a moderator",
   removed: "Removed by a moderator",
 } as const;
+
+export function generateMetadata() {
+  return pageTitle("Edit post");
+}
 
 // An existing post: the same form, plus publish, unpublish and delete. A post the
 // member may not edit is a 404, the same answer the Manager gives (#66): another

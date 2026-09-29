@@ -14,9 +14,14 @@ import { submitAnonymousPost } from "./actions";
 import { errorTextFor } from "./anonymous-post-form-messages";
 import { SUMMARY_MAX_LENGTH, TITLE_MAX_LENGTH } from "./parse-anonymous-post-form";
 import styles from "./new-post.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 interface NewAnonymousPostPageProps {
   readonly searchParams: Promise<{ readonly error?: string }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Post anonymously");
 }
 
 // The anonymous write form (SPEC.md §4, D7): no sign-in, no draft phase — a visitor

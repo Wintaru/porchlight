@@ -4,6 +4,7 @@ import { sendSignInLink, signInWithGoogle } from "@/app/auth/actions";
 import { isDevSignInEnabled } from "@/auth/dev-sign-in";
 import { SimplePage } from "@/components/SimplePage";
 import { safeNextPath } from "@/lib/safe-next-path";
+import { pageTitle } from "@/lib/page-title";
 
 interface SignInPageProps {
   readonly searchParams: Promise<{
@@ -19,6 +20,10 @@ const ERROR_TEXT: Readonly<Record<string, string>> = {
   wait: "Too many sign-in emails were asked for just now. Wait a minute and try again.",
   failed: "The sign-in email could not be sent. Try again in a moment.",
 };
+
+export function generateMetadata() {
+  return pageTitle("Sign in");
+}
 
 // The two ways in (SPEC.md §4, #67): Google, or a one-time link by email. Neither has a
 // password. New accounts follow `sign_up` either way; the callback decides that.

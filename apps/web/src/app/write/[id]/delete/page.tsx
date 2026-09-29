@@ -10,11 +10,16 @@ import { isEntityId } from "@/lib/entity-id";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { deletePost } from "../../actions";
+import { pageTitle } from "@/lib/page-title";
 
 interface DeletePageProps {
   readonly params: Promise<{ readonly id: string }>;
   // Where Cancel goes: the editor or the post page, whichever sent the author here.
   readonly searchParams: Promise<{ readonly from?: string | string[] }>;
+}
+
+export function generateMetadata() {
+  return pageTitle("Delete post");
 }
 
 // The confirm step before a delete (#72). A page, not a dialog, so it works with no

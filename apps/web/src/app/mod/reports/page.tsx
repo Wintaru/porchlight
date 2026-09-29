@@ -24,6 +24,7 @@ import { formatDate } from "@/lib/format-date";
 import { REPORT_REASON_LABELS } from "@/lib/report-reason-labels";
 import { signInPathFor } from "@/lib/sign-in-path";
 import styles from "./reports.module.css";
+import { pageTitle } from "@/lib/page-title";
 
 const REPORTS_PATH = "/mod/reports";
 
@@ -38,6 +39,10 @@ const DONE_TEXT: Readonly<Record<string, string>> = {
   dismissed: "Dismissed. The item stays as it is.",
   blocked: "Blocked. Nothing more from that visitor or their address gets through.",
 } satisfies Partial<Record<StaffOutcome, string>>;
+
+export function generateMetadata() {
+  return pageTitle("Reports");
+}
 
 // The Queue board's Reports tab (SPEC.md §7, #40): every post or comment with an open
 // or escalated report, escalated first. Each decision closes the item's reports; the

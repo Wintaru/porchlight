@@ -56,3 +56,25 @@ test("changing the site name changes the home page's title", async ({ page }) =>
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page).toHaveURL(/\/admin\?done=saved$/);
 });
+
+// #113: every page names itself in the tab, not only the site.
+test("the working pages have their own titles", async ({ page }) => {
+  for (const [path, name] of [
+    ["/p/new", "Post anonymously"],
+    ["/auth/sign-in", "Sign in"],
+    ["/anon", "Your anonymous posts"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page).toHaveTitle(new RegExp(`^${name} · `));
+  }
+  await devSignIn(page, LAMPLIGHTER);
+  for (const [path, name] of [
+    ["/write", "Write"],
+    ["/settings", "Settings"],
+    ["/admin", "Admin"],
+    ["/mod/queue", "Moderation queue"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page).toHaveTitle(new RegExp(`^${name} · `));
+  }
+});
