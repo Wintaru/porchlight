@@ -84,15 +84,17 @@ function HitList({
             <Link href={hit.href} className={styles.title}>
               {hit.kind === "comment" ? `Comment on ${hit.title}` : hit.title}
             </Link>
-            <p className={styles.snippet}>
-              {snippetParts(hit.snippet).map((part, index) =>
-                part.match ? (
-                  <mark key={index}>{part.text}</mark>
-                ) : (
-                  <span key={index}>{part.text}</span>
-                ),
-              )}
-            </p>
+            {hit.snippet !== null && (
+              <p className={styles.snippet}>
+                {snippetParts(hit.snippet).map((part, index) =>
+                  part.match ? (
+                    <mark key={index}>{part.text}</mark>
+                  ) : (
+                    <span key={index}>{part.text}</span>
+                  ),
+                )}
+              </p>
+            )}
             <p className={styles.meta}>{formatDate(hit.publishedAt)}</p>
           </li>
         ))}

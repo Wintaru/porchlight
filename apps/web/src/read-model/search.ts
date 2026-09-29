@@ -9,7 +9,8 @@ export type SearchHit =
       readonly postId: string;
       readonly title: string;
       readonly href: string;
-      readonly snippet: string;
+      // Null for a mature post, whose text stays behind its click (#120).
+      readonly snippet: string | null;
       readonly publishedAt: string;
     }
   | {
@@ -18,7 +19,7 @@ export type SearchHit =
       readonly commentId: string;
       readonly title: string;
       readonly href: string;
-      readonly snippet: string;
+      readonly snippet: string | null;
       readonly publishedAt: string;
     };
 
@@ -51,7 +52,7 @@ interface SearchRow {
   readonly title: string;
   readonly slug: string;
   readonly author_handle: string | null;
-  readonly snippet: string;
+  readonly snippet: string | null;
   readonly published_at: string;
 }
 

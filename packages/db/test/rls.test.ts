@@ -321,6 +321,32 @@ describe("search_site", () => {
     expect(comment.replace(/[\uE000\uE001]/g, "")).toMatch(/^I will tell/);
   });
 
+  // #120: a mature post is found by its title, with no snippet of its text.
+  test("a mature post has no snippet", async () => {
+    const slug = "search-mature-test";
+    await sql`delete from public.posts where slug = ${slug}`;
+    const [post] = await sql<{ id: string }[]>`
+      insert into public.posts
+        (author_id, slug, title, body_md, status, visibility, published_at)
+      values
+        (${SEED.trustedMember}, ${slug}, 'Quokkaswim title', 'Quokkaswim body text.',
+         'published', 'public', now())
+      returning id`;
+    try {
+      await sql`
+        insert into public.post_tags (post_id, tag_id) values (${post?.id ?? ""}, ${SEED.matureTag})`;
+      const rows = await asRole(
+        sql,
+        "anon",
+        (tx) => tx<{ post_id: string; snippet: string | null }[]>`
+          select post_id, snippet from public.search_site('quokkaswim', 20)`,
+      );
+      expect(rows).toEqual([{ post_id: post?.id, snippet: null }]);
+    } finally {
+      await sql`delete from public.posts where slug = ${slug}`;
+    }
+  });
+
   test("markdown_plain_text keeps a link's words and drops a picture", async () => {
     const [row] = await sql<{ text: string }[]>`
       select public.markdown_plain_text(
