@@ -98,7 +98,8 @@ a.name:hover {
   font-weight: 600;
 }
 
-/* The author's menu: a <details> whose items drop below the ⋯, over the page. */
+/* The author's menu: a <details> whose items drop below the ⋯, over the page.
+   AuthorMenu sets data-align="end" when the left-anchored menu would leave the screen. */
 .authorMenu {
   position: relative;
 }
@@ -130,7 +131,7 @@ a.name:hover {
 .authorMenuItems {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -140,6 +141,11 @@ a.name:hover {
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 6px 24px rgb(0 0 0 / 12%);
+}
+
+.authorMenu[data-align="end"] > .authorMenuItems {
+  right: 0;
+  left: auto;
 }
 
 .authorMenuItems button,

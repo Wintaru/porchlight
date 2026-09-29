@@ -17,6 +17,7 @@ import { reportPathFor } from "@/lib/report-link";
 import type { PostPage } from "@/read-model/post-page";
 import type { ItemReactions } from "@/read-model/reactions";
 
+import { AuthorMenu } from "./AuthorMenu";
 import styles from "./post.module.css";
 
 interface PostArticleProps {
@@ -130,25 +131,22 @@ function AuthorControls({
       >
         Edit
       </Link>
-      <details className={styles.authorMenu} data-testid="post-author-menu">
-        <summary aria-label="More actions for this post">⋯</summary>
-        <div className={styles.authorMenuItems}>
-          {canUnpublish && (
-            <form action={unpublishPost}>
-              <input type="hidden" name="postId" value={post.id} />
-              <input type="hidden" name="returnTo" value={returnTo} />
-              <button type="submit">Unpublish</button>
-            </form>
-          )}
-          <Link href={`/write/${post.id}/history`}>History</Link>
-          <Link
-            href={`/write/${post.id}/delete?from=${encodeURIComponent(returnTo)}`}
-            className={styles.dangerItem}
-          >
-            Delete
-          </Link>
-        </div>
-      </details>
+      <AuthorMenu>
+        {canUnpublish && (
+          <form action={unpublishPost}>
+            <input type="hidden" name="postId" value={post.id} />
+            <input type="hidden" name="returnTo" value={returnTo} />
+            <button type="submit">Unpublish</button>
+          </form>
+        )}
+        <Link href={`/write/${post.id}/history`}>History</Link>
+        <Link
+          href={`/write/${post.id}/delete?from=${encodeURIComponent(returnTo)}`}
+          className={styles.dangerItem}
+        >
+          Delete
+        </Link>
+      </AuthorMenu>
     </>
   );
 }

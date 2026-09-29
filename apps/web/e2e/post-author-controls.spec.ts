@@ -105,3 +105,41 @@ test("Delete in the editor asks first too, and Cancel returns to the editor", as
 
   await deleteCurrentPost(page);
 });
+
+// The byline wraps, so the ⋯ can sit at the left or the right of the screen. A private
+// post has no Share button, so its ⋯ is the last thing on the line.
+for (const { visibility, width } of [
+  { visibility: "Public", width: 390 },
+  { visibility: "Private", width: 390 },
+  { visibility: "Private", width: 600 },
+  { visibility: "Private", width: 1280 },
+]) {
+  test(`the menu opens inside the screen: ${visibility} post, ${String(width)}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await devSignIn(page, THEO);
+    await page.goto("/write");
+    await page
+      .getByLabel("Title")
+      .fill(`Menu ${String(width)} ${Date.now().toString(36)}`);
+    await fillBodyMarkdown(page, "Short.");
+    await page.getByLabel(new RegExp(`^${visibility} ·`)).check();
+    await page.getByRole("button", { name: "Publish" }).click();
+    await expect(page).toHaveURL(/\/@theo\/[a-z0-9-]+$/);
+
+    await page.getByLabel("More actions for this post").click();
+    const history = page.getByRole("link", { name: "History" });
+    await expect(history).toBeVisible();
+    // The menu picks its side when it opens, one render after the click.
+    await expect
+      .poll(async () => {
+        const box = await history.boundingBox();
+        return box !== null && box.x >= 0 && box.x + box.width <= width;
+      })
+      .toBe(true);
+
+    await page.getByTestId("post-edit").click();
+    await deleteCurrentPost(page);
+  });
+}
