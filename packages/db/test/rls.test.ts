@@ -305,6 +305,30 @@ describe("search_site", () => {
     expect(found.map((row) => row.post_id)).toContain(SEED.publicPost);
   });
 
+  // #111: a snippet is plain text, and keeps short words at its edges.
+  test("snippets read as text", async () => {
+    const rows = await asRole(
+      sql,
+      "anon",
+      (tx) => tx<{ kind: string; snippet: string }[]>`
+        select kind, snippet from public.search_site('bench', 20)`,
+    );
+    const post = rows.find((row) => row.kind === "post")?.snippet ?? "";
+    const plain = post.replace(/[\uE000\uE001]/g, "");
+    expect(plain).toMatch(/^A first post about a bench/);
+    expect(plain).not.toMatch(/!\[|\]\(/);
+    const comment = rows.find((row) => row.kind === "comment")?.snippet ?? "";
+    expect(comment.replace(/[\uE000\uE001]/g, "")).toMatch(/^I will tell/);
+  });
+
+  test("markdown_plain_text keeps a link's words and drops a picture", async () => {
+    const [row] = await sql<{ text: string }[]>`
+      select public.markdown_plain_text(
+        '# Title' || E'\n\n' || 'See [my plans](https://x.test/p) and ![a pic](p.jpg). *Done*'
+      ) as text`;
+    expect(row?.text).toBe("Title See my plans and . Done");
+  });
+
   // #93: the candidate step reads past RLS to use the GIN indexes, so it must apply
   // the listing rule itself.
   test("search_candidates returns nothing a visitor may not list", async () => {

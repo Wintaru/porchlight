@@ -1408,6 +1408,7 @@ export type Database = {
           published_at: string
         }[]
       }
+      markdown_plain_text: { Args: { p_body_md: string }; Returns: string }
       media_in_use: { Args: { p_media_id: string }; Returns: boolean }
       member_email_of: { Args: { p_profile_id: string }; Returns: string }
       null_expired_raw_ips: { Args: never; Returns: number }
