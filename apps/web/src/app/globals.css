@@ -30,6 +30,8 @@
   --code-comment: #75695c;
   --code-title: #1f5f8b;
   --code-builtin: #6b4f00;
+  /* Every feed card's cover box, on every screen: one framing fits them all. */
+  --cover-aspect: 16 / 10;
   --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-source-sans), "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;

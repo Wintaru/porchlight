@@ -10,7 +10,10 @@
   width: 100%;
   height: auto;
   filter: blur(28px);
-  transform: scale(1.08);
+  /* A feed card sets the author's framing (PostCardList.module.css); elsewhere these
+     fall back to the centre, not zoomed. */
+  transform: scale(calc(1.08 * var(--cover-zoom, 1)));
+  transform-origin: var(--cover-focus, 50% 50%);
   transition: filter 0.2s ease;
 }
 
@@ -53,7 +56,7 @@
 
 .toggle:checked + .image {
   filter: none;
-  transform: none;
+  transform: scale(var(--cover-zoom, 1));
 }
 
 .toggle:checked + .image + .label {

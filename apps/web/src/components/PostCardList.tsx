@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { formatDate } from "@/lib/format-date";
+import { coverFrameVars } from "@/lib/cover-frame";
 import { shownCover } from "@/lib/post-cover";
 import { type PostCard, summaryLine } from "@/read-model/post-card";
 
@@ -109,7 +110,8 @@ function WithCover({
 }
 
 // The card's cover (#73, #76): a fixed box, cropped to fill, so a wide or tall picture
-// is never stretched. The same rule as the post page decides whether it shows and
+// is never stretched. The box has one shape on every screen, and the author's framing
+// places the picture in it. The same rule as the post page decides whether it shows and
 // whether it blurs.
 function CardCover({
   post,
@@ -119,7 +121,15 @@ function CardCover({
   readonly cover: NonNullable<ReturnType<typeof shownCover>>;
 }) {
   return (
-    <div className={styles.cover} data-testid="post-card-cover">
+    <div
+      className={styles.cover}
+      style={coverFrameVars({
+        focusX: post.cover_focus_x,
+        focusY: post.cover_focus_y,
+        zoom: post.cover_zoom,
+      })}
+      data-testid="post-card-cover"
+    >
       {cover.mature ? (
         <RevealImage id={`card-${post.id}`} src={cover.src} alt="" mode="mature" />
       ) : (

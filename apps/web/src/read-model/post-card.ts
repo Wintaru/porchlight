@@ -7,11 +7,12 @@ import { carriesMatureTag } from "@porchlight/core/client";
 // three embeds: the author through the posts→profiles key, the tags through post_tags,
 // and the cover the feed card shows (#73). An anonymous post has no author row until
 // it is claimed (D7): `author` is null. The cover's `published_path` is null until the
-// scan passes, and the grants hide it from anyone else (#36), as on the post page.
+// scan passes, and the grants hide it from anyone else (#36), as on the post page. The
+// three `cover_` numbers are how the author framed the cover in the card's box.
 // `visibility` marks a private post (D27): RLS hands one only to its author, whose own
 // feed and profile show it with the "Only you" chip.
 export const POST_CARD_COLUMNS =
-  "id, slug, title, summary, excerpt, published_at, comments_enabled, visibility, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
+  "id, slug, title, summary, excerpt, published_at, comments_enabled, visibility, cover_focus_x, cover_focus_y, cover_zoom, author:profiles!posts_author_id_fkey(handle, display_name, avatar_url), post_tags(tag:tags(slug, name)), cover:media_assets!posts_cover_media_id_fkey(published_path, mature)";
 
 export interface PostCardAuthor {
   readonly handle: string;
@@ -33,6 +34,9 @@ export interface PostCard {
   readonly published_at: string | null;
   readonly comments_enabled: boolean;
   readonly visibility: Enums<"post_visibility">;
+  readonly cover_focus_x: number;
+  readonly cover_focus_y: number;
+  readonly cover_zoom: number;
   readonly author: PostCardAuthor | null;
   readonly post_tags: readonly { readonly tag: PostCardTag | null }[];
   readonly cover: {
