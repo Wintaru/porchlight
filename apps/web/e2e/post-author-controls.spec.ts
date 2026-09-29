@@ -44,10 +44,14 @@ test("only the author sees Edit and the menu, and Edit opens the editor", async 
   await deleteCurrentPost(page);
 });
 
-test("Unpublish from the post page comes back to it as a draft", async ({ page }) => {
+test("Unpublish from the post page comes back to it as a draft, and Publish puts it back", async ({
+  page,
+}) => {
   const title = `Unpublish here ${Date.now().toString(36)}`;
   const path = await publishAsTheo(page, title);
   await expect(page.getByTestId("post-status-note")).toHaveCount(0);
+  await expect(page.getByTestId("post-publish")).toHaveCount(0);
+  await expect(page.getByTestId("share-button")).toBeVisible();
 
   await page.getByLabel("More actions for this post").click();
   await page.getByRole("button", { name: "Unpublish" }).click();
@@ -56,11 +60,22 @@ test("Unpublish from the post page comes back to it as a draft", async ({ page }
     "Taken down. It is a draft again.",
   );
   await expect(page.getByTestId("post-status-note")).toHaveText(
-    "Draft. Only you can see this page.",
+    "Draft. Nobody else can see this page until you publish it.",
   );
+  // A draft's link is a 404 for everyone else, so there is nothing to share.
+  await expect(page.getByTestId("share-button")).toHaveCount(0);
   // A draft has nothing to unpublish.
   await page.getByLabel("More actions for this post").click();
   await expect(page.getByRole("button", { name: "Unpublish" })).toHaveCount(0);
+  await page.getByLabel("More actions for this post").click();
+
+  // Theo is trusted, so Publish goes straight up and stays on the post page.
+  await page.getByTestId("post-publish").click();
+  await expect(page).toHaveURL(new RegExp(`${path}\\?saved=published$`));
+  await expect(page.getByTestId("post-toast")).toHaveText("Published.");
+  await expect(page.getByTestId("post-status-note")).toHaveCount(0);
+  await expect(page.getByTestId("post-publish")).toHaveCount(0);
+  await expect(page.getByTestId("share-button")).toBeVisible();
 
   await page.getByTestId("post-edit").click();
   await deleteCurrentPost(page);

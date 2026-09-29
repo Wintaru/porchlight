@@ -10,7 +10,7 @@ import { PrivateChip } from "@/components/PrivateChip";
 import { RaccoonMark } from "@/components/RaccoonMark";
 import { RevealImage } from "@/components/RevealImage";
 import { ShareButton } from "@/components/ShareButton";
-import { unpublishPost } from "@/app/write/actions";
+import { publishPost, unpublishPost } from "@/app/write/actions";
 import { formatDate } from "@/lib/format-date";
 import { shownCover } from "@/lib/post-cover";
 import { readingMinutes } from "@/lib/reading-time";
@@ -54,10 +54,12 @@ export function PostArticle({
   // Only its author ever reaches a private post (D27): nothing to share, react to or
   // report, since nobody else can open it.
   const isPrivate = post.visibility === "private";
+  // A link to an unpublished post is a 404 for everyone but its author.
+  const isShareable = post.status === "published" && !isPrivate;
   return (
     <article className={styles.article}>
       {note !== undefined && (
-        <p role="status" className={styles.note} data-testid="post-status-note">
+        <p role="status" className={styles.statusNote} data-testid="post-status-note">
           {note}
         </p>
       )}
@@ -74,7 +76,7 @@ export function PostArticle({
             {viewerId !== undefined && viewerId === post.author_id && (
               <AuthorControls post={post} returnTo={returnTo} />
             )}
-            {!isPrivate && <ShareButton url={shareUrl} title={post.title} />}
+            {isShareable && <ShareButton url={shareUrl} title={post.title} />}
             {/* Anyone may report a published post (SPEC.md §7), except its author. */}
             {post.status === "published" && !isPrivate && viewerId !== post.author_id && (
               <Link
@@ -119,10 +121,10 @@ export function PostArticle({
   );
 }
 
-// Edit, and a menu for Unpublish and Delete, for the post's own author only (#72). The
-// page decides who that is from the session, and each action checks ownership again.
-// The menu is a <details>, so it opens with no JavaScript. Delete goes to its confirm
-// page, which sends Cancel back here.
+// Publish for a draft, Edit, and a menu for Unpublish and Delete, for the post's own
+// author only (#72). The page decides who that is from the session, and each action
+// checks ownership again. The menu is a <details>, so it opens with no JavaScript.
+// Delete goes to its confirm page, which sends Cancel back here.
 function AuthorControls({
   post,
   returnTo,
@@ -133,6 +135,19 @@ function AuthorControls({
   const canUnpublish = post.status === "published" || post.status === "pending";
   return (
     <>
+      {post.status === "draft" && (
+        <form action={publishPost}>
+          <input type="hidden" name="postId" value={post.id} />
+          <input type="hidden" name="returnTo" value={returnTo} />
+          <button
+            type="submit"
+            className="pill-button pill-button--amber"
+            data-testid="post-publish"
+          >
+            Publish
+          </button>
+        </form>
+      )}
       <Link
         href={`/write/${post.id}`}
         className={styles.authorLink}

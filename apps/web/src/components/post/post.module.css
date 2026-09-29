@@ -24,6 +24,20 @@
   font-size: 15px;
 }
 
+/* The page is not public yet (draft, waiting, or taken down by a moderator): loud
+   enough that the author does not share the link by mistake. */
+.statusNote {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--amber);
+  border-left-width: 6px;
+  border-radius: 8px;
+  background: var(--chip-warm);
+  color: var(--chip-warm-ink);
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .head {
   display: flex;
   flex-direction: column;

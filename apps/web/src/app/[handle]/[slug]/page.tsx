@@ -28,7 +28,7 @@ interface PostPageProps {
   readonly searchParams: Promise<{
     readonly comment?: string;
     readonly error?: string;
-    // Only `unpublished`: the author's menu on this page redirects back with it (#72).
+    // The author's Publish and Unpublish on this page redirect back with one (#72).
     readonly saved?: string;
   }>;
 }
@@ -73,8 +73,10 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   };
 }
 
+const PAGE_SAVED_CODES: ReadonlySet<string> = new Set(["published", "unpublished"]);
+
 const STATUS_NOTE: Readonly<Partial<Record<PostPage["status"], string>>> = {
-  draft: "Draft. Only you can see this page.",
+  draft: "Draft. Nobody else can see this page until you publish it.",
   pending: "Waiting for approval. Only you can see this page.",
   rejected: "Rejected by a moderator. Only you can see this page.",
   hidden: "Hidden by a moderator. Only you can see this page.",
@@ -122,9 +124,10 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   ]);
 
   const url = `${SITE_URL}${returnTo}`;
-  // Only the author unpublished it: a crafted link must not tell a reader otherwise.
+  // Only the author published or unpublished it: a crafted link must not tell a reader
+  // otherwise.
   const savedText =
-    saved === "unpublished" && viewerId === post.author_id
+    saved !== undefined && PAGE_SAVED_CODES.has(saved) && viewerId === post.author_id
       ? savedTextFor(saved)
       : undefined;
 

@@ -191,6 +191,27 @@ export async function unpublishPost(formData: FormData): Promise<void> {
   redirect(`${returnTo}?saved=unpublished`);
 }
 
+// Publish from the post page. The author lands back on it: live with a toast, or in the
+// queue with its waiting note (D7). A failure goes to the editor, as Unpublish does.
+export async function publishPost(formData: FormData): Promise<void> {
+  const postId = idOf(formData);
+  const editor = `/write/${postId}`;
+  const returnTo = returnPathOf(formData, editor);
+  const actor = await requireMember(returnTo);
+  const response = await getDependencyContainer().postManager.execute(
+    new PublishPostRequest(actor, postId, await currentRequestMeta()),
+  );
+  if (!(response instanceof PostResponse)) {
+    redirect(`${editor}?error=${errorCode(response)}`);
+  }
+  revalidatePath(returnTo);
+  const landing =
+    response.post.status === "published"
+      ? `/@${actor.profile.handle}/${response.post.slug}`
+      : returnTo;
+  redirect(`${landing}?saved=${response.post.status}`);
+}
+
 // A deleted post's uploads go with it (#80). Their ids are read first: the delete
 // leaves them with no post. They are deleted only once the post is gone, and only those
 // no other post uses.

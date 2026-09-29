@@ -60,6 +60,7 @@ export const SAVED_TEXT: Readonly<Record<string, string>> = {
   draft: "Saved.",
   pending: "Saved and sent to the queue. It shows once a moderator approves it.",
   unpublished: "Taken down. It is a draft again.",
+  published: "Published.",
 };
 
 function isErrorCode(code: string): code is ErrorCode {
