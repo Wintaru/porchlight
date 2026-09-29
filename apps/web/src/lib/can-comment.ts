@@ -28,15 +28,23 @@ export async function commentFormStateFor(
       return "anonymous";
     }
     if (response instanceof CannotCommentResponse) {
-      // Never `signed-out` in practice (the actor already is a visitor): whatever
-      // closed the anonymous door, sign-in is still the way in for a member.
-      return "signed-out";
+      // The anonymous door is closed. Offer sign-in only when a member could comment:
+      // not on a post whose comments are off (#106).
+      return memberCommentState(actor, postId);
     }
     if (response instanceof CommentUnavailableResponse) {
       console.error(`comment check failed [${response.correlationId}]`, response.reason);
     }
     return "closed";
   }
+  return memberCommentState(actor, postId);
+}
+
+async function memberCommentState(
+  actor: Actor,
+  postId: string,
+): Promise<CommentFormState> {
+  const { commentManager } = getDependencyContainer();
   const response = await commentManager.query(new CheckCanCommentRequest(actor, postId));
   if (response instanceof CanCommentResponse) {
     return "open";

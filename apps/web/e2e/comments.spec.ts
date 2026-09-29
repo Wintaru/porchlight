@@ -210,6 +210,7 @@ test("a 7-deep reply chain renders at 6 levels and the last reply names who it a
 
 test("a post with comments off shows its comments but no form (D20)", async ({
   page,
+  browser,
 }) => {
   const stamp = Date.now().toString(36);
   const post = await publishPost(page, THEO, `Closed later ${stamp}`);
@@ -227,6 +228,14 @@ test("a post with comments off shows its comments but no form (D20)", async ({
   await expect(page.getByTestId("reply-form")).toHaveCount(0);
   await expect(page.locator("summary", { hasText: "Reply" })).toHaveCount(0);
   await expect(page.getByTestId("comment-sign-in")).toHaveCount(0);
+
+  // A visitor is not offered sign-in either: signing in would not open it (#106).
+  const visitor = await browser.newPage();
+  await visitor.goto(post.url);
+  await expect(visitor.getByText(`Before the close ${stamp}`)).toBeVisible();
+  await expect(visitor.getByTestId("comment-sign-in")).toHaveCount(0);
+  await expect(visitor.getByTestId("anonymous-comment-form")).toHaveCount(0);
+  await visitor.close();
 
   await page.goto(`/write/${post.id}`);
   await deleteCurrentPost(page);

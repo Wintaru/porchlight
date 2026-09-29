@@ -364,12 +364,14 @@ async function mayCreateComment(
   if (!subject.commentsEnabled) {
     return "comments-closed";
   }
-  const gate = activeMember(actor);
-  if (isDenial(gate)) {
-    return gate;
-  }
+  // The site's switch before the member gate, so a visitor on a site with comments off
+  // is not offered sign-in (#106).
   const comments = await policy.comments();
-  return comments === "off" ? "comments-closed" : undefined;
+  if (comments === "off") {
+    return "comments-closed";
+  }
+  const gate = activeMember(actor);
+  return isDenial(gate) ? gate : undefined;
 }
 
 // The visitor entry point #8 adds, the same shape as `mayCreatePostAnonymously`: the
