@@ -19,10 +19,12 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { BodyEditor } from "@/components/editor/BodyEditor";
+import { type FormMessages, KeepTypedForm } from "@/components/KeepTypedForm";
 import { StaffShell } from "@/components/staff/StaffShell";
 import { Toast } from "@/components/toast/Toast";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { applyPreset, saveSiteConfig } from "./actions";
+import { applyPreset, saveSiteConfig, saveSiteConfigInPlace } from "./actions";
+import { type SiteConfigField } from "./parse-site-config-form";
 import { InvitesSection } from "./InvitesSection";
 import { rerenderBodies } from "./rerender-actions";
 import { parseRerenderCursor } from "./rerender-press";
@@ -62,14 +64,36 @@ const DUTY_STATUS_LABEL: Record<DutyChecklistStatus, string> = {
   fakeInProduction: "Not yet active — the fake is answering in production",
 };
 
-const ERROR_TEXT: Readonly<Record<string, string>> = {
+// A sentence for every setting the form can name in an error (#108), so none shows as
+// a raw key.
+const FIELD_TEXT = {
+  posting: "Pick a posting policy from the list.",
+  comments: "Pick a comment policy from the list.",
+  signUp: "Pick a sign-up policy from the list.",
+  agents: "Pick an agents policy from the list.",
+  agentDisclosure: "Pick a disclosure setting from the list.",
+  agentLimits: `Each agent limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}.`,
+  region: "Pick a region from the list.",
+  siteIdentity: "Check the site name, tagline and about text.",
+  attachmentAllowlist: "Check the allowed attachment types.",
+  anonymousUploadCap: "The anonymous upload cap is a whole number of bytes.",
+  attachmentQuotaByTrust: "Check the upload caps for each trust level.",
+  moderationThresholds: "Check the moderation thresholds.",
+  rawIpRetentionDays: "The IP retention window is a whole number of days.",
+  autoPromoteAfterApprovedPosts: "Check the number of approved posts for promotion.",
+} satisfies Record<SiteConfigField, string>;
+
+const ERROR_TEXT: FormMessages = {
+  ...FIELD_TEXT,
   "not-allowed": "This account may not manage the site's settings.",
   "signed-out": "Sign in as the site's admin first.",
   "account-inactive": "This account cannot make changes right now.",
+  "posting-closed": "This account may not manage the site's settings.",
+  "comments-closed": "This account may not manage the site's settings.",
+  "agents-closed": "This account may not manage the site's settings.",
   unavailable: "The settings could not be saved. Try again in a moment.",
   "rerender-cursor": "That re-render could not continue. Press Re-render to start again.",
-  agentLimits: `Each agent limit is a whole number from 0 to ${String(MAX_AGENT_DAILY_LIMIT)}.`,
-  agentDisclosure: "Pick a disclosure setting from the list.",
+  preset: "Pick a preset from the list.",
 };
 
 export function generateMetadata() {
@@ -103,7 +127,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   // here and again by the action, so a typed address cannot reach a query.
   const resume =
     done === "rerender-stopped" ? parseRerenderCursor(table, after) : undefined;
-  const errorText = error === undefined ? undefined : (ERROR_TEXT[error] ?? `${error}.`);
+  const errorText =
+    error === undefined ? undefined : (ERROR_TEXT[error] ?? ERROR_TEXT.unavailable);
 
   return (
     <StaffShell current="admin" isAdmin>
@@ -201,7 +226,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         )}
       </section>
 
-      <form action={saveSiteConfig} className={styles.form}>
+      <KeepTypedForm
+        action={saveSiteConfig}
+        submitInPlace={saveSiteConfigInPlace}
+        messages={ERROR_TEXT}
+        className={styles.form}
+      >
         <section className={styles.card} aria-labelledby="identity-heading">
           <h2 id="identity-heading">Site identity</h2>
           <div className={styles.grid}>
@@ -443,7 +473,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             Save settings
           </button>
         </div>
-      </form>
+      </KeepTypedForm>
     </StaffShell>
   );
 }

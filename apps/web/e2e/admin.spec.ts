@@ -40,6 +40,32 @@ test("an admin sees the duty checklist and can change site identity", async ({
   await expect(page).toHaveURL(/\/admin\?done=saved$/);
 });
 
+// #108: a refused save says what was wrong in words and keeps the other edits.
+test("a refused settings save explains itself and keeps the page as typed", async ({
+  page,
+}) => {
+  await devSignIn(page, LAMPLIGHTER);
+  await page.goto("/admin");
+  const stamp = Date.now().toString(36);
+  const tagline = `Kept on refusal ${stamp}`;
+  await page.getByLabel("Tagline").fill(tagline);
+  const flagAt = page.getByLabel("Flag at");
+  const raised = Math.min(1, Number(await flagAt.inputValue()) + 0.05).toFixed(2);
+  await flagAt.fill(raised);
+  await page.getByRole("button", { name: "Save settings" }).click();
+
+  await expect(page.getByTestId("form-error")).toHaveText(
+    /^Check the moderation thresholds: thresholds may only be lowered/,
+  );
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.getByLabel("Tagline")).toHaveValue(tagline);
+  await expect(flagAt).toHaveValue(raised);
+
+  // Nothing was stored.
+  await page.reload();
+  await expect(page.getByLabel("Tagline")).not.toHaveValue(tagline);
+});
+
 test("switching region changes the reporting info and the raw IP retention window", async ({
   page,
 }) => {

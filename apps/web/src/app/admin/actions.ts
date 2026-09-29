@@ -15,21 +15,47 @@ import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
+import type { SubmitRefused } from "@/components/KeepTypedForm";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { parseSiteConfigForm } from "./parse-site-config-form";
 
 const ADMIN_PATH = "/admin";
 
+// The form's own action, for a browser without JS: a refusal redirects back with its
+// code.
 export async function saveSiteConfig(formData: FormData): Promise<void> {
+  const refused = await siteConfigSave(formData);
+  redirect(withCode("error", refused.error));
+}
+
+// The same save with JS: a refusal comes back to the page, which keeps the other edits
+// (#108).
+export async function saveSiteConfigInPlace(formData: FormData): Promise<SubmitRefused> {
+  return siteConfigSave(formData);
+}
+
+// A stored save redirects; only a refusal returns.
+async function siteConfigSave(formData: FormData): Promise<SubmitRefused> {
   const actor = await requireMember();
   const parsed = parseSiteConfigForm(formData);
   if (!parsed.ok) {
-    redirect(withCode("error", parsed.field));
+    return { error: parsed.field };
   }
   const response = await getDependencyContainer().siteConfigManager.execute(
     new SaveSiteConfigRequest(actor, parsed.config),
   );
-  finish(response);
+  if (response instanceof SiteConfigSavedResponse) {
+    revalidatePath(ADMIN_PATH);
+    redirect(withCode("done", "saved"));
+  }
+  if (response instanceof SiteConfigInvalidResponse) {
+    return { error: response.field, detail: response.message };
+  }
+  if (response instanceof SiteConfigForbiddenResponse) {
+    return { error: response.reason };
+  }
+  console.error(`site config save failed [${response.correlationId}]`, response);
+  return { error: "unavailable" };
 }
 
 export async function applyPreset(formData: FormData): Promise<void> {

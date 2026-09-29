@@ -18,9 +18,29 @@ export interface ParsedSiteConfigForm {
   readonly config: Partial<SiteConfigSnapshot>;
 }
 
+// Every setting the form can name in an error. The page has a sentence for each (#108).
+export const SITE_CONFIG_FIELDS = [
+  "posting",
+  "comments",
+  "signUp",
+  "agents",
+  "agentDisclosure",
+  "agentLimits",
+  "region",
+  "siteIdentity",
+  "attachmentAllowlist",
+  "anonymousUploadCap",
+  "attachmentQuotaByTrust",
+  "moderationThresholds",
+  "rawIpRetentionDays",
+  "autoPromoteAfterApprovedPosts",
+] as const;
+
+export type SiteConfigField = (typeof SITE_CONFIG_FIELDS)[number];
+
 export interface SiteConfigFormError {
   readonly ok: false;
-  readonly field: string;
+  readonly field: SiteConfigField;
 }
 
 export function parseSiteConfigForm(
