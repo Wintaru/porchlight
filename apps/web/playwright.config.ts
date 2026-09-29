@@ -27,8 +27,10 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   // A CI runner compiles each route cold on its first hit, and with no retries one slow
-  // first compile must not fail the run.
+  // first compile must not fail the run. That holds for one assertion too: a form
+  // action and the page it redirects to can both compile inside one toHaveURL.
   timeout: IS_CI ? 60_000 : 30_000,
+  expect: { timeout: IS_CI ? 15_000 : 5_000 },
   forbidOnly: IS_CI,
   reporter: IS_CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
