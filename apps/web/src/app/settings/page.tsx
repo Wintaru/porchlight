@@ -7,7 +7,7 @@ import { getAgentsPolicy } from "@/lib/agents-policy";
 import { getCurrentActor } from "@/lib/current-actor";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { classNames } from "@/lib/class-names";
-import { saveProfile } from "./actions";
+import { saveProfile, saveProfileInPlace } from "./actions";
 import { blockTextFor } from "@/components/member-block/block-messages";
 import { AnonymousClaimCard } from "./AnonymousClaimCard";
 import { MutedMembersSection } from "./MutedMembersSection";
@@ -16,6 +16,7 @@ import { EmailSection } from "./EmailSection";
 import { PresenceSection } from "./PresenceSection";
 import styles from "./settings.module.css";
 import { BIO_MAX_LENGTH, DISPLAY_NAME_MAX_LENGTH } from "./parse-profile-form";
+import { type FormMessages, KeepTypedForm } from "@/components/KeepTypedForm";
 import { pageTitle } from "@/lib/page-title";
 
 interface SettingsPageProps {
@@ -32,7 +33,7 @@ interface SettingsPageProps {
   }>;
 }
 
-const ERROR_TEXT: Readonly<Record<string, string>> = {
+const ERROR_TEXT: FormMessages = {
   "handle-shape":
     "A handle is 2 to 30 characters: lowercase letters, digits, - and _, starting with a letter or digit.",
   "handle-reserved": "That handle is reserved.",
@@ -125,7 +126,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               {errorText}
             </p>
           )}
-          <form action={saveProfile} className={styles.form}>
+          <KeepTypedForm
+            action={saveProfile}
+            submitInPlace={saveProfileInPlace}
+            messages={ERROR_TEXT}
+            className={styles.form}
+          >
             <div className={styles.pair}>
               <label className="field">
                 <span className="field-label">Display name</span>
@@ -167,7 +173,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 Save
               </button>
             </div>
-          </form>
+          </KeepTypedForm>
         </section>
         {agentsOpen && (
           <AgentsSection

@@ -77,6 +77,8 @@ test("the settings form saves and the handle rules answer", async ({ page }) => 
   await expect(page.getByLabel("Display name")).toHaveValue("June P.");
   await expect(page.getByLabel("Bio")).toHaveValue(bio);
 
+  // A refused save keeps everything typed, so it can be fixed and sent again (#107).
+  await page.getByLabel("Display name").fill("June Q.");
   for (const [handle, message] of [
     ["June", /2 to 30 characters/],
     ["mod", /reserved/],
@@ -85,8 +87,10 @@ test("the settings form saves and the handle rules answer", async ({ page }) => 
     await page.getByLabel("Handle").fill(handle);
     await page.getByRole("button", { name: "Save", exact: true }).click();
     await expect(page.getByTestId("form-error")).toHaveText(message);
+    await expect(page.getByLabel("Handle")).toHaveValue(handle);
+    await expect(page.getByLabel("Display name")).toHaveValue("June Q.");
   }
-  await expect(page.getByLabel("Handle")).toHaveValue(JUNE.handle);
+  await page.getByLabel("Handle").fill(JUNE.handle);
 
   // Put the seed row back so the next run starts from the same place.
   await page.getByLabel("Display name").fill(original.displayName);
