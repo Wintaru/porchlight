@@ -1,6 +1,14 @@
 /* The site header: the Main board's 64px row on a desktop, the FeedPhone board's 56px
-   row on a phone. One row at every width — what does not fit moves into a menu. */
+   row on a phone. One row at every width — what does not fit moves into a menu. The
+   row is a dusk sky in both themes, lit from the lamp mark, so its text is always
+   light; `--lamp-x` follows the lamp as the padding changes. */
 .header {
+  --pad: 64px;
+  --lamp-x: calc(var(--pad) + 14px);
+  --sky-ink: #fffcf7;
+  --sky-muted: rgb(246 241 232 / 72%);
+  --sky-deep: #2c2d45;
+
   position: relative;
   z-index: 20;
   display: flex;
@@ -8,9 +16,23 @@
   justify-content: space-between;
   gap: 16px;
   height: 64px;
-  padding: 0 64px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  padding: 0 var(--pad);
+  border-bottom: 1px solid #c47a4a;
+  background:
+    radial-gradient(
+      circle at var(--lamp-x) 50%,
+      rgb(255 217 138 / 45%),
+      rgb(242 180 65 / 12%) 56px,
+      transparent 120px
+    ),
+    linear-gradient(to top, rgb(220 154 94 / 45%), transparent 16px),
+    radial-gradient(circle at 22% 24%, rgb(255 252 247 / 70%) 1px, transparent 1.6px),
+    radial-gradient(circle at 37% 62%, rgb(255 252 247 / 50%) 1px, transparent 1.6px),
+    radial-gradient(circle at 51% 18%, rgb(255 252 247 / 70%) 1.2px, transparent 1.8px),
+    radial-gradient(circle at 63% 48%, rgb(255 252 247 / 45%) 1px, transparent 1.6px),
+    radial-gradient(circle at 74% 22%, rgb(255 252 247 / 60%) 1px, transparent 1.6px),
+    radial-gradient(circle at 29% 44%, rgb(255 252 247 / 40%) 1px, transparent 1.6px),
+    linear-gradient(to bottom, #1f2a44, #3a3346 70%, #5a4452);
   box-sizing: border-box;
 }
 
@@ -26,7 +48,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  color: var(--ink);
+  color: var(--sky-ink);
   font-family: var(--font-serif);
   font-size: 24px;
   font-weight: 500;
@@ -36,11 +58,16 @@
 }
 
 .brand:hover {
-  color: var(--ink);
+  color: var(--sky-ink);
 }
 
 .lamp {
   flex-shrink: 0;
+}
+
+.header a:focus-visible {
+  outline: 2px solid var(--glow);
+  outline-offset: 3px;
 }
 
 /* A long site name gives way before the controls on the right do. */
@@ -62,17 +89,17 @@
 .siteLink {
   padding-bottom: 2px;
   border-bottom: 2px solid transparent;
-  color: var(--muted);
+  color: var(--sky-muted);
   text-decoration: none;
 }
 
 .siteLink:hover {
-  color: var(--ink);
+  color: var(--sky-ink);
 }
 
 .siteLink[aria-current="page"] {
-  border-bottom-color: var(--amber);
-  color: var(--ink);
+  border-bottom-color: var(--glow);
+  color: var(--sky-ink);
 }
 
 .account {
@@ -89,13 +116,23 @@
 }
 
 .quietLink {
-  color: var(--label);
+  color: var(--sky-muted);
   font-size: 15px;
   text-decoration: none;
 }
 
 .quietLink:hover {
-  color: var(--amber);
+  color: var(--glow);
+}
+
+.header .signIn {
+  border-color: rgb(246 241 232 / 45%);
+  color: var(--sky-ink);
+}
+
+.header .signIn:not(:disabled):hover {
+  border-color: var(--glow);
+  color: var(--glow);
 }
 
 /* A dropdown: the bell, the account menu, a visitor's menu. */
@@ -113,17 +150,17 @@
   border: 0;
   border-radius: 999px;
   background: none;
-  color: var(--ink);
+  color: var(--sky-ink);
   font: inherit;
   cursor: pointer;
 }
 
 .menuButton:hover {
-  color: var(--amber);
+  color: var(--glow);
 }
 
 .menuButton:focus-visible {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--glow);
   outline-offset: 3px;
 }
 
@@ -208,9 +245,9 @@
   right: -4px;
   width: 10px;
   height: 10px;
-  border: 2px solid var(--surface);
+  border: 2px solid var(--sky-deep);
   border-radius: 999px;
-  background: var(--amber);
+  background: var(--glow);
   box-sizing: border-box;
 }
 
@@ -267,7 +304,7 @@
    starts here: links move into the menus, Write and Sign in shrink to their core. */
 @media (max-width: 900px) {
   .header {
-    padding: 0 24px;
+    --pad: 24px;
   }
 
   .account {
@@ -304,8 +341,8 @@
 
 @media (max-width: 640px) {
   .header {
+    --pad: 16px;
     height: 56px;
-    padding: 0 16px;
   }
 
   .brand {

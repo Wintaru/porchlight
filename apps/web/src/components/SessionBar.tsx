@@ -189,13 +189,13 @@ function LampMark() {
       aria-hidden="true"
     >
       <circle cx="24" cy="26" r="13" fill="var(--glow)" stroke="none" opacity="0.35" />
-      <path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="var(--surface)" />
+      <path d="M17 12h14l3 6v14l-3 4H17l-3-4V18l3-6Z" fill="var(--sky-deep)" />
       <path d="M24 6v6" />
       <path d="M20 12h8" />
       <path
         d="M24 21c-2 2-3 4-3 6a3 3 0 0 0 6 0c0-2-1-4-3-6Z"
         fill="var(--glow)"
-        stroke="var(--amber)"
+        stroke="#e08a3c"
       />
       <path d="M14 34h20" />
     </svg>
