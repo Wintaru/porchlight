@@ -18,7 +18,6 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { getDependencyContainer } from "@/lib/dependency-container";
 import { isEntityId } from "@/lib/entity-id";
 import { signInPathFor } from "@/lib/sign-in-path";
-import { unpublishPost } from "../actions";
 import { errorTextFor, savedTextFor } from "../post-form-messages";
 import { PrivateChip } from "@/components/PrivateChip";
 
@@ -117,22 +116,19 @@ export default async function EditPage({ params, searchParams }: EditPageProps) 
   };
   return (
     <main>
+      {/* A Save or Unpublish redirects back to this same page, which keeps the editor
+          mounted: the key remounts it on every stored write, so its fields and version
+          start again from the post as saved. An autosave does not re-render. */}
       <PostEditor
+        key={post.version}
         heading={post.title === "" ? "Edit post" : post.title}
         post={editable}
         canPublish={post.status === "draft"}
+        canUnpublish={post.status === "published" || post.status === "pending"}
         trustLevel={actor.profile.trustLevel}
         notices={notices}
       />
       <div className={classNames(styles.section, styles.footer)}>
-        {(post.status === "published" || post.status === "pending") && (
-          <form action={unpublishPost}>
-            <input type="hidden" name="postId" value={post.id} />
-            <button type="submit" className={styles.button}>
-              Unpublish
-            </button>
-          </form>
-        )}
         {/* Asks first on its own page (#72), which holds the delete form. */}
         <Link
           href={`/write/${post.id}/delete`}

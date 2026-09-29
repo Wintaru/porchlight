@@ -195,6 +195,46 @@ test("an untouched body is saved as it was loaded, and a published post does not
   await deleteCurrentPost(page);
 });
 
+// A Save or Unpublish redirects back to the same editor. It shows the post as saved:
+// the visibility just chosen, and a version the next autosave may write over. Unpublish
+// waits while the page has changes it would not send.
+test("after a Save and an Unpublish the editor shows the post as saved", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  const stamp = Date.now().toString(36);
+  await page.getByLabel("Title").fill(`Shown as saved ${stamp}`);
+  await page.getByLabel(/^Unlisted/).check();
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page).toHaveURL(new RegExp(`/@theo/shown-as-saved-${stamp}$`));
+  await page.getByTestId("post-edit").click();
+
+  // The status line is the server's render of the stored post.
+  const saveAs = async (visibility: RegExp, status: string | RegExp) => {
+    await page.getByLabel(visibility).check();
+    await page.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByTestId("post-status")).toHaveText(status);
+    await expect(page.getByLabel(visibility)).toBeChecked();
+    await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
+  };
+  await saveAs(/^Private/, /Only you/);
+  await saveAs(/^Public/, /^Published$/);
+  await saveAs(/^Private/, /Only you/);
+
+  const unpublish = page.getByRole("button", { name: "Unpublish" });
+  await page.getByLabel("Title").fill(`Shown as saved ${stamp} edited`);
+  await expect(unpublish).toBeDisabled();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByLabel("Title")).toHaveValue(`Shown as saved ${stamp} edited`);
+  await unpublish.click();
+  await expect(page.getByTestId("post-status")).toHaveText(/^Draft/);
+  await page.getByLabel("Title").fill(`Shown as saved ${stamp} again`);
+  await expect(page.getByTestId("save-state")).toHaveText(/Saving|Draft saved/);
+  await expect(page.getByTestId("save-state")).toHaveText("Draft saved a moment ago");
+  await deleteCurrentPost(page);
+});
+
 // #66: the editor opens only for someone who may edit the post. June may read Theo's
 // published post on its own page, but not open it here.
 test("another member's published post does not open in the editor", async ({ page }) => {

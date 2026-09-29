@@ -3,7 +3,13 @@
 import type { Post, TrustLevel } from "@porchlight/core";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
-import { autosavePost, checkDraft, previewPost, submitPost } from "@/app/write/actions";
+import {
+  autosavePost,
+  checkDraft,
+  previewPost,
+  submitPost,
+  unpublishPost,
+} from "@/app/write/actions";
 import {
   SUMMARY_MAX_LENGTH,
   TAGS_MAX_COUNT,
@@ -41,6 +47,7 @@ export type EditorPost = Pick<
 interface PostEditorProps {
   readonly post?: EditorPost;
   readonly canPublish: boolean;
+  readonly canUnpublish?: boolean;
   readonly trustLevel: TrustLevel;
   readonly heading: string;
   readonly notices?: ReactNode;
@@ -63,6 +70,7 @@ type SaveState =
 export function PostEditor({
   post,
   canPublish,
+  canUnpublish = false,
   trustLevel,
   heading,
   notices,
@@ -296,6 +304,18 @@ export function PostEditor({
           >
             {isDraft ? "Save draft" : "Save"}
           </button>
+          {canUnpublish && (
+            // Unpublish sends no fields and the page remounts the editor from the
+            // stored post, so it waits until the changes on the page are saved.
+            <button
+              type="submit"
+              formAction={unpublishPost}
+              className={styles.button}
+              disabled={locked || save.kind === "dirty" || save.kind === "failed"}
+            >
+              Unpublish
+            </button>
+          )}
           {canPublish && (
             <button
               type="submit"
