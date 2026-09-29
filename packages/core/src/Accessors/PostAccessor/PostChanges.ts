@@ -1,3 +1,4 @@
+import type { CoverFrame } from "../../Common/CoverFrame";
 import type { PostStatus } from "../../Common/PostStatus";
 import type { PostVisibility } from "../../Common/PostVisibility";
 import type { Tag } from "../../Common/Tag";
@@ -13,6 +14,7 @@ export interface PostChanges {
   readonly visibility?: PostVisibility;
   readonly commentsEnabled?: boolean;
   readonly coverMediaId?: string | null;
+  readonly coverFrame?: CoverFrame;
   readonly tags?: readonly Tag[];
   readonly status?: PostStatus;
   readonly publishedAt?: Date | null;

@@ -1,3 +1,4 @@
+import { type CoverFrame, isCoverFrameInRange } from "../../Common/CoverFrame";
 import { POST_BODY_MAX_LENGTH } from "../../Common/PostBody";
 import { POST_SUMMARY_MAX_LENGTH } from "../../Common/PostSummary";
 import type { RequestContext } from "../../Common/RequestContext";
@@ -23,6 +24,17 @@ export function checkBodyLength(
   return bodyMd.length > POST_BODY_MAX_LENGTH
     ? new PostRejectedResponse(context.correlationId, "body")
     : undefined;
+}
+
+// A framing the schema would refuse: a focus point off the picture, or a zoom out of
+// range. Refused as a bad cover, before the store.
+export function checkCoverFrame(
+  frame: CoverFrame | undefined,
+  context: Context,
+): PostRejectedResponse | undefined {
+  return frame === undefined || isCoverFrameInRange(frame)
+    ? undefined
+    : new PostRejectedResponse(context.correlationId, "cover");
 }
 
 // The summary as every door stores it (D18, #118): trimmed, and null when empty so the

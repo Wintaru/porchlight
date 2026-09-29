@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Actor } from "../Common/Actor";
+import { CENTERED_COVER_FRAME, COVER_ZOOM_MAX } from "../Common/CoverFrame";
 import { POST_BODY_MAX_LENGTH } from "../Common/PostBody";
 import { POST_SUMMARY_MAX_LENGTH } from "../Common/PostSummary";
 import type { Post } from "../Common/Post";
@@ -187,6 +188,40 @@ describe("DependencyContainer: PostManager", () => {
     expect(updated).toMatchObject({ reason: "summary" });
     expect(cleared).toBeInstanceOf(PostResponse);
     expect(cleared).toMatchObject({ post: { summary: null } });
+  });
+
+  test("a cover framing is stored, centred by default, and refused out of range", async () => {
+    const container = new DependencyContainer(FAKE_ENV);
+    const centred = await draft(container, THEO);
+    const framed = await draft(container, THEO, {
+      coverFrame: { focusX: 0.2, focusY: 1, zoom: COVER_ZOOM_MAX },
+    });
+
+    const created = await container.postManager.execute(
+      new CreateDraftRequest(
+        THEO,
+        { ...DRAFT, coverFrame: { focusX: 0.5, focusY: 0.5, zoom: COVER_ZOOM_MAX + 1 } },
+        TEST_ORIGIN,
+      ),
+    );
+    const updated = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, centred.id, {
+        coverFrame: { focusX: -0.1, focusY: 0.5, zoom: 1 },
+      }),
+    );
+    const moved = await container.postManager.execute(
+      new UpdateDraftRequest(THEO, framed.id, {
+        coverFrame: { focusX: 0.9, focusY: 0.1, zoom: 1.5 },
+      }),
+    );
+
+    expect(centred.coverFrame).toEqual(CENTERED_COVER_FRAME);
+    expect(framed.coverFrame).toEqual({ focusX: 0.2, focusY: 1, zoom: COVER_ZOOM_MAX });
+    expect(created).toMatchObject({ reason: "cover" });
+    expect(updated).toMatchObject({ reason: "cover" });
+    expect(moved).toMatchObject({
+      post: { coverFrame: { focusX: 0.9, focusY: 0.1, zoom: 1.5 } },
+    });
   });
 
   test("a visitor may not draft, and neither may a suspended member", async () => {

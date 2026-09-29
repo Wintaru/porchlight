@@ -1,4 +1,5 @@
 import type { ContentAuthor } from "./ContentAuthor";
+import type { CoverFrame } from "./CoverFrame";
 import type { PostOrigin } from "./PostOrigin";
 import type { PostStatus } from "./PostStatus";
 import type { PostVisibility } from "./PostVisibility";
@@ -16,6 +17,7 @@ export interface Post {
   readonly bodyHtml: string;
   readonly summary: string | null;
   readonly coverMediaId: string | null;
+  readonly coverFrame: CoverFrame;
   readonly status: PostStatus;
   readonly visibility: PostVisibility;
   readonly commentsEnabled: boolean;

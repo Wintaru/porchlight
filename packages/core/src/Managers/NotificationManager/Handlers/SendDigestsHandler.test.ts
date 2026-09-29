@@ -16,6 +16,7 @@ import { createFakeEmailPreferenceAccessor } from "../../../Composition/createEm
 import { SendDigestsRequest } from "../Requests/SendDigestsRequest";
 import { DigestsSentResponse } from "../Responses/DigestsSentResponse";
 import { SendDigestsHandler } from "./SendDigestsHandler";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 
 const SITE = { name: "Porch", url: "https://porch.test" };
 const AT = new Date("2026-09-27T12:00:00.000Z");
@@ -53,6 +54,7 @@ function addPost(state: FakePostState, id: string, authorId: string, at: Date): 
     bodyHtml: "",
     summary: null,
     coverMediaId: null,
+    coverFrame: CENTERED_COVER_FRAME,
     status: "published",
     visibility: "public",
     commentsEnabled: true,

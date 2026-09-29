@@ -3,6 +3,7 @@ import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccesso
 import { StoreNewPostRequest } from "../../../Accessors/PostAccessor/Requests/StoreNewPostRequest";
 import { PostSlugTakenResponse } from "../../../Accessors/PostAccessor/Responses/PostSlugTakenResponse";
 import { PostStoredResponse } from "../../../Accessors/PostAccessor/Responses/PostStoredResponse";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 import type { IHandler } from "../../../Common/IHandler";
 import { ResponseBase } from "../../../Common/ResponseBase";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
@@ -25,7 +26,13 @@ import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import { evidenceTextOf } from "../evidenceTextOf";
-import { checkBodyLength, renderBody, shapeSummary, shapeTags } from "../shapeDraft";
+import {
+  checkBodyLength,
+  checkCoverFrame,
+  renderBody,
+  shapeSummary,
+  shapeTags,
+} from "../shapeDraft";
 import { unavailable } from "../unavailable";
 
 // How many slug candidates to try before giving up. Every candidate after the first
@@ -102,6 +109,10 @@ export class CreateDraftHandler implements IHandler<
     if (badCover !== undefined) {
       return badCover;
     }
+    const badFrame = checkCoverFrame(draft.coverFrame, context);
+    if (badFrame !== undefined) {
+      return badFrame;
+    }
     const tags = await shapeTags(this.content, draft.tags, context);
     if (tags instanceof ResponseBase) {
       return tags;
@@ -133,6 +144,7 @@ export class CreateDraftHandler implements IHandler<
             visibility: draft.visibility,
             commentsEnabled: draft.commentsEnabled,
             coverMediaId: draft.coverMediaId ?? null,
+            coverFrame: draft.coverFrame ?? CENTERED_COVER_FRAME,
             tags,
             ...provenanceOf(actor, timestamp, draft.bodyMd),
           },

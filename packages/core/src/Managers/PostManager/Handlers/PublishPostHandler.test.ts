@@ -34,6 +34,7 @@ import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Reque
 import { FakeProfileState } from "../../../Accessors/ProfileAccessor/FakeProfileState";
 import { FakeListStaffProfilesHandler } from "../../../Accessors/ProfileAccessor/Handlers/FakeListStaffProfilesHandler";
 import { ListStaffProfilesRequest } from "../../../Accessors/ProfileAccessor/Requests/ListStaffProfilesRequest";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 
 const AT = new Date("2026-09-12T10:00:00.000Z");
 const THEO: Actor = {
@@ -64,6 +65,7 @@ function stateWith(status: PostStatus): FakePostState {
     bodyHtml: "",
     summary: null,
     coverMediaId: null,
+    coverFrame: CENTERED_COVER_FRAME,
     status,
     visibility: "public",
     commentsEnabled: true,

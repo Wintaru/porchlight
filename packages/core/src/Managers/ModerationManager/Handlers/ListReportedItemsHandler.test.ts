@@ -16,6 +16,7 @@ import { createFakeReportAccessor } from "../../../Composition/createReportAcces
 import { ListReportedItemsRequest } from "../Requests/ListReportedItemsRequest";
 import { ReportedItemsResponse } from "../Responses/ReportedItemsResponse";
 import { ListReportedItemsHandler } from "./ListReportedItemsHandler";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 
 const AT = new Date("2026-09-25T10:00:00.000Z");
 const MIRA: Actor = {
@@ -42,6 +43,7 @@ const POST: Post = {
   bodyHtml: "",
   summary: null,
   coverMediaId: null,
+  coverFrame: CENTERED_COVER_FRAME,
   status: "published",
   visibility: "public",
   commentsEnabled: true,

@@ -35,6 +35,7 @@ export class FakeStoreNewPostHandler implements IHandler<
       bodyHtml: post.bodyHtml,
       summary: post.summary,
       coverMediaId: post.coverMediaId,
+      coverFrame: post.coverFrame,
       status: "draft",
       visibility: post.visibility,
       commentsEnabled: post.commentsEnabled,

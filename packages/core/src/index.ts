@@ -70,6 +70,7 @@ export { MOD_ACTION_KINDS, type ModActionKind } from "./Common/ModActionKind";
 export type { ModerationTarget } from "./Common/ModerationTarget";
 export type { Notification } from "./Common/Notification";
 export { NOTIFICATION_KINDS, type NotificationKind } from "./Common/NotificationKind";
+export type { CoverFrame } from "./Common/CoverFrame";
 export type { Post } from "./Common/Post";
 export type { PostRevision } from "./Common/PostRevision";
 export { POST_ORIGINS, DEFAULT_POST_ORIGIN, type PostOrigin } from "./Common/PostOrigin";

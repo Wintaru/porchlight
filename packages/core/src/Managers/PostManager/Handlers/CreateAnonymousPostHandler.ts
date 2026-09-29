@@ -16,6 +16,7 @@ import { SlugUnusableResponse } from "../../../Engines/ContentRenderEngine/Respo
 import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
 import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IPermissionEngine } from "../../../Engines/PermissionEngine/IPermissionEngine";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 import type { IHandler } from "../../../Common/IHandler";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { evidenceTextOf } from "../evidenceTextOf";
@@ -182,6 +183,7 @@ export class CreateAnonymousPostHandler implements IHandler<
             visibility: "public",
             commentsEnabled: true,
             coverMediaId: null,
+            coverFrame: CENTERED_COVER_FRAME,
             tags: [],
             // An anonymous visitor is a person at a form, never an agent (D22).
             origin: "editor",

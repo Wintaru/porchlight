@@ -7,6 +7,12 @@ export { AGENT_SCOPES, DEFAULT_AGENT_SCOPES, type AgentScope } from "./Common/Ag
 export { AGENT_TOKEN_NAME_MAX_LENGTH } from "./Common/AgentToken";
 export { isImageFilename } from "./Common/AttachmentTypeCatalog";
 export { BLOCKED_REPLY_TEXT } from "./Common/BlockedReplyText";
+export {
+  CENTERED_COVER_FRAME,
+  COVER_ZOOM_MAX,
+  isCoverFrameInRange,
+  type CoverFrame,
+} from "./Common/CoverFrame";
 export { hasHandleShape } from "./Common/HandleShape";
 export { hasSlugShape } from "./Common/SlugShape";
 export { EMBED_PLAYER_PREFIXES } from "./Common/EmbedPlayers";

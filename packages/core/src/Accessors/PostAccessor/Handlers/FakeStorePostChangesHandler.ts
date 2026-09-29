@@ -50,6 +50,7 @@ export class FakeStorePostChangesHandler implements IHandler<
       summary: changes.summary === undefined ? current.summary : changes.summary,
       coverMediaId:
         changes.coverMediaId === undefined ? current.coverMediaId : changes.coverMediaId,
+      coverFrame: changes.coverFrame ?? current.coverFrame,
       visibility: changes.visibility ?? current.visibility,
       commentsEnabled: changes.commentsEnabled ?? current.commentsEnabled,
       tags: changes.tags ?? current.tags,

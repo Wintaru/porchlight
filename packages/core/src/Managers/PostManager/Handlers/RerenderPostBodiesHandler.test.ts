@@ -14,6 +14,7 @@ import { RerenderPostBodiesRequest } from "../Requests/RerenderPostBodiesRequest
 import { PostBodiesRerenderedResponse } from "../Responses/PostBodiesRerenderedResponse";
 import { PostRerenderRejectedResponse } from "../Responses/PostRerenderRejectedResponse";
 import { RerenderPostBodiesHandler } from "./RerenderPostBodiesHandler";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 
 // Issue #98: the re-render reads a budget of posts per request and hands back where to
 // resume, and a post saved during the run counts as skipped, not changed.
@@ -51,6 +52,7 @@ function stalePost(id: string): Post {
     bodyHtml: "<p>old</p>",
     summary: null,
     coverMediaId: null,
+    coverFrame: CENTERED_COVER_FRAME,
     status: "published",
     visibility: "public",
     commentsEnabled: true,

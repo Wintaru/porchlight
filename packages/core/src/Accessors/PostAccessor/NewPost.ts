@@ -1,4 +1,5 @@
 import type { ContentAuthor } from "../../Common/ContentAuthor";
+import type { CoverFrame } from "../../Common/CoverFrame";
 import type { PostOrigin } from "../../Common/PostOrigin";
 import type { PostVisibility } from "../../Common/PostVisibility";
 import type { Tag } from "../../Common/Tag";
@@ -15,6 +16,7 @@ export interface NewPost {
   readonly visibility: PostVisibility;
   readonly commentsEnabled: boolean;
   readonly coverMediaId: string | null;
+  readonly coverFrame: CoverFrame;
   readonly tags: readonly Tag[];
   // Provenance, decided by the Manager from the actor (D22): an agent's draft names
   // its token and is unreviewed until a person saves it.

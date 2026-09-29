@@ -10,6 +10,7 @@ import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfi
 import type { IReportAccessor } from "../../../Accessors/ReportAccessor/IReportAccessor";
 import { CountOpenReportsOnPostRequest } from "../../../Accessors/ReportAccessor/Requests/CountOpenReportsOnPostRequest";
 import { OpenReportsCountedResponse } from "../../../Accessors/ReportAccessor/Responses/OpenReportsCountedResponse";
+import { CENTERED_COVER_FRAME } from "../../../Common/CoverFrame";
 import type { IHandler } from "../../../Common/IHandler";
 import type { Post } from "../../../Common/Post";
 import { ResponseBase } from "../../../Common/ResponseBase";
@@ -35,7 +36,13 @@ import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
-import { checkBodyLength, renderBody, shapeSummary, shapeTags } from "../shapeDraft";
+import {
+  checkBodyLength,
+  checkCoverFrame,
+  renderBody,
+  shapeSummary,
+  shapeTags,
+} from "../shapeDraft";
 import { unavailable } from "../unavailable";
 import { visibilityMoveOf } from "../visibilityMove";
 
@@ -213,6 +220,15 @@ export class UpdateDraftHandler implements IHandler<
         }
       }
       shaped.coverMediaId = changes.coverMediaId;
+      // A framing belongs to one picture: a new cover sent with none starts centred.
+      shaped.coverFrame = CENTERED_COVER_FRAME;
+    }
+    if (changes.coverFrame !== undefined) {
+      const badFrame = checkCoverFrame(changes.coverFrame, context);
+      if (badFrame !== undefined) {
+        return badFrame;
+      }
+      shaped.coverFrame = changes.coverFrame;
     }
     if (changes.visibility !== undefined) shaped.visibility = changes.visibility;
     if (changes.commentsEnabled !== undefined)

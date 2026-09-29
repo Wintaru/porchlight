@@ -37,6 +37,9 @@ test("toPost maps a member's row, its tags and its dates", () => {
     body_html: "<p>Hi</p>",
     summary: null,
     cover_media_id: null,
+    cover_focus_x: 0.25,
+    cover_focus_y: 0.75,
+    cover_zoom: 2,
     status: "published",
     visibility: "public",
     comments_enabled: true,
@@ -54,6 +57,7 @@ test("toPost maps a member's row, its tags and its dates", () => {
   expect(post).toMatchObject({
     author: { kind: "member", profileId: "u1" },
     tags: [{ slug: "making", name: "Making" }],
+    coverFrame: { focusX: 0.25, focusY: 0.75, zoom: 2 },
     publishedAt: new Date("2026-09-12T10:00:00.000Z"),
     version: 3,
   });
@@ -69,6 +73,9 @@ test("toPost maps an anonymous row and refuses one with no author", () => {
     body_html: "",
     summary: null,
     cover_media_id: null,
+    cover_focus_x: 0.25,
+    cover_focus_y: 0.75,
+    cover_zoom: 2,
     status: "pending",
     visibility: "public",
     comments_enabled: true,

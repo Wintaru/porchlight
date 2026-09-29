@@ -9,7 +9,7 @@ import type { Tag } from "../../Common/Tag";
 // purpose: the client parses the select string at the type level, and a concatenation
 // would widen it to `string` and lose the row type.
 export const POST_COLUMNS =
-  "id, author_id, anonymous_author_id, slug, title, body_md, body_html, summary, cover_media_id, status, visibility, comments_enabled, rejection_reason, origin, agent_token_id, reviewed_at, agent_draft_md, published_at, created_at, updated_at, version, post_tags(tag:tags(slug, name))";
+  "id, author_id, anonymous_author_id, slug, title, body_md, body_html, summary, cover_media_id, cover_focus_x, cover_focus_y, cover_zoom, status, visibility, comments_enabled, rejection_reason, origin, agent_token_id, reviewed_at, agent_draft_md, published_at, created_at, updated_at, version, post_tags(tag:tags(slug, name))";
 
 export type PostRow = Pick<
   Tables<"posts">,
@@ -22,6 +22,9 @@ export type PostRow = Pick<
   | "body_html"
   | "summary"
   | "cover_media_id"
+  | "cover_focus_x"
+  | "cover_focus_y"
+  | "cover_zoom"
   | "status"
   | "visibility"
   | "comments_enabled"
@@ -52,6 +55,11 @@ export function toPost(row: PostRow): Post {
     bodyHtml: row.body_html,
     summary: row.summary,
     coverMediaId: row.cover_media_id,
+    coverFrame: {
+      focusX: row.cover_focus_x,
+      focusY: row.cover_focus_y,
+      zoom: row.cover_zoom,
+    },
     status: row.status,
     visibility: row.visibility,
     commentsEnabled: row.comments_enabled,
