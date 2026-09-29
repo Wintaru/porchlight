@@ -24,7 +24,10 @@ import {
 } from "./upload-rows";
 
 interface AttachmentPanelProps {
-  readonly onInsert: (item: BodyInsert) => void;
+  readonly onInsert: (item: BodyInsert, upload: UploadView) => void;
+  // The cover's upload id, or "" for none: that row says so instead of offering itself.
+  readonly coverMediaId: string;
+  readonly onUseAsCover: (upload: UploadView) => void;
   // The post being edited, or "" while a new post has no id yet.
   readonly postId: string;
 }
@@ -36,8 +39,13 @@ interface AttachmentPanelProps {
 // the member can still put one in or remove it. Pressing a row opens a preview, and the
 // preview puts it in (#80): an image goes in as a picture, a video as a player (#21), any
 // other file as a download card. A file with no public copy yet (a flagged image) cannot
-// go in.
-export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
+// go in. An image can also become the cover from here, so it need not be uploaded twice.
+export function AttachmentPanel({
+  onInsert,
+  coverMediaId,
+  onUseAsCover,
+  postId,
+}: AttachmentPanelProps) {
   const [rows, setRows] = useState<readonly UploadRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
@@ -165,6 +173,12 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   );
   const previewing = previewingId === null ? null : uploadById(rows, loose, previewingId);
   const previewInsert = previewing === null ? null : insertOf(previewing);
+  const coverRole = (upload: UploadView): CoverRole =>
+    upload.mediaId === coverMediaId
+      ? "is-cover"
+      : canBeCover(upload)
+        ? "can-be-cover"
+        : "not-a-cover";
 
   return (
     <div className={styles.field}>
@@ -194,6 +208,10 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
                 <AttachmentRow
                   upload={row.upload}
                   refusal={refusals.get(row.id)}
+                  coverRole={coverRole(row.upload)}
+                  onUseAsCover={() => {
+                    onUseAsCover(row.upload);
+                  }}
                   onPreview={() => {
                     setPreviewingId(row.id);
                   }}
@@ -220,6 +238,10 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
                 <AttachmentRow
                   upload={upload}
                   refusal={refusals.get(upload.mediaId)}
+                  coverRole={coverRole(upload)}
+                  onUseAsCover={() => {
+                    onUseAsCover(upload);
+                  }}
                   onPreview={() => {
                     setPreviewingId(upload.mediaId);
                   }}
@@ -238,10 +260,10 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
       <AttachmentPreview
         upload={previewing}
         onInsert={
-          previewInsert === null
+          previewing === null || previewInsert === null
             ? null
             : () => {
-                onInsert(previewInsert);
+                onInsert(previewInsert, previewing);
                 setPreviewingId(null);
               }
         }
@@ -253,9 +275,13 @@ export function AttachmentPanel({ onInsert, postId }: AttachmentPanelProps) {
   );
 }
 
+type CoverRole = "is-cover" | "can-be-cover" | "not-a-cover";
+
 interface AttachmentRowProps {
   readonly upload: UploadView;
   readonly refusal: string | undefined;
+  readonly coverRole: CoverRole;
+  readonly onUseAsCover: () => void;
   readonly onPreview: () => void;
   readonly onRetry: () => void;
   readonly onRemove: () => void;
@@ -264,6 +290,8 @@ interface AttachmentRowProps {
 function AttachmentRow({
   upload,
   refusal,
+  coverRole,
+  onUseAsCover,
   onPreview,
   onRetry,
   onRemove,
@@ -293,6 +321,12 @@ function AttachmentRow({
           {note}
         </span>
       </button>
+      {coverRole === "is-cover" && <span className={styles.hint}>The cover</span>}
+      {coverRole === "can-be-cover" && (
+        <button type="button" className={styles.linkButton} onClick={onUseAsCover}>
+          Use as cover
+        </button>
+      )}
       {upload.retryable && (
         <button type="button" className={styles.linkButton} onClick={onRetry}>
           Try again
@@ -311,6 +345,17 @@ function AttachmentRow({
         </span>
       )}
     </div>
+  );
+}
+
+// The cover picker's own rule (checkCover in the core): an image a moderator has not
+// turned down. One still waiting for a moderator may be chosen; publishing sends the
+// post to them. One with no copy for another reason would show nowhere.
+function canBeCover(upload: UploadView): boolean {
+  return (
+    upload.kind === "image" &&
+    !upload.rejected &&
+    (upload.publicUrl !== null || upload.awaitingReview)
   );
 }
 

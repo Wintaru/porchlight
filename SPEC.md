@@ -108,8 +108,8 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 
 ## 5. Content
 
-- Posts: title, slug, `body_md`, `body_html`, cover image, summary (one line for the
-  preview card), tags, `status` (`draft | pending | published | rejected | hidden |
+- Posts: title, slug, `body_md`, `body_html`, cover image, cover framing (a focus point
+  and a zoom for the feed card), summary (one line for the preview card), tags, `status` (`draft | pending | published | rejected | hidden |
   removed`), `visibility` (`public | unlisted | private`), `comments_enabled` (default true, set
   by the author in the editor; the comment form hides and new comments are refused
   when false, existing comments stay visible).
@@ -256,8 +256,11 @@ with an immediate option for the admin queue.
 Server rendering for every public page. `sitemap.xml`, `robots.txt`, canonical URLs,
 JSON-LD `Article`. OpenGraph and Twitter tags on every post. A generated preview
 image per post through Next.js `opengraph-image`: cover image if set, else a branded card
-with `site_name`, title and author. Author controls: pick the cover, write a one-line
-summary. With no summary, the body's first sentence (`posts.excerpt`) is used on the
+with `site_name`, title and author. Author controls: pick the cover (a new upload, or
+any image already uploaded to the post; the post's first picture fills an empty cover
+once), frame it for the feed card, write a one-line summary. Every feed card's cover box
+has one shape (16:10) on every screen, so one framing fits all of them; the post page
+and the share card show the whole cover. With no summary, the body's first sentence (`posts.excerpt`) is used on the
 share card, the feed card and the RSS item. No per-post off switch. Share button copies the link and calls
 `navigator.share` where available.
 

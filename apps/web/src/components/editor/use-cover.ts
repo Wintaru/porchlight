@@ -15,12 +15,16 @@ export interface CoverState {
   readonly frame: CoverFrame;
   // The id the form sends: empty for no cover.
   readonly mediaId: string;
+  // The author removed a cover in this editor: the post's first picture then no longer
+  // fills the empty cover on its own.
+  readonly removedHere: boolean;
   readonly choose: (upload: UploadView) => void;
   readonly clear: () => void;
   readonly reframe: (next: (current: CoverFrame) => CoverFrame) => void;
 }
 
-// The editor's cover and its framing. Each change calls `onChange`, so autosave sees it.
+// The editor's cover and its framing, shared by the cover picker and the attachment
+// list, which can both choose one. Each change calls `onChange`, so autosave sees it.
 export function useCover(
   initialMediaId: string | null,
   initialFrame: CoverFrame,
@@ -32,6 +36,7 @@ export function useCover(
       : { kind: "loading", mediaId: initialMediaId },
   );
   const [frame, setFrame] = useState(initialFrame);
+  const [removedHere, setRemovedHere] = useState(false);
 
   // A saved cover arrives as an id: look it up once for its picture.
   useEffect(() => {
@@ -71,6 +76,7 @@ export function useCover(
   const clear = useCallback(() => {
     setCover({ kind: "none" });
     setFrame(CENTERED_COVER_FRAME);
+    setRemovedHere(true);
     onChange();
   }, [onChange]);
 
@@ -89,5 +95,5 @@ export function useCover(
         ? ""
         : cover.mediaId;
 
-  return { cover, frame, mediaId, choose, clear, reframe };
+  return { cover, frame, mediaId, removedHere, choose, clear, reframe };
 }

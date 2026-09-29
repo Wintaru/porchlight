@@ -20,7 +20,7 @@ interface CoverPickerProps {
 // The Editor board's "Cover image" (#52): one of the author's images, shown on the post
 // above the body and on the share card, and framed for the feed card. The hidden fields
 // carry its id and framing with the rest of the form; the Manager checks it is the
-// author's own image.
+// author's own image. A picture already uploaded can be chosen from Attachments instead.
 export function CoverPicker({ state, postId }: CoverPickerProps) {
   const { cover, frame } = state;
   const [busy, setBusy] = useState(false);
@@ -127,7 +127,8 @@ export function CoverPicker({ state, postId }: CoverPickerProps) {
         </span>
       )}
       <span className={styles.hint}>
-        Used on the post, on the feed card and on the card when you share a link.
+        Used on the post, on the feed card and on the card when you share a link. Or press
+        Use as cover on a picture in Attachments.
       </span>
     </div>
   );

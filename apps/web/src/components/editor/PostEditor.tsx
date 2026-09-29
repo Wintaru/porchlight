@@ -471,8 +471,20 @@ export function PostEditor({
           </div>
           <AttachmentPanel
             postId={postId}
-            onInsert={(item) => {
+            coverMediaId={coverState.mediaId}
+            onUseAsCover={coverState.choose}
+            onInsert={(item, upload) => {
+              // The post's first picture fills an empty cover, once, where the author
+              // sees it and can change it.
+              const fillsCover =
+                item.kind === "image" &&
+                coverState.cover.kind === "none" &&
+                !coverState.removedHere &&
+                !hasPicture(bodyRef.current);
               insertRef.current?.(item);
+              if (fillsCover) {
+                coverState.choose(upload);
+              }
             }}
           />
           {trustLevel === "probation" && (
@@ -504,6 +516,11 @@ export function PostEditor({
       />
     </form>
   );
+}
+
+// Whether the Markdown already holds a picture: `![alt](url)`.
+function hasPicture(markdown: string): boolean {
+  return /!\[[^\]]*\]\(/.test(markdown);
 }
 
 // The form as one string, for "did anything change since the last save". Every field
