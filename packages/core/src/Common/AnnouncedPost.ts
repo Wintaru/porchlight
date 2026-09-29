@@ -1,6 +1,7 @@
 // A post as a reader's email lists it (#22, D20): public, published, and announced
 // once (posts.announced_at, #24). `authorHandle` is null for an unclaimed anonymous post,
-// whose only address is /p/slug.
+// whose only address is /p/slug. `summary` is the author's, else the body's first
+// sentence (posts.excerpt, D18), as on the feed card.
 export interface AnnouncedPost {
   readonly id: string;
   readonly title: string;

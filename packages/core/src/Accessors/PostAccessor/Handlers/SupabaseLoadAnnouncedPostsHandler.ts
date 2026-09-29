@@ -18,7 +18,7 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
     const query = this.db
       .from("posts")
       .select(
-        "id, title, summary, slug, author_id, announced_at, author:profiles!posts_author_id_fkey(handle)",
+        "id, title, summary, excerpt, slug, author_id, announced_at, author:profiles!posts_author_id_fkey(handle)",
       )
       .eq("status", "published")
       .eq("visibility", "public")
@@ -41,7 +41,7 @@ export class SupabaseLoadAnnouncedPostsHandler implements IHandler<
               {
                 id: row.id,
                 title: row.title,
-                summary: row.summary,
+                summary: row.summary ?? row.excerpt,
                 slug: row.slug,
                 authorId: row.author_id,
                 authorHandle: row.author?.handle ?? null,
