@@ -1,3 +1,6 @@
+import type { IFollowAccessor } from "../../../Accessors/FollowAccessor/IFollowAccessor";
+import { RemoveFollowRequest } from "../../../Accessors/FollowAccessor/Requests/RemoveFollowRequest";
+import { FollowRemovedResponse } from "../../../Accessors/FollowAccessor/Responses/FollowRemovedResponse";
 import type { IMemberBlockAccessor } from "../../../Accessors/MemberBlockAccessor/IMemberBlockAccessor";
 import { RemoveMemberBlockRequest } from "../../../Accessors/MemberBlockAccessor/Requests/RemoveMemberBlockRequest";
 import { StoreMemberBlockRequest } from "../../../Accessors/MemberBlockAccessor/Requests/StoreMemberBlockRequest";
@@ -27,10 +30,14 @@ type Result =
   | AccountUnavailableResponse;
 
 // Permission, then the target, then the write (#23). Taking back a level the actor
-// never set is not an error: the answer is the same "none".
+// never set is not an error: the answer is the same "none". A block also ends the
+// follows between the two members, both ways (#115): a blocked member must not keep
+// getting the blocker's new posts. One level per pair, so a block takes a mute's place
+// and an unblock leaves neither.
 export class SetMemberBlockHandler implements IHandler<SetMemberBlockRequest, Result> {
   constructor(
     private readonly memberBlocks: IMemberBlockAccessor,
+    private readonly follows: IFollowAccessor,
     private readonly profiles: IProfileAccessor,
     private readonly permissions: IPermissionEngine,
   ) {}
@@ -86,6 +93,23 @@ export class SetMemberBlockHandler implements IHandler<SetMemberBlockRequest, Re
     );
     if (!(stored instanceof MemberBlockStoredResponse)) {
       return unavailable(correlationId, stored, "memberBlocks.store");
+    }
+    if (level === "block") {
+      for (const [followerId, authorId] of [
+        [actor.profile.id, targetProfileId],
+        [targetProfileId, actor.profile.id],
+      ] as const) {
+        const removed = await this.follows.remove(
+          new RemoveFollowRequest(
+            followerId,
+            { kind: "author", profileId: authorId },
+            context,
+          ),
+        );
+        if (!(removed instanceof FollowRemovedResponse)) {
+          return unavailable(correlationId, removed, "follows.remove");
+        }
+      }
     }
     return new MemberBlockSetResponse(correlationId, level);
   }

@@ -44,9 +44,10 @@ function profile(overrides: Partial<Profile>): Profile {
 }
 
 const THEO: Actor = { kind: "member", profile: profile({}) };
+const JUNE_ID = "00000000-0000-4000-8000-000000000004";
 const JUNE: Actor = {
   kind: "member",
-  profile: profile({ id: "00000000-0000-4000-8000-000000000004", handle: "june" }),
+  profile: profile({ id: JUNE_ID, handle: "june" }),
 };
 const IVY: Actor = {
   kind: "member",
@@ -162,6 +163,31 @@ describe("DependencyContainer: follows (#24)", () => {
     await expect(
       container.accountManager.execute(new UnfollowRequest(JUNE, THEO_AUTHOR)),
     ).resolves.toMatchObject({ following: false });
+  });
+
+  // #115: a block ends the follows between the two members, both ways, and an unblock
+  // does not bring them back.
+  test("a block ends follows both ways", async () => {
+    const container = await withProfiles();
+    const juneAuthor = { kind: "author", profileId: JUNE_ID } as const;
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    await container.accountManager.execute(new FollowRequest(THEO, juneAuthor));
+    await container.accountManager.execute(
+      new SetMemberBlockRequest(THEO, JUNE_ID, "block"),
+    );
+    // June follows again while blocked: still nothing reaches her.
+    await container.accountManager.execute(new FollowRequest(JUNE, THEO_AUTHOR));
+    await publish(container, THEO, [], "public");
+    expect(await publishedNotices(container, JUNE)).toEqual([]);
+    await container.accountManager.execute(new UnfollowRequest(JUNE, THEO_AUTHOR));
+    await container.accountManager.execute(
+      new SetMemberBlockRequest(THEO, JUNE_ID, "none"),
+    );
+
+    await publish(container, THEO, [], "public");
+    await publish(container, JUNE, [], "public");
+    expect(await publishedNotices(container, JUNE)).toEqual([]);
+    expect(await publishedNotices(container, THEO)).toEqual([]);
   });
 
   test("a post that goes out tells the followers of its author and its tags, once each", async () => {

@@ -40,7 +40,7 @@ test("a mute hides the member's posts and comments, and Unmute brings them back"
   await expect(row).toContainText("Muted");
   await row.getByRole("button", { name: "Unmute" }).click();
   await expect(page.getByTestId("block-status")).toHaveText(
-    "Done. You see their posts and comments again.",
+    "Done. You see their posts and comments again. A follow that a block ended does not come back.",
   );
   await expect(page.getByTestId("muted-empty")).toBeVisible();
 

@@ -374,7 +374,7 @@ export class DependencyContainer {
         .register(RevokeInviteRequest, new RevokeInviteHandler(invites, permissions))
         .register(
           SetMemberBlockRequest,
-          new SetMemberBlockHandler(memberBlocks, profiles, permissions),
+          new SetMemberBlockHandler(memberBlocks, follows, profiles, permissions),
         )
         .register(FollowRequest, new FollowHandler(follows, profiles, permissions))
         .register(UnfollowRequest, new UnfollowHandler(follows, permissions))

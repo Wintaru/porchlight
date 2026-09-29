@@ -1469,6 +1469,30 @@ describe("announce_post (#87)", () => {
     expect(result.after).toEqual(result.recipients);
   });
 
+  // #115: the author's own block silences a follower; the author's mute does not.
+  test("skips a follower the author blocked", async () => {
+    const recipients = await asService(async (tx) => {
+      await reset(tx, [SEED.publicPost]);
+      await tx`
+        delete from public.follows
+        where author_id = ${SEED.trustedMember} or tag_id = ${MAKING_TAG}
+      `;
+      await tx`
+        insert into public.follows (follower_id, author_id) values
+          (${SEED.moderator}, ${SEED.trustedMember}),
+          (${SEED.admin}, ${SEED.trustedMember})
+      `;
+      await tx`
+        insert into public.member_blocks (member_id, target_id, level) values
+          (${SEED.trustedMember}, ${SEED.moderator}, 'block'),
+          (${SEED.trustedMember}, ${SEED.admin}, 'mute')
+      `;
+      await announce(tx, SEED.publicPost);
+      return noticesFor(tx, SEED.publicPost);
+    });
+    expect(recipients).toEqual([SEED.admin]);
+  });
+
   test("the database clock sets the mark once, and a set mark can change (#86)", async () => {
     const result = await asService(async (tx) => {
       await reset(tx, [SEED.publicPost]);
