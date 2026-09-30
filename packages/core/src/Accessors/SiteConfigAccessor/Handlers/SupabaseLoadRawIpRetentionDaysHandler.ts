@@ -1,6 +1,5 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import { DEFAULT_RAW_IP_RETENTION_DAYS } from "../../../Common/Retention";
 import type { LoadRawIpRetentionDaysRequest } from "../Requests/LoadRawIpRetentionDaysRequest";
 import { RawIpRetentionDaysLoadedResponse } from "../Responses/RawIpRetentionDaysLoadedResponse";
@@ -12,16 +11,12 @@ export class SupabaseLoadRawIpRetentionDaysHandler implements IHandler<
   LoadRawIpRetentionDaysRequest,
   RawIpRetentionDaysLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadRawIpRetentionDaysRequest,
   ): Promise<RawIpRetentionDaysLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", RETENTION_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(RETENTION_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

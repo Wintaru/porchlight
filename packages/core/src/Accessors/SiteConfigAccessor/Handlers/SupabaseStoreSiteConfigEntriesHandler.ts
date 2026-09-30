@@ -1,6 +1,7 @@
 import type { DbClient, Json } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { StoreSiteConfigEntriesRequest } from "../Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
 import { SiteConfigStoredResponse } from "../Responses/SiteConfigStoredResponse";
@@ -12,7 +13,10 @@ export class SupabaseStoreSiteConfigEntriesHandler implements IHandler<
   StoreSiteConfigEntriesRequest,
   SiteConfigStoredResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(
+    private readonly db: DbClient,
+    private readonly config: SiteConfigSnapshot,
+  ) {}
 
   async handle(
     request: StoreSiteConfigEntriesRequest,
@@ -28,6 +32,7 @@ export class SupabaseStoreSiteConfigEntriesHandler implements IHandler<
     const { error } = await this.db
       .from("site_config")
       .upsert(rows, { onConflict: "key" });
+    this.config.forget();
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

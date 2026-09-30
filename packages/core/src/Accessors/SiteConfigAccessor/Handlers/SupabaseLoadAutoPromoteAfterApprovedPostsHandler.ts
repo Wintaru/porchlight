@@ -1,6 +1,5 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import { DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS } from "../../../Common/AutoPromoteRule";
 import { AutoPromoteAfterApprovedPostsLoadedResponse } from "../Responses/AutoPromoteAfterApprovedPostsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -20,18 +19,14 @@ export class SupabaseLoadAutoPromoteAfterApprovedPostsHandler implements IHandle
   LoadAutoPromoteAfterApprovedPostsRequest,
   AutoPromoteAfterApprovedPostsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadAutoPromoteAfterApprovedPostsRequest,
   ): Promise<
     AutoPromoteAfterApprovedPostsLoadedResponse | SiteConfigAccessFailedResponse
   > {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", AUTO_PROMOTE_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(AUTO_PROMOTE_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

@@ -1,7 +1,6 @@
-import type { DbClient } from "@porchlight/db";
-
 import { DEFAULT_ATTACHMENT_ALLOWLIST } from "../../../Common/AttachmentAllowlist";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { LoadAttachmentAllowlistRequest } from "../Requests/LoadAttachmentAllowlistRequest";
 import { AttachmentAllowlistLoadedResponse } from "../Responses/AttachmentAllowlistLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -16,16 +15,12 @@ export class SupabaseLoadAttachmentAllowlistHandler implements IHandler<
   LoadAttachmentAllowlistRequest,
   AttachmentAllowlistLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadAttachmentAllowlistRequest,
   ): Promise<AttachmentAllowlistLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", ALLOWLIST_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(ALLOWLIST_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

@@ -1,11 +1,10 @@
-import type { DbClient } from "@porchlight/db";
-
 import {
   COMMENT_POLICIES,
   type CommentPolicy,
   DEFAULT_COMMENT_POLICY,
 } from "../../../Common/CommentPolicy";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { LoadCommentPolicyRequest } from "../Requests/LoadCommentPolicyRequest";
 import { CommentPolicyLoadedResponse } from "../Responses/CommentPolicyLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -22,16 +21,12 @@ export class SupabaseLoadCommentPolicyHandler implements IHandler<
   LoadCommentPolicyRequest,
   CommentPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadCommentPolicyRequest,
   ): Promise<CommentPolicyLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", COMMENTS_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(COMMENTS_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

@@ -1,6 +1,5 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import {
   DEFAULT_SIGN_UP_POLICY,
   SIGN_UP_POLICIES,
@@ -22,16 +21,12 @@ export class SupabaseLoadSignUpPolicyHandler implements IHandler<
   LoadSignUpPolicyRequest,
   SignUpPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadSignUpPolicyRequest,
   ): Promise<SignUpPolicyLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", SIGN_UP_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(SIGN_UP_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

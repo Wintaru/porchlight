@@ -48,6 +48,7 @@ import { LoadSignUpPolicyRequest } from "../Accessors/SiteConfigAccessor/Request
 import { LoadSiteIdentityRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSiteIdentityRequest";
 import { StoreSiteConfigEntriesRequest } from "../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigAccessor } from "../Accessors/SiteConfigAccessor/SiteConfigAccessor";
+import { SiteConfigSnapshot } from "../Accessors/SiteConfigAccessor/SiteConfigSnapshot";
 import {
   COMMENT_POLICIES,
   type CommentPolicy,
@@ -83,6 +84,10 @@ function isSignUpPolicy(value: string): value is SignUpPolicy {
 // keys from SITE_CONFIG_FAKE_POSTING, SITE_CONFIG_FAKE_COMMENTS and
 // SITE_CONFIG_FAKE_SIGN_UP, so a test or a local run can close posting, comments or
 // sign-up without a row.
+// How long one server keeps its copy of `site_config` (SiteConfigSnapshot): a setting
+// saved on another instance reaches this one within this long.
+const SITE_CONFIG_TTL_MS = 30_000;
+
 export function createSiteConfigAccessor(
   env: Environment,
   db: () => DbClient,
@@ -90,55 +95,68 @@ export function createSiteConfigAccessor(
   switch (readStoreProvider(env, "SITE_CONFIG_PROVIDER")) {
     case "supabase": {
       const client = db();
+      const snapshot = new SiteConfigSnapshot(
+        () => client.from("site_config").select("key, value"),
+        SITE_CONFIG_TTL_MS,
+      );
       return new SiteConfigAccessor(
         new HandlerResolverBuilder()
           .register(
             StoreSiteConfigEntriesRequest,
-            new SupabaseStoreSiteConfigEntriesHandler(client),
+            new SupabaseStoreSiteConfigEntriesHandler(client, snapshot),
           )
           .build(),
         new HandlerResolverBuilder()
           .register(
             LoadPostingPolicyRequest,
-            new SupabaseLoadPostingPolicyHandler(client),
+            new SupabaseLoadPostingPolicyHandler(snapshot),
           )
           .register(
             LoadCommentPolicyRequest,
-            new SupabaseLoadCommentPolicyHandler(client),
+            new SupabaseLoadCommentPolicyHandler(snapshot),
           )
           .register(
             LoadAttachmentAllowlistRequest,
-            new SupabaseLoadAttachmentAllowlistHandler(client),
+            new SupabaseLoadAttachmentAllowlistHandler(snapshot),
           )
           .register(
             LoadAnonymousUploadCapRequest,
-            new SupabaseLoadAnonymousUploadCapHandler(client),
+            new SupabaseLoadAnonymousUploadCapHandler(snapshot),
           )
           .register(
             LoadAttachmentQuotaByTrustRequest,
-            new SupabaseLoadAttachmentQuotaByTrustHandler(client),
+            new SupabaseLoadAttachmentQuotaByTrustHandler(snapshot),
           )
           .register(
             LoadModerationThresholdsRequest,
-            new SupabaseLoadModerationThresholdsHandler(client),
+            new SupabaseLoadModerationThresholdsHandler(snapshot),
           )
           .register(
             LoadRawIpRetentionDaysRequest,
-            new SupabaseLoadRawIpRetentionDaysHandler(client),
+            new SupabaseLoadRawIpRetentionDaysHandler(snapshot),
           )
-          .register(LoadRegionRequest, new SupabaseLoadRegionHandler(client))
-          .register(LoadSignUpPolicyRequest, new SupabaseLoadSignUpPolicyHandler(client))
-          .register(LoadSiteIdentityRequest, new SupabaseLoadSiteIdentityHandler(client))
+          .register(LoadRegionRequest, new SupabaseLoadRegionHandler(snapshot))
+          .register(
+            LoadSignUpPolicyRequest,
+            new SupabaseLoadSignUpPolicyHandler(snapshot),
+          )
+          .register(
+            LoadSiteIdentityRequest,
+            new SupabaseLoadSiteIdentityHandler(snapshot),
+          )
           .register(
             LoadAutoPromoteAfterApprovedPostsRequest,
-            new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(client),
+            new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(snapshot),
           )
-          .register(LoadAgentsPolicyRequest, new SupabaseLoadAgentsPolicyHandler(client))
+          .register(
+            LoadAgentsPolicyRequest,
+            new SupabaseLoadAgentsPolicyHandler(snapshot),
+          )
           .register(
             LoadAgentDisclosureRequest,
-            new SupabaseLoadAgentDisclosureHandler(client),
+            new SupabaseLoadAgentDisclosureHandler(snapshot),
           )
-          .register(LoadAgentLimitsRequest, new SupabaseLoadAgentLimitsHandler(client))
+          .register(LoadAgentLimitsRequest, new SupabaseLoadAgentLimitsHandler(snapshot))
           .build(),
       );
     }

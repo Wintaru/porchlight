@@ -1,6 +1,5 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import { DEFAULT_REGION, REGIONS, type Region } from "../../../Common/Region";
 import type { LoadRegionRequest } from "../Requests/LoadRegionRequest";
 import { RegionLoadedResponse } from "../Responses/RegionLoadedResponse";
@@ -18,16 +17,12 @@ export class SupabaseLoadRegionHandler implements IHandler<
   LoadRegionRequest,
   RegionLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadRegionRequest,
   ): Promise<RegionLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", REGION_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(REGION_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

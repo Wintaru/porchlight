@@ -1,10 +1,9 @@
-import type { DbClient } from "@porchlight/db";
-
 import {
   DEFAULT_ANONYMOUS_UPLOAD_CAP,
   type AnonymousUploadCap,
 } from "../../../Common/AnonymousUploadCap";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { LoadAnonymousUploadCapRequest } from "../Requests/LoadAnonymousUploadCapRequest";
 import { AnonymousUploadCapLoadedResponse } from "../Responses/AnonymousUploadCapLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -34,16 +33,12 @@ export class SupabaseLoadAnonymousUploadCapHandler implements IHandler<
   LoadAnonymousUploadCapRequest,
   AnonymousUploadCapLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadAnonymousUploadCapRequest,
   ): Promise<AnonymousUploadCapLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", CAP_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(CAP_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

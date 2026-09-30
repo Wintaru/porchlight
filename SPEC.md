@@ -86,7 +86,9 @@ Roles: `admin`, `moderator`, `member`. Signed-out visitors read everything publi
 the editor and comment form hide when the actor cannot write. The setup wizard offers
 three presets that only fill these keys: **Just me** (`staff` / `anyone` / `closed`),
 **Friends** (`members` / `anyone` / `invite`), **Open porch** (`anyone` / `anyone` /
-`open`). An admin can change any single key later on the site config page.
+`open`). An admin can change any single key later on the site config page. Each server
+keeps a copy of `site_config` for up to 30 seconds, so a saved change is live at once on
+the server that saved it and within 30 seconds everywhere else.
 
 **Site identity** lives in `site_config` too: `site_name`, `site_tagline`, `about_md`.
 Every page title, the feed header, the RSS channel and the branded preview card use

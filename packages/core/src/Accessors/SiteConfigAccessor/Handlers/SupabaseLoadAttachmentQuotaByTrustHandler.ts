@@ -1,11 +1,10 @@
-import type { DbClient } from "@porchlight/db";
-
 import {
   DEFAULT_ATTACHMENT_QUOTA_BY_TRUST,
   type AttachmentQuota,
   type AttachmentQuotaByTrust,
 } from "../../../Common/AttachmentQuota";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import { TRUST_LEVELS, type TrustLevel } from "../../../Common/TrustLevel";
 import type { LoadAttachmentQuotaByTrustRequest } from "../Requests/LoadAttachmentQuotaByTrustRequest";
 import { AttachmentQuotaByTrustLoadedResponse } from "../Responses/AttachmentQuotaByTrustLoadedResponse";
@@ -57,16 +56,12 @@ export class SupabaseLoadAttachmentQuotaByTrustHandler implements IHandler<
   LoadAttachmentQuotaByTrustRequest,
   AttachmentQuotaByTrustLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadAttachmentQuotaByTrustRequest,
   ): Promise<AttachmentQuotaByTrustLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", QUOTA_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(QUOTA_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

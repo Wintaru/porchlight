@@ -1,10 +1,9 @@
-import type { DbClient } from "@porchlight/db";
-
 import {
   DEFAULT_MODERATION_THRESHOLDS,
   type ModerationThresholds,
 } from "../../../Common/ModerationThresholds";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { LoadModerationThresholdsRequest } from "../Requests/LoadModerationThresholdsRequest";
 import { ModerationThresholdsLoadedResponse } from "../Responses/ModerationThresholdsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -32,16 +31,12 @@ export class SupabaseLoadModerationThresholdsHandler implements IHandler<
   LoadModerationThresholdsRequest,
   ModerationThresholdsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadModerationThresholdsRequest,
   ): Promise<ModerationThresholdsLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", THRESHOLDS_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(THRESHOLDS_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

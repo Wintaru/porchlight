@@ -1,7 +1,6 @@
-import type { DbClient } from "@porchlight/db";
-
 import { DEFAULT_AGENT_LIMITS, toAgentLimits } from "../../../Common/AgentLimits";
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import type { LoadAgentLimitsRequest } from "../Requests/LoadAgentLimitsRequest";
 import { AgentLimitsLoadedResponse } from "../Responses/AgentLimitsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -14,16 +13,12 @@ export class SupabaseLoadAgentLimitsHandler implements IHandler<
   LoadAgentLimitsRequest,
   AgentLimitsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadAgentLimitsRequest,
   ): Promise<AgentLimitsLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("value")
-      .eq("key", AGENT_LIMITS_KEY)
-      .maybeSingle();
+    const { data, error } = await this.config.row(AGENT_LIMITS_KEY);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }

@@ -1,6 +1,5 @@
-import type { DbClient } from "@porchlight/db";
-
 import type { IHandler } from "../../../Common/IHandler";
+import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
 import { DEFAULT_SITE_IDENTITY, type SiteIdentity } from "../../../Common/SiteIdentity";
 import type { LoadSiteIdentityRequest } from "../Requests/LoadSiteIdentityRequest";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -18,15 +17,12 @@ export class SupabaseLoadSiteIdentityHandler implements IHandler<
   LoadSiteIdentityRequest,
   SiteIdentityLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly config: SiteConfigSnapshot) {}
 
   async handle(
     request: LoadSiteIdentityRequest,
   ): Promise<SiteIdentityLoadedResponse | SiteConfigAccessFailedResponse> {
-    const { data, error } = await this.db
-      .from("site_config")
-      .select("key, value")
-      .in("key", IDENTITY_KEYS);
+    const { data, error } = await this.config.rows(IDENTITY_KEYS);
     if (error) {
       return new SiteConfigAccessFailedResponse(request.correlationId, error.message);
     }
