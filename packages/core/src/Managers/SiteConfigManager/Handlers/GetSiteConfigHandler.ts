@@ -3,6 +3,8 @@ import { AgentLimitsLoadedResponse } from "../../../Accessors/SiteConfigAccessor
 import { LoadAgentDisclosureRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentDisclosureRequest";
 import { LoadAgentLimitsRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentLimitsRequest";
 import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { RefreshSiteConfigRequest } from "../../../Accessors/SiteConfigAccessor/Requests/RefreshSiteConfigRequest";
+import { SiteConfigRefreshedResponse } from "../../../Accessors/SiteConfigAccessor/Responses/SiteConfigRefreshedResponse";
 import { LoadAgentsPolicyRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAgentsPolicyRequest";
 import { LoadAnonymousUploadCapRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAnonymousUploadCapRequest";
 import { LoadAttachmentAllowlistRequest } from "../../../Accessors/SiteConfigAccessor/Requests/LoadAttachmentAllowlistRequest";
@@ -64,6 +66,12 @@ export class GetSiteConfigHandler implements IHandler<GetSiteConfigRequest, Verd
     }
 
     const context: RequestContext = { correlationId };
+    // The admin form saves every field it shows, so it starts from the table, not from
+    // a copy another server's save may have made stale.
+    const refreshed = await this.siteConfig.load(new RefreshSiteConfigRequest(context));
+    if (!(refreshed instanceof SiteConfigRefreshedResponse)) {
+      return unavailable(correlationId, refreshed);
+    }
     const [
       posting,
       comments,

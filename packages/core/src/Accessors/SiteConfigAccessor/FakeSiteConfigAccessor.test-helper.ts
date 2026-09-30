@@ -28,6 +28,8 @@ import { LoadModerationThresholdsRequest } from "./Requests/LoadModerationThresh
 import { LoadPostingPolicyRequest } from "./Requests/LoadPostingPolicyRequest";
 import { LoadRawIpRetentionDaysRequest } from "./Requests/LoadRawIpRetentionDaysRequest";
 import { LoadRegionRequest } from "./Requests/LoadRegionRequest";
+import { RefreshSiteConfigRequest } from "./Requests/RefreshSiteConfigRequest";
+import { FakeRefreshSiteConfigHandler } from "./Handlers/FakeRefreshSiteConfigHandler";
 import { LoadSignUpPolicyRequest } from "./Requests/LoadSignUpPolicyRequest";
 import { LoadSiteIdentityRequest } from "./Requests/LoadSiteIdentityRequest";
 import { StoreSiteConfigEntriesRequest } from "./Requests/StoreSiteConfigEntriesRequest";
@@ -49,6 +51,7 @@ export function fakeSiteConfigAccessor(state: FakeSiteConfigState): ISiteConfigA
       .register(LoadCommentPolicyRequest, new FakeLoadCommentPolicyHandler(state))
       .register(LoadSignUpPolicyRequest, new FakeLoadSignUpPolicyHandler(state))
       .register(LoadRegionRequest, new FakeLoadRegionHandler(state))
+      .register(RefreshSiteConfigRequest, new FakeRefreshSiteConfigHandler())
       .register(LoadSiteIdentityRequest, new FakeLoadSiteIdentityHandler(state))
       .register(
         LoadAttachmentAllowlistRequest,

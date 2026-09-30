@@ -44,6 +44,9 @@ import { LoadModerationThresholdsRequest } from "../Accessors/SiteConfigAccessor
 import { LoadPostingPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadPostingPolicyRequest";
 import { LoadRawIpRetentionDaysRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadRawIpRetentionDaysRequest";
 import { LoadRegionRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadRegionRequest";
+import { RefreshSiteConfigRequest } from "../Accessors/SiteConfigAccessor/Requests/RefreshSiteConfigRequest";
+import { FakeRefreshSiteConfigHandler } from "../Accessors/SiteConfigAccessor/Handlers/FakeRefreshSiteConfigHandler";
+import { SupabaseRefreshSiteConfigHandler } from "../Accessors/SiteConfigAccessor/Handlers/SupabaseRefreshSiteConfigHandler";
 import { LoadSignUpPolicyRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSignUpPolicyRequest";
 import { LoadSiteIdentityRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSiteIdentityRequest";
 import { StoreSiteConfigEntriesRequest } from "../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
@@ -131,6 +134,7 @@ export function createSiteConfigAccessor(
             new SupabaseLoadRawIpRetentionDaysHandler(cache),
           )
           .register(LoadRegionRequest, new SupabaseLoadRegionHandler(cache))
+          .register(RefreshSiteConfigRequest, new SupabaseRefreshSiteConfigHandler(cache))
           .register(LoadSignUpPolicyRequest, new SupabaseLoadSignUpPolicyHandler(cache))
           .register(LoadSiteIdentityRequest, new SupabaseLoadSiteIdentityHandler(cache))
           .register(
@@ -208,6 +212,7 @@ export function createSiteConfigAccessor(
             new FakeLoadRawIpRetentionDaysHandler(state),
           )
           .register(LoadRegionRequest, new FakeLoadRegionHandler(state))
+          .register(RefreshSiteConfigRequest, new FakeRefreshSiteConfigHandler())
           .register(LoadSignUpPolicyRequest, new FakeLoadSignUpPolicyHandler(state))
           .register(LoadSiteIdentityRequest, new FakeLoadSiteIdentityHandler(state))
           .register(

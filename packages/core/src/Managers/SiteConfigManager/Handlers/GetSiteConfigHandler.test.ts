@@ -6,6 +6,8 @@ import {
 } from "../../../Accessors/SiteConfigAccessor/FakeSiteConfigAccessor.test-helper";
 import type { Actor } from "../../../Common/Actor";
 import { VISITOR } from "../../../Common/Actor";
+import type { ISiteConfigAccessor } from "../../../Accessors/SiteConfigAccessor/ISiteConfigAccessor";
+import { RefreshSiteConfigRequest } from "../../../Accessors/SiteConfigAccessor/Requests/RefreshSiteConfigRequest";
 import type { Profile } from "../../../Common/Profile";
 import { createPermissionEngine } from "../../../Composition/createPermissionEngine";
 import { REGION_PROFILES } from "../RegionProfiles";
@@ -44,6 +46,28 @@ function handlerFor(state: FakeSiteConfigState) {
 }
 
 describe("GetSiteConfigHandler", () => {
+  test("asks for a fresh copy before it reads, since the form saves every field", async () => {
+    const inner = fakeSiteConfigAccessor(new FakeSiteConfigState("staff", "anyone"));
+    const asked: string[] = [];
+    const siteConfig: ISiteConfigAccessor = {
+      load: (request) => {
+        asked.push(request.constructor.name);
+        return inner.load(request);
+      },
+      store: (request) => inner.store(request),
+    };
+    const handler = new GetSiteConfigHandler(
+      siteConfig,
+      createPermissionEngine(inner),
+      [],
+    );
+
+    const response = await handler.handle(new GetSiteConfigRequest(ADMIN));
+
+    expect(response).toBeInstanceOf(SiteConfigResponse);
+    expect(asked[0]).toBe(RefreshSiteConfigRequest.name);
+  });
+
   test("an admin gets the whole snapshot, the region profile, and the duty checklist", async () => {
     const state = new FakeSiteConfigState("staff", "anyone");
     state.region = "US";
