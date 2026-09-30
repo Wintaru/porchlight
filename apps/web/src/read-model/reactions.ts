@@ -1,15 +1,10 @@
 import { Constants, type DbClient, type Enums } from "@porchlight/db";
 
-// The reactions on a post and on its comments: `kind` and `profile_id`, nothing more.
-// Counts are summed here, per item and per kind, and the viewer's own are kept as a
-// set so their buttons can show as pressed. Never a total per member and never a sort
-// key (D9). The kinds come from the schema's enum: the read-model may not import the
-// core, and the core's list is checked against this one.
-const POST_REACTION_COLUMNS = "kind, profile_id";
-// `comments!inner(post_id)` is the join the post-id filter runs on; the embedded
-// column is not read.
-const COMMENT_REACTION_COLUMNS = "comment_id, kind, profile_id, comments!inner(post_id)";
-
+// The reactions on a post and on its comments, counted per item and per kind in the
+// database, with whether the viewer is among them so their buttons can show as pressed.
+// Never a total per member and never a sort key (D9). The kinds come from the schema's
+// enum: the read-model may not import the core, and the core's list is checked against
+// this one.
 export type ReactionKind = Enums<"reaction_kind">;
 
 export const REACTION_KINDS: readonly ReactionKind[] =
@@ -27,42 +22,41 @@ export interface PostReactions {
   readonly comments: ReadonlyMap<string, ItemReactions>;
 }
 
+interface CountRow {
+  readonly comment_id: string | null;
+  readonly kind: ReactionKind;
+  readonly total: number;
+  readonly mine: boolean;
+}
+
 const NO_COUNTS: ReactionCounts = { heart: 0, laugh: 0, wow: 0, sad: 0, clap: 0 };
 
 export const NO_REACTIONS: ItemReactions = { counts: NO_COUNTS, mine: new Set() };
 
-// Two reads, both filtered at the source: the post's own rows by `post_id`, and the
-// comments' rows through the join (`comments!inner` with the post id on the comment),
-// so a long thread never puts an id list on the request line. Both run under RLS, so a
-// reaction on a comment the reader cannot see is not returned either.
+// One read under RLS, so a reaction on a comment the reader cannot see is not counted.
 export async function loadReactionsForPost(
   db: DbClient,
   postId: string,
   viewerId: string | undefined,
 ): Promise<PostReactions> {
-  const [onPost, onComments] = await Promise.all([
-    db.from("reactions").select(POST_REACTION_COLUMNS).eq("post_id", postId),
-    db.from("reactions").select(COMMENT_REACTION_COLUMNS).eq("comments.post_id", postId),
-  ]);
-  if (onPost.error) {
-    throw new Error(`reactions for post ${postId}: ${onPost.error.message}`);
-  }
-  if (onComments.error) {
-    throw new Error(`reactions for comments of ${postId}: ${onComments.error.message}`);
+  const { data, error } = await db.rpc("post_reaction_counts", {
+    p_post_id: postId,
+    ...(viewerId === undefined ? {} : { p_viewer_id: viewerId }),
+  });
+  if (error) {
+    throw new Error(`reactions for post ${postId}: ${error.message}`);
   }
 
+  // The post's own counts come back with no comment id, which the generated type misses.
+  const rows: readonly CountRow[] = data;
   const post = new Tally();
-  for (const row of onPost.data) {
-    post.add(row.kind, row.profile_id === viewerId);
-  }
   const comments = new Map<string, Tally>();
-  for (const row of onComments.data) {
-    if (row.comment_id === null) {
-      continue;
+  for (const { comment_id: commentId, kind, total, mine } of rows) {
+    const tally = commentId === null ? post : (comments.get(commentId) ?? new Tally());
+    if (commentId !== null) {
+      comments.set(commentId, tally);
     }
-    const tally = comments.get(row.comment_id) ?? new Tally();
-    comments.set(row.comment_id, tally);
-    tally.add(row.kind, row.profile_id === viewerId);
+    tally.add(kind, total, mine);
   }
   return {
     post: post.done(),
@@ -74,8 +68,8 @@ class Tally {
   private readonly counts: Record<ReactionKind, number> = { ...NO_COUNTS };
   private readonly mine = new Set<ReactionKind>();
 
-  add(kind: ReactionKind, own: boolean): void {
-    this.counts[kind] += 1;
+  add(kind: ReactionKind, total: number, own: boolean): void {
+    this.counts[kind] += total;
     if (own) {
       this.mine.add(kind);
     }

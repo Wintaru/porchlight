@@ -43,6 +43,63 @@ describe("public_tags", () => {
   });
 });
 
+interface CountRow {
+  readonly comment_id: string | null;
+  readonly kind: string;
+  readonly total: number;
+  readonly mine: boolean;
+}
+
+function countsFor(
+  tx: Parameters<Parameters<typeof asRole>[2]>[0],
+  viewer: string | null,
+) {
+  return tx<CountRow[]>`
+    select comment_id, kind::text, total, mine
+    from public.post_reaction_counts(${SEED.publicPost}, ${viewer})
+    order by comment_id nulls first, kind
+  `;
+}
+
+describe("post_reaction_counts", () => {
+  test("counts per item and kind, and marks the viewer's own", async () => {
+    const rows = await seededAs(
+      sql,
+      "anon",
+      undefined,
+      (tx) => tx`
+        insert into public.reactions (post_id, comment_id, profile_id, kind)
+        values (${SEED.publicPost}, null, ${SEED.trustedMember}, 'heart')
+      `,
+      (tx) => countsFor(tx, SEED.admin),
+    );
+    expect(rows).toEqual([
+      { comment_id: null, kind: "clap", total: 1, mine: false },
+      { comment_id: null, kind: "heart", total: 2, mine: true },
+      { comment_id: SEED.visibleComment, kind: "laugh", total: 1, mine: false },
+    ]);
+  });
+
+  test("marks nothing as the viewer's own without a viewer", async () => {
+    const rows = await asRole(sql, "anon", (tx) => countsFor(tx, null));
+    expect(rows.every((row) => !row.mine)).toBe(true);
+  });
+
+  test("leaves out reactions on a comment the reader cannot see", async () => {
+    const rows = await seededAs(
+      sql,
+      "anon",
+      undefined,
+      (tx) => tx`
+        insert into public.reactions (post_id, comment_id, profile_id, kind)
+        values (null, ${SEED.pendingComment}, ${SEED.admin}, 'wow')
+      `,
+      (tx) => countsFor(tx, null),
+    );
+    expect(rows.map((row) => row.comment_id)).not.toContain(SEED.pendingComment);
+  });
+});
+
 describe("several_published_authors", () => {
   test("is true with two authors of public posts", async () => {
     const [row] = await asRole(

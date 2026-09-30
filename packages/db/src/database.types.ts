@@ -1423,6 +1423,15 @@ export type Database = {
       null_expired_raw_ips: { Args: never; Returns: number }
       post_excerpt: { Args: { p_body_md: string }; Returns: string }
       post_is_private: { Args: { p_post_id: string }; Returns: boolean }
+      post_reaction_counts: {
+        Args: { p_post_id: string; p_viewer_id?: string }
+        Returns: {
+          comment_id: string
+          kind: Database["public"]["Enums"]["reaction_kind"]
+          mine: boolean
+          total: number
+        }[]
+      }
       post_search_document: {
         Args: { p_body_md: string; p_summary: string; p_title: string }
         Returns: unknown
