@@ -2,7 +2,7 @@
 
 import { NOTIFICATION_SENTENCES } from "@porchlight/core/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { markAllNotificationsRead, openNotification } from "@/app/notification-actions";
 import { useDropdown } from "@/components/header/use-dropdown";
@@ -26,6 +26,10 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
   const { open: isOpen, toggle, rootRef, triggerRef } = useDropdown();
   const router = useRouter();
   const panelId = useId();
+  // Every notice id this bell holds. A channel that has not finished leaving can be
+  // handed to the next subscription on the same topic, and then one insert reaches two
+  // handlers (React mounts effects twice in development): each notice is taken once.
+  const seen = useRef(new Set(initial.map((notification) => notification.id)));
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +60,10 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
           },
           (payload) => {
             const row = payload.new as NotificationRow;
+            if (seen.current.has(row.id)) {
+              return;
+            }
+            seen.current.add(row.id);
             setNotifications((current) => [row, ...current]);
             if (row.post_id !== null) {
               void loadNoticePostTitle(db, row.post_id).then((title) => {
@@ -73,7 +81,9 @@ export function NotificationBell({ recipientId, initial }: NotificationBellProps
 
     return () => {
       cancelled = true;
-      void channel?.unsubscribe();
+      if (channel !== undefined) {
+        void db.removeChannel(channel);
+      }
     };
   }, [recipientId]);
 
