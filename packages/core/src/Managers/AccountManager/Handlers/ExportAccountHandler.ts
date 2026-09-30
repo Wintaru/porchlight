@@ -79,64 +79,57 @@ export class ExportAccountHandler implements IHandler<ExportAccountRequest, Resu
       return refused;
     }
 
-    const loadedPosts = await this.posts.load(
-      new LoadPostsByAuthorRequest(profileId, ALL_POSTS, context, true),
-    );
+    // Independent reads, all at once; each answer is then checked in turn.
+    const [
+      loadedPosts,
+      loadedRevisions,
+      loadedComments,
+      loadedReactions,
+      loadedMedia,
+      loadedGuide,
+      loadedGuideRevisions,
+      loadedTokens,
+      loadedBlocks,
+      loadedFollows,
+    ] = await Promise.all([
+      this.posts.load(new LoadPostsByAuthorRequest(profileId, ALL_POSTS, context, true)),
+      this.posts.load(new LoadPostRevisionsByAuthorRequest(profileId, context)),
+      this.comments.load(new LoadCommentsByAuthorRequest(profileId, context)),
+      this.reactions.load(new LoadReactionsByProfileRequest(profileId, context)),
+      this.mediaAssets.load(new LoadMediaAssetsByOwnerRequest(profileId, context)),
+      this.profiles.load(new LoadVoiceGuideRequest(profileId, context)),
+      this.profiles.load(new LoadVoiceGuideRevisionsRequest(profileId, context)),
+      this.agentTokens.load(new ListAgentTokensByOwnerRequest(profileId, context)),
+      this.memberBlocks.load(new LoadMemberBlocksByMemberRequest(profileId, context)),
+      this.follows.load(new LoadFollowsByMemberRequest(profileId, context)),
+    ]);
     if (!(loadedPosts instanceof PostsLoadedResponse)) {
       return unavailable(correlationId, loadedPosts, "posts.load");
     }
-    const loadedRevisions = await this.posts.load(
-      new LoadPostRevisionsByAuthorRequest(profileId, context),
-    );
     if (!(loadedRevisions instanceof PostRevisionsLoadedResponse)) {
       return unavailable(correlationId, loadedRevisions, "posts.load revisions");
     }
-    const loadedComments = await this.comments.load(
-      new LoadCommentsByAuthorRequest(profileId, context),
-    );
     if (!(loadedComments instanceof CommentsLoadedResponse)) {
       return unavailable(correlationId, loadedComments, "comments.load");
     }
-    const loadedReactions = await this.reactions.load(
-      new LoadReactionsByProfileRequest(profileId, context),
-    );
     if (!(loadedReactions instanceof ReactionsLoadedResponse)) {
       return unavailable(correlationId, loadedReactions, "reactions.load");
     }
-    const loadedMedia = await this.mediaAssets.load(
-      new LoadMediaAssetsByOwnerRequest(profileId, context),
-    );
     if (!(loadedMedia instanceof MediaAssetsLoadedResponse)) {
       return unavailable(correlationId, loadedMedia, "mediaAssets.load");
     }
-
-    const loadedGuide = await this.profiles.load(
-      new LoadVoiceGuideRequest(profileId, context),
-    );
     if (!(loadedGuide instanceof VoiceGuideLoadedResponse)) {
       return unavailable(correlationId, loadedGuide, "profiles.load");
     }
-    const loadedGuideRevisions = await this.profiles.load(
-      new LoadVoiceGuideRevisionsRequest(profileId, context),
-    );
     if (!(loadedGuideRevisions instanceof VoiceGuideRevisionsLoadedResponse)) {
       return unavailable(correlationId, loadedGuideRevisions, "profiles.load revisions");
     }
-    const loadedTokens = await this.agentTokens.load(
-      new ListAgentTokensByOwnerRequest(profileId, context),
-    );
     if (!(loadedTokens instanceof AgentTokensLoadedResponse)) {
       return unavailable(correlationId, loadedTokens, "agentTokens.load");
     }
-    const loadedBlocks = await this.memberBlocks.load(
-      new LoadMemberBlocksByMemberRequest(profileId, context),
-    );
     if (!(loadedBlocks instanceof MemberBlocksLoadedResponse)) {
       return unavailable(correlationId, loadedBlocks, "memberBlocks.load");
     }
-    const loadedFollows = await this.follows.load(
-      new LoadFollowsByMemberRequest(profileId, context),
-    );
     if (!(loadedFollows instanceof FollowsLoadedResponse)) {
       return unavailable(correlationId, loadedFollows, "follows.load");
     }

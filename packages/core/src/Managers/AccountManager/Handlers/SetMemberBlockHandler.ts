@@ -95,20 +95,27 @@ export class SetMemberBlockHandler implements IHandler<SetMemberBlockRequest, Re
       return unavailable(correlationId, stored, "memberBlocks.store");
     }
     if (level === "block") {
-      for (const [followerId, authorId] of [
-        [actor.profile.id, targetProfileId],
-        [targetProfileId, actor.profile.id],
-      ] as const) {
-        const removed = await this.follows.remove(
-          new RemoveFollowRequest(
-            followerId,
-            { kind: "author", profileId: authorId },
-            context,
+      const removals = await Promise.all(
+        (
+          [
+            [actor.profile.id, targetProfileId],
+            [targetProfileId, actor.profile.id],
+          ] as const
+        ).map(([followerId, authorId]) =>
+          this.follows.remove(
+            new RemoveFollowRequest(
+              followerId,
+              { kind: "author", profileId: authorId },
+              context,
+            ),
           ),
-        );
-        if (!(removed instanceof FollowRemovedResponse)) {
-          return unavailable(correlationId, removed, "follows.remove");
-        }
+        ),
+      );
+      const failed = removals.find(
+        (removed) => !(removed instanceof FollowRemovedResponse),
+      );
+      if (failed !== undefined) {
+        return unavailable(correlationId, failed, "follows.remove");
       }
     }
     return new MemberBlockSetResponse(correlationId, level);

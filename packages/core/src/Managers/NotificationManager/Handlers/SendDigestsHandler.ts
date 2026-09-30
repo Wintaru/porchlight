@@ -31,6 +31,7 @@ import type { SendDigestsRequest } from "../Requests/SendDigestsRequest";
 import { DigestsSentResponse } from "../Responses/DigestsSentResponse";
 import type { NotificationUnavailableResponse } from "../Responses/NotificationUnavailableResponse";
 import { unavailable } from "../unavailable";
+import { chunked } from "../../../Utilities/collections/chunked";
 
 type Result = DigestsSentResponse | NotificationUnavailableResponse;
 type Ctx = Required<Pick<RequestContext, "correlationId" | "timestamp">>;
@@ -52,6 +53,8 @@ const RUN_BUDGET_MS = 30_000;
 // The most posts one reader email lists, oldest first. A window with more ends with a
 // link to the site for the rest.
 const POSTS_PER_EMAIL = 20;
+// Post reads in flight at once while a batch of readers is composed.
+const LOADS_AT_ONCE = 10;
 
 // One batch's outcome: how many went out, or the failure that stops the run. A failed
 // send has already put back the windows of the emails that did not go out.
@@ -187,10 +190,10 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
     // One read per scope and window, not one for the whole batch: a reader of a quiet
     // author can have a window months long, and a site-wide read from its start would
     // crowd out every other reader's posts. Readers who share a scope and a window
-    // share the read.
+    // share the read. Windows start at each reader's last email, so most claims need a
+    // read of their own: they run LOADS_AT_ONCE at a time, not one after another.
     const loads = new Map<string, Promise<ResponseBase>>();
-    const outgoing: Outgoing<SubscriberEmailClaim>[] = [];
-    for (const claim of claims) {
+    const loadFor = (claim: SubscriberEmailClaim): Promise<ResponseBase> => {
       const key = `${claim.authorId ?? "site"}|${claim.windowStart.toISOString()}`;
       let load = loads.get(key);
       if (load === undefined) {
@@ -205,7 +208,14 @@ export class SendDigestsHandler implements IHandler<SendDigestsRequest, Result> 
         );
         loads.set(key, load);
       }
-      const loaded = await load;
+      return load;
+    };
+    for (const run of chunked(claims, LOADS_AT_ONCE)) {
+      await Promise.all(run.map(loadFor));
+    }
+    const outgoing: Outgoing<SubscriberEmailClaim>[] = [];
+    for (const claim of claims) {
+      const loaded = await loadFor(claim);
       if (!(loaded instanceof AnnouncedPostsLoadedResponse)) {
         await release(claims);
         return failure(context, loaded, "posts.load");
