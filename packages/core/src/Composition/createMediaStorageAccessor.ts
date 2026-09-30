@@ -4,11 +4,13 @@ import { FakeCreateSignedDownloadUrlHandler } from "../Accessors/MediaStorageAcc
 import { FakeCreateSignedUploadUrlHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeCreateSignedUploadUrlHandler";
 import { FakeDownloadStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeDownloadStorageObjectHandler";
 import { FakeRemoveStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeRemoveStorageObjectHandler";
+import { FakeRemoveStorageObjectsHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeRemoveStorageObjectsHandler";
 import { FakeUploadStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeUploadStorageObjectHandler";
 import { SupabaseCreateSignedDownloadUrlHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseCreateSignedDownloadUrlHandler";
 import { SupabaseCreateSignedUploadUrlHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseCreateSignedUploadUrlHandler";
 import { SupabaseDownloadStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseDownloadStorageObjectHandler";
 import { SupabaseRemoveStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseRemoveStorageObjectHandler";
+import { SupabaseRemoveStorageObjectsHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseRemoveStorageObjectsHandler";
 import { SupabaseUploadStorageObjectHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseUploadStorageObjectHandler";
 import { FakeMediaStorageState } from "../Accessors/MediaStorageAccessor/FakeMediaStorageState";
 import type { IMediaStorageAccessor } from "../Accessors/MediaStorageAccessor/IMediaStorageAccessor";
@@ -17,6 +19,7 @@ import { CreateSignedDownloadUrlRequest } from "../Accessors/MediaStorageAccesso
 import { CreateSignedUploadUrlRequest } from "../Accessors/MediaStorageAccessor/Requests/CreateSignedUploadUrlRequest";
 import { DownloadStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/DownloadStorageObjectRequest";
 import { RemoveStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectRequest";
+import { RemoveStorageObjectsRequest } from "../Accessors/MediaStorageAccessor/Requests/RemoveStorageObjectsRequest";
 import { UploadStorageObjectRequest } from "../Accessors/MediaStorageAccessor/Requests/UploadStorageObjectRequest";
 import { FakeLoadStorageObjectInfoHandler } from "../Accessors/MediaStorageAccessor/Handlers/FakeLoadStorageObjectInfoHandler";
 import { SupabaseLoadStorageObjectInfoHandler } from "../Accessors/MediaStorageAccessor/Handlers/SupabaseLoadStorageObjectInfoHandler";
@@ -87,6 +90,7 @@ function createSupabaseMediaStorageAccessor(db: DbClient): IMediaStorageAccessor
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveStorageObjectRequest, new SupabaseRemoveStorageObjectHandler(db))
+      .register(RemoveStorageObjectsRequest, new SupabaseRemoveStorageObjectsHandler(db))
       .build(),
   );
 }
@@ -116,6 +120,7 @@ function createFakeMediaStorageAccessor(
       .build(),
     new HandlerResolverBuilder()
       .register(RemoveStorageObjectRequest, new FakeRemoveStorageObjectHandler(state))
+      .register(RemoveStorageObjectsRequest, new FakeRemoveStorageObjectsHandler(state))
       .build(),
   );
 }
