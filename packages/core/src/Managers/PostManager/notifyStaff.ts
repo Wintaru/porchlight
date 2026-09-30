@@ -1,6 +1,6 @@
 import type { INotificationAccessor } from "../../Accessors/NotificationAccessor/INotificationAccessor";
-import { RecordNotificationRequest } from "../../Accessors/NotificationAccessor/Requests/RecordNotificationRequest";
-import { NotificationStoredResponse } from "../../Accessors/NotificationAccessor/Responses/NotificationStoredResponse";
+import { RecordNotificationsRequest } from "../../Accessors/NotificationAccessor/Requests/RecordNotificationsRequest";
+import { NotificationsRecordedResponse } from "../../Accessors/NotificationAccessor/Responses/NotificationsRecordedResponse";
 import type { IProfileAccessor } from "../../Accessors/ProfileAccessor/IProfileAccessor";
 import { ListStaffProfilesRequest } from "../../Accessors/ProfileAccessor/Requests/ListStaffProfilesRequest";
 import { StaffProfilesLoadedResponse } from "../../Accessors/ProfileAccessor/Responses/StaffProfilesLoadedResponse";
@@ -22,16 +22,24 @@ export async function notifyStaffOfPendingPost(
       `unexpected ${staff.constructor.name} from profiles.load`,
     );
   }
-  for (const profile of staff.profiles) {
-    const stored = await notifications.store(
-      new RecordNotificationRequest(profile.id, "queue.pending", { postId }, {}, context),
+  if (staff.profiles.length === 0) {
+    return undefined;
+  }
+  // One write for every recipient, so they are all told or none are.
+  const stored = await notifications.store(
+    new RecordNotificationsRequest(
+      staff.profiles.map((profile) => profile.id),
+      "queue.pending",
+      { postId },
+      {},
+      context,
+    ),
+  );
+  if (!(stored instanceof NotificationsRecordedResponse)) {
+    return new PostUnavailableResponse(
+      context.correlationId,
+      `unexpected ${stored.constructor.name} from notifications.store`,
     );
-    if (!(stored instanceof NotificationStoredResponse)) {
-      return new PostUnavailableResponse(
-        context.correlationId,
-        `unexpected ${stored.constructor.name} from notifications.store`,
-      );
-    }
   }
   return undefined;
 }

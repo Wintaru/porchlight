@@ -7,6 +7,7 @@ import { FakeRecordNotificationHandler } from "../Accessors/NotificationAccessor
 import { SupabaseListNotificationsHandler } from "../Accessors/NotificationAccessor/Handlers/SupabaseListNotificationsHandler";
 import { SupabaseMarkNotificationsReadHandler } from "../Accessors/NotificationAccessor/Handlers/SupabaseMarkNotificationsReadHandler";
 import { SupabaseRecordNotificationHandler } from "../Accessors/NotificationAccessor/Handlers/SupabaseRecordNotificationHandler";
+import { SupabaseRecordNotificationsHandler } from "../Accessors/NotificationAccessor/Handlers/SupabaseRecordNotificationsHandler";
 import type { INotificationAccessor } from "../Accessors/NotificationAccessor/INotificationAccessor";
 import { NotificationAccessor } from "../Accessors/NotificationAccessor/NotificationAccessor";
 import { ListNotificationsRequest } from "../Accessors/NotificationAccessor/Requests/ListNotificationsRequest";
@@ -40,6 +41,7 @@ function createSupabaseNotificationAccessor(db: DbClient): INotificationAccessor
   return new NotificationAccessor(
     new HandlerResolverBuilder()
       .register(RecordNotificationRequest, new SupabaseRecordNotificationHandler(db))
+      .register(RecordNotificationsRequest, new SupabaseRecordNotificationsHandler(db))
       .register(
         MarkNotificationsReadRequest,
         new SupabaseMarkNotificationsReadHandler(db),
