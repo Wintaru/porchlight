@@ -151,6 +151,9 @@ test.describe("presence", () => {
     const theo = await signedIn(browser, THEO);
     const june = await signedIn(browser, JUNE);
     try {
+      // Signing in lands June on the home page, where she is online. She leaves it, so
+      // Theo's home page starts with only Theo.
+      await june.page.goto("about:blank");
       await theo.page.goto(POST);
       const theoHome = await theo.context.newPage();
       await theoHome.goto("/");
