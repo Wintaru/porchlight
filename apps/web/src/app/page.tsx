@@ -13,7 +13,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { loadFeedFor } from "@/read-model/feed";
-import { loadFollowingFeed, loadPublishedAuthorCount } from "@/read-model/follows";
+import { loadFollowingFeed, loadSeveralPublishedAuthors } from "@/read-model/follows";
 import { loadTagCloud } from "@/read-model/tag";
 
 import styles from "./home.module.css";
@@ -59,19 +59,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   // The Following tab (#24, D20) is a member's, and only on a site with two or more
   // authors: with one, it would be the same list as Everything. Every read runs in one
-  // round (#93), so the asked-for feed is read before the author count is known; a
+  // round (#93), so the asked-for feed is read before the author check is known; a
   // one-author site that was asked for Following reads Everything after.
   const wantsFollowing = viewerId !== undefined && feed === "following";
-  const [authorCount, asked, tags, mayWriteAnonymously, presence, hidden] =
+  const [showTabs, asked, tags, mayWriteAnonymously, presence, hidden] =
     await Promise.all([
-      viewerId === undefined ? 0 : loadPublishedAuthorCount(db),
+      viewerId !== undefined && loadSeveralPublishedAuthors(db),
       wantsFollowing ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
       loadTagCloud(db),
       canPostAnonymously(actor),
       presenceFor(actor),
       loadViewerHiddenAuthors(db, viewerId),
     ]);
-  const showTabs = authorCount >= 2;
   const following = showTabs && wantsFollowing;
   const posts = wantsFollowing && !following ? await loadFeedFor(db, viewerId) : asked;
   return (

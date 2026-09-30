@@ -1534,6 +1534,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      several_published_authors: { Args: never; Returns: boolean }
       sweep_rate_limits: { Args: never; Returns: number }
       unused_media: {
         Args: { p_media_ids: string[]; p_owner_id: string; p_post_id?: string }

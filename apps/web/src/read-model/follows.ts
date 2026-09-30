@@ -50,11 +50,12 @@ export async function loadFollowingFeed(db: DbClient): Promise<readonly PostCard
   return cardsInOrder(db, data, "following feed");
 }
 
-// How many members have a public post out: the Following tab shows from two (D20).
-export async function loadPublishedAuthorCount(db: DbClient): Promise<number> {
-  const { data, error } = await db.rpc("published_author_count");
+// Whether two or more members have a public post out: the Following tab shows from two
+// (D20).
+export async function loadSeveralPublishedAuthors(db: DbClient): Promise<boolean> {
+  const { data, error } = await db.rpc("several_published_authors");
   if (error) {
-    throw new Error(`published author count: ${error.message}`);
+    throw new Error(`several published authors: ${error.message}`);
   }
   return data;
 }
