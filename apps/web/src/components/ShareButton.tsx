@@ -18,10 +18,14 @@ export function ShareButton({ url, title }: ShareButtonProps) {
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url });
-      } catch {
-        // A user-dismissed share sheet throws `AbortError`; nothing to report.
+        return;
+      } catch (error: unknown) {
+        // A user-dismissed share sheet throws `AbortError`; nothing to report. Any other
+        // refusal falls back to copying the link.
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
       }
-      return;
     }
     try {
       await navigator.clipboard.writeText(url);
