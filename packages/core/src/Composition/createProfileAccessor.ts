@@ -41,6 +41,9 @@ import { CountProfilesRequest } from "../Accessors/ProfileAccessor/Requests/Coun
 import { EraseProfileRequest } from "../Accessors/ProfileAccessor/Requests/EraseProfileRequest";
 import { RemoveOrphanAuthUserRequest } from "../Accessors/ProfileAccessor/Requests/RemoveOrphanAuthUserRequest";
 import { ListStaffProfilesRequest } from "../Accessors/ProfileAccessor/Requests/ListStaffProfilesRequest";
+import { LoadProfilesByIdsRequest } from "../Accessors/ProfileAccessor/Requests/LoadProfilesByIdsRequest";
+import { FakeLoadProfilesByIdsHandler } from "../Accessors/ProfileAccessor/Handlers/FakeLoadProfilesByIdsHandler";
+import { SupabaseLoadProfilesByIdsHandler } from "../Accessors/ProfileAccessor/Handlers/SupabaseLoadProfilesByIdsHandler";
 import { LoadProfileByHandleRequest } from "../Accessors/ProfileAccessor/Requests/LoadProfileByHandleRequest";
 import { LoadProfileByIdRequest } from "../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
 import { StoreNewProfileRequest } from "../Accessors/ProfileAccessor/Requests/StoreNewProfileRequest";
@@ -77,6 +80,7 @@ function createSupabaseProfileAccessor(db: DbClient): IProfileAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new SupabaseLoadProfileByIdHandler(db))
+      .register(LoadProfilesByIdsRequest, new SupabaseLoadProfilesByIdsHandler(db))
       .register(LoadProfileByHandleRequest, new SupabaseLoadProfileByHandleHandler(db))
       .register(CountProfilesRequest, new SupabaseCountProfilesHandler(db))
       .register(ListStaffProfilesRequest, new SupabaseListStaffProfilesHandler(db))
@@ -104,6 +108,7 @@ export function createFakeProfileAccessor(state: FakeProfileState): IProfileAcce
       .build(),
     new HandlerResolverBuilder()
       .register(LoadProfileByIdRequest, new FakeLoadProfileByIdHandler(state))
+      .register(LoadProfilesByIdsRequest, new FakeLoadProfilesByIdsHandler(state))
       .register(LoadProfileByHandleRequest, new FakeLoadProfileByHandleHandler(state))
       .register(CountProfilesRequest, new FakeCountProfilesHandler(state))
       .register(ListStaffProfilesRequest, new FakeListStaffProfilesHandler(state))

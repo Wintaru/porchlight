@@ -24,6 +24,9 @@ import { MediaAssetAccessor } from "../Accessors/MediaAssetAccessor/MediaAssetAc
 import { CountMediaForAnonymousAuthorRequest } from "../Accessors/MediaAssetAccessor/Requests/CountMediaForAnonymousAuthorRequest";
 import { LoadHeldMediaRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadHeldMediaRequest";
 import { LoadMediaAssetByIdRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
+import { LoadMediaAssetsByIdsRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByIdsRequest";
+import { FakeLoadMediaAssetsByIdsHandler } from "../Accessors/MediaAssetAccessor/Handlers/FakeLoadMediaAssetsByIdsHandler";
+import { SupabaseLoadMediaAssetsByIdsHandler } from "../Accessors/MediaAssetAccessor/Handlers/SupabaseLoadMediaAssetsByIdsHandler";
 import { LoadMediaAssetsByOwnerRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByOwnerRequest";
 import { LoadMediaInUseRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadMediaInUseRequest";
 import { LoadUnusedMediaRequest } from "../Accessors/MediaAssetAccessor/Requests/LoadUnusedMediaRequest";
@@ -60,6 +63,7 @@ function createSupabaseMediaAssetAccessor(db: DbClient): IMediaAssetAccessor {
       .build(),
     new HandlerResolverBuilder()
       .register(LoadMediaAssetByIdRequest, new SupabaseLoadMediaAssetByIdHandler(db))
+      .register(LoadMediaAssetsByIdsRequest, new SupabaseLoadMediaAssetsByIdsHandler(db))
       .register(
         LoadMediaAssetsByOwnerRequest,
         new SupabaseLoadMediaAssetsByOwnerHandler(db),
@@ -91,6 +95,7 @@ export function createFakeMediaAssetAccessor(
       .build(),
     new HandlerResolverBuilder()
       .register(LoadMediaAssetByIdRequest, new FakeLoadMediaAssetByIdHandler(state))
+      .register(LoadMediaAssetsByIdsRequest, new FakeLoadMediaAssetsByIdsHandler(state))
       .register(
         LoadMediaAssetsByOwnerRequest,
         new FakeLoadMediaAssetsByOwnerHandler(state),

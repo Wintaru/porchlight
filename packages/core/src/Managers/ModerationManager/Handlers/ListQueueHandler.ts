@@ -6,18 +6,15 @@ import type { IModActionAccessor } from "../../../Accessors/ModActionAccessor/IM
 import { LoadEscalatedTargetsRequest } from "../../../Accessors/ModActionAccessor/Requests/LoadEscalatedTargetsRequest";
 import { EscalatedTargetsLoadedResponse } from "../../../Accessors/ModActionAccessor/Responses/EscalatedTargetsLoadedResponse";
 import { LoadHeldMediaRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadHeldMediaRequest";
-import { LoadMediaAssetByIdRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetByIdRequest";
-import { MediaAssetLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetLoadedResponse";
-import { MediaAssetNotFoundResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetNotFoundResponse";
+import { LoadMediaAssetsByIdsRequest } from "../../../Accessors/MediaAssetAccessor/Requests/LoadMediaAssetsByIdsRequest";
 import { MediaAssetsLoadedResponse } from "../../../Accessors/MediaAssetAccessor/Responses/MediaAssetsLoadedResponse";
 import type { IPostAccessor } from "../../../Accessors/PostAccessor/IPostAccessor";
 import { LoadPostsByIdsRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByIdsRequest";
 import { LoadPostsByStatusRequest } from "../../../Accessors/PostAccessor/Requests/LoadPostsByStatusRequest";
 import { PostsLoadedResponse } from "../../../Accessors/PostAccessor/Responses/PostsLoadedResponse";
 import type { IProfileAccessor } from "../../../Accessors/ProfileAccessor/IProfileAccessor";
-import { LoadProfileByIdRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadProfileByIdRequest";
-import { ProfileLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileLoadedResponse";
-import { ProfileNotFoundResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfileNotFoundResponse";
+import { LoadProfilesByIdsRequest } from "../../../Accessors/ProfileAccessor/Requests/LoadProfilesByIdsRequest";
+import { ProfilesLoadedResponse } from "../../../Accessors/ProfileAccessor/Responses/ProfilesLoadedResponse";
 import type { ContentAuthor } from "../../../Common/ContentAuthor";
 import type { IHandler } from "../../../Common/IHandler";
 import type { LiveComment } from "../../../Common/LiveComment";
@@ -243,25 +240,22 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
         profileIds.add(author.profileId);
       }
     }
-    const loaded = await Promise.all(
-      [...profileIds].map((id) =>
-        this.profiles.load(new LoadProfileByIdRequest(id, context)),
-      ),
-    );
-    const trustLevels = new Map<string, TrustLevel>();
-    for (const response of loaded) {
-      if (response instanceof ProfileLoadedResponse) {
-        trustLevels.set(response.profile.id, response.profile.trustLevel);
-        continue;
-      }
-      // A missing profile leaves the item's trust level unresolved (null); a real
-      // backend failure must not silently read the same as "not found" — this queue's
-      // `probation` filter (and `flagged`, below) exists to catch content that needs a
-      // closer look, so a hiccup here must surface as unavailable, not as "clean."
-      if (!(response instanceof ProfileNotFoundResponse)) {
-        return unavailable(context.correlationId, response, "profiles.load");
-      }
+    if (profileIds.size === 0) {
+      return new Map();
     }
+    // A missing profile leaves the item's trust level unresolved (null); a real backend
+    // failure must not silently read the same as "not found" — this queue's `probation`
+    // filter (and `flagged`, below) exists to catch content that needs a closer look, so
+    // a hiccup here must surface as unavailable, not as "clean."
+    const loaded = await this.profiles.load(
+      new LoadProfilesByIdsRequest([...profileIds], context),
+    );
+    if (!(loaded instanceof ProfilesLoadedResponse)) {
+      return unavailable(context.correlationId, loaded, "profiles.load");
+    }
+    const trustLevels = new Map<string, TrustLevel>(
+      loaded.profiles.map((profile) => [profile.id, profile.trustLevel]),
+    );
     return trustLevels;
   }
 
@@ -272,25 +266,22 @@ export class ListQueueHandler implements IHandler<ListQueueRequest, Result> {
     const coverIds = new Set(
       posts.flatMap((post) => (post.coverMediaId === null ? [] : [post.coverMediaId])),
     );
-    const loaded = await Promise.all(
-      [...coverIds].map((id) =>
-        this.mediaAssets.load(new LoadMediaAssetByIdRequest(id, context)),
-      ),
-    );
-    const flagged = new Set<string>();
-    for (const response of loaded) {
-      if (response instanceof MediaAssetLoadedResponse) {
-        if (response.asset.scanStatus === "flagged") {
-          flagged.add(response.asset.id);
-        }
-        continue;
-      }
-      // Same reasoning as loadTrustLevels: a missing cover is not flagged, but a real
-      // backend failure must not silently read as "not flagged."
-      if (!(response instanceof MediaAssetNotFoundResponse)) {
-        return unavailable(context.correlationId, response, "mediaAssets.load");
-      }
+    if (coverIds.size === 0) {
+      return new Set();
     }
+    // Same reasoning as loadTrustLevels: a missing cover is not flagged, but a real
+    // backend failure must not silently read as "not flagged."
+    const loaded = await this.mediaAssets.load(
+      new LoadMediaAssetsByIdsRequest([...coverIds], context),
+    );
+    if (!(loaded instanceof MediaAssetsLoadedResponse)) {
+      return unavailable(context.correlationId, loaded, "mediaAssets.load");
+    }
+    const flagged = new Set(
+      loaded.assets
+        .filter((asset) => asset.scanStatus === "flagged")
+        .map((asset) => asset.id),
+    );
     return flagged;
   }
 }
