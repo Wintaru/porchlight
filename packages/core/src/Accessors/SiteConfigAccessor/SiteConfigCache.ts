@@ -72,8 +72,18 @@ export class SiteConfigCache {
     return rows;
   }
 
+  // Never rejects: a thrown query is a failed read like any other, and is not kept.
   private async load(): Promise<Read<ReadonlyMap<string, Json>>> {
-    const { data, error } = await this.query();
+    let answer;
+    try {
+      answer = await this.query();
+    } catch (error: unknown) {
+      return {
+        data: null,
+        error: { message: error instanceof Error ? error.message : String(error) },
+      };
+    }
+    const { data, error } = answer;
     if (error !== null || data === null) {
       return { data: null, error: { message: error?.message ?? "no rows and no error" } };
     }

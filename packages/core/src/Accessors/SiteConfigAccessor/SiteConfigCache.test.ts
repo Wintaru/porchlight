@@ -93,4 +93,47 @@ describe("SiteConfigCache", () => {
     });
     expect(queries()).toBe(2);
   });
+
+  test("a read begun before a save is not kept once the save forgets it", async () => {
+    let finishOld: (value: {
+      data: { key: string; value: string }[];
+      error: null;
+    }) => void = () => undefined;
+    let queries = 0;
+    const config = new SiteConfigCache(() => {
+      queries += 1;
+      return queries === 1
+        ? new Promise((resolve) => {
+            finishOld = resolve;
+          })
+        : Promise.resolve({ data: [{ key: "posting", value: "members" }], error: null });
+    }, TTL_MS);
+
+    const old = config.row("posting");
+    config.forget();
+    finishOld({ data: [{ key: "posting", value: "anyone" }], error: null });
+    await old;
+
+    expect(await config.row("posting")).toEqual({
+      data: { value: "members" },
+      error: null,
+    });
+    expect(queries).toBe(2);
+  });
+
+  test("a query that throws is a failed read, and is not kept", async () => {
+    let queries = 0;
+    const config = new SiteConfigCache(() => {
+      queries += 1;
+      return queries === 1
+        ? Promise.reject(new Error("socket closed"))
+        : Promise.resolve({ data: [], error: null });
+    }, TTL_MS);
+
+    expect(await config.row("posting")).toEqual({
+      data: null,
+      error: { message: "socket closed" },
+    });
+    expect(await config.row("posting")).toEqual({ data: null, error: null });
+  });
 });
