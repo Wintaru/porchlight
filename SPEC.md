@@ -190,7 +190,8 @@ Pipeline order is fixed inside `MediaManager`:
 3. General classifier for text only (OpenAI Moderation or Claude). **A general LLM API
    never receives an image.**
 
-A video goes to the first two by a short-lived signed link, and each checks its frames.
+A hash match stops the pipeline: the file is locked, and the classifier never receives
+it. A video goes to the first two by a short-lived signed link, and each checks its frames.
 A provider with no video scan fails the upload rather than let it through, except under
 `ALLOW_FAKE_PROVIDERS=1`, where the fake answers for video and the admin checklist shows
 the video classifier red. Hash matching still runs on every video. A HEIC photo

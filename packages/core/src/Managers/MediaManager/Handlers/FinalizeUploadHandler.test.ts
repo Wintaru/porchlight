@@ -377,6 +377,19 @@ describe("FinalizeUploadHandler", () => {
     expect(assetState.auditEvents[0]).toMatchObject({ event: "media.locked" });
   });
 
+  test("a hash match never reaches the classifier", async () => {
+    // A classifier that would fail: were it asked, the upload would be unavailable.
+    const { assetState, seed, finalize } = harness("match", "fail");
+    seed("56565656-5656-4565-8565-565656565656", "porch.png", PNG_BYTES);
+
+    const result = await finalize("56565656-5656-4565-8565-565656565656", "porch.png");
+
+    expect(result).toBeInstanceOf(MediaRefusedResponse);
+    expect(assetState.assets.get("56565656-5656-4565-8565-565656565656")).toMatchObject({
+      scanStatus: "locked",
+    });
+  });
+
   test("an agent with media:upload finalizes as its member, and a lock still refuses (#31)", async () => {
     const agent = {
       kind: "agent" as const,

@@ -55,8 +55,10 @@ export interface ScanDependencies {
 }
 
 // The fixed order (SPEC.md §7, WAYFINDER D17): hash match, then the purpose-built
-// classifier, then the policy. One copy for the member and the anonymous upload paths:
-// scanning has no exception for who is uploading.
+// classifier, then the policy. A hash match stops there: the policy locks it whatever a
+// classifier would say, so known-illegal content never goes to a second vendor. One
+// copy for the member and the anonymous upload paths: scanning has no exception for
+// who is uploading.
 export async function scanUpload(
   dependencies: ScanDependencies,
   subject: ScanSubject,
@@ -91,13 +93,15 @@ export async function scanUpload(
     hashMatched = hashResult.matched;
     heicPixels = scanned.heicPixels;
 
-    const classifyResult = await imageClassifier.load(
-      new ClassifyImageRequest(scanned.bytes, scanned.mimeType, context),
-    );
-    if (!(classifyResult instanceof ImageClassifiedResponse)) {
-      return unavailable(context.correlationId, classifyResult, "imageClassifier.load");
+    if (!hashMatched) {
+      const classifyResult = await imageClassifier.load(
+        new ClassifyImageRequest(scanned.bytes, scanned.mimeType, context),
+      );
+      if (!(classifyResult instanceof ImageClassifiedResponse)) {
+        return unavailable(context.correlationId, classifyResult, "imageClassifier.load");
+      }
+      imageClassification = classifyResult.classification;
     }
-    imageClassification = classifyResult.classification;
   }
 
   if (subject.kind === "video") {
@@ -109,13 +113,15 @@ export async function scanUpload(
     }
     hashMatched = hashResult.matched;
 
-    const classifyResult = await imageClassifier.load(
-      new ClassifyVideoRequest(subject.url, context),
-    );
-    if (!(classifyResult instanceof ImageClassifiedResponse)) {
-      return unavailable(context.correlationId, classifyResult, "imageClassifier.load");
+    if (!hashMatched) {
+      const classifyResult = await imageClassifier.load(
+        new ClassifyVideoRequest(subject.url, context),
+      );
+      if (!(classifyResult instanceof ImageClassifiedResponse)) {
+        return unavailable(context.correlationId, classifyResult, "imageClassifier.load");
+      }
+      imageClassification = classifyResult.classification;
     }
-    imageClassification = classifyResult.classification;
   }
 
   const thresholds = await siteConfig.load(new LoadModerationThresholdsRequest(context));
