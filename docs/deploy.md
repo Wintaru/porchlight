@@ -259,10 +259,10 @@ on it, and use your Realtime quota. Switch public access off.
    the first member must light up with no reload. If it does not, switch public access
    on again and open an issue.
 
-Watch the cost of presence after launch. Each open page calls `/api/presence` about 3
-times a minute. In the Vercel dashboard, open Usage and look at the function
-invocations for `/api/presence`. If the count is too high, a later release can make
-the interval longer (decision C8 in issue #89 kept it at 20 seconds).
+Watch the cost of presence after launch. Each open page calls `/api/presence` about 2
+times a minute (every 30 seconds). In the Vercel dashboard, open Usage and look at the
+function invocations for `/api/presence`. If the count is too high, a later release can
+make the interval longer (`HEARTBEAT_MS` in `apps/web/src/read-model/presence.ts`).
 
 ## 13. Held uploads in the queue (issue #90)
 
