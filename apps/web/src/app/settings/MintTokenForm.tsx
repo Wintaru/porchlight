@@ -1,6 +1,7 @@
 "use client";
 
 import type { AgentScope } from "@porchlight/core";
+import { AGENT_TOKEN_NAME_MAX_LENGTH } from "@porchlight/core/client";
 import { useActionState } from "react";
 
 import { AGENT_SCOPE_TEXT } from "@/lib/agent-scopes";
@@ -59,7 +60,7 @@ export function MintTokenForm({ scopes }: MintTokenFormProps) {
           className="text-input"
           type="text"
           name="name"
-          maxLength={60}
+          maxLength={AGENT_TOKEN_NAME_MAX_LENGTH}
           required
           placeholder="Laptop"
         />
