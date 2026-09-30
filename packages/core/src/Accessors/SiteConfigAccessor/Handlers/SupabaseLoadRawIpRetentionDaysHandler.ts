@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import { DEFAULT_RAW_IP_RETENTION_DAYS } from "../../../Common/Retention";
 import type { LoadRawIpRetentionDaysRequest } from "../Requests/LoadRawIpRetentionDaysRequest";
 import { RawIpRetentionDaysLoadedResponse } from "../Responses/RawIpRetentionDaysLoadedResponse";
@@ -11,7 +11,7 @@ export class SupabaseLoadRawIpRetentionDaysHandler implements IHandler<
   LoadRawIpRetentionDaysRequest,
   RawIpRetentionDaysLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadRawIpRetentionDaysRequest,

@@ -4,7 +4,7 @@ import {
   type AttachmentQuotaByTrust,
 } from "../../../Common/AttachmentQuota";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import { TRUST_LEVELS, type TrustLevel } from "../../../Common/TrustLevel";
 import type { LoadAttachmentQuotaByTrustRequest } from "../Requests/LoadAttachmentQuotaByTrustRequest";
 import { AttachmentQuotaByTrustLoadedResponse } from "../Responses/AttachmentQuotaByTrustLoadedResponse";
@@ -56,7 +56,7 @@ export class SupabaseLoadAttachmentQuotaByTrustHandler implements IHandler<
   LoadAttachmentQuotaByTrustRequest,
   AttachmentQuotaByTrustLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAttachmentQuotaByTrustRequest,

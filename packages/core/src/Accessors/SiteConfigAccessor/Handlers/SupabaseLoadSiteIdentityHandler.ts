@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import { DEFAULT_SITE_IDENTITY, type SiteIdentity } from "../../../Common/SiteIdentity";
 import type { LoadSiteIdentityRequest } from "../Requests/LoadSiteIdentityRequest";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -17,7 +17,7 @@ export class SupabaseLoadSiteIdentityHandler implements IHandler<
   LoadSiteIdentityRequest,
   SiteIdentityLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadSiteIdentityRequest,

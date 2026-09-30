@@ -48,7 +48,7 @@ import { LoadSignUpPolicyRequest } from "../Accessors/SiteConfigAccessor/Request
 import { LoadSiteIdentityRequest } from "../Accessors/SiteConfigAccessor/Requests/LoadSiteIdentityRequest";
 import { StoreSiteConfigEntriesRequest } from "../Accessors/SiteConfigAccessor/Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigAccessor } from "../Accessors/SiteConfigAccessor/SiteConfigAccessor";
-import { SiteConfigSnapshot } from "../Accessors/SiteConfigAccessor/SiteConfigSnapshot";
+import { SiteConfigCache } from "../Accessors/SiteConfigAccessor/SiteConfigCache";
 import {
   COMMENT_POLICIES,
   type CommentPolicy,
@@ -80,13 +80,14 @@ function isSignUpPolicy(value: string): value is SignUpPolicy {
   return SIGN_UP_POLICIES.some((policy) => policy === value);
 }
 
+// How long one server keeps its copy of `site_config` (SiteConfigCache): a setting
+// saved on another instance reaches this one within this long.
+const SITE_CONFIG_TTL_MS = 30_000;
+
 // The store behind the D20 site settings and the #12 admin page. The fake reads its
 // keys from SITE_CONFIG_FAKE_POSTING, SITE_CONFIG_FAKE_COMMENTS and
 // SITE_CONFIG_FAKE_SIGN_UP, so a test or a local run can close posting, comments or
 // sign-up without a row.
-// How long one server keeps its copy of `site_config` (SiteConfigSnapshot): a setting
-// saved on another instance reaches this one within this long.
-const SITE_CONFIG_TTL_MS = 30_000;
 
 export function createSiteConfigAccessor(
   env: Environment,
@@ -95,7 +96,7 @@ export function createSiteConfigAccessor(
   switch (readStoreProvider(env, "SITE_CONFIG_PROVIDER")) {
     case "supabase": {
       const client = db();
-      const snapshot = new SiteConfigSnapshot(
+      const cache = new SiteConfigCache(
         () => client.from("site_config").select("key, value"),
         SITE_CONFIG_TTL_MS,
       );
@@ -103,60 +104,45 @@ export function createSiteConfigAccessor(
         new HandlerResolverBuilder()
           .register(
             StoreSiteConfigEntriesRequest,
-            new SupabaseStoreSiteConfigEntriesHandler(client, snapshot),
+            new SupabaseStoreSiteConfigEntriesHandler(client, cache),
           )
           .build(),
         new HandlerResolverBuilder()
-          .register(
-            LoadPostingPolicyRequest,
-            new SupabaseLoadPostingPolicyHandler(snapshot),
-          )
-          .register(
-            LoadCommentPolicyRequest,
-            new SupabaseLoadCommentPolicyHandler(snapshot),
-          )
+          .register(LoadPostingPolicyRequest, new SupabaseLoadPostingPolicyHandler(cache))
+          .register(LoadCommentPolicyRequest, new SupabaseLoadCommentPolicyHandler(cache))
           .register(
             LoadAttachmentAllowlistRequest,
-            new SupabaseLoadAttachmentAllowlistHandler(snapshot),
+            new SupabaseLoadAttachmentAllowlistHandler(cache),
           )
           .register(
             LoadAnonymousUploadCapRequest,
-            new SupabaseLoadAnonymousUploadCapHandler(snapshot),
+            new SupabaseLoadAnonymousUploadCapHandler(cache),
           )
           .register(
             LoadAttachmentQuotaByTrustRequest,
-            new SupabaseLoadAttachmentQuotaByTrustHandler(snapshot),
+            new SupabaseLoadAttachmentQuotaByTrustHandler(cache),
           )
           .register(
             LoadModerationThresholdsRequest,
-            new SupabaseLoadModerationThresholdsHandler(snapshot),
+            new SupabaseLoadModerationThresholdsHandler(cache),
           )
           .register(
             LoadRawIpRetentionDaysRequest,
-            new SupabaseLoadRawIpRetentionDaysHandler(snapshot),
+            new SupabaseLoadRawIpRetentionDaysHandler(cache),
           )
-          .register(LoadRegionRequest, new SupabaseLoadRegionHandler(snapshot))
-          .register(
-            LoadSignUpPolicyRequest,
-            new SupabaseLoadSignUpPolicyHandler(snapshot),
-          )
-          .register(
-            LoadSiteIdentityRequest,
-            new SupabaseLoadSiteIdentityHandler(snapshot),
-          )
+          .register(LoadRegionRequest, new SupabaseLoadRegionHandler(cache))
+          .register(LoadSignUpPolicyRequest, new SupabaseLoadSignUpPolicyHandler(cache))
+          .register(LoadSiteIdentityRequest, new SupabaseLoadSiteIdentityHandler(cache))
           .register(
             LoadAutoPromoteAfterApprovedPostsRequest,
-            new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(snapshot),
+            new SupabaseLoadAutoPromoteAfterApprovedPostsHandler(cache),
           )
-          .register(
-            LoadAgentsPolicyRequest,
-            new SupabaseLoadAgentsPolicyHandler(snapshot),
-          )
+          .register(LoadAgentsPolicyRequest, new SupabaseLoadAgentsPolicyHandler(cache))
           .register(
             LoadAgentDisclosureRequest,
-            new SupabaseLoadAgentDisclosureHandler(snapshot),
+            new SupabaseLoadAgentDisclosureHandler(cache),
           )
-          .register(LoadAgentLimitsRequest, new SupabaseLoadAgentLimitsHandler(snapshot))
+          .register(LoadAgentLimitsRequest, new SupabaseLoadAgentLimitsHandler(cache))
           .build(),
       );
     }

@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import { DEFAULT_REGION, REGIONS, type Region } from "../../../Common/Region";
 import type { LoadRegionRequest } from "../Requests/LoadRegionRequest";
 import { RegionLoadedResponse } from "../Responses/RegionLoadedResponse";
@@ -17,7 +17,7 @@ export class SupabaseLoadRegionHandler implements IHandler<
   LoadRegionRequest,
   RegionLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadRegionRequest,

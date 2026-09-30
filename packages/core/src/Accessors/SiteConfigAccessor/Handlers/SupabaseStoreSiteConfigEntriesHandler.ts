@@ -1,7 +1,7 @@
 import type { DbClient, Json } from "@porchlight/db";
 
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { StoreSiteConfigEntriesRequest } from "../Requests/StoreSiteConfigEntriesRequest";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
 import { SiteConfigStoredResponse } from "../Responses/SiteConfigStoredResponse";
@@ -15,7 +15,7 @@ export class SupabaseStoreSiteConfigEntriesHandler implements IHandler<
 > {
   constructor(
     private readonly db: DbClient,
-    private readonly config: SiteConfigSnapshot,
+    private readonly config: SiteConfigCache,
   ) {}
 
   async handle(

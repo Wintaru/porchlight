@@ -14,7 +14,7 @@ type Read<T> =
 // every page read a key or two, and each used to be its own round trip. A save on this
 // server forgets the copy at once; another server instance sees it within `ttlMs`. A
 // read that fails is not kept, so the next call asks again.
-export class SiteConfigSnapshot {
+export class SiteConfigCache {
   private current:
     | { readonly at: number; readonly rows: Promise<Read<ReadonlyMap<string, Json>>> }
     | undefined;

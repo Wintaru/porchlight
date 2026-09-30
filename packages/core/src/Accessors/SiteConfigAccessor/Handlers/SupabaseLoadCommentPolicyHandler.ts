@@ -4,7 +4,7 @@ import {
   DEFAULT_COMMENT_POLICY,
 } from "../../../Common/CommentPolicy";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadCommentPolicyRequest } from "../Requests/LoadCommentPolicyRequest";
 import { CommentPolicyLoadedResponse } from "../Responses/CommentPolicyLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -21,7 +21,7 @@ export class SupabaseLoadCommentPolicyHandler implements IHandler<
   LoadCommentPolicyRequest,
   CommentPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadCommentPolicyRequest,

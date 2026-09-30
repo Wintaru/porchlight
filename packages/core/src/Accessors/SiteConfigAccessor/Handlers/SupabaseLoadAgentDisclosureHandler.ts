@@ -4,7 +4,7 @@ import {
   DEFAULT_AGENT_DISCLOSURE,
 } from "../../../Common/AgentDisclosure";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadAgentDisclosureRequest } from "../Requests/LoadAgentDisclosureRequest";
 import { AgentDisclosureLoadedResponse } from "../Responses/AgentDisclosureLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -22,7 +22,7 @@ export class SupabaseLoadAgentDisclosureHandler implements IHandler<
   LoadAgentDisclosureRequest,
   AgentDisclosureLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAgentDisclosureRequest,

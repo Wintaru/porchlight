@@ -1,6 +1,6 @@
 import { DEFAULT_AGENT_LIMITS, toAgentLimits } from "../../../Common/AgentLimits";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadAgentLimitsRequest } from "../Requests/LoadAgentLimitsRequest";
 import { AgentLimitsLoadedResponse } from "../Responses/AgentLimitsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -13,7 +13,7 @@ export class SupabaseLoadAgentLimitsHandler implements IHandler<
   LoadAgentLimitsRequest,
   AgentLimitsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAgentLimitsRequest,

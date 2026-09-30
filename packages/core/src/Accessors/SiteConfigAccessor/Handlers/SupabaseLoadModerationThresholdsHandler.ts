@@ -3,7 +3,7 @@ import {
   type ModerationThresholds,
 } from "../../../Common/ModerationThresholds";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadModerationThresholdsRequest } from "../Requests/LoadModerationThresholdsRequest";
 import { ModerationThresholdsLoadedResponse } from "../Responses/ModerationThresholdsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -31,7 +31,7 @@ export class SupabaseLoadModerationThresholdsHandler implements IHandler<
   LoadModerationThresholdsRequest,
   ModerationThresholdsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadModerationThresholdsRequest,

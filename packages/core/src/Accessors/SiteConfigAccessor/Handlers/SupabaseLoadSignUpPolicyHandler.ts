@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import {
   DEFAULT_SIGN_UP_POLICY,
   SIGN_UP_POLICIES,
@@ -21,7 +21,7 @@ export class SupabaseLoadSignUpPolicyHandler implements IHandler<
   LoadSignUpPolicyRequest,
   SignUpPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadSignUpPolicyRequest,

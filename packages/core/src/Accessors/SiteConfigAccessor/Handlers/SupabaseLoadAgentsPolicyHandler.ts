@@ -4,7 +4,7 @@ import {
   DEFAULT_AGENTS_POLICY,
 } from "../../../Common/AgentsPolicy";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadAgentsPolicyRequest } from "../Requests/LoadAgentsPolicyRequest";
 import { AgentsPolicyLoadedResponse } from "../Responses/AgentsPolicyLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -22,7 +22,7 @@ export class SupabaseLoadAgentsPolicyHandler implements IHandler<
   LoadAgentsPolicyRequest,
   AgentsPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAgentsPolicyRequest,

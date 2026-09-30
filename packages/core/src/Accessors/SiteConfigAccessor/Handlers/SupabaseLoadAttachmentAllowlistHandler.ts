@@ -1,6 +1,6 @@
 import { DEFAULT_ATTACHMENT_ALLOWLIST } from "../../../Common/AttachmentAllowlist";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadAttachmentAllowlistRequest } from "../Requests/LoadAttachmentAllowlistRequest";
 import { AttachmentAllowlistLoadedResponse } from "../Responses/AttachmentAllowlistLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -15,7 +15,7 @@ export class SupabaseLoadAttachmentAllowlistHandler implements IHandler<
   LoadAttachmentAllowlistRequest,
   AttachmentAllowlistLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAttachmentAllowlistRequest,

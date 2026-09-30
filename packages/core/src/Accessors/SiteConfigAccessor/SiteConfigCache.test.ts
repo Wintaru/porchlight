@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-import { SiteConfigSnapshot } from "./SiteConfigSnapshot";
+import { SiteConfigCache } from "./SiteConfigCache";
 
 const TTL_MS = 30_000;
 
-function snapshot(answers: ({ key: string; value: string }[] | "fail")[]) {
+function cacheOf(answers: ({ key: string; value: string }[] | "fail")[]) {
   let clock = 0;
   let queries = 0;
-  const config = new SiteConfigSnapshot(
+  const config = new SiteConfigCache(
     () => {
       const answer = answers[Math.min(queries, answers.length - 1)] ?? "fail";
       queries += 1;
@@ -29,9 +29,9 @@ function snapshot(answers: ({ key: string; value: string }[] | "fail")[]) {
   };
 }
 
-describe("SiteConfigSnapshot", () => {
+describe("SiteConfigCache", () => {
   test("answers every key from one read until the copy is older than the TTL", async () => {
-    const { config, queries, advance } = snapshot([
+    const { config, queries, advance } = cacheOf([
       [{ key: "posting", value: "anyone" }],
       [{ key: "posting", value: "members" }],
     ]);
@@ -57,7 +57,7 @@ describe("SiteConfigSnapshot", () => {
   });
 
   test("reads again after forget, as a save does", async () => {
-    const { config, queries } = snapshot([
+    const { config, queries } = cacheOf([
       [{ key: "posting", value: "anyone" }],
       [{ key: "posting", value: "members" }],
     ]);
@@ -73,7 +73,7 @@ describe("SiteConfigSnapshot", () => {
   });
 
   test("shares one read between callers that ask at once", async () => {
-    const { config, queries } = snapshot([[{ key: "region", value: "us" }]]);
+    const { config, queries } = cacheOf([[{ key: "region", value: "us" }]]);
 
     await Promise.all([config.row("region"), config.rows(["region", "site_name"])]);
 
@@ -81,10 +81,7 @@ describe("SiteConfigSnapshot", () => {
   });
 
   test("answers only the keys that exist, and does not keep a failed read", async () => {
-    const { config, queries } = snapshot([
-      "fail",
-      [{ key: "site_name", value: "Porch" }],
-    ]);
+    const { config, queries } = cacheOf(["fail", [{ key: "site_name", value: "Porch" }]]);
 
     expect(await config.rows(["site_name"])).toEqual({
       data: null,

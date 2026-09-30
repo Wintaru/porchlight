@@ -3,7 +3,7 @@ import {
   type AnonymousUploadCap,
 } from "../../../Common/AnonymousUploadCap";
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import type { LoadAnonymousUploadCapRequest } from "../Requests/LoadAnonymousUploadCapRequest";
 import { AnonymousUploadCapLoadedResponse } from "../Responses/AnonymousUploadCapLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -33,7 +33,7 @@ export class SupabaseLoadAnonymousUploadCapHandler implements IHandler<
   LoadAnonymousUploadCapRequest,
   AnonymousUploadCapLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAnonymousUploadCapRequest,

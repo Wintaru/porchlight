@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import {
   DEFAULT_POSTING_POLICY,
   POSTING_POLICIES,
@@ -21,7 +21,7 @@ export class SupabaseLoadPostingPolicyHandler implements IHandler<
   LoadPostingPolicyRequest,
   PostingPolicyLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadPostingPolicyRequest,

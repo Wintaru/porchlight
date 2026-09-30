@@ -1,5 +1,5 @@
 import type { IHandler } from "../../../Common/IHandler";
-import type { SiteConfigSnapshot } from "../SiteConfigSnapshot";
+import type { SiteConfigCache } from "../SiteConfigCache";
 import { DEFAULT_AUTO_PROMOTE_AFTER_APPROVED_POSTS } from "../../../Common/AutoPromoteRule";
 import { AutoPromoteAfterApprovedPostsLoadedResponse } from "../Responses/AutoPromoteAfterApprovedPostsLoadedResponse";
 import { SiteConfigAccessFailedResponse } from "../Responses/SiteConfigAccessFailedResponse";
@@ -19,7 +19,7 @@ export class SupabaseLoadAutoPromoteAfterApprovedPostsHandler implements IHandle
   LoadAutoPromoteAfterApprovedPostsRequest,
   AutoPromoteAfterApprovedPostsLoadedResponse | SiteConfigAccessFailedResponse
 > {
-  constructor(private readonly config: SiteConfigSnapshot) {}
+  constructor(private readonly config: SiteConfigCache) {}
 
   async handle(
     request: LoadAutoPromoteAfterApprovedPostsRequest,
