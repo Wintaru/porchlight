@@ -11,6 +11,7 @@ import type { ISiteConfigAccessor } from "../../Accessors/SiteConfigAccessor/ISi
 import { LoadModerationThresholdsRequest } from "../../Accessors/SiteConfigAccessor/Requests/LoadModerationThresholdsRequest";
 import { ModerationThresholdsLoadedResponse } from "../../Accessors/SiteConfigAccessor/Responses/ModerationThresholdsLoadedResponse";
 import type { ImageClassification } from "../../Common/ImageClassification";
+import { DEFAULT_MODERATION_THRESHOLDS } from "../../Common/ModerationThresholds";
 import { LOCKED_RETENTION_DAYS } from "../../Common/Retention";
 import type { ScanStatus } from "../../Common/ScanStatus";
 import type { IModerationPolicyEngine } from "../../Engines/ModerationPolicyEngine/IModerationPolicyEngine";
@@ -124,18 +125,20 @@ export async function scanUpload(
     }
   }
 
-  const thresholds = await siteConfig.load(new LoadModerationThresholdsRequest(context));
-  if (!(thresholds instanceof ModerationThresholdsLoadedResponse)) {
-    return unavailable(context.correlationId, thresholds, "siteConfig.load");
+  // The thresholds apply only to a classifier's score. A hash match locks and a file
+  // with nothing visual clears whatever they are, so neither waits on this read, and a
+  // known-illegal file is locked even when `site_config` cannot be read.
+  let thresholds = DEFAULT_MODERATION_THRESHOLDS;
+  if (imageClassification !== undefined) {
+    const loaded = await siteConfig.load(new LoadModerationThresholdsRequest(context));
+    if (!(loaded instanceof ModerationThresholdsLoadedResponse)) {
+      return unavailable(context.correlationId, loaded, "siteConfig.load");
+    }
+    thresholds = loaded.thresholds;
   }
 
   const verdict = await moderationPolicy.evaluate(
-    new EvaluateModerationRequest(
-      hashMatched,
-      imageClassification,
-      thresholds.thresholds,
-      context,
-    ),
+    new EvaluateModerationRequest(hashMatched, imageClassification, thresholds, context),
   );
   if (verdict instanceof ContentLockedResponse) {
     return {
