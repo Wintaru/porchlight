@@ -75,11 +75,12 @@ export default async function AnonymousPostPage({
     searchParams,
   ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [formState, comments, reactions, hiddenAuthorIds] = await Promise.all([
+  const [formState, comments, reactions, hiddenAuthorIds, presence] = await Promise.all([
     commentFormStateFor(actor, post.id),
     loadCommentsForPost(db, post.id),
     loadReactionsForPost(db, post.id, viewerId),
     loadViewerHiddenAuthors(db, viewerId),
+    presenceFor(actor),
   ]);
 
   return (
@@ -107,7 +108,7 @@ export default async function AnonymousPostPage({
         }}
         signInPath={signInPathFor(returnTo)}
         returnTo={returnTo}
-        presence={await presenceFor(actor)}
+        presence={presence}
         noticeCode={noticeCode}
         errorCode={errorCode}
       />

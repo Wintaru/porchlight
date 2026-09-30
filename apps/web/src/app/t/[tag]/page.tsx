@@ -63,17 +63,19 @@ export async function generateMetadata({ params }: TagPageProps): Promise<Metada
 // posts (#23). A signed-in member can follow the tag, and an admin can say what it is
 // for (#24).
 export default async function TagPage({ params, searchParams }: TagPageProps) {
-  const tag = await getTag((await params).tag);
+  const slug = (await params).tag;
+  // The description is read by slug, so it need not wait for the tag.
+  const [tag, description] = await Promise.all([
+    getTag(slug),
+    getDependencyContainer().siteConfigManager.query(new GetTagDescriptionRequest(slug)),
+  ]);
   if (tag === undefined) {
     notFound();
   }
-  const [db, actor, { follow, described }, description] = await Promise.all([
+  const [db, actor, { follow, described }] = await Promise.all([
     createSessionClient(),
     getCurrentActor(),
     searchParams,
-    getDependencyContainer().siteConfigManager.query(
-      new GetTagDescriptionRequest(tag.slug),
-    ),
   ]);
   const isAdmin = actor.kind === "member" && actor.profile.role === "admin";
   const descriptionMd =

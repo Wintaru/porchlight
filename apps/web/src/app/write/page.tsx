@@ -48,9 +48,9 @@ export default async function WritePage({ searchParams }: WritePageProps) {
   // The header already asked `canPost` this request; the second query runs only to
   // name the reason when the answer was no.
   const [refusal, listed, knownTags] = await Promise.all([
-    (await canPost(actor))
-      ? undefined
-      : postManager.query(new CheckCanPostRequest(actor)),
+    canPost(actor).then((allowed) =>
+      allowed ? undefined : postManager.query(new CheckCanPostRequest(actor)),
+    ),
     postManager.query(new ListPostsForAuthorRequest(actor, actor.profile.id)),
     loadSuggestedTagNames(await createSessionClient()),
   ]);
