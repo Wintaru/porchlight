@@ -9,6 +9,9 @@ import { ImageClassifierAccessFailedResponse } from "../Responses/ImageClassifie
 // a live response on 2026-09-27; no dashboard workflow is involved.
 const SIGHTENGINE_URL = "https://api.sightengine.com/1.0/check.json";
 const MODELS = "nudity-2.1,violence,gore,self-harm,offensive,face-age";
+// The whole image goes up in the request, so allow for a slow upload; past this the
+// scan fails, and the upload with it.
+const CLASSIFY_TIMEOUT_MS = 60_000;
 
 // A minors-related hit (D17) is a probable child's face together with sexual content,
 // not any photo of a child: a lock freezes the upload as evidence, and a family photo
@@ -101,7 +104,11 @@ export class SightengineClassifyImageHandler implements IHandler<
       form.set("models", MODELS);
       form.set("api_user", this.apiUser);
       form.set("api_secret", this.apiSecret);
-      const response = await fetch(SIGHTENGINE_URL, { method: "POST", body: form });
+      const response = await fetch(SIGHTENGINE_URL, {
+        method: "POST",
+        body: form,
+        signal: AbortSignal.timeout(CLASSIFY_TIMEOUT_MS),
+      });
       if (!response.ok) {
         return new ImageClassifierAccessFailedResponse(
           request.correlationId,

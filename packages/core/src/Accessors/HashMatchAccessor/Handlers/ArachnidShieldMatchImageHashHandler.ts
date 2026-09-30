@@ -11,6 +11,9 @@ import { shieldVerdict } from "./shieldVerdict";
 // POST the raw bytes to /v1/media/ with the image's Content-Type and HTTP Basic auth,
 // and read `classification` from the answer (shieldVerdict.ts).
 const SHIELD_MEDIA_URL = "https://shield.projectarachnid.com/v1/media/";
+// The whole image goes up in the request, so allow for a slow upload; past this the
+// scan fails, and the upload with it.
+const MATCH_TIMEOUT_MS = 60_000;
 
 export class ArachnidShieldMatchImageHashHandler implements IHandler<
   MatchImageHashRequest,
@@ -34,6 +37,7 @@ export class ArachnidShieldMatchImageHashHandler implements IHandler<
           "content-type": request.mimeType,
         },
         body: new Uint8Array(request.bytes),
+        signal: AbortSignal.timeout(MATCH_TIMEOUT_MS),
       });
       if (!response.ok) {
         return new HashMatchAccessFailedResponse(

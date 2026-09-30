@@ -17,6 +17,10 @@ function isSiteverifyBody(value: unknown): value is SiteverifyBody {
   );
 }
 
+// A stalled siteverify must not hold the visitor's submission open; the guard treats
+// the timeout like any other failure.
+const SITEVERIFY_TIMEOUT_MS = 10_000;
+
 // One call to Cloudflare's siteverify endpoint (D15). A missing token never reaches the
 // network: the widget did not run, so there is nothing to verify.
 export class CloudflareVerifyTurnstileHandler implements IHandler<
@@ -40,6 +44,7 @@ export class CloudflareVerifyTurnstileHandler implements IHandler<
           response: request.token,
           remoteip: request.remoteIp,
         }),
+        signal: AbortSignal.timeout(SITEVERIFY_TIMEOUT_MS),
       });
       const body: unknown = await response.json();
       if (!isSiteverifyBody(body)) {
