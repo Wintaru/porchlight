@@ -13,10 +13,11 @@ import { getBrowserDbClient } from "./browser-client";
 //
 // The server vouches for who is here (D26). A page reports itself to /api/presence, and
 // the server broadcasts the signed-in member's id on the channel; a browser may only
-// listen. A page says `join` when it opens or comes back into view, which also asks
-// the others to say they are here; then it repeats itself every HEARTBEAT_MS, and says
-// `gone` when it closes or is hidden. A member not heard from for LAPSE_MS is dropped,
-// for a page that closed without a word.
+// listen. A page says `join` when it opens, which also asks the others to say they are
+// here; then it repeats itself every HEARTBEAT_MS, and says `gone` when it closes or is
+// hidden. A hidden page keeps listening, so back in view it says only `here`, unless it
+// may have missed messages: after a dropped connection, or hidden for over LAPSE_MS. A
+// member not heard from for LAPSE_MS is dropped, for a page that closed without a word.
 //
 // The name and picture shown come from `profiles`, by id. An id that is not an active
 // member's is dropped.
@@ -100,9 +101,15 @@ export function joinPresence(
   let typingNow = false;
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let reply: ReturnType<typeof setTimeout> | undefined;
+  // A roll call makes every member on the channel answer, so it goes out only when this
+  // page's list of who is here may be out of date.
+  let rollCallDue = true;
+  let hiddenAt: number | undefined;
   const heard = new Map<string, Heard>();
   // Profile cards by id; null for an id that is not an active member.
   const cards = new Map<string, ProfileCard | null>();
+  // Ids whose card is being read, so replies arriving meanwhile do not read them again.
+  const reading = new Set<string>();
 
   const stopShowing = () => {
     showing = false;
@@ -161,12 +168,21 @@ export function joinPresence(
       return;
     }
     active = true;
-    announce("join");
-    if (showing) {
+    if (hiddenAt !== undefined && Date.now() - hiddenAt > LAPSE_MS) {
+      rollCallDue = true;
+    }
+    hiddenAt = undefined;
+    if (rollCallDue) {
+      rollCallDue = false;
+      announce("join");
       // Typing began before the channel was ready.
-      if (typingNow) {
+      if (showing && typingNow) {
         announce("typing");
       }
+    } else if (showing) {
+      announce(current());
+    }
+    if (showing) {
       heartbeat = setInterval(() => {
         announce(current());
       }, HEARTBEAT_MS);
@@ -179,6 +195,7 @@ export function joinPresence(
       return;
     }
     active = false;
+    hiddenAt = Date.now();
     clearInterval(heartbeat);
     clearTimeout(reply);
     reply = undefined;
@@ -205,18 +222,25 @@ export function joinPresence(
   };
 
   const report = async () => {
-    const unknown = [...heard.keys()].filter((id) => !cards.has(id));
+    const unknown = [...heard.keys()].filter((id) => !cards.has(id) && !reading.has(id));
     if (unknown.length > 0) {
+      for (const id of unknown) {
+        reading.add(id);
+      }
       const { data, error } = await db
         .from("profiles")
         .select("id, handle, avatar_url")
         .in("id", unknown);
+      for (const id of unknown) {
+        reading.delete(id);
+      }
       if (error !== null) {
         console.error(`presence profiles could not be read for ${topic}`, error.message);
         return;
       }
+      const rows = new Map(data.map((row) => [row.id, row]));
       for (const id of unknown) {
-        const row = data.find((candidate) => candidate.id === id);
+        const row = rows.get(id);
         cards.set(
           id,
           row === undefined ? null : { handle: row.handle, avatarUrl: row.avatar_url },
@@ -302,9 +326,14 @@ export function joinPresence(
       })
       .subscribe((status) => {
         if (status === REALTIME_SUBSCRIBE_STATES.SUBSCRIBED) {
+          // Back after a dropped connection: ask again who is here, now or when the page
+          // is next in view.
+          if (subscribed) {
+            rollCallDue = true;
+          }
           subscribed = true;
-          // Back after a dropped connection: ask again who is here.
           if (active) {
+            rollCallDue = false;
             announce("join");
           } else {
             start();
