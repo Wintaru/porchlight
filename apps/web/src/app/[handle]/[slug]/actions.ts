@@ -84,7 +84,20 @@ export async function deleteComment(formData: FormData): Promise<void> {
   redirect(`${withCode(returnTo, "comment", response.outcome)}#comments`);
 }
 
+// The form's own action, for a page with no JavaScript: the page renders again with the
+// new count.
 export async function toggleReaction(formData: FormData): Promise<void> {
+  await toggle(formData);
+  revalidatePath(returnPathOf(formData));
+}
+
+// The same toggle for the reaction bar with JavaScript, which shows the new count
+// itself: nothing on the page renders again. Answers whether the reaction is now on.
+export async function toggleReactionInPlace(formData: FormData): Promise<boolean> {
+  return (await toggle(formData)).reacted;
+}
+
+async function toggle(formData: FormData): Promise<ReactionToggledResponse> {
   const returnTo = returnPathOf(formData);
   const actor = await requireMember(returnTo);
   const target = targetOf(formData);
@@ -98,9 +111,7 @@ export async function toggleReaction(formData: FormData): Promise<void> {
   if (!(response instanceof ReactionToggledResponse)) {
     redirect(withCode(returnTo, "error", errorCode(response)));
   }
-  // No redirect: the page re-renders in place with the new count, and the reader
-  // stays where they were.
-  revalidatePath(returnTo);
+  return response;
 }
 
 // The largest comment the form accepts, before the Manager sees it. Well past what a
