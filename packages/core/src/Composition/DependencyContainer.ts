@@ -75,12 +75,6 @@ import { DeleteCommentRequest } from "../Managers/CommentManager/Requests/Delete
 import { EditCommentRequest } from "../Managers/CommentManager/Requests/EditCommentRequest";
 import { ListCommentsForPostRequest } from "../Managers/CommentManager/Requests/ListCommentsForPostRequest";
 import { ToggleReactionRequest } from "../Managers/CommentManager/Requests/ToggleReactionRequest";
-import { GreetingManager } from "../Managers/GreetingManager/GreetingManager";
-import { GetGreetingHandler } from "../Managers/GreetingManager/Handlers/GetGreetingHandler";
-import { SetGreetingHandler } from "../Managers/GreetingManager/Handlers/SetGreetingHandler";
-import type { IGreetingManager } from "../Managers/GreetingManager/IGreetingManager";
-import { GetGreetingRequest } from "../Managers/GreetingManager/Requests/GetGreetingRequest";
-import { SetGreetingRequest } from "../Managers/GreetingManager/Requests/SetGreetingRequest";
 import { ListNotificationsHandler } from "../Managers/NotificationManager/Handlers/ListNotificationsHandler";
 import { MarkReadHandler } from "../Managers/NotificationManager/Handlers/MarkReadHandler";
 import type { INotificationManager } from "../Managers/NotificationManager/INotificationManager";
@@ -236,7 +230,6 @@ import { createEmailPreferenceAccessor } from "./createEmailPreferenceAccessor";
 import { createSubscriberAccessor } from "./createSubscriberAccessor";
 import { createEvidenceAccessor } from "./createEvidenceAccessor";
 import { createEvidenceEngine } from "./createEvidenceEngine";
-import { createGreetingAccessor } from "./createGreetingAccessor";
 import { createHashMatchAccessor } from "./createHashMatchAccessor";
 import { createImageClassifierAccessor } from "./createImageClassifierAccessor";
 import { createMediaAssetAccessor } from "./createMediaAssetAccessor";
@@ -273,7 +266,6 @@ import type { Environment } from "./Environment";
 // file next to this one. The Client builds one container and reaches the Managers
 // through it.
 export class DependencyContainer {
-  readonly greetingManager: IGreetingManager;
   readonly accountManager: IAccountManager;
   readonly postManager: IPostManager;
   readonly commentManager: ICommentManager;
@@ -288,7 +280,6 @@ export class DependencyContainer {
     let serviceDb: DbClient | undefined;
     const db = (): DbClient => (serviceDb ??= createServiceDbClient(env));
 
-    const greetings = createGreetingAccessor(env);
     const profiles = createProfileAccessor(env, db);
     const memberBlocks = createMemberBlockAccessor(env, db);
     const follows = createFollowAccessor(env, db);
@@ -342,15 +333,6 @@ export class DependencyContainer {
       env,
       createEvidenceAccessor(env, db),
       siteConfig,
-    );
-
-    this.greetingManager = new GreetingManager(
-      new HandlerResolverBuilder()
-        .register(SetGreetingRequest, new SetGreetingHandler(greetings))
-        .build(),
-      new HandlerResolverBuilder()
-        .register(GetGreetingRequest, new GetGreetingHandler(greetings))
-        .build(),
     );
 
     this.accountManager = new AccountManager(

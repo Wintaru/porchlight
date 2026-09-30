@@ -438,11 +438,3 @@ export { SiteConfigResponse } from "./Managers/SiteConfigManager/Responses/SiteC
 export { SiteConfigSavedResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigSavedResponse";
 export { SiteConfigUnavailableResponse } from "./Managers/SiteConfigManager/Responses/SiteConfigUnavailableResponse";
 export { SiteIdentityResponse } from "./Managers/SiteConfigManager/Responses/SiteIdentityResponse";
-
-// GreetingManager is the worked example from issue #2 and the template for every real
-// Manager. Delete this block when the first real Manager lands, or keep it as a smoke test.
-export type { IGreetingManager } from "./Managers/GreetingManager/IGreetingManager";
-export { GetGreetingRequest } from "./Managers/GreetingManager/Requests/GetGreetingRequest";
-export { SetGreetingRequest } from "./Managers/GreetingManager/Requests/SetGreetingRequest";
-export { GreetingResponse } from "./Managers/GreetingManager/Responses/GreetingResponse";
-export { GreetingUnavailableResponse } from "./Managers/GreetingManager/Responses/GreetingUnavailableResponse";

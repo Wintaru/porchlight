@@ -12,7 +12,7 @@ import { signInPathFor } from "@/lib/sign-in-path";
 // The "Export as markdown + JSON" button on the Settings board (SPEC.md §10): a GET,
 // not a Server Function, since a Server Function's return value cannot be a binary
 // download. `getDependencyContainer` is the same call every other route makes into the
-// core; `toHttp` mirrors `api/greeting/route.ts`'s response-to-status mapping.
+// core; `toHttp` maps each response to its status.
 export async function GET(): Promise<Response> {
   const actor = await getCurrentActor();
   if (actor.kind !== "member") {
