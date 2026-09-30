@@ -49,9 +49,9 @@ export const POST_PRESENCE_TOPIC = (postId: string) => `presence:post:${postId}`
 export const SITE_PRESENCE_TOPIC = "presence:site";
 
 const PRESENCE_ROUTE = "/api/presence";
-const HEARTBEAT_MS = 20_000;
+const HEARTBEAT_MS = 30_000;
 // Two heartbeats and some slack: one lost report does not drop a member.
-const LAPSE_MS = 50_000;
+const LAPSE_MS = 75_000;
 const SWEEP_MS = 5_000;
 // Replies to a roll call spread over this long, so a crowd does not answer at once.
 const ROLL_CALL_REPLY_MS = 1_000;
@@ -272,7 +272,7 @@ export function joinPresence(
       heard.delete(payload.memberId);
       // Another tab of this member went out of view or closed, and every page dropped
       // the member (#89, C10). This tab is still here: say so at once, not at the next
-      // heartbeat up to 20 seconds later. The others see a short blink.
+      // heartbeat up to 30 seconds later. The others see a short blink.
       if (payload.memberId === selfId && active && showing) {
         announce(current());
       }

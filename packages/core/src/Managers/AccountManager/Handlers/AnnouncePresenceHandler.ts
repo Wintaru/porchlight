@@ -30,12 +30,12 @@ type Result =
 
 const MS_PER_MINUTE = 60_000;
 
-// Per member per minute (#89, decision C7). A page reports every 20 seconds and on
+// Per member per minute (#89, decision C7). A page reports every 30 seconds and on
 // each change of typing: a fast typist with two tabs reaches about 60. A `join` makes
 // every member on the channel answer, so joins have a counter of their own, and a
-// member who reloads in a loop cannot use up the allowance their reports need. A tab
-// that comes back into view joins again, so joins allow 30: 12 was reached by a reader
-// who changes windows about 6 times a minute.
+// member who reloads in a loop cannot use up the allowance their reports need. A page
+// joins when it opens, after a dropped connection, and when it comes back into view
+// after long enough away to have missed messages. Joins allow 30.
 export const PRESENCE_REPORTS_PER_MINUTE = 120;
 export const PRESENCE_JOINS_PER_MINUTE = 30;
 
