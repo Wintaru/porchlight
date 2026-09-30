@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { SimplePage } from "@/components/SimplePage";
+import { AuthorGone } from "@/components/AuthorGone";
 import { ERASED_AUTHOR_HEADER } from "@/lib/erased-author";
 import { getSiteIdentity } from "@/lib/site-identity";
 
@@ -19,14 +18,5 @@ export default async function ErasedAuthorPage() {
   if ((await headers()).get(ERASED_AUTHOR_HEADER) === null) {
     notFound();
   }
-  return (
-    <SimplePage
-      title="This author is gone"
-      lead="They erased their account, and their posts and profile went with it."
-    >
-      <p>
-        <Link href="/">Back to the home page</Link>
-      </p>
-    </SimplePage>
-  );
+  return <AuthorGone />;
 }

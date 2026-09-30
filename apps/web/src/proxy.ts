@@ -1,13 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { refreshSession } from "@/auth/refresh-session";
+import { type RefreshedSession, refreshSession } from "@/auth/refresh-session";
 import { ERASED_AUTHOR_HEADER, ERASED_AUTHOR_PATH } from "@/lib/erased-author";
 import { parseHandleParam } from "@/lib/handle-param";
 import { loadAuthorStatus } from "@/read-model/author";
 import { loadPostClaimStatus } from "@/read-model/post-page";
 
+// What the browser is fetching: `document` for a page load, `empty` for Next's own
+// fetches (a client-side navigation, a prefetch, a Server Action). Next strips its own
+// `rsc` header before the proxy runs, so this is the signal left. A client that sends
+// none, such as a crawler, is answered as a page load.
+const FETCH_DEST_HEADER = "sec-fetch-dest";
+
 // Keeps the session cookie fresh on every page and route request (SPEC.md §4). No
 // redirects here: a page that needs a member checks the actor itself.
+//
+// The two status answers below cost a database read, so only a full page load pays
+// for them: that is the request a status code is for. A client-side navigation, a
+// prefetch and a Server Action (a POST) skip them, and the pages give the same answer
+// on their own.
 //
 // One status code a page cannot send: 410 Gone for an erased author (D11). A page can
 // only render, redirect or 404, so the proxy reads the author's status under RLS
@@ -15,6 +26,23 @@ import { loadPostClaimStatus } from "@/read-model/post-page";
 // 410 status. That page is in the site's shell, so the visitor still has the header.
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { response, client } = await refreshSession(request);
+  if (!isPageLoad(request)) {
+    return response;
+  }
+  try {
+    return await statusAnswer(request, response, client);
+  } catch (error: unknown) {
+    // The page does its own read, so a failed one here costs only the status code.
+    console.error(`proxy status read failed for ${request.nextUrl.pathname}`, error);
+    return response;
+  }
+}
+
+async function statusAnswer(
+  request: NextRequest,
+  response: NextResponse,
+  client: RefreshedSession["client"],
+): Promise<NextResponse> {
   const anonymousSlug = anonymousPostSlugOf(request.nextUrl.pathname);
   if (anonymousSlug !== undefined) {
     // Read under the requester's own session (D11): once claimed, only the claiming
@@ -60,6 +88,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
+function isPageLoad(request: NextRequest): boolean {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return false;
+  }
+  const dest = request.headers.get(FETCH_DEST_HEADER);
+  return dest === null || dest === "document";
+}
+
 // `/@handle` and `/@handle/anything`, or undefined for every other path.
 function authorHandleOf(pathname: string): string | undefined {
   const [, first] = pathname.split("/");
@@ -77,6 +113,9 @@ function anonymousPostSlugOf(pathname: string): string | undefined {
 }
 
 export const config = {
-  // Everything except Next's own assets and static files with an extension.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+  // Everything except Next's own assets, static files with an extension, and the MCP
+  // door, which signs in by bearer token and never reads the session cookie.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|api/mcp(?:/|$)|.*\\.[a-zA-Z0-9]+$).*)",
+  ],
 };

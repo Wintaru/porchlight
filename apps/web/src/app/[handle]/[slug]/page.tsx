@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
+import { AuthorGone } from "@/components/AuthorGone";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { PostArticle } from "@/components/post/PostArticle";
 import postStyles from "@/components/post/post.module.css";
@@ -16,6 +17,7 @@ import { presenceFor } from "@/lib/presence";
 import { signInPathFor } from "@/lib/sign-in-path";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
+import { loadAuthorStatus } from "@/read-model/author";
 import { loadCommentsForPost } from "@/read-model/comments";
 import { loadViewerHiddenAuthors } from "@/read-model/member-blocks";
 import { summaryLine } from "@/read-model/post-card";
@@ -92,6 +94,14 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
   const { handle, slug } = await params;
   const post = await getPost(handle, slug);
   if (post?.author == null) {
+    // A client-side navigation skips the proxy's 410 for an erased author.
+    const author = parseHandleParam(handle);
+    if (
+      author !== undefined &&
+      (await loadAuthorStatus(await createSessionClient(), author)) === "erased"
+    ) {
+      return <AuthorGone />;
+    }
     notFound();
   }
   const note = STATUS_NOTE[post.status];

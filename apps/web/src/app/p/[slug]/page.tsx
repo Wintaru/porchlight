@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 
 import { createSessionClient } from "@/auth/session-client";
@@ -52,9 +52,9 @@ const STATUS_NOTE: Readonly<Partial<Record<PostPage["status"], string>>> = {
   removed: "Removed by a moderator.",
 };
 
-// D11's anonymous route: `/p/slug`. `proxy.ts` already sends a claimed post's own
-// author on to `/@handle/slug` with a 301; anyone still landing here sees the post
-// itself. Nothing anonymous is visible under RLS before an admin approves it (SPEC.md
+// D11's anonymous route: `/p/slug`. A claimed post moves to `/@handle/slug`: `proxy.ts`
+// answers a page load with a 301, and a client-side navigation, which it leaves alone,
+// is sent on from here. Nothing anonymous is visible under RLS before an admin approves it (SPEC.md
 // §4), so an unapproved post's own author sees the same 404 everyone else does — the
 // status page (`/anon`) is where they check on it instead.
 export default async function AnonymousPostPage({
@@ -63,8 +63,11 @@ export default async function AnonymousPostPage({
 }: AnonymousPostPageProps) {
   const { slug } = await params;
   const post = await getPost(slug);
-  if (post?.author !== null) {
+  if (post === undefined) {
     notFound();
+  }
+  if (post.author !== null) {
+    permanentRedirect(`/@${post.author.handle}/${post.slug}`);
   }
   const note = STATUS_NOTE[post.status];
   const returnTo = `/p/${post.slug}`;

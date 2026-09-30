@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { AuthorGone } from "@/components/AuthorGone";
 import { createSessionClient } from "@/auth/session-client";
 import { Avatar } from "@/components/Avatar";
 import { FollowButton } from "@/components/follow/FollowButton";
@@ -56,6 +57,9 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
   if (author === undefined) {
     return {};
   }
+  if (author.status === "erased") {
+    return { title: `Gone · ${siteName}`, robots: { index: false } };
+  }
   const title = `@${author.handle} · ${siteName}`;
   const description = author.bio ?? undefined;
   const url = `${SITE_URL}/@${author.handle}`;
@@ -71,8 +75,9 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
   };
 }
 
-// The author page, /@handle (D11, the Profile board). An erased author never reaches
-// here: the proxy answers 410 first. A profile the browser roles cannot read
+// The author page, /@handle (D11, the Profile board). On a page load the proxy answers
+// an erased author with 410 first; a client-side navigation reaches here, and gets the
+// same "gone" view. A profile the browser roles cannot read
 // (suspended, banned, unknown) is a 404. A signed-in member sees Follow (#24), Mute and
 // Block (#23) on anyone else's page; this page still lists a muted member's posts, since the
 // member came here on purpose. `?tab=` switches Posts/Comments server-side, so both
@@ -83,6 +88,9 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
     searchParams,
     getCurrentActor(),
   ]);
+  if (author?.status === "erased") {
+    return <AuthorGone />;
+  }
   if (author?.status !== "active") {
     notFound();
   }
