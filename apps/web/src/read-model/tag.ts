@@ -15,23 +15,12 @@ export interface TagPage {
 }
 
 // A tag is public only once a public, published post carries it (SPEC.md §5): a draft's
-// new tag name must not show anywhere a visitor can see. `post_tags!inner(posts!inner(id))`
-// is an embed used only as a join — the filters on it drop a tag with no such post, and
-// toTagPage drops it from the rows. It names `id` because an empty embed reads the whole
-// row, and the browser roles may read only the granted columns of `posts` (#29).
-const PUBLIC_TAG_COLUMNS = "id, slug, name, post_tags!inner(posts!inner(id))";
+// new tag name must not show anywhere a visitor can see. `public_tags` is that rule in
+// the database; it returns tag rows only, so the columns are named here.
+const PUBLIC_TAG_COLUMNS = "id, slug, name";
 
 function publicTags(db: DbClient) {
-  return db
-    .from("tags")
-    .select(PUBLIC_TAG_COLUMNS)
-    .eq("post_tags.posts.status", "published")
-    .eq("post_tags.posts.visibility", "public");
-}
-
-// The join's embed is only a filter; keep the rows to a tag.
-function toTagPage({ id, slug, name }: TagPage): TagPage {
-  return { id, slug, name };
+  return db.rpc("public_tags").select(PUBLIC_TAG_COLUMNS);
 }
 
 // The Main board's sidebar tag cloud: every public tag, alphabetically, capped at one
@@ -45,7 +34,7 @@ export async function loadTagCloud(db: DbClient): Promise<readonly TagPage[]> {
   if (error) {
     throw new Error(`tag cloud: ${error.message}`);
   }
-  return data.map(toTagPage);
+  return data;
 }
 
 // The /tags page: every public tag, alphabetically. Unlike the sidebar cloud it has no cap,
@@ -55,7 +44,7 @@ export async function loadAllTags(db: DbClient): Promise<readonly TagPage[]> {
   if (error) {
     throw new Error(`all tags: ${error.message}`);
   }
-  return data.map(toTagPage);
+  return data;
 }
 
 // The editor's suggestions as a member types a tag: public names only, so a draft's new
@@ -71,7 +60,7 @@ export async function loadTag(db: DbClient, slug: string): Promise<TagPage | und
   if (error) {
     throw new Error(`tag ${slug}: ${error.message}`);
   }
-  return data === null ? undefined : toTagPage(data);
+  return data ?? undefined;
 }
 
 // The public posts under one tag, newest first. `matched:post_tags!inner` is a second,

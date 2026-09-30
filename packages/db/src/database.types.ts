@@ -1436,6 +1436,22 @@ export type Database = {
         Returns: boolean
       }
       presence_allowed: { Args: never; Returns: boolean }
+      public_tags: {
+        Args: never
+        Returns: {
+          created_at: string
+          description_md: string | null
+          id: string
+          name: string
+          slug: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tags"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       published_author_count: { Args: never; Returns: number }
       redeem_invite: {
         Args: { p_token_hash: string }
