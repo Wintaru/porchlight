@@ -225,3 +225,69 @@ test("tabbing from the open bell to the account menu closes the bell", async ({
   await expect(page.getByTestId("account-menu")).toHaveAttribute("aria-expanded", "true");
   await expect(bell).toHaveAttribute("aria-expanded", "false");
 });
+
+// The header hides on a scroll down and comes back on a short scroll up. The seed
+// pages are short, so the test makes the page long enough to scroll.
+async function makePageLong(page: Page) {
+  // Padding on <body>, which React does not render, so hydration cannot take it away.
+  await page.evaluate(() => {
+    document.body.style.paddingBottom = "3000px";
+  });
+}
+
+async function headerBottom(page: Page): Promise<number> {
+  return page.evaluate(
+    () => document.querySelector("header")?.getBoundingClientRect().bottom ?? Number.NaN,
+  );
+}
+
+// One wheel turn, waited out until the page has really moved. A scroll made before the
+// header's script runs goes unseen, so each test waits for the network to settle first.
+async function scrollDown(page: Page, distance: number) {
+  const before = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, distance);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before);
+}
+
+test("the header hides on a scroll down and comes back on a scroll up", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await makePageLong(page);
+
+  await scrollDown(page, 400);
+  await expect.poll(() => headerBottom(page)).toBeLessThanOrEqual(0);
+
+  await page.mouse.wheel(0, -40);
+  await expect.poll(() => headerBottom(page)).toBe(64);
+});
+
+test("the editor's bar moves up to the top while the header is away", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.waitForLoadState("networkidle");
+  await makePageLong(page);
+  const bar = page.getByRole("heading", { level: 1, name: /Write/ }).locator("..");
+
+  await scrollDown(page, 200);
+  await expect.poll(async () => (await bar.boundingBox())?.y).toBe(0);
+
+  await page.mouse.wheel(0, -40);
+  await expect.poll(async () => (await bar.boundingBox())?.y).toBe(64);
+});
+
+test("the header stays put while one of its menus is open", async ({ page }) => {
+  await devSignIn(page, THEO);
+  await page.waitForLoadState("networkidle");
+  await makePageLong(page);
+  await openAccountMenu(page);
+
+  await scrollDown(page, 400);
+  // Longer than the 200ms slide: a header that was going to hide has hidden by now.
+  await page.waitForTimeout(400);
+  await expect(page.locator("html")).not.toHaveAttribute("data-site-header");
+  expect(await headerBottom(page)).toBe(64);
+});

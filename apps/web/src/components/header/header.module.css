@@ -9,7 +9,8 @@
   --sky-muted: rgb(246 241 232 / 72%);
   --sky-deep: #2c2d45;
 
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 20;
   display: flex;
   align-items: center;
@@ -34,6 +35,11 @@
     radial-gradient(circle at 29% 44%, rgb(255 252 247 / 40%) 1px, transparent 1.6px),
     linear-gradient(to bottom, #1f2a44, #3a3346 70%, #5a4452);
   box-sizing: border-box;
+  transition: transform var(--site-header-slide) ease;
+}
+
+:global(html[data-site-header="hidden"]) .header {
+  transform: translateY(-100%);
 }
 
 .site {

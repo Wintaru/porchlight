@@ -6,6 +6,7 @@ import { signOut } from "@/app/auth/actions";
 import { createSessionClient } from "@/auth/session-client";
 import { Avatar } from "@/components/Avatar";
 import { HeaderMenu } from "@/components/header/HeaderMenu";
+import { SiteHeader } from "@/components/header/SiteHeader";
 import { SiteLinks } from "@/components/header/SiteLinks";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { classNames } from "@/lib/class-names";
@@ -32,7 +33,7 @@ export async function SessionBar() {
     notificationsFor(actor),
   ]);
   return (
-    <header className={styles.header}>
+    <SiteHeader className={styles.header}>
       <nav aria-label="Site" className={styles.site}>
         <Link href="/" className={styles.brand}>
           <LampMark />
@@ -117,7 +118,7 @@ export async function SessionBar() {
           </HeaderMenu>
         </nav>
       )}
-    </header>
+    </SiteHeader>
   );
 }
 

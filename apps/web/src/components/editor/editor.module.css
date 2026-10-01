@@ -12,6 +12,7 @@
   flex-wrap: wrap;
   min-height: var(--editor-bar-height);
   padding: 8px 64px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
@@ -255,13 +256,14 @@
 
 @media (min-width: 901px) {
   :global(html):has(.editor) {
-    scroll-padding-top: 72px;
+    scroll-padding-top: calc(var(--site-header-height) + 72px);
   }
 
   .bar {
     position: sticky;
-    top: 0;
+    top: var(--site-header-offset);
     z-index: 10;
+    transition: top var(--site-header-slide) ease;
     flex-wrap: nowrap;
   }
 
@@ -287,9 +289,12 @@
 
   .side {
     position: sticky;
-    top: calc(var(--editor-bar-height) + 24px);
+    top: calc(var(--site-header-offset) + var(--editor-bar-height) + 24px);
     align-self: start;
-    max-height: calc(100vh - var(--editor-bar-height) - 48px);
+    max-height: calc(100vh - var(--site-header-offset) - var(--editor-bar-height) - 48px);
+    transition:
+      top var(--site-header-slide) ease,
+      max-height var(--site-header-slide) ease;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 4px;

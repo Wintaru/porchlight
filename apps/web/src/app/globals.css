@@ -67,6 +67,33 @@
   }
 }
 
+/* The site header hides on a scroll down and comes back on a scroll up (SiteHeader.tsx).
+   A sticky bar sits `--site-header-offset` from the top so the header never covers it,
+   and slides with the header. Scroll padding keeps the full header height even while
+   it is away: a jump up to a link or a field brings the header back over it. */
+:root {
+  --site-header-height: 64px;
+  --site-header-offset: var(--site-header-height);
+  --site-header-slide: 200ms;
+  scroll-padding-top: var(--site-header-height);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --site-header-height: 56px;
+  }
+}
+
+:root[data-site-header="hidden"] {
+  --site-header-offset: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --site-header-slide: 0ms;
+  }
+}
+
 body {
   margin: 0;
   background: var(--cream);
