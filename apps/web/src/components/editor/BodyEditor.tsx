@@ -9,6 +9,10 @@ import { type BodyMode, EditorToolbar } from "./EditorToolbar";
 import { trimBlankEnds } from "./trim-blank-ends";
 import { UrlDialog, type UrlDialogKind, type UrlDialogValue } from "./UrlDialog";
 
+// The editor's top bar sticks on a wide screen (editor.module.css), so the caret keeps
+// clear of it: the bar's 64px plus a little air.
+const STICKY_BAR_SCROLL_MARGIN = 72;
+
 // An upload going into the body (#52): an image as a picture, any other file as a
 // download link on a line of its own, which the prose styles draw as a card.
 export type BodyInsert =
@@ -58,6 +62,7 @@ export function BodyEditor({
     // Tiptap renders on the client only; the server sends the markdown in the form.
     immediatelyRender: false,
     editorProps: {
+      scrollMargin: { top: STICKY_BAR_SCROLL_MARGIN, right: 5, bottom: 5, left: 5 },
       attributes: {
         class: "prose",
         role: "textbox",

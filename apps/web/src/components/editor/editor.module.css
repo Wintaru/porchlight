@@ -1,12 +1,16 @@
 /* The Editor board (design/porchlight/Editor.dc.html): a top bar, a writing column and
    a 340px sidebar, collapsing to one column on a narrow screen. */
+.editor {
+  --editor-bar-height: 64px;
+}
+
 .bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  min-height: 64px;
+  min-height: var(--editor-bar-height);
   padding: 8px 64px;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
@@ -250,11 +254,42 @@
 }
 
 @media (min-width: 901px) {
+  :global(html):has(.editor) {
+    scroll-padding-top: 72px;
+  }
+
+  .bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: nowrap;
+  }
+
+  .crumb {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .barActions {
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  .barActions > button {
+    flex-shrink: 0;
+  }
+
+  .status {
+    min-width: 0;
+  }
+
   .side {
     position: sticky;
-    top: 24px;
+    top: calc(var(--editor-bar-height) + 24px);
     align-self: start;
-    max-height: calc(100vh - 48px);
+    max-height: calc(100vh - var(--editor-bar-height) - 48px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 4px;

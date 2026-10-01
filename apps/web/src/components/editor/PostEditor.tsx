@@ -309,7 +309,13 @@ export function PostEditor({
   const status = statusText(save, isDraft, title);
 
   return (
-    <form ref={formRef} action={submitPost} onChange={markDirty} onSubmit={submit}>
+    <form
+      ref={formRef}
+      className={styles.editor}
+      action={submitPost}
+      onChange={markDirty}
+      onSubmit={submit}
+    >
       <input type="hidden" name="postId" value={postId} />
       <input type="hidden" name="version" value={version ?? ""} />
       <input type="hidden" name="tags" value={allTags.join(", ")} />
