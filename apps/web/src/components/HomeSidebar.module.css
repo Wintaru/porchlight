@@ -7,13 +7,8 @@
 @media (min-width: 901px) {
   .sidebar {
     position: sticky;
-    top: calc(var(--site-header-offset) + 24px);
+    top: calc(var(--site-header-offset) + 24px + var(--aside-shift, 0px));
     align-self: start;
-    max-height: calc(100vh - var(--site-header-offset) - 48px);
-    transition:
-      top var(--site-header-slide) ease,
-      max-height var(--site-header-slide) ease;
-    overflow-y: auto;
   }
 }
 

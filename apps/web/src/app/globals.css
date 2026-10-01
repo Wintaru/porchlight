@@ -71,11 +71,20 @@
    A sticky bar sits `--site-header-offset` from the top so the header never covers it,
    and slides with the header. Scroll padding keeps the full header height even while
    it is away: a jump up to a link or a field brings the header back over it. */
+/* Registered so it can slide: every sticky bar's `top` reads it, and the header's 200ms
+   slide carries them all with no transition of their own. */
+@property --site-header-offset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 :root {
   --site-header-height: 64px;
   --site-header-offset: var(--site-header-height);
   --site-header-slide: 200ms;
   scroll-padding-top: var(--site-header-height);
+  transition: --site-header-offset var(--site-header-slide) ease;
 }
 
 @media (max-width: 640px) {

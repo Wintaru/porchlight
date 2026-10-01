@@ -291,3 +291,39 @@ test("the header stays put while one of its menus is open", async ({ page }) => 
   await expect(page.locator("html")).not.toHaveAttribute("data-site-header");
   expect(await headerBottom(page)).toBe(64);
 });
+
+test("a sidebar taller than the window scrolls with the page, with no scrollbar of its own", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.waitForLoadState("networkidle");
+  const side = page.getByRole("main").locator("aside");
+  // A sidebar sticks only within its grid, so the writing column must be the longer one.
+  await side.evaluate((aside) => {
+    const spacer = document.createElement("div");
+    spacer.style.height = "3000px";
+    aside.previousElementSibling?.append(spacer);
+  });
+  const fits = () =>
+    side.evaluate((aside) => ({
+      ownScroll: aside.scrollHeight > aside.clientHeight,
+      top: aside.getBoundingClientRect().top,
+      bottom: aside.getBoundingClientRect().bottom,
+      height: aside.getBoundingClientRect().height,
+      window: window.innerHeight,
+    }));
+  const before = await fits();
+  expect(before.height).toBeGreaterThan(before.window);
+  expect(before.ownScroll).toBe(false);
+
+  // Down: it goes with the page until its end is in view, 24px above the bottom.
+  await scrollDown(page, 1200);
+  await expect
+    .poll(async () => Math.round((await fits()).bottom))
+    .toBe(before.window - 24);
+
+  // Up: it comes back down with the page until its top is in view again.
+  await page.mouse.wheel(0, -2000);
+  await expect.poll(async () => Math.round((await fits()).top)).toBe(before.top);
+});

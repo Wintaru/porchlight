@@ -263,7 +263,6 @@
     position: sticky;
     top: var(--site-header-offset);
     z-index: 10;
-    transition: top var(--site-header-slide) ease;
     flex-wrap: nowrap;
   }
 
@@ -289,17 +288,11 @@
 
   .side {
     position: sticky;
-    top: calc(var(--site-header-offset) + var(--editor-bar-height) + 24px);
+    top: calc(
+      var(--site-header-offset) + var(--editor-bar-height) + 24px +
+        var(--aside-shift, 0px)
+    );
     align-self: start;
-    max-height: calc(100vh - var(--site-header-offset) - var(--editor-bar-height) - 48px);
-    transition:
-      top var(--site-header-slide) ease,
-      max-height var(--site-header-slide) ease;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 4px;
-    margin: -4px;
-    box-sizing: border-box;
   }
 }
 

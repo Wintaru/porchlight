@@ -22,6 +22,7 @@ import {
 } from "@/app/write/actions";
 import { TAGS_MAX_COUNT, TITLE_MAX_LENGTH } from "@/app/write/parse-post-form";
 import { errorTextFor } from "@/app/write/post-form-messages";
+import { StickyAside } from "@/components/StickyAside";
 import { AttachmentPanel } from "./AttachmentPanel";
 import { AUTOSAVE_DELAY_MS } from "./autosave-delay";
 import { BodyEditor, type BodyInsert } from "./BodyEditor";
@@ -400,7 +401,7 @@ export function PostEditor({
             }}
           />
         </div>
-        <aside className={styles.side}>
+        <StickyAside className={styles.side}>
           <CoverPicker state={coverState} postId={postId} />
           <label className={styles.field}>
             <span className={styles.label}>Summary for the preview card</span>
@@ -506,7 +507,7 @@ export function PostEditor({
               </span>
             </div>
           )}
-        </aside>
+        </StickyAside>
       </div>
       <CheckDialog
         state={check}

@@ -13,7 +13,6 @@
 .side {
   position: sticky;
   top: calc(var(--site-header-offset) + 24px);
-  transition: top var(--site-header-slide) ease;
 }
 
 .role {
@@ -62,7 +61,6 @@
 .aside {
   position: sticky;
   top: calc(var(--site-header-offset) + 24px);
-  transition: top var(--site-header-slide) ease;
 }
 
 .duties {

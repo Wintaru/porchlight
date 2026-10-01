@@ -11,7 +11,6 @@
 .side ul {
   position: sticky;
   top: calc(var(--site-header-offset) + 24px);
-  transition: top var(--site-header-slide) ease;
   display: flex;
   flex-direction: column;
   gap: 4px;

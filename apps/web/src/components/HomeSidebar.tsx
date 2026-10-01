@@ -2,6 +2,7 @@ import type { Actor } from "@porchlight/core";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { StickyAside } from "@/components/StickyAside";
 import type { TagPage } from "@/read-model/tag";
 
 import styles from "./HomeSidebar.module.css";
@@ -26,7 +27,7 @@ export function HomeSidebar({
   children,
 }: HomeSidebarProps) {
   return (
-    <aside className={styles.sidebar} aria-label="About this porch">
+    <StickyAside className={styles.sidebar} aria-label="About this porch">
       {actor.kind === "visitor" && (
         <div className={`card ${styles.welcomeCard ?? ""}`}>
           <h2>Leave the light on</h2>
@@ -55,6 +56,6 @@ export function HomeSidebar({
         </div>
       )}
       {children}
-    </aside>
+    </StickyAside>
   );
 }
