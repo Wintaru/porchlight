@@ -4,6 +4,16 @@
   gap: 20px;
 }
 
+@media (min-width: 901px) {
+  .sidebar {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+}
+
 .welcomeCard h2 {
   font-size: 18px;
   margin: 0 0 8px;
