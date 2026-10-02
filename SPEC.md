@@ -292,7 +292,8 @@ the erased profile's id as accountability. A db test lists every foreign key to
 `profiles` and `auth.users` and fails when erasure does not handle one (#83).
 
 The terms page states: comments on an erased post go with it, tombstones keep other
-people's replies readable, frozen evidence outlives an erasure.
+people's replies readable, frozen evidence outlives an erasure, and erased data stays in
+a backup until that backup expires (seven days, section 21).
 
 ## 11. Data model
 
@@ -300,7 +301,8 @@ The ER diagram in [PROPOSAL.md](PROPOSAL.md) shows the main tables and their col
 The full table list for phase 1: `profiles`, `anonymous_authors`,
 `posts`, `comments`, `tags`, `post_tags`, `reactions`, `media_assets`,
 `submission_evidence`, `reports`, `mod_actions`, `audit_log`, `notifications`, `quotas`,
-`rate_limits`, `blocks`, `site_config`, `agent_tokens` (section 17).
+`rate_limits`, `blocks`, `site_config`, `agent_tokens` (section 17). Phase 4 adds
+`site_moves` and `transfer_codes` (section 19) and `backup_runs` (section 21).
 
 ## 12. Screens
 
@@ -309,7 +311,7 @@ https://claude.ai/code/artifact/9a8cf86a-2969-4c94-9105-ab98cab14397. Source in
 `design/porchlight/`. Warm modern: cream #F6F1E8, surface #FFFCF7, ink #2A2622, muted
 #75695C, amber #B4530A, glow #F2B441, danger #A83A2B, dark #221F1C. Newsreader for
 titles, Source Sans 3 for body. Lamp mark and raccoon as inline SVG. Dark mode is warm
-charcoal.
+charcoal. These values are the **Porch** theme, the default (section 18).
 
 ## 13. Documentation
 
@@ -318,7 +320,9 @@ email sign-in, Turnstile, storage, hash matching, classifiers, email, and (phase
 Each says what the service is for, how to get credentials, where they go, and what the
 fake mode does without it. The Discord guide also shows how to point a Discord RSS bot
 at a tag feed, the phase 1 route. The admin duty checklist links the same guides. Terms,
-code of conduct and `/about` are phase 1 pages.
+code of conduct and `/about` are phase 1 pages. Phase 4 adds `docs/themes.md` (section
+18), `docs/moving-a-site.md` (section 19), `docs/setup/self-host.md` (section 21),
+`docs/releasing.md` and `CHANGELOG.md` (section 21).
 
 ## 14. Phases
 
@@ -335,6 +339,8 @@ for readers who subscribe.
 Plus outbound webhooks on publish (D21): `WebhookAccessor` with a fake mode, a retry
 rule, admin-set URLs in site config, a Discord-shaped payload as the first format, and
 `docs/setup/discord-webhook.md`.
+**Phase 4** — themes (section 18), moving a site (section 19), `pnpm setup:check`
+(section 20), and the Docker self-host with versioned releases (section 21).
 
 ## 15. Out of scope
 
@@ -424,3 +430,164 @@ banned phrase that is also a summary opening ("in conclusion") is one warning, n
 shown under the guide in Settings, exported and erased with the account.
 
 **Later.** A local stdio wrapper.
+
+## 18. Themes (D28)
+
+A theme gives values to the color and font tokens. It changes no layout, no screen and
+no approved board. The admin picks one theme for the whole site. Readers keep following
+their device's light or dark setting.
+
+**Tokens name a role, not a color.** `--ground` (was `--cream`), `--accent` (was
+`--amber`), `--accent-strong` (was `--amber-dark`), and so on. The full list is one
+`const` array in `packages/themes`. A blue theme never sets a token called `--amber`.
+
+**No color outside the tokens.** Every color in a CSS module, a component, the header's
+dusk sky, the lamp and raccoon marks, the preview card image (`opengraph-image.tsx`),
+the favicon and the email layout comes from the active theme. CSS reads `var(--…)`.
+Code that cannot read CSS (the preview card, the favicon route, `emailLayout`) reads the
+same values from `packages/themes`. A test fails on a hex or `rgb()` color outside
+`packages/themes` and test files.
+
+**A theme is one file.** `packages/themes/src/<id>.ts` exports `{ id, name, light, dark,
+fonts }`. `light` and `dark` are typed as a record over the token list, so a missing
+token does not compile. Fonts are local files declared once in a font registry, never a
+network fetch (D19). The root layout writes the active theme's tokens into the page
+from the server, so a page never flashes the default first. Emails use the theme's
+`light` values. The web app and the core both read `packages/themes`.
+
+**The contrast test.** For each theme, in light and in dark, every text pair on a named
+list (body text on ground, muted on ground, link on ground and on surface, and the rest)
+reaches 4.5:1. Every control pair (accent on ground, strong line on surface, focus ring)
+reaches 3:1. The pair list is a `const` in `packages/themes`, beside the token list.
+
+**The setting.** `site_config.theme`, default `porch`. An Appearance section on `/admin`
+(admin only) shows each theme as a light and a dark swatch. A saved change is live
+within 30 seconds (section 4). A saved theme that no longer exists renders as Porch, and
+the Appearance section names the missing one.
+
+Porchlight ships Porch and at least one other theme. `docs/themes.md` tells an operator
+how to add a theme file and rebuild.
+
+Rejected: layout themes, a theme for each reader, color pickers on `/admin`.
+
+## 19. Moving a site (D29, D29b, D29c)
+
+This moves one Porchlight site to a new host. It is not a way to leave Porchlight: that
+is each member's own export (section 10). Both sites must run the same Porchlight
+version.
+
+**Export (old site).** A "Move this site" section on `/admin`, admin role only. Before a
+job starts, the admin must have signed in within the last 10 minutes, else Porchlight
+sends them through sign-in again. Starting an export writes the audit log, and every
+other admin gets an email and a bell item (`site.exported`). One export runs at a time.
+The section shows the state (building, ready, failed with the reason and Retry). The
+section also says that writes after the export do not move, and shows `posting`,
+`comments` and `sign_up` with a link to Access, so the admin can close the porch first.
+
+**The archive.** A zip in the private `site-moves` bucket: `manifest.json` (Porchlight
+version, the name of the latest migration, the source site URL, row counts, a SHA-256 for
+each file) and one JSON Lines file for each table, plus the Auth users and their
+identities. It holds the database only, no media. Every table is in it except a named
+skip list (`rate_limits` and other short-lived rows). A db test lists every table and
+fails when one is in neither list. The download link and the file expire after 24 hours,
+and "Delete now" removes the file sooner.
+
+**Background work.** A `site_moves` row holds each job's state. `pg_cron` calls a step
+route with `CRON_SECRET` every minute, and each call does a bounded batch, so no single
+request runs long. The same stepper runs export and import.
+
+**Transfer code (old site).** Beside the export, the admin makes a transfer code. It is
+shown once and stored as a hash in `transfer_codes`. It expires after 24 hours, the
+admin can revoke it, and each use writes the audit log. A server that holds the code can
+list every file (published and quarantined, with its bucket, path, size and SHA-256) and
+ask for one signed storage link at a time, valid for five minutes. No key changes hands,
+the archive alone unlocks no file, and **no file passes through a browser.**
+
+**Import (new site).** "Import a site" shows on `/admin` only while the site holds the
+admin profile of `PORCHLIGHT_ADMIN_EMAIL` and no posts or comments (D29b). The admin
+uploads the archive straight to the `site-moves` bucket, never through a request body,
+and pastes the old site's URL and transfer code. The import then:
+
+1. Refuses when the latest migration differs, and names both Porchlight versions.
+2. Refuses when no member in the archive is an admin with the same email.
+3. Pulls every file from the old site, server to server, into the same bucket and path.
+   It checks each SHA-256, skips a file already copied with the right hash, and keeps
+   every `retain_until`.
+4. Loads the database in one transaction. It removes the lone admin profile and its
+   Auth user, and inserts the archive's Auth users and identities with their own ids, so
+   a Google sign-in or an email link finds the moved account.
+5. Renders every post again, so media links point at the new host. Sets the region row
+   on the duty checklist to red until the admin confirms the region (D17). Writes the
+   audit log.
+
+A failed import shows the reason and Retry. The transaction rolls back, copied files
+stay for the retry, and the site stays empty. Every person signs in again after a move.
+`plt_` agent tokens keep working. OAuth connector grants do not move. A claim code still
+works where an old cookie does not. Reader subscriptions move with the database.
+
+`docs/moving-a-site.md` covers both sides, says to keep the old site up until the import
+ends and the new site is checked, and links the region guide.
+
+Rejected: a command-line export, a neutral format for Ghost or WordPress, a merge into a
+live site, media in the archive with the old site's key, signed links in the archive.
+
+## 20. Setup check (D30)
+
+`pnpm setup:check` reads the live hosted site and prints one row for each step in
+`docs/deploy.md`: green, red, or "cannot check" with the reason (a missing
+`SUPABASE_ACCESS_TOKEN`, `vercel` or `gh` not installed). It is read-only and exits
+non-zero when a row is red. A provider left on `fake` is red, as on the duty checklist.
+It never prints a secret value, only whether it is set.
+
+**Steps are defined once,** in the script: an id, a check, and a fix or manual text. Each
+`deploy.md` section carries its step id in a comment. A test fails when a section has no
+step id or a step id has no section. `deploy.md` stays hand-written.
+
+**`--fix`** changes what a tool can change: the Supabase Management API (sign-in URLs,
+providers, the OAuth server, Realtime public access, the upload limit), the Vercel CLI
+(environment variables) and `gh` (secrets and variables). It shows each change and asks
+before it makes it. It prints the old value first when it is not a secret. One failed fix
+does not stop the rest, and a summary comes at the end. A step that needs a browser
+(Google OAuth client, Turnstile, Arachnid Shield, the Resend domain) prints the link and
+what to paste.
+
+A self-host has no Management API. Its rows say "not for a self-host" and point at
+`docs/setup/self-host.md`.
+
+Rejected: a checker with no fixes, a one-time guided installer, `deploy.md` generated from
+the script.
+
+## 21. Self-host with Docker (D31, D31b)
+
+blog.abandonedbits.com stays on Vercel and hosted Supabase. The Docker path is for other
+operators. Local development stays on the Supabase CLI (D19).
+
+**Versions.** Josh tags `v0.x` releases. `CHANGELOG.md` says what each version changes and
+any step an operator must take. CI builds the web image (`output: "standalone"`) for x86
+and ARM on each tag and publishes it to GHCR. `docs/releasing.md` lists Josh's steps.
+
+**The compose** (`deploy/docker/`) runs the whole stack on one machine: the web image at a
+pinned version, Supabase's self-host images, Caddy for HTTPS, a one-shot service that
+runs the migrations and sets the `pg_cron` secrets on each start, and the backup service.
+Studio and Postgres listen on localhost only. `.env.example` leaves every provider unset,
+never `fake`, so the duty checklist is red until the operator fills it. Auth email links
+need SMTP values in `.env`. An update is: read the CHANGELOG, change the pinned version,
+`docker compose pull && docker compose up -d`.
+
+**Backups come first in the guide.** Each night the backup service dumps the database and
+copies both buckets to an S3-compatible target named in `.env`, and keeps seven. Each run
+writes a `backup_runs` row. On a self-host the duty checklist shows the last backup time,
+red when it is older than 48 hours or when no off-machine target is set. The guide has
+the restore steps, and CI tests a restore into a fresh stack.
+
+**CI** builds the image and starts the compose on each tag, then runs a Playwright smoke
+test: the home page loads, an email-link sign-in works, and a post publishes.
+
+**Agent connectors.** `plt_` tokens work on a self-host. The guide does not promise OAuth
+connectors (D25) until the Auth OAuth 2.1 server is tested on the self-host image.
+
+`docs/setup/self-host.md` covers the machine size (8 GB RAM recommended), backups, the
+`.env` values, HTTPS, the first sign-in, updates, and moving in from a hosted site
+(section 19). Research: [docs/research/D31-hosting-costs.md](docs/research/D31-hosting-costs.md).
+
+Rejected: moving Josh's site now, an app-only image, a rolling image from `main`.
