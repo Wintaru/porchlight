@@ -55,7 +55,12 @@ section in [PROPOSAL.md](PROPOSAL.md).
 
 Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[research]` = look it up · `[task]` = manual work.
 
-Nothing open. D4b was the last item (settled 2026-09-27).
+Added 2026-10-02 from Josh's idea list. Nothing here is settled.
+
+- **D28 Themes** `[grilling]` `[prototype]` — What is a theme: a set of colors and fonts that the admin picks for the whole site, or a full change of layout? `globals.css` already holds 53 CSS custom properties, so a token swap is cheap. A layout change is a much bigger job. Open: admin-only or per reader, the dark mode rule for each theme, and how a self-hoster adds a theme without a fork.
+- **D29 Site export and import for a move between providers** `[grilling]` `[research]` — Section 10 export is per member. A move needs the whole site: every member, post, comment, media file, and site setting. Open: is `pg_dump` plus a copy of the storage buckets enough (same Porchlight, new host), or is an app-level format needed (to move to or from Ghost, WordPress, or another platform)? Locked items and frozen evidence must move with their `retain_until` intact, and an import must never drop them. Sign-in uses Google and email links, so there are no passwords to carry.
+- **D30 Setup scripts for the deploy steps** `[research]` `[task]` — `docs/deploy.md` has 18 sections of manual work. Open: which steps a script can do (the Supabase CLI and Management API, the Vercel CLI, `gh secret set`) and which stay manual (the Google OAuth consent screen, Turnstile, the Arachnid Shield sign-up). One script that checks the steps is a smaller first step than one that does them.
+- **D31 Cheaper hosting with a Docker image** `[research]` — Open: what costs money today, and what would a Docker image change? An image of the Next.js app alone moves only the web host. The Supabase services (Postgres, Auth, Storage, Realtime) are the larger part. Self-hosted Supabase is about ten containers on one VPS. Compare the costs before any build, and keep D19 (local dev stays on the Supabase CLI) separate from this production question.
 
 ## Standing constraints (apply to every decision)
 
