@@ -1,3 +1,5 @@
+import powershell from "highlight.js/lib/languages/powershell";
+import { common } from "lowlight";
 import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize, { type Options as SanitizeSchema } from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
@@ -27,7 +29,10 @@ export interface RenderOptions {
 // rehype-highlight, never from the author, so the schema never has to let `class` or
 // `style` through. Only a block that names its language is highlighted: `detect` off,
 // so a plain block stays plain, and a language the highlighter does not know is left
-// as it is.
+// as it is. The languages are lowlight's common set plus the ones it leaves out that
+// Porchlight posts use.
+const HIGHLIGHT_LANGUAGES = { ...common, powershell };
+
 export async function renderMarkdown(
   markdown: string,
   schema: SanitizeSchema,
@@ -36,7 +41,7 @@ export async function renderMarkdown(
   const pipeline = unified().use(remarkParse).use(remarkRehype);
   const sanitized = (options.inert ? pipeline.use(inertLinks) : pipeline)
     .use(rehypeSanitize, schema)
-    .use(rehypeHighlight, { detect: false });
+    .use(rehypeHighlight, { detect: false, languages: HIGHLIGHT_LANGUAGES });
   const file = await (
     !options.inert && options.loneLink !== undefined
       ? sanitized.use(loneLinks(options.loneLink))

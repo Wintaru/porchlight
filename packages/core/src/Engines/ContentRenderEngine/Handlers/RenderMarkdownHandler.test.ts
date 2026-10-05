@@ -153,6 +153,24 @@ describe("RenderMarkdownHandler highlights code that names its language (#77)", 
     expect(html).toContain('<span class="hljs-string">"hello"</span>');
   });
 
+  test("powershell blocks get colour spans, under the name and its aliases", async () => {
+    const html = await render(
+      [
+        "```powershell",
+        "$name = 'x'",
+        "```",
+        "",
+        "```ps1",
+        "Write-Host $name",
+        "```",
+      ].join("\n"),
+    );
+    expect(html).toContain('<code class="hljs language-powershell">');
+    expect(html).toContain('<span class="hljs-variable">$name</span>');
+    expect(html).toContain('<code class="hljs language-ps1">');
+    expect(html).toContain('<span class="hljs-built_in">Write-Host</span>');
+  });
+
   test("a block with no language, or one the highlighter does not know, stays plain", async () => {
     expect(await render("```\nconst x = 1;\n```")).toBe(
       "<pre><code>const x = 1;\n</code></pre>",

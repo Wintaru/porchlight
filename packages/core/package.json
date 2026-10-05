@@ -14,7 +14,9 @@
   "dependencies": {
     "@porchlight/db": "workspace:*",
     "heic-decode": "catalog:",
+    "highlight.js": "catalog:",
     "jszip": "catalog:",
+    "lowlight": "catalog:",
     "rehype-highlight": "catalog:",
     "rehype-sanitize": "catalog:",
     "rehype-stringify": "catalog:",

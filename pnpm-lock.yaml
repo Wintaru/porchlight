@@ -75,12 +75,18 @@ catalogs:
     heic-decode:
       specifier: ^2.1.0
       version: 2.1.0
+    highlight.js:
+      specifier: ^11.11.1
+      version: 11.11.2
     jsdom:
       specifier: ^30.0.1
       version: 30.0.1
     jszip:
       specifier: ^3.10.1
       version: 3.10.2
+    lowlight:
+      specifier: ^3.3.0
+      version: 3.3.0
     mediabunny:
       specifier: ^1.60.0
       version: 1.60.0
@@ -255,9 +261,15 @@ importers:
       heic-decode:
         specifier: 'catalog:'
         version: 2.1.0
+      highlight.js:
+        specifier: 'catalog:'
+        version: 11.11.2
       jszip:
         specifier: 'catalog:'
         version: 3.10.2
+      lowlight:
+        specifier: 'catalog:'
+        version: 3.3.0
       rehype-highlight:
         specifier: 'catalog:'
         version: 7.0.2
