@@ -15,7 +15,6 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { Post } from "../../../Common/Post";
 import { ResponseBase } from "../../../Common/ResponseBase";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
-import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
 import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
@@ -27,7 +26,6 @@ import { checkCover } from "../checkCover";
 import { coverAwaitsReview } from "../coverAwaitsReview";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { permit } from "../permit";
-import { admitAgent } from "../admitAgent";
 import { agentDraftStamp, agentEditStamp, reviewStamp } from "../provenance";
 import { publishesAtOnce } from "../publishesAtOnce";
 import { recordEvidence } from "../recordEvidence";
@@ -37,8 +35,7 @@ import { PostChangedResponse } from "../Responses/PostChangedResponse";
 import { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
-import type { PostRateLimitedResponse } from "../Responses/PostRateLimitedResponse";
-import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
+import { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import {
   checkBodyLength,
   checkCoverFrame,
@@ -55,7 +52,6 @@ type UpdateDraftResult =
   | PostChangedResponse
   | PostForbiddenResponse
   | PostRejectedResponse
-  | PostRateLimitedResponse
   | PostUnavailableResponse;
 
 // Load, permission, then reshape only what changed: a new body is re-rendered, new tag
@@ -72,7 +68,6 @@ export class UpdateDraftHandler implements IHandler<
     private readonly posts: IPostAccessor,
     private readonly content: IContentRenderEngine,
     private readonly permissions: IPermissionEngine,
-    private readonly agentGuard: IAgentGuardEngine,
     private readonly mediaAssets: IMediaAssetAccessor,
     private readonly profiles: IProfileAccessor,
     private readonly notifications: INotificationAccessor,
@@ -107,10 +102,11 @@ export class UpdateDraftHandler implements IHandler<
       if (changes.visibility !== undefined && changes.visibility !== current.visibility) {
         return new PostForbiddenResponse(correlationId, "not-allowed");
       }
-      // Agent text in front of readers at once counts as a publish (D32).
-      const capped = await admitAgent(this.agentGuard, actor, "agent:publish", context);
-      if (capped !== undefined) {
-        return capped;
+      // The words go out with a record of the token that wrote them (D32b), so the
+      // origin is needed as at a Publish. Every agent door sends one, so a missing one
+      // is a wiring fault.
+      if (origin === undefined) {
+        return new PostUnavailableResponse(correlationId, "agent edit without an origin");
       }
     }
     // Whoever may edit the post as it is must also be allowed it as it will be: only
@@ -299,7 +295,8 @@ export class UpdateDraftHandler implements IHandler<
     return unavailable(correlationId, stored, "store");
   }
 
-  // What a publish does after its store, for a save that published (#101, D27). The
+  // What an agent's change to a published post records (D32b), and what a publish does
+  // after its store, for a save that published (#101, D27). The
   // evidence row hashes the text that goes out now (#65); a post that went to the queue
   // tells the staff; a post that is up and public tells its followers, once (#87).
   private async afterStore(
@@ -308,8 +305,30 @@ export class UpdateDraftHandler implements IHandler<
     move: ReturnType<typeof visibilityMoveOf>,
     request: UpdateDraftRequest,
   ): Promise<PostUnavailableResponse | undefined> {
-    const { correlationId, timestamp } = request;
+    const { correlationId, timestamp, actor, changes } = request;
     const context = { correlationId, timestamp };
+    // An agent's words on a published post go out at once: the evidence row names the
+    // token, since the post's own `agentTokenId` names only a token that drafted it
+    // (D32b). `handle` refused this with no origin.
+    if (
+      actor.kind === "agent" &&
+      before.status === "published" &&
+      (changes.title !== undefined || changes.bodyMd !== undefined) &&
+      request.origin !== undefined
+    ) {
+      await recordEvidence(
+        this.evidence,
+        new RecordTextEvidenceRequest(
+          { kind: "post", id: after.id },
+          after.author,
+          actor.grant.tokenId,
+          request.origin,
+          "not_required",
+          evidenceTextOf(after),
+          context,
+        ),
+      );
+    }
     // `handle` refused a move out of private with no origin, so it is here.
     if (move === "leaves-private" && request.origin !== undefined) {
       await recordEvidence(

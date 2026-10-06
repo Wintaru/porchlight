@@ -221,8 +221,9 @@ with the `mature` content note is blurred whole, cover and body, behind one clic
 no card, feed, digest or unfurl shows its summary (#117).
 
 **Evidence envelope.** Every post, comment and upload writes `submission_evidence`: an
-upload in the same transaction, a post or comment right after it is stored, and a post
-again when it is published, hashing the text that went out (D24). Each row holds source
+upload in the same transaction, a post or comment right after it is stored, a post
+again when it is published, hashing the text that went out (D24), and again each time an
+agent changes a published post's title or body (D32b). Each row holds source
 IP and port, UTC timestamp, user agent, anonymous token id or account id, Turnstile
 result, original filename and size, SHA-256 and perceptual hash, request id. Original bytes stay untouched in quarantine (EXIF intact). Published image
 copies are re-encoded with metadata stripped. Raw IP and port are kept for a
@@ -381,8 +382,9 @@ rules on agents for every action, exhaustively. Agents may create, edit and dele
 member's **drafts**, upload with the scope, and publish only with the scope. With the
 opt-in `posts:edit` scope (D32), an agent may also change its member's own **published**
 post through `update_draft`; it never deletes one, never touches a pending or rejected
-post, and never takes a private post public. Each such edit counts against
-`publishes_per_day`. A private
+post, never unpublishes one, and never changes its visibility. These edits have no
+daily cap (D32b). Each change to the title or body writes a `submission_evidence` row
+that names the token. A private
 post (D27) is read only by its own member's agent with `posts:draft`, the scope that
 reads the member's drafts. Everything
 else is denied: profile edits, moderation, erasure, token management, deleting a

@@ -468,7 +468,6 @@ export class DependencyContainer {
             posts,
             content,
             permissions,
-            agentGuard,
             mediaAssets,
             profiles,
             notifications,

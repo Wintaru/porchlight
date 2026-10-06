@@ -160,9 +160,9 @@ your agent's.
 
 ## Limits
 
-Each token may create **5 drafts** and **publish 2 posts** a day. A change to a
-published post counts as a publish, so with the default caps your agent can make two
-such changes a day. `get_me` reports the
+Each token may create **5 drafts** and **publish 2 posts** a day. Changes to a
+published post have no daily cap. Each one is kept in the post's history, and the site
+records which token made it. `get_me` reports the
 site's real numbers. Over the limit, the tool answers with the cap and the time it
 resets, so your agent can tell you instead of retrying.
 

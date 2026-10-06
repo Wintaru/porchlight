@@ -100,7 +100,8 @@ function actorFrom(extra: unknown): AgentActor | undefined {
   return actor.kind === "agent" ? (actor as AgentActor) : undefined;
 }
 
-// Where the agent's request came from, for a draft's evidence envelope (SPEC.md §7),
+// Where the agent's request came from, for the evidence envelope of a draft, a publish
+// or a change to a published post (SPEC.md §7, D32b),
 // set by `serve` below next to the actor.
 function originFrom(extra: unknown): RequestOrigin | undefined {
   if (typeof extra !== "object" || extra === null || !("origin" in extra)) {
@@ -422,7 +423,7 @@ function registerTools(
     "update_draft",
     {
       description:
-        "Change a draft of the member's, or with the posts:edit scope one of their published posts (not its visibility). A change to a published post goes live at once and counts against the daily publish limit, so send every field in one call. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
+        "Change a draft of the member's, or with the posts:edit scope one of their published posts (not its visibility). A change to a published post goes live at once. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
       inputSchema: z.object({
         id: z.string().min(1),
         title: z.string().min(1).optional(),
@@ -436,16 +437,23 @@ function registerTools(
     },
     async ({ id, ...input }) => {
       const response = await postManager.execute(
-        new UpdateDraftRequest(actor, id, {
-          ...(input.title === undefined ? {} : { title: input.title }),
-          ...(input.body_md === undefined ? {} : { bodyMd: input.body_md }),
-          ...(input.summary === undefined ? {} : { summary: input.summary }),
-          ...(input.tags === undefined ? {} : { tags: input.tags }),
-          ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
-          ...(input.comments_enabled === undefined
-            ? {}
-            : { commentsEnabled: input.comments_enabled }),
-        }),
+        new UpdateDraftRequest(
+          actor,
+          id,
+          {
+            ...(input.title === undefined ? {} : { title: input.title }),
+            ...(input.body_md === undefined ? {} : { bodyMd: input.body_md }),
+            ...(input.summary === undefined ? {} : { summary: input.summary }),
+            ...(input.tags === undefined ? {} : { tags: input.tags }),
+            ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
+            ...(input.comments_enabled === undefined
+              ? {}
+              : { commentsEnabled: input.comments_enabled }),
+          },
+          undefined,
+          undefined,
+          origin,
+        ),
       );
       if (!isPost(response)) {
         return refusalFor(response, "update_draft");

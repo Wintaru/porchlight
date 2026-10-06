@@ -9,6 +9,8 @@ import { CommentResponse } from "../Managers/CommentManager/Responses/CommentRes
 import { CreateAnonymousPostRequest } from "../Managers/PostManager/Requests/CreateAnonymousPostRequest";
 import { CreateDraftRequest } from "../Managers/PostManager/Requests/CreateDraftRequest";
 import { PublishPostRequest } from "../Managers/PostManager/Requests/PublishPostRequest";
+import { UpdateDraftRequest } from "../Managers/PostManager/Requests/UpdateDraftRequest";
+import { PostUnavailableResponse } from "../Managers/PostManager/Responses/PostUnavailableResponse";
 import { AnonymousPostCreatedResponse } from "../Managers/PostManager/Responses/AnonymousPostCreatedResponse";
 import { PostResponse } from "../Managers/PostManager/Responses/PostResponse";
 import { DependencyContainer } from "./DependencyContainer";
@@ -26,6 +28,14 @@ const THEO_PROFILE: Profile = {
   createdAt: new Date("2026-09-12T10:00:00.000Z"),
 };
 const THEO: Actor = { kind: "member", profile: THEO_PROFILE };
+const THEO_AGENT: Actor = {
+  kind: "agent",
+  profile: THEO_PROFILE,
+  grant: {
+    tokenId: "00000000-0000-4000-8000-0000000000f1",
+    scopes: ["posts:draft", "posts:edit"],
+  },
+};
 const VISITOR: Actor = { kind: "visitor" };
 const SUBMISSION = {
   secret: undefined,
@@ -123,5 +133,57 @@ describe("DependencyContainer: evidence for posts and comments (#61)", () => {
       ),
     );
     expect(logged).not.toHaveBeenCalled();
+  });
+
+  test("an agent's change to a published post's words records evidence; a person's save does not (D32b)", async () => {
+    const container = new DependencyContainer({
+      ...FAKE_ENV,
+      EVIDENCE_FAKE_RESULT: "fail",
+    });
+    const drafted = await container.postManager.execute(
+      new CreateDraftRequest(
+        THEO,
+        {
+          title: "Out",
+          bodyMd: "A body.",
+          summary: null,
+          tags: [],
+          visibility: "public",
+          commentsEnabled: true,
+        },
+        TEST_ORIGIN,
+      ),
+    );
+    if (!(drafted instanceof PostResponse)) {
+      throw new Error(`expected PostResponse, got ${drafted.constructor.name}`);
+    }
+    const id = drafted.post.id;
+    await container.postManager.execute(new PublishPostRequest(THEO, id, TEST_ORIGIN));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await container.postManager.execute(
+      new UpdateDraftRequest(THEO, id, { bodyMd: "Theo's fix." }),
+    );
+    expect(logged).not.toHaveBeenCalled();
+
+    const changed = await container.postManager.execute(
+      new UpdateDraftRequest(
+        THEO_AGENT,
+        id,
+        { bodyMd: "The agent's fix." },
+        undefined,
+        undefined,
+        TEST_ORIGIN,
+      ),
+    );
+    expect(changed).toBeInstanceOf(PostResponse);
+    expect(logged.mock.calls.map(([message]) => String(message))).toEqual([
+      expect.stringContaining(`evidence for post ${id} not recorded`),
+    ]);
+
+    const noOrigin = await container.postManager.execute(
+      new UpdateDraftRequest(THEO_AGENT, id, { bodyMd: "Again." }),
+    );
+    expect(noOrigin).toBeInstanceOf(PostUnavailableResponse);
   });
 });
