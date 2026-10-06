@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PostCardList } from "@/components/PostCardList";
 import { HomeSidebar } from "@/components/HomeSidebar";
+import { NewPostWatcher } from "@/components/NewPostWatcher";
 import { SubscribeCard } from "@/components/SubscribeCard";
 import { OnlineNow } from "@/components/presence/OnlineNow";
 import { presenceFor } from "@/lib/presence";
@@ -104,6 +105,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </Link>
             </nav>
           )}
+          <NewPostWatcher newestShown={posts[0]?.published_at ?? null} />
           <PostCardList
             posts={posts}
             empty={

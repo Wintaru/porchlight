@@ -53,8 +53,9 @@ export function createProxySessionClient(
   return createSessionDbClient(url, anonKey, store);
 }
 
-// A client that holds no session and reads or writes no cookies, for Auth calls that run
-// after the response has gone (`after()`, #84), where no cookie can reach the browser.
+// A client that holds no session and reads or writes no cookies: for Auth calls that run
+// after the response has gone (`after()`, #84), where no cookie can reach the browser,
+// and for a public read whose answer a CDN may cache (D33).
 export function createCookielessAuthClient(): DbClient {
   const { url, anonKey } = readSupabasePublicEnv();
   return createDbClient(url, anonKey);

@@ -20,3 +20,20 @@ export async function loadFeedFor(
 ): Promise<readonly PostCard[]> {
   return viewerId === undefined ? loadFeed(db) : listedPostCards(db, null, "feed");
 }
+
+// When the newest public post went up, or null on an empty site: all the home page's
+// poll needs to know whether to re-render (D33). The same answer for every reader.
+export async function loadNewestPublishedAt(db: DbClient): Promise<string | null> {
+  const { data, error } = await db
+    .from("posts")
+    .select("published_at")
+    .eq("status", "published")
+    .eq("visibility", "public")
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`newest post: ${error.message}`);
+  }
+  return data?.published_at ?? null;
+}

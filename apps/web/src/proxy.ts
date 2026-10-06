@@ -113,9 +113,10 @@ function anonymousPostSlugOf(pathname: string): string | undefined {
 }
 
 export const config = {
-  // Everything except Next's own assets, static files with an extension, and the MCP
-  // door, which signs in by bearer token and never reads the session cookie.
+  // Everything except Next's own assets, static files with an extension, the MCP door,
+  // which signs in by bearer token and never reads the session cookie, and the home
+  // page's poll, whose cached answer must never carry a session (D33).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/mcp(?:/|$)|.*\\.[a-zA-Z0-9]+$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/mcp(?:/|$)|api/latest-post$|.*\\.[a-zA-Z0-9]+$).*)",
   ],
 };
