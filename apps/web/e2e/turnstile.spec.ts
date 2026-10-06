@@ -54,10 +54,24 @@ test.describe("the Turnstile box", () => {
     await deleteSubscribers(reader);
   });
 
-  test("is interaction-only and fits the subscribe card", async ({ page }) => {
+  test("fits the subscribe card", async ({ page }) => {
     await page.goto("/");
-    const widget = page.locator("#subscribe .cf-turnstile");
-    await expect(widget).toHaveAttribute("data-appearance", "interaction-only");
+    await expectBoxInsideCard(page);
+  });
+
+  // The script loads once per page load, so the widget must render itself when the card
+  // comes back by a client-side navigation.
+  test("renders again after a client-side navigation", async ({ page }) => {
+    await page.goto("/");
+    await expectBoxInsideCard(page);
+    const site = page.getByRole("navigation", { name: "Site" });
+    await site.getByRole("link", { name: "Tags" }).click();
+    await expect(page).toHaveURL(/\/tags$/);
+    await site.getByRole("link", { name: "Home" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(
+      page.getByTestId("turnstile-widget").locator('input[name="cf-turnstile-response"]'),
+    ).toHaveCount(1);
     await expectBoxInsideCard(page);
   });
 

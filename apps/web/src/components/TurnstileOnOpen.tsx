@@ -1,31 +1,13 @@
 "use client";
 
 import Script from "next/script";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import {
-  TURNSTILE_APPEARANCE,
-  TURNSTILE_SIZE,
-  TURNSTILE_SRC,
-  turnstileSiteKey,
-} from "@/lib/turnstile";
+import { useTurnstile } from "@/components/use-turnstile";
+import { TURNSTILE_SRC } from "@/lib/turnstile";
 
-interface TurnstileRenderOptions {
-  readonly sitekey: string;
-  readonly appearance: typeof TURNSTILE_APPEARANCE;
-  readonly size: typeof TURNSTILE_SIZE;
-}
-
-// Turnstile's explicit-render API (docs/setup/turnstile.md), the script's global.
-interface TurnstileApi {
-  render(container: HTMLElement, options: TurnstileRenderOptions): string;
-  remove(widgetId: string): void;
-}
-
-declare global {
-  interface Window {
-    turnstile?: TurnstileApi;
-  }
+function isInOpenDisclosure(element: HTMLElement): boolean {
+  return element.closest("details")?.open === true;
 }
 
 // A Turnstile widget inside a closed <details> (an anonymous reply form, #33): rendered
@@ -38,44 +20,18 @@ declare global {
 // what next/script calls for a second <Script> with the same src, `onReady` for a
 // remount after it loaded), and hydration itself (the visitor may open it first).
 export function TurnstileOnOpen() {
-  const siteKey = turnstileSiteKey();
-  const container = useRef<HTMLDivElement>(null);
-  const widgetId = useRef<string | undefined>(undefined);
-
-  const renderIfOpen = useCallback(() => {
-    const element = container.current;
-    const api = window.turnstile;
-    if (
-      widgetId.current !== undefined ||
-      element === null ||
-      api === undefined ||
-      siteKey === undefined ||
-      element.closest("details")?.open !== true
-    ) {
-      return;
-    }
-    widgetId.current = api.render(element, {
-      sitekey: siteKey,
-      appearance: TURNSTILE_APPEARANCE,
-      size: TURNSTILE_SIZE,
-    });
-  }, [siteKey]);
+  const { siteKey, container, renderIfWanted } = useTurnstile(isInOpenDisclosure);
 
   useEffect(() => {
     const details = container.current?.closest("details");
     if (details === null || details === undefined) {
       return;
     }
-    details.addEventListener("toggle", renderIfOpen);
-    renderIfOpen();
+    details.addEventListener("toggle", renderIfWanted);
     return () => {
-      details.removeEventListener("toggle", renderIfOpen);
-      if (widgetId.current !== undefined) {
-        window.turnstile?.remove(widgetId.current);
-        widgetId.current = undefined;
-      }
+      details.removeEventListener("toggle", renderIfWanted);
     };
-  }, [renderIfOpen]);
+  }, [container, renderIfWanted]);
 
   if (siteKey === undefined) {
     return null;
@@ -86,8 +42,8 @@ export function TurnstileOnOpen() {
         src={TURNSTILE_SRC}
         async
         defer
-        onLoad={renderIfOpen}
-        onReady={renderIfOpen}
+        onLoad={renderIfWanted}
+        onReady={renderIfWanted}
       />
       <div ref={container} className="turnstile-box" />
     </>

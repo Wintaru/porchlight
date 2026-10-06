@@ -1,32 +1,35 @@
+"use client";
+
 import Script from "next/script";
 
-import {
-  TURNSTILE_APPEARANCE,
-  TURNSTILE_SIZE,
-  TURNSTILE_SRC,
-  turnstileSiteKey,
-} from "@/lib/turnstile";
+import { useTurnstile } from "@/components/use-turnstile";
+import { TURNSTILE_SRC } from "@/lib/turnstile";
 
-// Cloudflare Turnstile, implicit render (docs/setup/turnstile.md): the script scans the
-// page for `.cf-turnstile` and injects a hidden `cf-turnstile-response` field into it,
-// so the anonymous form needs no client script of its own to carry the token. An unset
-// site key means the fake provider is running (TURNSTILE_SECRET_KEY empty selects it
-// the same way on the server): the widget is skipped entirely rather than shown broken,
-// and the form submits with no token, which the fake accepts.
+function always(): boolean {
+  return true;
+}
+
+// Cloudflare Turnstile on an anonymous form (docs/setup/turnstile.md): the widget puts a
+// hidden `cf-turnstile-response` field inside its container, so the form carries the
+// token with no client script of its own. An unset site key means the fake provider is
+// running (TURNSTILE_SECRET_KEY empty selects it the same way on the server): the widget
+// is skipped entirely rather than shown broken, and the form submits with no token,
+// which the fake accepts.
 export function TurnstileWidget() {
-  const siteKey = turnstileSiteKey();
+  const { siteKey, container, renderIfWanted } = useTurnstile(always);
   if (siteKey === undefined) {
     return null;
   }
   return (
     <>
-      <Script src={TURNSTILE_SRC} async defer />
-      <div
-        className="cf-turnstile turnstile-box"
-        data-sitekey={siteKey}
-        data-appearance={TURNSTILE_APPEARANCE}
-        data-size={TURNSTILE_SIZE}
+      <Script
+        src={TURNSTILE_SRC}
+        async
+        defer
+        onLoad={renderIfWanted}
+        onReady={renderIfWanted}
       />
+      <div ref={container} className="turnstile-box" data-testid="turnstile-widget" />
     </>
   );
 }

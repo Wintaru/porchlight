@@ -57,9 +57,11 @@ widget is skipped and the fake accessor answers `pass`.
 ## What happens on submit
 
 1. The anonymous post, comment, report and subscribe forms render the Turnstile widget
-   (implicit render: a `.cf-turnstile` div, Cloudflare's script injects a hidden
-   `cf-turnstile-response` field into it) only when a site key is configured. A reply
-   form renders its widget explicitly, when its disclosure first opens.
+   only when a site key is configured. Each form renders its widget explicitly when the
+   form appears, also after a client-side navigation. Cloudflare's script puts a hidden
+   `cf-turnstile-response` field into the widget. A reply form renders its widget when
+   its disclosure first opens. The widget resets after each submit, because a token
+   is good for one use only.
 2. Submitting the form sends that field's token along with the rest.
 3. `CreateAnonymousPostHandler`, `CreateAnonymousCommentHandler`, `FileReportHandler`
    (for a visitor) and `RequestUploadUrlAnonymouslyHandler` ask
