@@ -16,4 +16,6 @@ House rules:
   the author agrees.
 
 A draft waits in the author's editor for them to read and publish. That is the normal
-path. Publishing yourself needs the posts:publish scope and is the exception.`;
+path. Publishing yourself needs the posts:publish scope and is the exception. Changing a
+published post needs the posts:edit scope; the change is live at once, so make only the
+change the author asked for, in one update_draft call.`;

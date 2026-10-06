@@ -10,6 +10,7 @@ import {
 export const AGENT_SCOPE_TEXT: Readonly<Record<AgentScope, string>> = {
   "posts:draft": "Write drafts (you publish from the editor)",
   "posts:publish": "Publish without you",
+  "posts:edit": "Change your published posts",
   "media:upload": "Upload images and files",
   "voice:write": "Change your voice guide",
 };

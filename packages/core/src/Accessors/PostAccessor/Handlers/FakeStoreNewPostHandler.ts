@@ -44,6 +44,7 @@ export class FakeStoreNewPostHandler implements IHandler<
       agentTokenId: post.agentTokenId,
       reviewedAt: post.reviewedAt,
       agentDraftMd: post.agentDraftMd,
+      agentEditedAt: null,
       tags: post.tags,
       publishedAt: null,
       createdAt: timestamp,

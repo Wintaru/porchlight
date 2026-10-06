@@ -8,7 +8,7 @@ import { isPost, loadPost, subjectOf } from "../loadPost";
 import { permit } from "../permit";
 import type { UnpublishPostRequest } from "../Requests/UnpublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
-import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
+import { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostNotPublishableResponse } from "../Responses/PostNotPublishableResponse";
 import { PostResponse } from "../Responses/PostResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
@@ -40,6 +40,11 @@ export class UnpublishPostHandler implements IHandler<
     const current = await loadPost(this.posts, { by: "id", id: postId }, context);
     if (!isPost(current)) {
       return current;
+    }
+    // Taking a post down is a person's act: `posts:edit` changes words, not who can
+    // read them (D32).
+    if (actor.kind === "agent") {
+      return new PostForbiddenResponse(correlationId, "not-allowed");
     }
     const refused = await permit(
       this.permissions,

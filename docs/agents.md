@@ -20,7 +20,9 @@ is no production step for this feature and no key to buy: tokens are minted in t
 2. Give the token a name you will recognise later, such as "Laptop".
 3. Pick the scopes. **Write drafts** is always on and is the floor. **Publish without
    you** is the one to think about: with it, your agent can put a post on the site
-   without you reading it first. Leave it off unless you want that.
+   without you reading it first. Leave it off unless you want that. **Change your
+   published posts** is the same kind of choice: with it, your agent can change a post
+   that readers can already see, and the change is live at once.
 4. Pick an expiry, or "Never".
 5. Press **Mint token**.
 
@@ -120,7 +122,7 @@ invent facts or opinions, one draft per request, read the voice guide first, and
 | `check_draft` | Checks a draft's text for your banned phrases and a few signs of machine writing. It gives warnings only. The editor has the same check as a **Check** button. |
 | `get_post` | One of your own posts, by id or slug. For a post the agent drafted, it also returns the agent's first text. |
 | `create_draft` | Starts a draft. Never publishes. |
-| `update_draft` | Changes a draft of yours. An upload it takes out of the draft is deleted, unless another post or a comment shows it. |
+| `update_draft` | Changes a draft of yours. With the **Change your published posts** scope, it also changes a published post of yours, but never who can read it. An upload it takes out of the post is deleted, unless another post or a comment shows it. |
 | `delete_draft` | Deletes a draft of yours. |
 | `publish_post` | Publishes one of your drafts. Needs the **Publish without you** scope. |
 | `request_upload` | Gets a one-time address to upload a file, and the `curl` line that sends it. Needs the **Upload images and files** scope. |
@@ -147,8 +149,9 @@ never appears anywhere.
 
 ## What an agent cannot do
 
-An agent carries your profile, but it is not you. It may only touch **your own drafts**.
-It cannot edit or delete a post that is already published, comment, react, report,
+An agent carries your profile, but it is not you. It may only touch **your own drafts**,
+and your own published posts when you give it the **Change your published posts** scope.
+It cannot delete a post that is already published, change who can read one, comment, react, report,
 moderate anything, change your profile, export or erase your account, or mint or revoke
 tokens. Those need a person signed in.
 
@@ -157,7 +160,9 @@ your agent's.
 
 ## Limits
 
-Each token may create **5 drafts** and **publish 2 posts** a day. `get_me` reports the
+Each token may create **5 drafts** and **publish 2 posts** a day. A change to a
+published post counts as a publish, so with the default caps your agent can make two
+such changes a day. `get_me` reports the
 site's real numbers. Over the limit, the tool answers with the cap and the time it
 resets, so your agent can tell you instead of retrying.
 
@@ -172,6 +177,11 @@ A post your agent drafted says so under it, unless the site's admin turned that 
 for @you" when your agent published it and you never opened it. Until you save it,
 the draft carries an "agent draft, not yet reviewed" badge in your drafts list and in
 the moderation queue, and the editor reminds you to read it before you publish.
+
+When your agent changes a post that is already published, the post reads "Last changed
+by an assistant for @you", and your posts list shows "changed by an agent, not yet
+reviewed". Both go away when you open the post and save it. The post's history keeps
+the words it replaced.
 
 ## Revoke a token
 

@@ -176,12 +176,19 @@ function AuthorControls({
 }
 
 // The disclosure line under a post an agent drafted (SPEC.md §17): edited once a person
-// has saved or published it, posted by the assistant when nobody has.
+// has saved or published it, posted by the assistant when nobody has. A published post
+// an agent changed says so until its author saves it (D32), whoever drafted it.
 function agentLineFor(post: PostPage): string | undefined {
-  if (post.origin !== "agent" || post.author === null) {
+  if (post.author === null) {
     return undefined;
   }
   const handle = `@${post.author.handle}`;
+  if (post.agent_edited_at !== null) {
+    return `Last changed by an assistant for ${handle}`;
+  }
+  if (post.origin !== "agent") {
+    return undefined;
+  }
   return post.reviewed_at === null
     ? `Posted by an assistant for ${handle}`
     : `Drafted with an assistant, edited by ${handle}`;

@@ -34,6 +34,9 @@ export interface Post {
   // The agent's own text at its first write, frozen after (D22): null when no agent
   // wrote this post. Only the member and their agent ever see it.
   readonly agentDraftMd: string | null;
+  // When an agent last changed this post while it was published, until a person saves
+  // it (D32). `reviewedAt` cannot say this: posts from before D22 have none.
+  readonly agentEditedAt: Date | null;
   readonly publishedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;

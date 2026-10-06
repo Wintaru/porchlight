@@ -62,6 +62,7 @@ function stalePost(id: string): Post {
     agentTokenId: null,
     reviewedAt: AT,
     agentDraftMd: null,
+    agentEditedAt: null,
     publishedAt: AT,
     createdAt: AT,
     updatedAt: AT,

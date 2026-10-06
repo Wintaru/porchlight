@@ -621,8 +621,9 @@ async function mayManageOwnTokens(
 // One rule per action for the agent actor, the same exhaustive shape as RULES. The
 // floor: an agent may read what anyone may read, and see, create, change and delete
 // its own member's drafts with the `posts:draft` scope. Publishing needs
-// `posts:publish`. Everything else is `deny`: profile edits, comments, reactions,
-// moderation, erasure, token management, and deleting or editing a published post.
+// `posts:publish`. Changing the member's own published post needs `posts:edit` (D32).
+// Everything else is `deny`: profile edits, comments, reactions, moderation, erasure,
+// token management, and deleting a published post.
 // The upload scope opens `media.upload` and the member's own uploads (#31). Reading the
 // voice guide is part of drafting
 // (`posts:draft`); changing it needs `voice:write` (#29).
@@ -641,7 +642,7 @@ const AGENT_RULES: Readonly<Record<PermissionAction, AgentRule>> = {
   "post.create.anonymous": deny,
   "post.view": agentMayViewPost,
   "post.list": agentMayListPosts,
-  "post.edit": agentMayEditDraft,
+  "post.edit": agentMayEditPost,
   "post.publish": agentMayPublishPost,
   "post.delete": agentMayEditDraft,
   "comment.create": deny,
@@ -692,8 +693,7 @@ async function activeAgent(
     : "agents-closed";
 }
 
-// The member's own draft, and nothing in any other status: an agent never touches a
-// published, pending or rejected post, whoever wrote it.
+// The member's own draft, and nothing in any other status.
 function isOwnDraft(profile: Profile, subject: PermissionSubject): boolean {
   return (
     subject.kind === "post" && subject.status === "draft" && isAuthor(profile, subject)
@@ -799,6 +799,23 @@ async function agentMayEditDraft(
   const gate = await activeAgent(agent, policy);
   if (isDenial(gate)) {
     return gate;
+  }
+  return verdict(hasScope(agent.grant, "posts:draft") && isOwnDraft(gate, subject));
+}
+
+// A draft with the draft scope, or the member's own published post with the opt-in
+// edit scope (D32). Never a pending or rejected post: those wait on a moderator.
+async function agentMayEditPost(
+  agent: AgentActor,
+  subject: PermissionSubject,
+  policy: SitePolicy,
+): Promise<Denial> {
+  const gate = await activeAgent(agent, policy);
+  if (isDenial(gate)) {
+    return gate;
+  }
+  if (subject.kind === "post" && subject.status === "published") {
+    return verdict(hasScope(agent.grant, "posts:edit") && isAuthor(gate, subject));
   }
   return verdict(hasScope(agent.grant, "posts:draft") && isOwnDraft(gate, subject));
 }

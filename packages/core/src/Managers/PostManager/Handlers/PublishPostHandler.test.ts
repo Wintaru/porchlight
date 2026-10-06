@@ -74,6 +74,7 @@ function stateWith(status: PostStatus): FakePostState {
     agentTokenId: null,
     reviewedAt: null,
     agentDraftMd: null,
+    agentEditedAt: null,
     tags: [],
     publishedAt: status === "published" ? AT : null,
     createdAt: AT,

@@ -15,6 +15,7 @@ import type { IHandler } from "../../../Common/IHandler";
 import type { Post } from "../../../Common/Post";
 import { ResponseBase } from "../../../Common/ResponseBase";
 import type { IContentRenderEngine } from "../../../Engines/ContentRenderEngine/IContentRenderEngine";
+import type { IAgentGuardEngine } from "../../../Engines/AgentGuardEngine/IAgentGuardEngine";
 import type { IEvidenceEngine } from "../../../Engines/EvidenceEngine/IEvidenceEngine";
 import { RecordTextEvidenceRequest } from "../../../Engines/EvidenceEngine/Requests/RecordTextEvidenceRequest";
 import type { IFollowerNoticeEngine } from "../../../Engines/FollowerNoticeEngine/IFollowerNoticeEngine";
@@ -26,15 +27,17 @@ import { checkCover } from "../checkCover";
 import { coverAwaitsReview } from "../coverAwaitsReview";
 import { notifyStaffOfPendingPost } from "../notifyStaff";
 import { permit } from "../permit";
-import { agentDraftStamp, reviewStamp } from "../provenance";
+import { admitAgent } from "../admitAgent";
+import { agentDraftStamp, agentEditStamp, reviewStamp } from "../provenance";
 import { publishesAtOnce } from "../publishesAtOnce";
 import { recordEvidence } from "../recordEvidence";
 import type { UpdateDraftRequest } from "../Requests/UpdateDraftRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import { PostChangedResponse } from "../Responses/PostChangedResponse";
-import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
+import { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
 import { PostRejectedResponse } from "../Responses/PostRejectedResponse";
 import { PostResponse } from "../Responses/PostResponse";
+import type { PostRateLimitedResponse } from "../Responses/PostRateLimitedResponse";
 import type { PostUnavailableResponse } from "../Responses/PostUnavailableResponse";
 import {
   checkBodyLength,
@@ -52,6 +55,7 @@ type UpdateDraftResult =
   | PostChangedResponse
   | PostForbiddenResponse
   | PostRejectedResponse
+  | PostRateLimitedResponse
   | PostUnavailableResponse;
 
 // Load, permission, then reshape only what changed: a new body is re-rendered, new tag
@@ -68,6 +72,7 @@ export class UpdateDraftHandler implements IHandler<
     private readonly posts: IPostAccessor,
     private readonly content: IContentRenderEngine,
     private readonly permissions: IPermissionEngine,
+    private readonly agentGuard: IAgentGuardEngine,
     private readonly mediaAssets: IMediaAssetAccessor,
     private readonly profiles: IProfileAccessor,
     private readonly notifications: INotificationAccessor,
@@ -95,6 +100,18 @@ export class UpdateDraftHandler implements IHandler<
     );
     if (refused !== undefined) {
       return refused;
+    }
+    if (actor.kind === "agent" && current.status === "published") {
+      // An agent with `posts:edit` changes the words of a published post, never who
+      // can read it (D32): a new audience is a publish, and that is a person's act.
+      if (changes.visibility !== undefined && changes.visibility !== current.visibility) {
+        return new PostForbiddenResponse(correlationId, "not-allowed");
+      }
+      // Agent text in front of readers at once counts as a publish (D32).
+      const capped = await admitAgent(this.agentGuard, actor, "agent:publish", context);
+      if (capped !== undefined) {
+        return capped;
+      }
     }
     // Whoever may edit the post as it is must also be allowed it as it will be: only
     // the author may make a post private (D27), since nobody else could read it after.
@@ -151,7 +168,11 @@ export class UpdateDraftHandler implements IHandler<
     // A person's save is a review (D22); an agent's is not.
     const columns: PostChanges = {
       ...reviewStamp(actor, timestamp),
-      ...agentDraftStamp(actor, current, changes.bodyMd),
+      // The agent's first text is a draft's (D22); an edit of a published post is not one.
+      ...(current.status === "draft"
+        ? agentDraftStamp(actor, current, changes.bodyMd)
+        : {}),
+      ...agentEditStamp(actor, current, timestamp),
     };
     const shaped: { -readonly [K in keyof PostChanges]: PostChanges[K] } = columns;
     if (changes.title !== undefined) {

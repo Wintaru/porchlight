@@ -1,11 +1,13 @@
 // What a personal token lets an agent do (SPEC.md §17, D22). `posts:draft` is the
 // default and the anti-slop floor: a person reads and publishes in the editor.
-// `posts:publish` is opt-in. The two upload and voice scopes are for #29 and #31.
+// `posts:publish` is opt-in, and so is `posts:edit`, which opens the member's published
+// posts (D32). The two upload and voice scopes are for #29 and #31.
 // Restates the schema's `agent_scope` enum, because Common cannot import packages/db;
 // toAgentToken.test.ts checks the two lists against each other.
 export const AGENT_SCOPES = [
   "posts:draft",
   "posts:publish",
+  "posts:edit",
   "media:upload",
   "voice:write",
 ] as const;

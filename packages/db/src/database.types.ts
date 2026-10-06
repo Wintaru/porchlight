@@ -722,6 +722,7 @@ export type Database = {
       posts: {
         Row: {
           agent_draft_md: string | null
+          agent_edited_at: string | null
           agent_token_id: string | null
           announced_at: string | null
           anonymous_author_id: string | null
@@ -750,6 +751,7 @@ export type Database = {
         }
         Insert: {
           agent_draft_md?: string | null
+          agent_edited_at?: string | null
           agent_token_id?: string | null
           announced_at?: string | null
           anonymous_author_id?: string | null
@@ -778,6 +780,7 @@ export type Database = {
         }
         Update: {
           agent_draft_md?: string | null
+          agent_edited_at?: string | null
           agent_token_id?: string | null
           announced_at?: string | null
           anonymous_author_id?: string | null
@@ -1572,6 +1575,7 @@ export type Database = {
       agent_scope:
         | "posts:draft"
         | "posts:publish"
+        | "posts:edit"
         | "media:upload"
         | "voice:write"
       comment_status:
@@ -1763,6 +1767,7 @@ export const Constants = {
       agent_scope: [
         "posts:draft",
         "posts:publish",
+        "posts:edit",
         "media:upload",
         "voice:write",
       ],

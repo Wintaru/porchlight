@@ -39,7 +39,7 @@ export function refusalFor(response: ResponseBase, what: string) {
     return refuse(
       response.reason === "agents-closed"
         ? "This site has turned agents off, or off for your account. Ask the site's admin."
-        : `Not allowed: ${response.reason}. An agent may only touch its member's own drafts.`,
+        : `Not allowed: ${response.reason}. An agent may touch its member's own drafts. With the posts:edit scope it may also change the words of their published posts, but never delete one or change who can read it.`,
     );
   }
   if (response instanceof PostRateLimitedResponse) {

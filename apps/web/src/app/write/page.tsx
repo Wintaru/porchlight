@@ -117,6 +117,15 @@ export default async function WritePage({ searchParams }: WritePageProps) {
                     </span>
                   </>
                 )}
+                {post.agentEditedAt !== null && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <span data-testid="agent-edit-badge">
+                      changed by an agent, not yet reviewed
+                    </span>
+                  </>
+                )}
               </li>
             ))}
           </ul>

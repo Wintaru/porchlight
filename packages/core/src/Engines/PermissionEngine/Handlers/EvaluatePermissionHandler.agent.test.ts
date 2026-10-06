@@ -147,6 +147,33 @@ describe("an agent with the draft scope", () => {
   });
 });
 
+describe("an agent with the edit scope (D32)", () => {
+  const EDITOR = agent(["posts:draft", "posts:edit"]);
+
+  test("may change its member's published post, and only that member's", async () => {
+    expect(await verdict(EDITOR, "post.edit", post("published"))).toBe("granted");
+    expect(
+      await verdict(EDITOR, "post.edit", post("published", THEO_ID, "private")),
+    ).toBe("granted");
+    expect(await verdict(EDITOR, "post.edit", post("published", JUNE_ID))).toBe(
+      "not-allowed",
+    );
+  });
+
+  test("still may not delete a published post, or touch one in the queue", async () => {
+    expect(await verdict(EDITOR, "post.delete", post("published"))).toBe("not-allowed");
+    expect(await verdict(EDITOR, "post.edit", post("pending"))).toBe("not-allowed");
+  });
+
+  test("is refused when the site closes agents", async () => {
+    const closed = new FakeSiteConfigState("anyone", "anyone");
+    closed.agents = "off";
+    expect(await verdict(EDITOR, "post.edit", post("published"), closed)).toBe(
+      "agents-closed",
+    );
+  });
+});
+
 describe("an agent without the draft scope", () => {
   test("may not create or touch drafts", async () => {
     expect(await verdict(agent(["voice:write"]), "post.create", SITE)).toBe(
@@ -309,6 +336,7 @@ describe("every other action", () => {
     const everything = agent([
       "posts:draft",
       "posts:publish",
+      "posts:edit",
       "media:upload",
       "voice:write",
     ]);

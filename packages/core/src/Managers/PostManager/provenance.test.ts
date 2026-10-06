@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { Profile } from "../../Common/Profile";
-import { agentDraftStamp, provenanceOf, reviewStamp } from "./provenance";
+import { agentDraftStamp, agentEditStamp, provenanceOf, reviewStamp } from "./provenance";
 
 const AT = new Date("2026-09-22T10:00:00.000Z");
 
@@ -60,5 +60,25 @@ describe("reviewStamp", () => {
     expect(reviewStamp(MEMBER, AT)).toEqual({ reviewedAt: AT });
     expect(reviewStamp(AGENT, AT)).toEqual({});
     expect(reviewStamp({ kind: "visitor" }, AT)).toEqual({});
+  });
+});
+
+describe("agentEditStamp", () => {
+  test("an agent's change to a published post marks it; to a draft, nothing", () => {
+    expect(
+      agentEditStamp(AGENT, { status: "published", agentEditedAt: null }, AT),
+    ).toEqual({ agentEditedAt: AT });
+    expect(agentEditStamp(AGENT, { status: "draft", agentEditedAt: null }, AT)).toEqual(
+      {},
+    );
+  });
+
+  test("a person's save clears the mark, and writes nothing when there is none", () => {
+    expect(
+      agentEditStamp(MEMBER, { status: "published", agentEditedAt: AT }, AT),
+    ).toEqual({ agentEditedAt: null });
+    expect(
+      agentEditStamp(MEMBER, { status: "published", agentEditedAt: null }, AT),
+    ).toEqual({});
   });
 });

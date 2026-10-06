@@ -24,4 +24,6 @@ export interface PostChanges {
   // Set once, at an agent's first write to a post no agent wrote before (D22). The
   // store refuses any later change.
   readonly agentDraftMd?: string;
+  // Set by an agent's change to a published post, cleared by a person's save (D32).
+  readonly agentEditedAt?: Date | null;
 }

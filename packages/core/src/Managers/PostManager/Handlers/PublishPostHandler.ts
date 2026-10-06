@@ -21,7 +21,7 @@ import { admitAgent } from "../admitAgent";
 import { coverAwaitsReview } from "../coverAwaitsReview";
 import { permit } from "../permit";
 import { publishesAtOnce } from "../publishesAtOnce";
-import { reviewStamp } from "../provenance";
+import { agentEditStamp, reviewStamp } from "../provenance";
 import type { PublishPostRequest } from "../Requests/PublishPostRequest";
 import { NoSuchPostResponse } from "../Responses/NoSuchPostResponse";
 import type { PostForbiddenResponse } from "../Responses/PostForbiddenResponse";
@@ -106,7 +106,10 @@ export class PublishPostHandler implements IHandler<
     if (typeof heldCover !== "boolean") {
       return heldCover;
     }
-    const review = reviewStamp(actor, timestamp);
+    const review = {
+      ...reviewStamp(actor, timestamp),
+      ...agentEditStamp(actor, current, timestamp),
+    };
     const changes: PostChanges =
       current.visibility === "private" || (publishesAtOnce(actor) && !heldCover)
         ? { status: "published", publishedAt: timestamp, ...review }

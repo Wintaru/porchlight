@@ -43,3 +43,19 @@ export function agentDraftStamp(
 export function reviewStamp(actor: Actor, now: Date): { reviewedAt?: Date } {
   return actor.kind === "member" ? { reviewedAt: now } : {};
 }
+
+// An agent's change to a published post marks it until a person saves it (D32): the
+// author's posts list and the disclosure footer read the mark. A person's save clears
+// it. A draft never carries it, since nobody reads a draft but its author.
+export function agentEditStamp(
+  actor: Actor,
+  current: Pick<Post, "status" | "agentEditedAt">,
+  now: Date,
+): { agentEditedAt?: Date | null } {
+  if (actor.kind === "agent") {
+    return current.status === "published" ? { agentEditedAt: now } : {};
+  }
+  return actor.kind === "member" && current.agentEditedAt !== null
+    ? { agentEditedAt: null }
+    : {};
+}

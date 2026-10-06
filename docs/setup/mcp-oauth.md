@@ -108,7 +108,8 @@ Do this check once after the first deploy with the OAuth server on.
    `https://<your-site>/api/mcp`.
 3. Press **Connect**. The browser goes to the site's consent page. Check that it names
    the connector and that it sends you back to claude.ai.
-4. Leave **Publish without you** off. Press **Allow**.
+4. Leave **Publish without you** and **Change your published posts** off. Press
+   **Allow**.
 5. In a new chat, ask Claude to call `get_me`. The answer must show your handle and the
    scopes `posts:draft` only.
 6. Ask Claude to publish one of your drafts. The tool must refuse ("Not allowed").

@@ -52,6 +52,7 @@ const POST: Post = {
   agentTokenId: null,
   reviewedAt: AT,
   agentDraftMd: null,
+  agentEditedAt: null,
   tags: [],
   publishedAt: AT,
   createdAt: AT,

@@ -422,7 +422,7 @@ function registerTools(
     "update_draft",
     {
       description:
-        "Change a draft of the member's. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
+        "Change a draft of the member's, or with the posts:edit scope one of their published posts (not its visibility). A change to a published post goes live at once and counts against the daily publish limit, so send every field in one call. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
       inputSchema: z.object({
         id: z.string().min(1),
         title: z.string().min(1).optional(),
@@ -452,8 +452,9 @@ function registerTools(
       }
       // A picture the agent took out goes, as it does on the editor's Save (#90, C11).
       // Only when the agent wrote the body: an edit of the title alone must not delete a
-      // file the author took out by autosave and means to put back before Save.
-      if (input.body_md !== undefined) {
+      // file the author took out by autosave and means to put back before Save. Only on
+      // a draft: a published post's history still shows the files it used (D32).
+      if (input.body_md !== undefined && response.post.status === "draft") {
         await pruneSavedPostUploads(actor, response.post);
       }
       return ok({ post: view(response.post) });

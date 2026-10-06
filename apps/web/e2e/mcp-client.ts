@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 // The mint form's label for each optional scope; posts:draft is always on.
 const SCOPE_LABELS: Readonly<Record<string, string>> = {
   "posts:publish": "Publish without you",
+  "posts:edit": "Change your published posts",
   "voice:write": "Change your voice guide",
   "media:upload": "Upload images and files",
 };

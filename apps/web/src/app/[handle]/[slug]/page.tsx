@@ -121,8 +121,11 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
     createSessionClient(),
     searchParams,
     getSiteIdentity(),
-    // Only an agent's post has a line to show, so only it pays for the read.
-    post.origin === "agent" ? getAgentDisclosure() : ("off" as const),
+    // Only a post an agent drafted or changed has a line to show (D32), so only it
+    // pays for the read.
+    post.origin === "agent" || post.agent_edited_at !== null
+      ? getAgentDisclosure()
+      : ("off" as const),
   ]);
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   const [formState, comments, reactions, hiddenAuthorIds, presence] = await Promise.all([

@@ -48,6 +48,7 @@ test("toPost maps a member's row, its tags and its dates", () => {
     agent_token_id: null,
     reviewed_at: null,
     agent_draft_md: null,
+    agent_edited_at: "2026-09-13T10:00:00.000Z",
     published_at: "2026-09-12T10:00:00.000Z",
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-12T10:00:00.000Z",
@@ -59,6 +60,7 @@ test("toPost maps a member's row, its tags and its dates", () => {
     tags: [{ slug: "making", name: "Making" }],
     coverFrame: { focusX: 0.25, focusY: 0.75, zoom: 2 },
     publishedAt: new Date("2026-09-12T10:00:00.000Z"),
+    agentEditedAt: new Date("2026-09-13T10:00:00.000Z"),
     version: 3,
   });
 });
@@ -84,6 +86,7 @@ test("toPost maps an anonymous row and refuses one with no author", () => {
     agent_token_id: null,
     reviewed_at: null,
     agent_draft_md: null,
+    agent_edited_at: null,
     published_at: null,
     created_at: "2026-09-11T10:00:00.000Z",
     updated_at: "2026-09-11T10:00:00.000Z",

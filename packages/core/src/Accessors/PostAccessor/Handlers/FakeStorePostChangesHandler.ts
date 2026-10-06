@@ -62,6 +62,10 @@ export class FakeStorePostChangesHandler implements IHandler<
       reviewedAt:
         changes.reviewedAt === undefined ? current.reviewedAt : changes.reviewedAt,
       agentDraftMd: current.agentDraftMd ?? changes.agentDraftMd ?? null,
+      agentEditedAt:
+        changes.agentEditedAt === undefined
+          ? current.agentEditedAt
+          : changes.agentEditedAt,
       publishedAt:
         changes.publishedAt === undefined ? current.publishedAt : changes.publishedAt,
       updatedAt: timestamp,
