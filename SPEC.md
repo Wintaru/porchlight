@@ -124,6 +124,10 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 - Reactions: a small fixed emoji set with counts on the item. Never totals on a profile,
   never a sort key.
 - Feeds sort newest first. No vote-based ordering anywhere.
+- The home feed shows a new post without a reload (D33). While the page is open and its
+  tab is visible, it asks `/api/latest-post` once a minute for the newest public
+  published post's time; a newer time re-renders the page in place. The route reads no
+  cookie, the proxy skips it, and its answer is `public, s-maxage=30`.
 - URL shape: `/@handle/slug`. Author page `/@handle`. Reserved handles: `anon`, `p`,
   `admin`, `mod`, and every top-level route. Erased authors return 410 Gone.
 - Unlisted posts are excluded from feeds, tag pages, sitemap, RSS, and carry `noindex`.
@@ -370,11 +374,15 @@ summary, do not invent facts or opinions.
 **Tokens.** `agent_tokens`: owner, name, `token_hash` (SHA-256 of `plt_` + 32 random
 bytes, base64url), scopes, `expires_at`, `revoked_at`, `last_used_at`. Shown once on
 `/settings`, section Agents. Scopes: `posts:draft` (default), `posts:publish`,
-`media:upload`, `voice:write`. RLS denies the table to every browser role.
+`posts:edit` (D32), `media:upload`, `voice:write`. RLS denies the table to every browser role.
 
 **The agent actor.** `Actor` gains `{ kind: "agent", profile, grant }`. `PermissionEngine`
 rules on agents for every action, exhaustively. Agents may create, edit and delete their
-member's **drafts**, upload with the scope, and publish only with the scope. A private
+member's **drafts**, upload with the scope, and publish only with the scope. With the
+opt-in `posts:edit` scope (D32), an agent may also change its member's own **published**
+post through `update_draft`; it never deletes one, never touches a pending or rejected
+post, and never takes a private post public. Each such edit counts against
+`publishes_per_day`. A private
 post (D27) is read only by its own member's agent with `posts:draft`, the scope that
 reads the member's drafts. Everything
 else is denied: profile edits, moderation, erasure, token management, deleting a
@@ -386,7 +394,9 @@ agent lands in `pending`. Text moderation and the upload quarantine apply as to 
 `posts.reviewed_at` (first save or publish by a signed-in person). `submission_evidence`
 gains `agent_token_id`. The drafts list and the queue show an "agent draft, not yet
 reviewed" badge. The editor's publish button warns on an unreviewed agent draft. It
-warns, it does not block.
+warns, it does not block. `posts.agent_edited_at` (D32) is set when an agent changes a
+published post and cleared by a person's next save; while it is set, the posts list shows
+"changed by an agent, not yet reviewed".
 
 **Voice guide.** `profiles.voice_guide_md`, edited on the settings page. `get_voice_guide`
 returns it with the member's recent published posts where `origin = editor` as samples.
@@ -399,7 +409,7 @@ constant. The guide exports and erases with the account (section 10).
 | --- | --- | --- |
 | `agents` | `members` · `staff` · `off` (`off` hides the Agents section and `/api/mcp` answers 403) | `members` |
 | `agent_limits` | `{"drafts_per_day": n, "publishes_per_day": n}`, per token, through `rate_limits` | 5 and 2 |
-| `agent_disclosure` | `off` · `footer` ("Drafted with an assistant, edited by @handle", or "Posted by an assistant for @handle" when unreviewed) | `footer` |
+| `agent_disclosure` | `off` · `footer` ("Drafted with an assistant, edited by @handle", or "Posted by an assistant for @handle" when unreviewed, or "Last changed by an assistant for @handle" while `agent_edited_at` is set) | `footer` |
 
 **Tools.** `get_me`, `get_voice_guide`, `update_voice_guide`, `check_draft`, `list_posts`, `get_post`,
 `create_draft`, `update_draft`, `delete_draft`, `publish_post`, `request_upload`,
