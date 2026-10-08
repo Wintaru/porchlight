@@ -1,6 +1,6 @@
 /* The palette and type from SPEC.md §12, as tokens every screen reads. Dark mode is
-   warm charcoal. Newsreader and Source Sans 3 are files in the repo (src/fonts/),
-   loaded by next/font/local, so a build never needs the network. */
+   warm charcoal. Newsreader and Atkinson Hyperlegible Next are files in the repo
+   (src/fonts/), loaded by next/font/local, so a build never needs the network. */
 :root {
   --cream: #f6f1e8;
   --surface: #fffcf7;
@@ -33,7 +33,7 @@
   /* Every feed card's cover box, on every screen: one framing fits them all. */
   --cover-aspect: 16 / 10;
   --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-source-sans), "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-atkinson), "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
 }
 

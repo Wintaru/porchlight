@@ -4,7 +4,7 @@ import localFont from "next/font/local";
 // network. Both are SIL Open Font License 1.1 (the OFL-*.txt files beside them), Latin
 // subset only, from the Fontsource builds of the Google Fonts releases. Each sets a CSS
 // variable that globals.css puts at the front of --font-serif and --font-sans.
-// next/font names each family after its export (`newsreader`, `sourceSans`), and the
+// next/font names each family after its export (`newsreader`, `atkinson`), and the
 // font test in e2e/design.spec.ts matches those names: rename both together.
 
 // Newsreader keeps its optical-size axis: the boards set titles with it, and it is what
@@ -17,14 +17,20 @@ export const newsreader = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-export const sourceSans = localFont({
+// Atkinson Hyperlegible Next, from the Braille Institute, sets the body text. Its letters
+// are drawn to stay distinct for low-vision readers (I, l and 1 never look alike).
+export const atkinson = localFont({
   src: [
-    { path: "./source-sans-3-latin-wght.woff2", weight: "200 900", style: "normal" },
     {
-      path: "./source-sans-3-latin-wght-italic.woff2",
-      weight: "200 900",
+      path: "./atkinson-hyperlegible-next-latin-wght.woff2",
+      weight: "200 800",
+      style: "normal",
+    },
+    {
+      path: "./atkinson-hyperlegible-next-latin-wght-italic.woff2",
+      weight: "200 800",
       style: "italic",
     },
   ],
-  variable: "--font-source-sans",
+  variable: "--font-atkinson",
 });

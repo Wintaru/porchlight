@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { EmbedPlayers } from "@/components/post/EmbedPlayers";
 import { SessionBar } from "@/components/SessionBar";
-import { newsreader, sourceSans } from "@/fonts/fonts";
+import { atkinson, newsreader } from "@/fonts/fonts";
 import { getSiteIdentity } from "@/lib/site-identity";
 
 import "./globals.css";
@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
     // The font variables must sit on <html>: globals.css reads them in :root.
-    <html lang="en" className={`${newsreader.variable} ${sourceSans.variable}`}>
+    <html lang="en" className={`${newsreader.variable} ${atkinson.variable}`}>
       <body>
         <SessionBar />
         {children}

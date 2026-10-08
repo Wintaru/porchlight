@@ -305,9 +305,16 @@
   display: none;
 }
 
+/* Just above the phone layout, the full row fits only with the side padding brought in. */
+@media (max-width: 1023px) {
+  .header {
+    --pad: 40px;
+  }
+}
+
 /* Below 900px the section links and the visitor's activity link no longer fit beside
-   the right-hand controls (a visitor's bar needs about 830px), so the phone layout
-   starts here: links move into the menus, Write and Sign in shrink to their core. */
+   the right-hand controls, so the phone layout starts here: links move into the
+   menus, Write and Sign in shrink to their core. */
 @media (max-width: 900px) {
   .header {
     --pad: 24px;

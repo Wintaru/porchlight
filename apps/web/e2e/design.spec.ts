@@ -268,7 +268,7 @@ test("body text and headings are set in the site's own fonts", async ({ page }) 
       headingLoaded: families.has(heading),
     };
   });
-  expect(loaded.body).toMatch(/source/i);
+  expect(loaded.body).toMatch(/atkinson/i);
   expect(loaded.heading).toMatch(/newsreader/i);
   expect(loaded.bodyLoaded).toBe(true);
   expect(loaded.headingLoaded).toBe(true);

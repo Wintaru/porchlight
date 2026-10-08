@@ -315,8 +315,8 @@ Nine approved boards on the design canvas:
 https://claude.ai/code/artifact/9a8cf86a-2969-4c94-9105-ab98cab14397. Source in
 `design/porchlight/`. Warm modern: cream #F6F1E8, surface #FFFCF7, ink #2A2622, muted
 #75695C, amber #B4530A, glow #F2B441, danger #A83A2B, dark #221F1C. Newsreader for
-titles, Source Sans 3 for body. Lamp mark and raccoon as inline SVG. Dark mode is warm
-charcoal. These values are the **Porch** theme, the default (section 18).
+titles, Atkinson Hyperlegible Next for body. Lamp mark and raccoon as inline SVG. Dark
+mode is warm charcoal. These values are the **Porch** theme, the default (section 18).
 
 ## 13. Documentation
 
