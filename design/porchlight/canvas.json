@@ -11,7 +11,7 @@
     { "file": "Settings.dc.html", "x": 1520, "y": 4260, "w": 1440, "h": 1700, "title": "Account settings" }
   ],
   "annotations": [
-    { "id": "direction", "x": 0, "y": -140, "w": 520, "text": "Porchlight — warm modern direction.\nCream surfaces, one amber accent, Newsreader titles, Source Sans body.\nNo karma, no rankings anywhere. Anonymous authors show the porch raccoon." },
+    { "id": "direction", "x": 0, "y": -140, "w": 520, "text": "Porchlight — warm modern direction.\nCream surfaces, one amber accent, Newsreader titles, Atkinson Hyperlegible Next body.\nNo karma, no rankings anywhere. Anonymous authors show the porch raccoon." },
     { "id": "queue-note", "x": 0, "y": 4110, "w": 520, "text": "Queue: flagged items blurred + grayscale, click to reveal. Locked items are never shown — only an escalation view with metadata. Duty checklist is region-gated (D17)." },
     { "id": "settings-note", "x": 1520, "y": 4110, "w": 520, "text": "Settings: export sits right above erase, on purpose (D5/D6). Claim flow for anonymous posts uses the cookie first, then a pasted code (D7)." }
   ],
