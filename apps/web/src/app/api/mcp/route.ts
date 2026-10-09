@@ -46,7 +46,7 @@ import { pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
-import { MCP_INSTRUCTIONS } from "./instructions";
+import { BODY_MD_DESCRIPTION, MCP_INSTRUCTIONS } from "./instructions";
 import { listenRefusal } from "./listen-refusal";
 import {
   curlLineFor,
@@ -388,7 +388,11 @@ function registerTools(
         "Start a draft for the member to read. It is not published. Write from their notes and voice guide only.",
       inputSchema: z.object({
         title: z.string().min(1),
-        body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH),
+        body_md: z
+          .string()
+          .min(1)
+          .max(POST_BODY_MAX_LENGTH)
+          .describe(BODY_MD_DESCRIPTION),
         summary: z.string().max(POST_SUMMARY_MAX_LENGTH).optional(),
         tags: z.array(z.string()).optional(),
         visibility: z.enum(POST_VISIBILITIES).optional(),
@@ -427,7 +431,12 @@ function registerTools(
       inputSchema: z.object({
         id: z.string().min(1),
         title: z.string().min(1).optional(),
-        body_md: z.string().min(1).max(POST_BODY_MAX_LENGTH).optional(),
+        body_md: z
+          .string()
+          .min(1)
+          .max(POST_BODY_MAX_LENGTH)
+          .optional()
+          .describe(BODY_MD_DESCRIPTION),
         // Nullable, so an agent can clear a summary it wrote.
         summary: z.string().max(POST_SUMMARY_MAX_LENGTH).nullable().optional(),
         tags: z.array(z.string()).optional(),

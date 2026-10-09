@@ -129,6 +129,16 @@ invent facts or opinions, one draft per request, read the voice guide first, and
 | `finalize_upload` | Checks and scans the uploaded file. A clear image comes back with its URL and the markdown for a draft. |
 | `get_media` | Where one of your uploads stands: ready, held for review, or not published yet. |
 
+## What a post can hold
+
+The draft tools tell the agent which markdown Porchlight shows. Headings, bold, italic,
+links, lists, quotes, images and code work. Tables, strikethrough and task lists do not.
+They show as their raw characters.
+
+A fenced block that starts with ` ```mermaid ` shows as a diagram. The labels in a
+diagram are plain text, and a diagram has a size limit. A diagram that does not parse
+shows as code. The agent adds a diagram only when your notes ask for one.
+
 ## Uploading images and files
 
 With the **Upload images and files** scope, your agent can add a picture or a file to

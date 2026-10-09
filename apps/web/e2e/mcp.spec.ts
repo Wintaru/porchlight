@@ -17,6 +17,12 @@ test("an agent drafts through the door and the draft waits in the editor", async
   try {
     // The house rules reach the agent before it writes anything.
     expect(client.getInstructions() ?? "").toContain("Do not pad");
+    // So is what a body can hold, on the field the agent fills.
+    const { tools } = await client.listTools();
+    for (const name of ["create_draft", "update_draft"]) {
+      const tool = tools.find((candidate) => candidate.name === name);
+      expect(JSON.stringify(tool?.inputSchema.properties?.body_md)).toContain("mermaid");
+    }
 
     const me = structured(await client.callTool({ name: "get_me", arguments: {} }));
     expect(me).toMatchObject({
