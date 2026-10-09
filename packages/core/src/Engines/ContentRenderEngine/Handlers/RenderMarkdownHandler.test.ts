@@ -182,6 +182,12 @@ describe("RenderMarkdownHandler highlights code that names its language (#77)", 
     );
   });
 
+  test("a mermaid block leaves as escaped code, for the browser to draw", async () => {
+    expect(await render("```mermaid\ngraph LR\n  A[<b>porch</b>] --> B\n```")).toBe(
+      '<pre><code class="hljs language-mermaid">graph LR\n  A[&#x3C;b>porch&#x3C;/b>] --> B\n</code></pre>',
+    );
+  });
+
   test("HTML in a highlighted block is still escaped", async () => {
     const html = await render("```html\n<script>alert(1)</script>\n```");
     expect(html).not.toContain("<script>");
