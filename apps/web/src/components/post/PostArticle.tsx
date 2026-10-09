@@ -20,6 +20,7 @@ import type { ItemReactions } from "@/read-model/reactions";
 
 import { AuthorMenu } from "./AuthorMenu";
 import { MatureReveal } from "./MatureReveal";
+import { ProseHtml } from "./ProseHtml";
 import styles from "./post.module.css";
 
 interface PostArticleProps {
@@ -220,10 +221,10 @@ function Cover({
 
 function Body({ post }: { readonly post: PostPage }) {
   return (
-    <div
+    <ProseHtml
+      html={post.body_html}
       className={`prose ${styles.body ?? ""}`}
-      data-testid="post-body"
-      dangerouslySetInnerHTML={{ __html: post.body_html }}
+      testId="post-body"
     />
   );
 }

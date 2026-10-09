@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { ProseHtml } from "@/components/post/ProseHtml";
+
 import styles from "./editor.module.css";
 
 export type PreviewState =
@@ -46,11 +48,7 @@ export function PreviewDialog({ state, title, onClose }: PreviewDialogProps) {
           <p role="alert">The preview could not be rendered. Try again in a moment.</p>
         )}
         {state.kind === "ready" && (
-          <div
-            className="prose"
-            data-testid="preview-body"
-            dangerouslySetInnerHTML={{ __html: state.bodyHtml }}
-          />
+          <ProseHtml html={state.bodyHtml} className="prose" testId="preview-body" />
         )}
       </div>
     </dialog>

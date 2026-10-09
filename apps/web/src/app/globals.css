@@ -458,6 +458,17 @@ textarea.text-input {
   border-radius: 8px;
 }
 
+/* A mermaid block drawn in the browser (draw-diagrams.ts), framed like a code block. */
+.prose figure[data-diagram] {
+  margin: 0 0 1em;
+  padding: 12px 16px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  text-align: center;
+}
+
 /* A video in a post (#21): an upload or an Imgur file in the browser's own player, or a
    YouTube or Vimeo card that becomes the service's player when pressed
    (EmbedPlayers.tsx). All keep a 16:9 box, so the page does not jump when one loads. */

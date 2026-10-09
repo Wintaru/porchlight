@@ -5,7 +5,9 @@ import { LINK_PROTOCOLS } from "../../Common/LinkProtocols";
 // offers only what markdown can store). Everything not named here is dropped, tags and
 // attributes alike. Links and images may only point at http(s) (and mailto for links):
 // `javascript:` and `data:` never survive. No `id`, `name`, `class` or `style` on
-// anything, so a body cannot clobber the page's own anchors or restyle it.
+// anything, so a body cannot clobber the page's own anchors or restyle it. The one
+// place markup joins a body after this is a mermaid diagram, drawn in the browser
+// (apps/web draw-diagrams.ts), which keeps the same line on forms, links and HTML.
 export const HTML_ALLOWLIST: SanitizeSchema = {
   strip: ["script", "style"],
   tagNames: [
