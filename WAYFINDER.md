@@ -65,7 +65,8 @@ section in [PROPOSAL.md](PROPOSAL.md).
 
 Tags: `[grilling]` = talk it through · `[prototype]` = design canvas · `[research]` = look it up · `[task]` = manual work.
 
-Nothing open. D28–D31 were settled 2026-10-02, and the completeness pass on them settled D29b, D29c and D31b the same day.
+- **D34 Social share buttons** `[grilling]` — a row of buttons that start a post on Bluesky, Mastodon, LinkedIn and other sites, beside the D18 share button. Notes: [SHARE-BUTTONS-IDEA.md](SHARE-BUTTONS-IDEA.md). Logged 2026-10-09.
+- **D35 A private section for an organization** `[grilling]` — posts that only members of one organization can read, with membership proven by email domain, invite, or SSO. Reopens D18, D20 and D27. Notes: [ORG-SECTION-IDEA.md](ORG-SECTION-IDEA.md). Logged 2026-10-09.
 
 ## Journeys for D28–D31
 
