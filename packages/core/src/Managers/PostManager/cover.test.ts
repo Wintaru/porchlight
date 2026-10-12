@@ -56,7 +56,7 @@ describe("checkCover", () => {
   test("the author's own cleared or flagged image may be a cover, or none at all", async () => {
     const media = accessor(asset("a", {}), asset("b", { scanStatus: "flagged" }));
     for (const id of ["a", "b", null, undefined]) {
-      expect(await checkCover(media, THEO, id, CONTEXT)).toBeUndefined();
+      expect(await checkCover(media, THEO, id, false, CONTEXT)).toBeUndefined();
     }
   });
 
@@ -72,10 +72,25 @@ describe("checkCover", () => {
       }),
     );
     for (const id of ["theirs", "doc", "locked", "turned-down", "missing"]) {
-      const verdict = await checkCover(media, THEO, id, CONTEXT);
+      const verdict = await checkCover(media, THEO, id, false, CONTEXT);
       expect(verdict).toBeInstanceOf(PostRejectedResponse);
       expect(verdict).toMatchObject({ reason: "cover" });
     }
+  });
+
+  test("an agent's cover must have a public copy or be waiting for a moderator", async () => {
+    const media = accessor(
+      asset("ready", {}),
+      asset("held", { scanStatus: "flagged", publishedPath: null }),
+      asset("copy-failed", { publishedPath: null }),
+    );
+    expect(await checkCover(media, THEO, "ready", true, CONTEXT)).toBeUndefined();
+    expect(await checkCover(media, THEO, "held", true, CONTEXT)).toBeUndefined();
+    expect(await checkCover(media, THEO, "copy-failed", true, CONTEXT)).toMatchObject({
+      reason: "cover",
+    });
+    // A person can press Try again beside it, so the editor may keep it.
+    expect(await checkCover(media, THEO, "copy-failed", false, CONTEXT)).toBeUndefined();
   });
 });
 

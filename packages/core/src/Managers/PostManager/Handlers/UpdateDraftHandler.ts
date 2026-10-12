@@ -215,6 +215,7 @@ export class UpdateDraftHandler implements IHandler<
         this.mediaAssets,
         authorId,
         changes.coverMediaId,
+        actor.kind === "agent",
         context,
       );
       if (badCover !== undefined) {

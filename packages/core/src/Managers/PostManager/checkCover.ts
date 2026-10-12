@@ -10,11 +10,14 @@ import { unavailable } from "./unavailable";
 // A cover is the author's own image, and never one a scan locked or has not scanned
 // (#52). A flagged one is allowed: it shows once a moderator approves it as mature, and
 // publishing the post sends it to the queue until then. One a moderator turned down
-// never is (#90).
+// never is (#90). An agent's cover must also be one the editor's Attachments list offers
+// (`canBeCover`): a cleared image whose public copy failed waits for the member to
+// press Try again, which an agent cannot do.
 export async function checkCover(
   mediaAssets: IMediaAssetAccessor,
   authorId: string,
   mediaId: string | null | undefined,
+  byAgent: boolean,
   context: Required<Pick<RequestContext, "correlationId">>,
 ): Promise<PostRejectedResponse | PostUnavailableResponse | undefined> {
   if (mediaId === null || mediaId === undefined) {
@@ -33,6 +36,7 @@ export async function checkCover(
     asset.owner.kind === "member" &&
     asset.owner.profileId === authorId &&
     (asset.scanStatus === "clear" || asset.scanStatus === "flagged") &&
-    asset.rejectedAt === null;
+    asset.rejectedAt === null &&
+    (!byAgent || asset.publishedPath !== null || asset.scanStatus === "flagged");
   return usable ? undefined : new PostRejectedResponse(context.correlationId, "cover");
 }

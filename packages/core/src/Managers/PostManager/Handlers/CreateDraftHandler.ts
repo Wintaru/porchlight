@@ -104,6 +104,7 @@ export class CreateDraftHandler implements IHandler<
       this.mediaAssets,
       actor.profile.id,
       draft.coverMediaId,
+      actor.kind === "agent",
       context,
     );
     if (badCover !== undefined) {
