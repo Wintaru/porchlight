@@ -417,6 +417,13 @@ constant. The guide exports and erases with the account (section 10).
 `create_draft`, `update_draft`, `delete_draft`, `publish_post`, `request_upload`,
 `finalize_upload`, `get_media`. Uploads reuse the section 6 signed-URL flow: the agent's
 client sends the bytes to storage itself, so they never pass through the model.
+`create_draft` and `update_draft` take `cover_media_id`, an upload's id. On
+`update_draft`, `null` removes the cover and an absent field keeps it. The core's cover
+rule (`checkCover`) applies, with one more condition for an agent: the image needs a
+public copy or must wait for review, as the editor's "Use as cover" offers. The post
+view that `get_post`, `create_draft`, `update_draft` and `publish_post` return names the cover's
+`mediaId`, `status` and `url`. The status and URL are null when the token may not look
+the upload up, or the upload is not available.
 
 **OAuth for connectors** (#79, D25). claude.ai connectors use OAuth 2.1, with Supabase
 Auth as the authorization server and dynamic client registration. The door's 401 names

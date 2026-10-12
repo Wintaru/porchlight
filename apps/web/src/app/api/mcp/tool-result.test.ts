@@ -1,4 +1,4 @@
-import { PostListRejectedResponse } from "@porchlight/core";
+import { PostListRejectedResponse, PostRejectedResponse } from "@porchlight/core";
 import { describe, expect, test } from "vitest";
 
 import { refusalFor } from "./tool-result";
@@ -18,5 +18,14 @@ describe("refusalFor", () => {
       ],
       isError: true,
     });
+  });
+
+  // Another member's image, a non-image and a held image on a published post all come
+  // back from the core as one "cover" rejection.
+  test("a refused cover says what a cover must be and how to check one", () => {
+    const result = refusalFor(new PostRejectedResponse("c1", "cover"), "update_draft");
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain("own images that get_media shows as ready");
   });
 });

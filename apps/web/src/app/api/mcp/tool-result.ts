@@ -71,6 +71,10 @@ function rejectionText(reason: PostRejectedResponse["reason"]): string {
       return `The body is longer than ${String(POST_BODY_MAX_LENGTH)} characters. Shorten it and try once more.`;
     case "summary":
       return `The summary is longer than ${String(POST_SUMMARY_MAX_LENGTH)} characters. Shorten it and try once more.`;
+    // One answer for every bad cover: which of the member's uploads exist is
+    // get_media's to say, under its own scope.
+    case "cover":
+      return "That cover cannot be used. A cover must be one of your member's own images that get_media shows as ready. On a draft, one held for review also works. Check it with get_media, or upload another with request_upload.";
     default:
       return `The ${reason} is not usable. Fix it and try once more.`;
   }

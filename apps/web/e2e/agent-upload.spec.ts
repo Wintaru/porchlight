@@ -171,3 +171,87 @@ test("a picture an agent takes out of a draft is deleted", async ({ page, baseUR
   await page.goto(`/write/${postId}`);
   await deleteCurrentPost(page);
 });
+
+// An agent makes an upload the post's cover with cover_media_id. The cover need not be
+// in the body: a body save that takes the picture out keeps the file, since the cover
+// still uses it. On a published post, with posts:edit, null takes the cover off at once.
+test("an agent sets a cover, keeps it through a body edit, and takes it off", async ({
+  page,
+  baseURL,
+}) => {
+  const stamp = Date.now().toString(36);
+  const filename = `agent-cover-${stamp}.jpg`;
+  await devSignIn(page, THEO);
+  const { rawToken } = await mintToken(page, ["media:upload", "posts:edit"]);
+  const client = await connect(baseURL ?? "", rawToken);
+  let postId = "";
+  let slug = "";
+  try {
+    const issued = structured(
+      await client.callTool({
+        name: "request_upload",
+        arguments: { filename, bytes: PHOTO.length },
+      }),
+    );
+    const mediaId = String(issued.mediaId);
+    await put(String(issued.curl), String(issued.uploadUrl), PHOTO, "image/jpeg");
+    const upload = structured(
+      await client.callTool({
+        name: "finalize_upload",
+        arguments: { media_id: mediaId, filename },
+      }),
+    ).upload as Record<string, unknown>;
+    expect(upload).toMatchObject({ status: "ready" });
+
+    const drafted = structured(
+      await client.callTool({
+        name: "create_draft",
+        arguments: {
+          title: `Agent cover ${stamp}`,
+          body_md: `The porch.\n\n${String(upload.markdown)}`,
+          cover_media_id: mediaId,
+        },
+      }),
+    ).post as Record<string, unknown>;
+    postId = String(drafted.id);
+    slug = String(drafted.slug);
+    expect(drafted.cover).toEqual({ mediaId, status: "ready", url: upload.url });
+
+    const textOnly = await client.callTool({
+      name: "update_draft",
+      arguments: { id: postId, body_md: "The porch, words only." },
+    });
+    expect(textOnly.isError).not.toBe(true);
+    const kept = await client.callTool({ name: "get_media", arguments: { id: mediaId } });
+    expect(kept.isError).not.toBe(true);
+    expect((await page.request.get(String(upload.url))).ok()).toBe(true);
+  } finally {
+    await client.close();
+  }
+
+  try {
+    await page.goto(`/write/${postId}`);
+    await page.getByRole("button", { name: "Publish" }).click();
+    await expect(page).toHaveURL(/\/@theo\//);
+    await expect(page.getByTestId("post-cover")).toBeVisible();
+
+    const again = await connect(baseURL ?? "", rawToken);
+    try {
+      const cleared = structured(
+        await again.callTool({
+          name: "update_draft",
+          arguments: { id: postId, cover_media_id: null },
+        }),
+      ).post as Record<string, unknown>;
+      expect(cleared).toMatchObject({ status: "published", cover: null });
+    } finally {
+      await again.close();
+    }
+    await page.goto(`/@theo/${slug}`);
+    await expect(page.getByTestId("post-body")).toBeVisible();
+    await expect(page.getByTestId("post-cover")).toHaveCount(0);
+  } finally {
+    await page.goto(`/write/${postId}`);
+    await deleteCurrentPost(page);
+  }
+});

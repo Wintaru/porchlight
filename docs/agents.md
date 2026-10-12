@@ -121,8 +121,8 @@ invent facts or opinions, one draft per request, read the voice guide first, and
 | `update_voice_guide` | Replaces your rules with new text. Needs the **Change your voice guide** scope. |
 | `check_draft` | Checks a draft's text for your banned phrases and a few signs of machine writing. It gives warnings only. The editor has the same check as a **Check** button. |
 | `get_post` | One of your own posts, by id or slug. For a post the agent drafted, it also returns the agent's first text. |
-| `create_draft` | Starts a draft. Never publishes. |
-| `update_draft` | Changes a draft of yours. With the **Change your published posts** scope, it also changes a published post of yours, but never who can read it. An upload it takes out of the post is deleted, unless another post or a comment shows it. |
+| `create_draft` | Starts a draft. Never publishes. `cover_media_id` gives it a cover. |
+| `update_draft` | Changes a draft of yours. With the **Change your published posts** scope, it also changes a published post of yours, but never who can read it. `cover_media_id` sets the cover, and `null` removes it. When it changes a draft's body, an upload the post no longer uses, in the body or as the cover, is deleted, unless another post or a comment shows it. |
 | `delete_draft` | Deletes a draft of yours. |
 | `publish_post` | Publishes one of your drafts. Needs the **Publish without you** scope. |
 | `request_upload` | Gets a one-time address to upload a file, and the `curl` line that sends it. Needs the **Upload images and files** scope. |
@@ -151,11 +151,21 @@ a draft:
 3. The agent calls `finalize_upload`. Porchlight checks that the file is what its name
    says, and scans it the same way as a file you upload in the editor.
 4. A clear image comes back with a URL and the markdown to put in the draft.
+5. To make the image the post's cover, the agent gives its media id to `create_draft`
+   or `update_draft` as `cover_media_id`. The cover does not need to be in the body.
 
 The upload is yours: it counts against your storage quota and shows in the editor's
 file list. A file the scan holds comes back as "held for review" until a moderator
 looks at it. A file the scan refuses comes back as "Refused." with no reason, and it
 never appears anywhere.
+
+Every post a tool returns shows its cover: the media id, and the cover's URL and state.
+The URL and state are empty when the token does not have the **Upload images and files**
+scope, or when the upload is not available.
+
+A cover follows the editor's rules. It must be one of your own images, and it must be
+ready. On a draft, an image held for review can also be the cover: when you publish,
+the post waits for a moderator. A published post cannot take a held image as its cover.
 
 ## What an agent cannot do
 

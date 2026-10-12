@@ -19,12 +19,13 @@ import {
   GetVoiceGuideRequest,
   ListPostsForAuthorRequest,
   POST_BODY_MAX_LENGTH,
-  POST_SUMMARY_MAX_LENGTH,
   POST_STATUSES,
-  POST_VISIBILITIES,
   publishesAtOnce,
   MediaFinalizedResponse,
+  MediaForbiddenResponse,
   MediaResponse,
+  NoSuchMediaResponse,
+  type Post,
   PublishPostRequest,
   type RequestOrigin,
   RequestUploadUrlRequest,
@@ -46,7 +47,13 @@ import { pruneSavedPostUploads } from "@/lib/prune-uploads";
 import { bearerChallenge } from "@/lib/mcp-resource";
 import { clientIpFrom } from "@/lib/request-meta";
 import { SITE_URL } from "@/lib/site";
-import { BODY_MD_DESCRIPTION, MCP_INSTRUCTIONS } from "./instructions";
+import {
+  createDraftInputSchema,
+  draftChangesOf,
+  newDraftOf,
+  updateDraftInputSchema,
+} from "./draft-input";
+import { MCP_INSTRUCTIONS } from "./instructions";
 import { listenRefusal } from "./listen-refusal";
 import {
   curlLineFor,
@@ -54,7 +61,13 @@ import {
   mediaRefusalFor,
   uploadStatusOf,
 } from "./media-tools";
-import { toPostDetailView, toPostIndexView, toPostView } from "./post-view";
+import {
+  type CoverView,
+  coverViewOf,
+  toPostDetailView,
+  toPostIndexView,
+  toPostView,
+} from "./post-view";
 import { toVoiceGuideView, voiceGuideText } from "./voice-guide-view";
 import {
   isDeleted,
@@ -144,8 +157,28 @@ function registerTools(
   const { accountManager, mediaManager, postManager, siteConfigManager } =
     getDependencyContainer();
   const { handle } = actor.profile;
-  const view = (post: Parameters<typeof toPostView>[0]) =>
-    toPostView(post, handle, SITE_URL);
+  // The cover's address and state, as get_media gives them. A token without
+  // media:upload may not look an upload up, so it sees the id alone.
+  const coverOf = async (post: Post): Promise<CoverView | null> => {
+    if (post.coverMediaId === null) {
+      return null;
+    }
+    const response = await mediaManager.query(
+      new GetMediaRequest(actor, post.coverMediaId),
+    );
+    if (response instanceof MediaResponse) {
+      return coverViewOf(post.coverMediaId, response.asset);
+    }
+    if (
+      !(response instanceof MediaForbiddenResponse) &&
+      !(response instanceof NoSuchMediaResponse)
+    ) {
+      console.error(`mcp cover lookup failed [${response.correlationId}]`, response);
+    }
+    return coverViewOf(post.coverMediaId, undefined);
+  };
+  const view = async (post: Post) =>
+    toPostView(post, handle, SITE_URL, await coverOf(post));
   const isOwn = (post: { author: { kind: string; profileId?: string } }) =>
     post.author.kind === "member" && post.author.profileId === actor.profile.id;
 
@@ -375,9 +408,11 @@ function registerTools(
       // An agent may read anyone's published post, but this tool is the member's own
       // shelf: another author's post would come back with a link built from the wrong
       // handle, so it answers the same "not yours" a missing post does.
-      return isOwn(response.post)
-        ? ok({ post: toPostDetailView(response.post, handle, SITE_URL) })
-        : refuse("No such post, or it is not yours.");
+      if (!isOwn(response.post)) {
+        return refuse("No such post, or it is not yours.");
+      }
+      const cover = await coverOf(response.post);
+      return ok({ post: toPostDetailView(response.post, handle, SITE_URL, cover) });
     },
   );
 
@@ -385,38 +420,16 @@ function registerTools(
     "create_draft",
     {
       description:
-        "Start a draft for the member to read. It is not published. Write from their notes and voice guide only.",
-      inputSchema: z.object({
-        title: z.string().min(1),
-        body_md: z
-          .string()
-          .min(1)
-          .max(POST_BODY_MAX_LENGTH)
-          .describe(BODY_MD_DESCRIPTION),
-        summary: z.string().max(POST_SUMMARY_MAX_LENGTH).optional(),
-        tags: z.array(z.string()).optional(),
-        visibility: z.enum(POST_VISIBILITIES).optional(),
-        comments_enabled: z.boolean().optional(),
-      }),
+        "Start a draft for the member to read. It is not published. Write from their notes and voice guide only. For a cover, upload an image with request_upload and finalize_upload, then pass its media id as cover_media_id.",
+      inputSchema: createDraftInputSchema,
     },
     async (input) => {
       const response = await postManager.execute(
-        new CreateDraftRequest(
-          actor,
-          {
-            title: input.title,
-            bodyMd: input.body_md,
-            summary: input.summary ?? null,
-            tags: input.tags ?? [],
-            visibility: input.visibility ?? "public",
-            commentsEnabled: input.comments_enabled ?? true,
-          },
-          origin,
-        ),
+        new CreateDraftRequest(actor, newDraftOf(input), origin),
       );
       return isPost(response)
         ? ok(
-            { post: view(response.post) },
+            { post: await view(response.post) },
             `Draft saved. It is waiting for ${handle} in the editor at ${SITE_URL}/write/${response.post.id}`,
           )
         : refusalFor(response, "create_draft");
@@ -427,38 +440,15 @@ function registerTools(
     "update_draft",
     {
       description:
-        "Change a draft of the member's, or with the posts:edit scope one of their published posts (not its visibility). A change to a published post goes live at once. Only the fields you name change. An upload you take out of the body is deleted, unless another post or a comment still shows it.",
-      inputSchema: z.object({
-        id: z.string().min(1),
-        title: z.string().min(1).optional(),
-        body_md: z
-          .string()
-          .min(1)
-          .max(POST_BODY_MAX_LENGTH)
-          .optional()
-          .describe(BODY_MD_DESCRIPTION),
-        // Nullable, so an agent can clear a summary it wrote.
-        summary: z.string().max(POST_SUMMARY_MAX_LENGTH).nullable().optional(),
-        tags: z.array(z.string()).optional(),
-        visibility: z.enum(POST_VISIBILITIES).optional(),
-        comments_enabled: z.boolean().optional(),
-      }),
+        "Change a draft of the member's, or with the posts:edit scope one of their published posts (not its visibility). A change to a published post goes live at once. Only the fields you name change. cover_media_id sets the cover and null removes it. When you change the body of a draft, an upload the post no longer uses, in the body or as the cover, is deleted, unless another post or a comment still shows it.",
+      inputSchema: updateDraftInputSchema,
     },
     async ({ id, ...input }) => {
       const response = await postManager.execute(
         new UpdateDraftRequest(
           actor,
           id,
-          {
-            ...(input.title === undefined ? {} : { title: input.title }),
-            ...(input.body_md === undefined ? {} : { bodyMd: input.body_md }),
-            ...(input.summary === undefined ? {} : { summary: input.summary }),
-            ...(input.tags === undefined ? {} : { tags: input.tags }),
-            ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
-            ...(input.comments_enabled === undefined
-              ? {}
-              : { commentsEnabled: input.comments_enabled }),
-          },
+          draftChangesOf(input),
           undefined,
           undefined,
           origin,
@@ -474,7 +464,7 @@ function registerTools(
       if (input.body_md !== undefined && response.post.status === "draft") {
         await pruneSavedPostUploads(actor, response.post);
       }
-      return ok({ post: view(response.post) });
+      return ok({ post: await view(response.post) });
     },
   );
 
@@ -509,9 +499,9 @@ function registerTools(
       }
       const { post } = response;
       return ok(
-        { post: view(post) },
+        { post: await view(post) },
         post.status === "pending"
-          ? "Sent to the moderation queue: this member is on probation, so a moderator reads it first."
+          ? "Sent to the moderation queue: a moderator reads it first, because this member is on probation or its cover waits for review."
           : `Published at ${SITE_URL}/@${handle}/${post.slug}`,
       );
     },
