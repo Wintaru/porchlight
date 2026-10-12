@@ -82,6 +82,19 @@ describe("PrunePostMediaHandler", () => {
     expect(state.assets.has("out")).toBe(false);
   });
 
+  test("an agent's new body never held the cover, and the cover is kept", async () => {
+    // update_draft with body_md and cover_media_id: the cover was uploaded for this
+    // post and is in use, but the body is only text.
+    const { state, response } = await prunePost(
+      theosAgent(),
+      [asset("cover"), asset("old-picture")],
+      { bodyMd: "Only words now.", coverMediaId: "cover" },
+    );
+
+    expect((response as MediaPrunedResponse).deletedIds).toEqual(["old-picture"]);
+    expect(state.assets.has("cover")).toBe(true);
+  });
+
   test("an agent without the draft scope deletes nothing", async () => {
     const { state, response } = await prunePost(theosAgent(["media:upload"]), [
       asset("out"),
