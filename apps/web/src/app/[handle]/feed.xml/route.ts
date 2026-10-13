@@ -23,7 +23,7 @@ export async function GET(_request: Request, { params }: RouteParams): Promise<R
   if (author?.status !== "active") {
     return notFound();
   }
-  const [{ siteName }, posts] = await Promise.all([
+  const [{ siteName }, { posts }] = await Promise.all([
     getSiteIdentity(),
     loadAuthorPosts(db, author.id),
   ]);

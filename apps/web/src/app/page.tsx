@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PostCardList } from "@/components/PostCardList";
 import { HomeSidebar } from "@/components/HomeSidebar";
 import { NewPostWatcher } from "@/components/NewPostWatcher";
+import { PostPager } from "@/components/PostPager";
 import { SubscribeCard } from "@/components/SubscribeCard";
 import { OnlineNow } from "@/components/presence/OnlineNow";
 import { presenceFor } from "@/lib/presence";
@@ -13,6 +14,7 @@ import { canPostAnonymously } from "@/lib/can-post";
 import { getCurrentActor } from "@/lib/current-actor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
+import { parsePageCursor } from "@/lib/page-cursor";
 import { loadFeedFor } from "@/read-model/feed";
 import { loadFollowingFeed, loadSeveralPublishedAuthors } from "@/read-model/follows";
 import { loadTagCloud } from "@/read-model/tag";
@@ -21,6 +23,7 @@ import styles from "./home.module.css";
 
 interface HomePageProps {
   readonly searchParams: Promise<{
+    readonly before?: string;
     readonly erased?: string;
     readonly feed?: string;
     readonly subscribe?: string;
@@ -54,8 +57,9 @@ export async function generateMetadata(): Promise<Metadata> {
 // session is gone (SPEC.md §10): nowhere under `/settings` can show this, since that
 // gate now redirects to sign-in.
 export default async function HomePage({ searchParams }: HomePageProps) {
-  const [{ siteName, siteTagline }, actor, { erased, feed, subscribe }] =
+  const [{ siteName, siteTagline }, actor, { before, erased, feed, subscribe }] =
     await Promise.all([getSiteIdentity(), getCurrentActor(), searchParams]);
+  const cursor = parsePageCursor(before);
   const db = await createSessionClient();
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
   // The Following tab (#24, D20) is a member's, and only on a site with two or more
@@ -66,14 +70,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const [showTabs, asked, tags, mayWriteAnonymously, presence, hidden] =
     await Promise.all([
       viewerId !== undefined && loadSeveralPublishedAuthors(db),
-      wantsFollowing ? loadFollowingFeed(db) : loadFeedFor(db, viewerId),
+      wantsFollowing ? loadFollowingFeed(db, cursor) : loadFeedFor(db, viewerId, cursor),
       loadTagCloud(db),
       canPostAnonymously(actor),
       presenceFor(actor),
       loadViewerHiddenAuthors(db, viewerId),
     ]);
   const following = showTabs && wantsFollowing;
-  const posts = wantsFollowing && !following ? await loadFeedFor(db, viewerId) : asked;
+  const { posts, older } =
+    wantsFollowing && !following ? await loadFeedFor(db, viewerId, cursor) : asked;
   return (
     <main>
       {erased !== undefined && (
@@ -105,7 +110,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               </Link>
             </nav>
           )}
-          <NewPostWatcher newestShown={posts[0]?.published_at ?? null} />
+          {cursor === undefined && (
+            <NewPostWatcher newestShown={posts[0]?.published_at ?? null} />
+          )}
           <PostCardList
             posts={posts}
             empty={
@@ -113,6 +120,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 ? "Nothing yet from the people and tags you follow. Follow someone from their page."
                 : "Nothing on the porch yet."
             }
+          />
+          <PostPager
+            path="/"
+            query={following ? { feed: "following" } : {}}
+            paged={cursor !== undefined}
+            older={older}
           />
         </div>
         <HomeSidebar actor={actor} mayWriteAnonymously={mayWriteAnonymously} tags={tags}>

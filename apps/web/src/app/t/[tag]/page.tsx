@@ -11,7 +11,9 @@ import { createSessionClient } from "@/auth/session-client";
 import { FollowButton } from "@/components/follow/FollowButton";
 import { followTextFor } from "@/components/follow/follow-messages";
 import { PostCardList } from "@/components/PostCardList";
+import { PostPager } from "@/components/PostPager";
 import { Toast } from "@/components/toast/Toast";
+import { parsePageCursor } from "@/lib/page-cursor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import { getCurrentActor } from "@/lib/current-actor";
@@ -30,6 +32,7 @@ const DESCRIBED_TEXT: Readonly<Record<string, string>> = {
 interface TagPageProps {
   readonly params: Promise<{ readonly tag: string }>;
   readonly searchParams: Promise<{
+    readonly before?: string;
     readonly follow?: string;
     readonly described?: string;
   }>;
@@ -72,7 +75,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   if (tag === undefined) {
     notFound();
   }
-  const [db, actor, { follow, described }] = await Promise.all([
+  const [db, actor, { before, follow, described }] = await Promise.all([
     createSessionClient(),
     getCurrentActor(),
     searchParams,
@@ -89,8 +92,9 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
     );
   }
   const viewerId = actor.kind === "member" ? actor.profile.id : undefined;
-  const [posts, following] = await Promise.all([
-    loadTagPostsFor(db, tag.id, viewerId),
+  const cursor = parsePageCursor(before);
+  const [{ posts, older }, following] = await Promise.all([
+    loadTagPostsFor(db, tag.id, viewerId, cursor),
     viewerId === undefined ? false : isFollowingTag(db, viewerId, tag.id),
   ]);
   const followText = followTextFor(follow);
@@ -154,6 +158,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
         </details>
       )}
       <PostCardList posts={posts} empty="No posts with this tag yet." />
+      <PostPager path={`/t/${tag.slug}`} paged={cursor !== undefined} older={older} />
     </main>
   );
 }

@@ -1,6 +1,12 @@
 import type { DbClient } from "@porchlight/db";
 
-import { type PostCard, PAGE_SIZE, publicPostCards } from "./post-card";
+import {
+  type PageCursor,
+  type PostPage,
+  PAGE_SIZE,
+  pageOf,
+  publicPostCards,
+} from "./post-card";
 
 // The public columns of a profile (the grant is this column list; `trust_level` stays
 // on the server). `status` is what /@handle needs to tell an erased author (410) from
@@ -58,12 +64,16 @@ export async function loadAuthorPosts(
   db: DbClient,
   authorId: string,
   ownProfile = false,
-): Promise<readonly PostCard[]> {
-  const { data, error } = await publicPostCards(db, ownProfile).eq("author_id", authorId);
+  before?: PageCursor,
+): Promise<PostPage> {
+  const { data, error } = await publicPostCards(db, ownProfile, before).eq(
+    "author_id",
+    authorId,
+  );
   if (error) {
     throw new Error(`author posts ${authorId}: ${error.message}`);
   }
-  return data;
+  return pageOf(data);
 }
 
 // The Profile board's Comments tab: one member's own visible comments, newest first,

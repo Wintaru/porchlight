@@ -8,7 +8,7 @@ import { loadFeed } from "@/read-model/feed";
 // The site feed, /feed.xml (SPEC.md §9, D21): the same posts and the same exclusions
 // as the home feed, everything public on the site.
 export async function GET(): Promise<Response> {
-  const [{ siteName, siteTagline }, posts] = await Promise.all([
+  const [{ siteName, siteTagline }, { posts }] = await Promise.all([
     getSiteIdentity(),
     loadFeed(await createSessionClient()),
   ]);

@@ -124,6 +124,12 @@ authors get a status page keyed by their cookie and show the "Porch raccoon" ava
 - Reactions: a small fixed emoji set with counts on the item. Never totals on a profile,
   never a sort key.
 - Feeds sort newest first. No vote-based ordering anywhere.
+- Every list (home Everything and Following, `/@handle`, `/t/tag`) shows 20 posts, then
+  an "Older posts" link to `?before=<published_at>_<id>` of the last post shown, and
+  "Newest posts" back to the first page. Lists order by `(published_at, id)`, so a new
+  post or a shared publish time never shows a post twice or skips one. No page numbers,
+  no endless scroll. The new-post poll (D33) runs on the first page only. RSS feeds
+  carry the newest 20 and do not page.
 - The home feed shows a new post without a reload (D33). While the page is open and its
   tab is visible, it asks `/api/latest-post` once a minute for the newest public
   published post's time; a newer time re-renders the page in place. The route reads no

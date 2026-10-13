@@ -1,0 +1,11 @@
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* "Older posts" stays on the right when it is the only link. */
+.older {
+  margin-left: auto;
+}

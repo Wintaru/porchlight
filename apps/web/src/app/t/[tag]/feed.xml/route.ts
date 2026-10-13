@@ -18,7 +18,7 @@ export async function GET(_request: Request, { params }: RouteParams): Promise<R
   if (tag === undefined) {
     return new Response("Not found.", { status: 404 });
   }
-  const [{ siteName }, posts] = await Promise.all([
+  const [{ siteName }, { posts }] = await Promise.all([
     getSiteIdentity(),
     loadTagPosts(db, tag.id),
   ]);

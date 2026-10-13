@@ -2,10 +2,13 @@ import { MATURE_TAG } from "@porchlight/core/client";
 import type { DbClient } from "@porchlight/db";
 
 import {
-  type PostCard,
+  type PageCursor,
+  type PostPage,
   POST_CARD_COLUMNS,
-  PAGE_SIZE,
+  PAGE_FETCH_SIZE,
+  beforeCursorFilter,
   listedPostCards,
+  pageOf,
 } from "./post-card";
 
 export interface TagPage {
@@ -70,19 +73,26 @@ export async function loadTag(db: DbClient, slug: string): Promise<TagPage | und
 export async function loadTagPosts(
   db: DbClient,
   tagId: string,
-): Promise<readonly PostCard[]> {
-  const { data, error } = await db
+  before?: PageCursor,
+): Promise<PostPage> {
+  const tagged = db
     .from("posts")
     .select(`${POST_CARD_COLUMNS}, matched:post_tags!inner(tag_id)`)
     .eq("matched.tag_id", tagId)
     .eq("status", "published")
-    .eq("visibility", "public")
+    .eq("visibility", "public");
+  const { data, error } = await (
+    before === undefined
+      ? tagged
+      : tagged.lte("published_at", before.publishedAt).or(beforeCursorFilter(before))
+  )
     .order("published_at", { ascending: false })
-    .limit(PAGE_SIZE);
+    .order("id", { ascending: false })
+    .limit(PAGE_FETCH_SIZE);
   if (error) {
     throw new Error(`tag posts ${tagId}: ${error.message}`);
   }
-  return data;
+  return pageOf(data);
 }
 
 // The tag page for one viewer: a signed-in viewer's muted and blocked members are left
@@ -91,8 +101,9 @@ export async function loadTagPostsFor(
   db: DbClient,
   tagId: string,
   viewerId: string | undefined,
-): Promise<readonly PostCard[]> {
+  before?: PageCursor,
+): Promise<PostPage> {
   return viewerId === undefined
-    ? loadTagPosts(db, tagId)
-    : listedPostCards(db, tagId, `tag posts ${tagId}`);
+    ? loadTagPosts(db, tagId, before)
+    : listedPostCards(db, tagId, `tag posts ${tagId}`, before);
 }

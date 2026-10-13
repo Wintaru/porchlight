@@ -1,15 +1,21 @@
 import type { DbClient } from "@porchlight/db";
 
-import { type PostCard, listedPostCards, publicPostCards } from "./post-card";
+import {
+  type PageCursor,
+  type PostPage,
+  listedPostCards,
+  pageOf,
+  publicPostCards,
+} from "./post-card";
 
 // The home feed: newest first, no votes, no rankings (SPEC.md §5, D9). The RSS feed
 // and a visitor read this one; it leaves nobody out.
-export async function loadFeed(db: DbClient): Promise<readonly PostCard[]> {
-  const { data, error } = await publicPostCards(db);
+export async function loadFeed(db: DbClient, before?: PageCursor): Promise<PostPage> {
+  const { data, error } = await publicPostCards(db, false, before);
   if (error) {
     throw new Error(`feed: ${error.message}`);
   }
-  return data;
+  return pageOf(data);
 }
 
 // The home feed for one viewer: Everything, minus their muted and blocked members,
@@ -17,8 +23,11 @@ export async function loadFeed(db: DbClient): Promise<readonly PostCard[]> {
 export async function loadFeedFor(
   db: DbClient,
   viewerId: string | undefined,
-): Promise<readonly PostCard[]> {
-  return viewerId === undefined ? loadFeed(db) : listedPostCards(db, null, "feed");
+  before?: PageCursor,
+): Promise<PostPage> {
+  return viewerId === undefined
+    ? loadFeed(db, before)
+    : listedPostCards(db, null, "feed", before);
 }
 
 // When the newest public post went up, or null on an empty site: all the home page's

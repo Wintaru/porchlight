@@ -11,11 +11,13 @@ import { followTextFor } from "@/components/follow/follow-messages";
 import { blockTextFor } from "@/components/member-block/block-messages";
 import { MemberBlockButtons } from "@/components/member-block/MemberBlockButtons";
 import { PostCardList } from "@/components/PostCardList";
+import { PostPager } from "@/components/PostPager";
 import { SubscribeCard } from "@/components/SubscribeCard";
 import { Toast } from "@/components/toast/Toast";
 import { getCurrentActor } from "@/lib/current-actor";
 import { formatMonthYear } from "@/lib/format-date";
 import { parseHandleParam } from "@/lib/handle-param";
+import { parsePageCursor } from "@/lib/page-cursor";
 import { SITE_URL } from "@/lib/site";
 import { getSiteIdentity } from "@/lib/site-identity";
 import {
@@ -33,6 +35,7 @@ import styles from "./profile.module.css";
 interface AuthorPageProps {
   readonly params: Promise<{ readonly handle: string }>;
   readonly searchParams: Promise<{
+    readonly before?: string;
     readonly tab?: string;
     readonly block?: string;
     readonly follow?: string;
@@ -83,7 +86,7 @@ export async function generateMetadata({ params }: AuthorPageProps): Promise<Met
 // member came here on purpose. `?tab=` switches Posts/Comments server-side, so both
 // tabs are plain links and work with no client JavaScript.
 export default async function AuthorPage({ params, searchParams }: AuthorPageProps) {
-  const [author, { tab, block, follow, subscribe }, actor] = await Promise.all([
+  const [author, { before, tab, block, follow, subscribe }, actor] = await Promise.all([
     getAuthor((await params).handle),
     searchParams,
     getCurrentActor(),
@@ -95,6 +98,7 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
     notFound();
   }
   const activeTab = tab === "comments" ? "comments" : "posts";
+  const cursor = parsePageCursor(before);
   const db = await createSessionClient();
   // Follow, Mute and Block show for a member on someone else's page; each reads one
   // row of the viewer's own (#93).
@@ -103,7 +107,7 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
     viewerId !== undefined && viewerId !== author.id ? viewerId : undefined;
   const [posts, comments, blockLevel, following] = await Promise.all([
     activeTab === "posts"
-      ? loadAuthorPosts(db, author.id, viewerId === author.id)
+      ? loadAuthorPosts(db, author.id, viewerId === author.id, cursor)
       : undefined,
     activeTab === "comments" ? loadAuthorComments(db, author.id) : undefined,
     viewerOnOthersPage === undefined
@@ -179,7 +183,10 @@ export default async function AuthorPage({ params, searchParams }: AuthorPagePro
       </nav>
 
       {activeTab === "posts" ? (
-        <PostCardList posts={posts ?? []} empty="No posts yet." variant="row" />
+        <>
+          <PostCardList posts={posts?.posts ?? []} empty="No posts yet." variant="row" />
+          <PostPager path={returnTo} paged={cursor !== undefined} older={posts?.older} />
+        </>
       ) : (
         <AuthorCommentList comments={comments ?? []} />
       )}

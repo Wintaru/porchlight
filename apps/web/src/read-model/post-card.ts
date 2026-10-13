@@ -56,8 +56,52 @@ export function summaryLine(post: {
   return carriesMatureTag(post.post_tags) ? null : (post.summary ?? post.excerpt);
 }
 
-// How many cards one list shows. Paging arrives with #16's feed board.
+// How many cards one list shows.
 export const PAGE_SIZE = 20;
+// One more than a page is read, so the extra card says whether an older page exists.
+export const PAGE_FETCH_SIZE = PAGE_SIZE + 1;
+
+// Where the page after this one starts: its last card. Lists sort by (published_at, id),
+// newest first, so the next page is every post before this pair.
+export interface PageCursor {
+  readonly publishedAt: string;
+  readonly id: string;
+}
+
+// One page of a list, and the cursor for the older page, or undefined on the last page.
+export interface PostPage {
+  readonly posts: readonly PostCard[];
+  readonly older: PageCursor | undefined;
+}
+
+export function pageOf(cards: readonly PostCard[]): PostPage {
+  const posts = cards.slice(0, PAGE_SIZE);
+  const last = cards.length > PAGE_SIZE ? posts.at(-1) : undefined;
+  return {
+    posts,
+    older:
+      last?.published_at == null
+        ? undefined
+        : { publishedAt: last.published_at, id: last.id },
+  };
+}
+
+// The PostgREST filter for the posts before a cursor at the same time as it; the caller
+// adds `published_at <= publishedAt`, which the feed index can serve. The time is
+// quoted, since it carries `:` and `.`.
+export function beforeCursorFilter(before: PageCursor): string {
+  return `published_at.lt."${before.publishedAt}",id.lt.${before.id}`;
+}
+
+// The same cursor as arguments to `listed_post_ids` and `following_post_ids`.
+export function beforeCursorArgs(before: PageCursor | undefined): {
+  p_before_at?: string;
+  p_before_id?: string;
+} {
+  return before === undefined
+    ? {}
+    : { p_before_at: before.publishedAt, p_before_id: before.id };
+}
 
 // Every public list starts here: published, public, newest first (SPEC.md §5). RLS
 // already hides anything unpublished; `visibility` is the listing rule this module
@@ -66,15 +110,19 @@ export const PAGE_SIZE = 20;
 // database instead: `listed_post_ids` picks the ids and `cardsInOrder` loads them.
 // `withPrivate` adds private posts (D27) for an author's own profile: RLS hands a
 // private post to its author only, so no other reader ever gets one from it.
-export function publicPostCards(db: DbClient, withPrivate = false) {
+export function publicPostCards(db: DbClient, withPrivate = false, before?: PageCursor) {
   const published = db.from("posts").select(POST_CARD_COLUMNS).eq("status", "published");
+  const listed = withPrivate
+    ? published.in("visibility", ["public", "private"])
+    : published.eq("visibility", "public");
   return (
-    withPrivate
-      ? published.in("visibility", ["public", "private"])
-      : published.eq("visibility", "public")
+    before === undefined
+      ? listed
+      : listed.lte("published_at", before.publishedAt).or(beforeCursorFilter(before))
   )
     .order("published_at", { ascending: false })
-    .limit(PAGE_SIZE);
+    .order("id", { ascending: false })
+    .limit(PAGE_FETCH_SIZE);
 }
 
 // The cards for ids a database function picked, in the function's order, in one query.
@@ -101,19 +149,37 @@ export async function cardsInOrder(
   return picked.flatMap((row) => byId.get(row.id) ?? []);
 }
 
-// A signed-in viewer's list as cards, newest first, minus the members they muted or
+// A signed-in viewer's page of a list, newest first, minus the members they muted or
 // blocked (#93): the whole site (no tag), or one tag's posts.
 export async function listedPostCards(
   db: DbClient,
   tagId: string | null,
   label: string,
-): Promise<readonly PostCard[]> {
+  before?: PageCursor,
+): Promise<PostPage> {
   const { data, error } = await db.rpc("listed_post_ids", {
     ...(tagId === null ? {} : { p_tag_id: tagId }),
-    p_limit: PAGE_SIZE,
+    ...beforeCursorArgs(before),
+    p_limit: PAGE_FETCH_SIZE,
   });
   if (error) {
     throw new Error(`${label}: ${error.message}`);
   }
-  return cardsInOrder(db, data, label);
+  return pageOfPicked(db, data, label);
+}
+
+// A page from ids a database function picked, one more than a page: only the shown ones
+// are loaded as cards, and the older cursor comes from the picked rows, so a post removed
+// between the two reads cannot hide the way on.
+export async function pageOfPicked(
+  db: DbClient,
+  picked: readonly { readonly id: string; readonly published_at: string }[],
+  label: string,
+): Promise<PostPage> {
+  const last = picked.length > PAGE_SIZE ? picked[PAGE_SIZE - 1] : undefined;
+  return {
+    posts: await cardsInOrder(db, picked.slice(0, PAGE_SIZE), label),
+    older:
+      last === undefined ? undefined : { publishedAt: last.published_at, id: last.id },
+  };
 }
