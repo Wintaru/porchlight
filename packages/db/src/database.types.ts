@@ -1396,7 +1396,7 @@ export type Database = {
         }
       }
       following_post_ids: {
-        Args: { p_limit?: number }
+        Args: { p_before_at?: string; p_before_id?: string; p_limit?: number }
         Returns: {
           id: string
           published_at: string
@@ -1414,7 +1414,12 @@ export type Database = {
       }
       link_post_media: { Args: { p_post_id: string }; Returns: undefined }
       listed_post_ids: {
-        Args: { p_limit?: number; p_tag_id?: string }
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_tag_id?: string
+        }
         Returns: {
           id: string
           published_at: string
