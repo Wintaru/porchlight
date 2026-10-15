@@ -40,7 +40,11 @@ export async function AgentsSection({
     accountManager.query(new GetVoiceGuideRequest(actor)),
     accountManager.query(new ListVoiceGuideRevisionsRequest(actor)),
   ]);
-  const tokens = response instanceof TokensResponse ? response.tokens : undefined;
+  // A revoked token can never come back, so the list keeps only the ones still in play.
+  const tokens =
+    response instanceof TokensResponse
+      ? response.tokens.filter((token) => token.revokedAt === null)
+      : undefined;
   const guide = voice instanceof VoiceGuideResponse ? voice.guide : undefined;
   const revisions =
     history instanceof VoiceGuideRevisionsResponse ? history.revisions : undefined;
@@ -115,9 +119,6 @@ export async function AgentsSection({
 }
 
 function describe(token: AgentToken, now: Date): string {
-  if (token.revokedAt !== null) {
-    return `revoked ${token.revokedAt.toISOString().slice(0, 10)}`;
-  }
   if (token.expiresAt !== null && !isAgentTokenLive(token, now)) {
     return `expired ${token.expiresAt.toISOString().slice(0, 10)}`;
   }

@@ -41,9 +41,9 @@ test("a member mints a token, sees it once, and revokes it", async ({ page }) =>
   await page.getByRole("button", { name: `Revoke Laptop ${stamp}` }).click();
   await expect(page).toHaveURL(/\/settings\?agentRevoked=1$/);
   await expect(page.getByTestId("agent-status")).toHaveText("Token revoked.");
-  const revoked = page.getByTestId("token-row").filter({ hasText: `Laptop ${stamp}` });
-  await expect(revoked).toContainText("revoked");
-  await expect(revoked.getByTestId("token-revoke")).toHaveCount(0);
+  await expect(
+    page.getByTestId("token-row").filter({ hasText: `Laptop ${stamp}` }),
+  ).toHaveCount(0);
 });
 
 test("a blank name is refused before anything is minted", async ({ page }) => {
