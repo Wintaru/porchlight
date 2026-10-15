@@ -46,6 +46,29 @@ test("a member mints a token, sees it once, and revokes it", async ({ page }) =>
   ).toHaveCount(0);
 });
 
+test("a second revoke on the same page removes its row too", async ({ page }) => {
+  await devSignIn(page, THEO);
+  await page.goto("/settings");
+  const form = page.getByTestId("mint-token-form");
+  const stamp = Date.now().toString(36);
+  const names = [`First ${stamp}`, `Second ${stamp}`];
+  for (const name of names) {
+    await form.getByLabel("Token name").fill(name);
+    await form.getByRole("button", { name: "Mint token" }).click();
+    await expect(page.getByTestId("minted-token")).toBeVisible();
+    await page.reload();
+  }
+
+  // Dismissing the toast takes `agentRevoked` out of the address, so the second revoke
+  // redirects to a URL the router already holds.
+  for (const name of names) {
+    await page.getByRole("button", { name: `Revoke ${name}` }).click();
+    await expect(page.getByTestId("token-row").filter({ hasText: name })).toHaveCount(0);
+    await page.getByRole("button", { name: "Dismiss" }).click();
+    await expect(page).toHaveURL(/\/settings$/);
+  }
+});
+
 test("a blank name is refused before anything is minted", async ({ page }) => {
   await devSignIn(page, JUNE);
   await page.goto("/settings");

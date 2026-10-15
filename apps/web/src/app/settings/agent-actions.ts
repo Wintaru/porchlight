@@ -12,6 +12,7 @@ import {
   VoiceGuideRejectedResponse,
   VoiceGuideResponse,
 } from "@porchlight/core";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { withdrawOAuthConsent } from "@/auth/oauth-consent";
@@ -98,6 +99,7 @@ export async function revokeAgentToken(formData: FormData): Promise<void> {
     if (response.oauthClientId !== null) {
       await withdrawOAuthConsent(response.oauthClientId);
     }
+    revalidatePath("/settings");
     redirect("/settings?agentRevoked=1");
   }
   if (response instanceof NoSuchTokenResponse) {
