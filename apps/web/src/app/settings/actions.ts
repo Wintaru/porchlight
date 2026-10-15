@@ -8,6 +8,7 @@ import {
   ProfileResponse,
   UpdateProfileRequest,
 } from "@porchlight/core";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createSessionClient } from "@/auth/session-client";
@@ -44,6 +45,7 @@ async function profileSave(formData: FormData): Promise<SubmitRefused> {
     new UpdateProfileRequest(actor, actor.profile.id, parsed.changes),
   );
   if (response instanceof ProfileResponse) {
+    revalidatePath("/settings");
     redirect("/settings?saved=1");
   }
   if (response instanceof HandleRejectedResponse) {

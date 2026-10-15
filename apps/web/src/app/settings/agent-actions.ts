@@ -126,6 +126,7 @@ export async function saveVoiceGuide(formData: FormData): Promise<void> {
     new UpdateVoiceGuideRequest(actor, guideMd),
   );
   if (response instanceof VoiceGuideResponse) {
+    revalidatePath("/settings");
     redirect("/settings?voiceSaved=1#voice");
   }
   if (response instanceof VoiceGuideRejectedResponse) {

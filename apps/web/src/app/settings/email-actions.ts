@@ -7,6 +7,7 @@ import {
   NotificationForbiddenResponse,
   SetEmailSettingsRequest,
 } from "@porchlight/core";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
@@ -34,6 +35,7 @@ export async function saveEmailSettings(formData: FormData): Promise<void> {
     }),
   );
   if (response instanceof EmailSettingsResponse) {
+    revalidatePath("/settings");
     redirect("/settings?emailSaved=1#email");
   }
   if (response instanceof NotificationForbiddenResponse) {

@@ -103,6 +103,31 @@ test("the voice guide carries the member's rules and only hand-written samples",
   await rest(`voice_guide_revisions?profile_id=eq.${THEO_ID}`, { method: "DELETE" });
 });
 
+test("each save of the voice guide shows the version it replaced", async ({ page }) => {
+  const stamp = Date.now().toString(36);
+  const replaced = `Second ${stamp}`;
+  const versions = [`First ${stamp}`, replaced, `Third ${stamp}`];
+  await devSignIn(page, THEO);
+  await page.goto("/settings");
+  const voice = page.getByTestId("voice-guide");
+
+  // Dismissing the toast takes `voiceSaved` out of the address, so each later save
+  // redirects to a URL the router already holds.
+  for (const text of versions) {
+    await voice.getByLabel("Your rules (markdown)").fill(text);
+    await voice.getByRole("button", { name: "Save voice guide" }).click();
+    await expect(page.getByTestId("voice-status")).toBeVisible();
+    await page.getByRole("button", { name: "Dismiss" }).click();
+    await expect(page).toHaveURL(/\/settings#voice$/);
+  }
+  await expect(page.getByTestId("voice-history")).toContainText(replaced);
+
+  await voice.getByLabel("Your rules (markdown)").fill("");
+  await voice.getByRole("button", { name: "Save voice guide" }).click();
+  await expect(page.getByTestId("voice-status")).toBeVisible();
+  await rest(`voice_guide_revisions?profile_id=eq.${THEO_ID}`, { method: "DELETE" });
+});
+
 test("get_post shows the agent's first text beside the member's edit", async ({
   page,
   baseURL,

@@ -1,6 +1,7 @@
 "use server";
 
 import { PresenceSettingResponse, SetPresenceSettingRequest } from "@porchlight/core";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentActor } from "@/lib/current-actor";
@@ -17,6 +18,7 @@ export async function savePresenceSetting(formData: FormData): Promise<void> {
     new SetPresenceSettingRequest(actor, formData.get("showPresence") === "on"),
   );
   if (response instanceof PresenceSettingResponse) {
+    revalidatePath("/settings");
     redirect("/settings?presenceSaved=1#presence");
   }
   console.error(`presence setting failed [${response.correlationId}]`, response);
