@@ -95,6 +95,7 @@ export async function revokeInvite(formData: FormData): Promise<void> {
     response instanceof InviteEndedResponse ||
     response instanceof NoSuchInviteResponse
   ) {
+    revalidatePath("/admin");
     redirect("/admin?done=revoked#invites");
   }
   if (response instanceof ActionForbiddenResponse) {
