@@ -97,6 +97,7 @@ async function saveFromForm(
   }
   // A private post a member on probation turned public waits in the queue now.
   const saved = response.post.status === "pending" ? "pending" : "draft";
+  revalidatePath(`/write/${response.post.id}`);
   redirect(`/write/${response.post.id}?saved=${saved}`);
 }
 
@@ -241,6 +242,7 @@ async function publish(actor: Actor & { kind: "member" }, post: Post): Promise<n
   if (response.post.status === "published") {
     redirect(`/@${actor.profile.handle}/${response.post.slug}`);
   }
+  revalidatePath(`/write/${post.id}`);
   redirect(`/write/${post.id}?saved=${response.post.status}`);
 }
 
