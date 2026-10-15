@@ -48,6 +48,7 @@ test("a second unpublish after a dismissed toast shows the edited title", async 
       await page.getByLabel("Title").fill(edited);
       await page.getByRole("button", { name: "Publish" }).click();
       await expect(page).toHaveURL(new RegExp(`/@theo/unpublish-twice-${stamp}$`));
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(edited);
     }
   }
   await deleteCurrentPost(page);
