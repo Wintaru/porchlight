@@ -2,6 +2,7 @@ import { LINK_PROTOCOLS } from "@porchlight/core/client";
 import type { Extensions, JSONContent, MarkdownRendererHelpers } from "@tiptap/core";
 import Heading from "@tiptap/extension-heading";
 import Image from "@tiptap/extension-image";
+import Link from "@tiptap/extension-link";
 import { Placeholder } from "@tiptap/extensions";
 import Paragraph from "@tiptap/extension-paragraph";
 import { Markdown } from "@tiptap/markdown";
@@ -22,7 +23,8 @@ export const BODY_PLACEHOLDER = "Keep writing…";
 // Tiptap's serializer closes a mark before an image and reopens it after, and when the
 // image ends the line nothing closes it again: bold over "see" and an image writes
 // `**see **![a](x)**`. So a paragraph or heading with an image writes each image on its
-// own and the text between images as separate runs, each closing its own marks.
+// own and the text between images as separate runs, each closing its own marks. A link
+// over text and an image becomes two links to the same page.
 function withImageRuns(helpers: MarkdownRendererHelpers): MarkdownRendererHelpers {
   return {
     ...helpers,
@@ -78,21 +80,66 @@ const InlineImageHeading = Heading.extend({
   },
 });
 
+// A linked image, `[![alt](src)](href)`, is a picture that opens a page. Tiptap's markdown
+// puts a link mark on text only, both when it reads and when it writes, so a linked image
+// would lose its link. Here the link reads onto the image and the image writes its own
+// link, in Link's own syntax. Bold or italic on an image drops: neither changes how a
+// picture looks.
+const ImageAwareLink = Link.extend({
+  parseMarkdown(token, helpers) {
+    const href: unknown = token.href;
+    const title: unknown = token.title;
+    const mark = {
+      type: "link",
+      attrs: {
+        href: typeof href === "string" ? href : "",
+        title: typeof title === "string" && title !== "" ? title : null,
+      },
+    };
+    return helpers
+      .parseInline(token.tokens ?? [])
+      .map((node: JSONContent) =>
+        node.type === "text" || node.type === "image"
+          ? { ...node, marks: [...(node.marks ?? []), mark] }
+          : node,
+      );
+  },
+});
+
+const LinkableImage = Image.extend({
+  renderMarkdown(node, helpers, ctx) {
+    const image = Image.config.renderMarkdown?.call(this, node, helpers, ctx) ?? "";
+    const link = node.marks?.find((mark) => mark.type === "link");
+    if (link === undefined) {
+      return image;
+    }
+    return (
+      Link.config.renderMarkdown?.call(
+        this,
+        { type: "link", attrs: link.attrs },
+        { ...helpers, renderChildren: () => image },
+        ctx,
+      ) ?? image
+    );
+  },
+});
+
 export const EDITOR_EXTENSIONS: Extensions = [
   StarterKit.configure({
     paragraph: false,
     underline: false,
     heading: false,
-    link: {
-      openOnClick: false,
-      // Only what the sanitizer lets through (D3). Anything else becomes plain text.
-      protocols: [...LINK_PROTOCOLS],
-      defaultProtocol: "https",
-    },
+    link: false,
   }),
   InlineImageParagraph,
   InlineImageHeading.configure({ levels: [...HEADING_LEVELS] }),
-  Image.configure({ inline: true, allowBase64: false }),
+  ImageAwareLink.configure({
+    openOnClick: false,
+    // Only what the sanitizer lets through (D3). Anything else becomes plain text.
+    protocols: [...LINK_PROTOCOLS],
+    defaultProtocol: "https",
+  }),
+  LinkableImage.configure({ inline: true, allowBase64: false }),
   Placeholder.configure({ placeholder: BODY_PLACEHOLDER }),
   Markdown.configure({ markedOptions: { gfm: true, breaks: false } }),
 ];

@@ -141,6 +141,30 @@ describe("the editor schema round-trips markdown", () => {
   });
 
   test.each([
+    "[![porch](https://example.com/p.jpg)](https://example.com/plan)",
+    '[![porch](https://example.com/p.jpg)](https://example.com/plan "Plan")',
+    "Look: [![one](https://example.com/1.png)](https://example.com/1) ![two](https://example.com/2.png)",
+  ])("a linked image keeps its link: %s", (markdown) => {
+    expect(roundTrip(markdown)).toBe(markdown);
+  });
+
+  test("a link around text and an image in a heading becomes two links", () => {
+    expect(
+      roundTrip("## [see ![a](https://example.com/a.png)](https://example.com/plan)"),
+    ).toBe(
+      "## [see](https://example.com/plan) [![a](https://example.com/a.png)](https://example.com/plan)",
+    );
+  });
+
+  test("a link around text and an image becomes two links to the same page", () => {
+    expect(
+      roundTrip("[see ![porch](https://example.com/p.jpg)](https://example.com/plan)"),
+    ).toBe(
+      "[see](https://example.com/plan) [![porch](https://example.com/p.jpg)](https://example.com/plan)",
+    );
+  });
+
+  test.each([
     ["see ![a](https://example.com/a.png)", "**see** ![a](https://example.com/a.png)"],
     [
       "see ![a](https://example.com/a.png) after",

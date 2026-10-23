@@ -166,6 +166,29 @@ test("two images side by side in the editor stay side by side in the post", asyn
   await deleteCurrentPost(page);
 });
 
+test("a linked image keeps its link through an edit in rich text", async ({ page }) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.getByLabel("Title").fill(`Linked ${Date.now().toString(36)}`);
+  await modeButton(page, "Markdown").click();
+  const linked = "[![porch](https://example.com/p.jpg)](https://example.com/plan)";
+  await page.getByLabel("Body (markdown)").fill(linked);
+
+  await modeButton(page, "Rich text").click();
+  const body = page.getByRole("textbox", { name: "Body", exact: true });
+  await expect(body.getByRole("link").getByRole("img", { name: "porch" })).toBeVisible();
+  await body.press("ControlOrMeta+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("More.");
+
+  await modeButton(page, "Markdown").click();
+  await expect(page.getByLabel("Body (markdown)")).toHaveValue(`${linked}\n\nMore.`);
+  await expect(page.getByTestId("save-state")).toHaveText("Draft saved a moment ago");
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]+$/);
+  await page.reload();
+  await deleteCurrentPost(page);
+});
+
 test("a pause saves the draft on its own, with the tags and the content note", async ({
   page,
 }) => {
