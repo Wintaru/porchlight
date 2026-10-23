@@ -114,13 +114,52 @@ test("a link and an image go in by URL and come out as markdown", async ({ page 
   await imageDialog.getByLabel("URL").fill("https://example.com/porch.jpg");
   await imageDialog.getByLabel("Alt text").fill("the porch");
   await imageDialog.getByRole("button", { name: "Insert image" }).click();
-  await expect(body.locator("img")).toHaveAttribute("alt", "the porch");
+  await expect(body.getByRole("img", { name: "the porch" })).toBeVisible();
 
   await modeButton(page, "Markdown").click();
   await expect(page.getByLabel("Body (markdown)")).toHaveValue(
     "[Read the plan](https://example.com/plan)\n\n![the porch](https://example.com/porch.jpg)",
   );
   // The pause after the last keystroke saved a draft: wait for it, then delete it.
+  await expect(page.getByTestId("save-state")).toHaveText("Draft saved a moment ago");
+  await expect(page).toHaveURL(/\/write\/[0-9a-f-]+$/);
+  await page.reload();
+  await deleteCurrentPost(page);
+});
+
+test("two images side by side in the editor stay side by side in the post", async ({
+  page,
+}) => {
+  await devSignIn(page, THEO);
+  await page.goto("/write");
+  await page.getByLabel("Title").fill(`Icons ${Date.now().toString(36)}`);
+  const body = page.getByRole("textbox", { name: "Body", exact: true });
+  await body.click();
+  for (const name of ["office", "home"]) {
+    await tool(page, "Image").click();
+    const imageDialog = page.getByRole("dialog", { name: "Add an image" });
+    await imageDialog.getByLabel("URL").fill(`https://example.com/${name}.png`);
+    await imageDialog.getByLabel("Alt text").fill(name);
+    await imageDialog.getByRole("button", { name: "Insert image" }).click();
+    await expect(imageDialog).toBeHidden();
+  }
+  // One paragraph holds both. The editor's own separator image has no name.
+  await expect(body.locator("p").filter({ has: page.getByRole("img") })).toHaveCount(1);
+  await expect(body.getByRole("img")).toHaveCount(2);
+
+  await modeButton(page, "Markdown").click();
+  await expect(page.getByLabel("Body (markdown)")).toHaveValue(
+    "![office](https://example.com/office.png)![home](https://example.com/home.png)",
+  );
+  // The server's render puts both in one paragraph, so the post shows them on one line.
+  await page.getByRole("button", { name: "Preview" }).click();
+  const preview = page.getByTestId("preview-body");
+  await expect(preview.locator("p:has(> img)")).toHaveCount(1);
+  await expect(preview.locator("p > img")).toHaveCount(2);
+  await page
+    .getByRole("dialog", { name: "Preview" })
+    .getByRole("button", { name: "Close" })
+    .click();
   await expect(page.getByTestId("save-state")).toHaveText("Draft saved a moment ago");
   await expect(page).toHaveURL(/\/write\/[0-9a-f-]+$/);
   await page.reload();

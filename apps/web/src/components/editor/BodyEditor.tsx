@@ -6,6 +6,7 @@ import { type RefObject, useEffect, useRef, useState } from "react";
 import { EDITOR_EXTENSIONS } from "./editor-extensions";
 import styles from "./editor.module.css";
 import { type BodyMode, EditorToolbar } from "./EditorToolbar";
+import { imageInsertAt } from "./image-insert-at";
 import { trimBlankEnds } from "./trim-blank-ends";
 import { UrlDialog, type UrlDialogKind, type UrlDialogValue } from "./UrlDialog";
 
@@ -88,7 +89,10 @@ export function BodyEditor({
       if (mode === "rich" && editor !== null) {
         // At the end of the selection, never over it: an image just inserted stays
         // selected, and the next insert must go after it, not replace it.
-        const at = editor.state.selection.to;
+        const at =
+          item.kind === "image"
+            ? imageInsertAt(editor.state.selection)
+            : editor.state.selection.to;
         const content =
           item.kind === "image"
             ? { type: "image", attrs: { src: item.url, alt: item.alt } }

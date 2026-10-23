@@ -3,6 +3,8 @@ import { Editor } from "@tiptap/core";
 import { describe, expect, test } from "vitest";
 
 import { EDITOR_EXTENSIONS } from "./editor-extensions";
+import { imageInsertAt } from "./image-insert-at";
+import { trimBlankEnds } from "./trim-blank-ends";
 
 // Everything the toolbar offers and the sanitizer keeps (SPEC.md §5), in the shape the
 // serializer writes it. Rich text → markdown → rich text must give this text back byte
@@ -56,6 +58,86 @@ describe("the editor schema round-trips markdown", () => {
     const reshaped = roundTrip("Loose __bold__ and _italic_\n\n* star bullet");
     expect(reshaped).toBe("Loose **bold** and *italic*\n\n- star bullet");
     expect(roundTrip(reshaped)).toBe(reshaped);
+  });
+
+  test("a lone image and two side by side keep their paragraphs", () => {
+    const images = [
+      "Intro.",
+      "",
+      "![one](https://example.com/1.png)",
+      "",
+      "![two](https://example.com/2.png) ![three](https://example.com/3.png)",
+    ].join("\n");
+    const editor = new Editor({
+      extensions: EDITOR_EXTENSIONS,
+      content: images,
+      contentType: "markdown",
+    });
+    try {
+      expect(() => {
+        editor.state.doc.check();
+      }).not.toThrow();
+      expect(editor.getMarkdown()).toBe(images);
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test("an image inserted after an image goes beside it, in the same paragraph", () => {
+    const editor = new Editor({
+      extensions: EDITOR_EXTENSIONS,
+      content: "Intro.",
+      contentType: "markdown",
+    });
+    try {
+      editor.commands.setTextSelection(editor.state.doc.content.size);
+      editor.commands.splitBlock();
+      // The attachment panel's insert (BodyEditor.tsx): at the end of the selection.
+      for (const name of ["office", "home"]) {
+        editor
+          .chain()
+          .insertContentAt(imageInsertAt(editor.state.selection), {
+            type: "image",
+            attrs: { src: `https://example.com/${name}.png`, alt: name },
+          })
+          .run();
+      }
+      expect(editor.getMarkdown()).toBe(
+        "Intro.\n\n![office](https://example.com/office.png)![home](https://example.com/home.png)",
+      );
+    } finally {
+      editor.destroy();
+    }
+  });
+
+  test.each([
+    [
+      "a code block",
+      "```\ncode here\n```",
+      6,
+      "```\ncode here\n```\n\n![n](https://example.com/n.png)",
+    ],
+    ["a heading", "## Head", 3, "## Head\n\n![n](https://example.com/n.png)"],
+  ])("an image inserted in %s goes after the block", (_, markdown, cursor, expected) => {
+    const editor = new Editor({
+      extensions: EDITOR_EXTENSIONS,
+      content: markdown,
+      contentType: "markdown",
+    });
+    try {
+      editor.commands.setTextSelection(cursor);
+      editor
+        .chain()
+        .insertContentAt(imageInsertAt(editor.state.selection), {
+          type: "image",
+          attrs: { src: "https://example.com/n.png", alt: "n" },
+        })
+        .run();
+      // What the body saves (BodyEditor.tsx): the editor keeps an empty paragraph at the end.
+      expect(trimBlankEnds(editor.getMarkdown())).toBe(expected);
+    } finally {
+      editor.destroy();
+    }
   });
 
   test("underline is not in the schema and H1 is not a toolbar command, but survives", () => {

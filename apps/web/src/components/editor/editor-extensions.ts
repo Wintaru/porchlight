@@ -2,6 +2,7 @@ import { LINK_PROTOCOLS } from "@porchlight/core/client";
 import type { Extensions } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extensions";
+import Paragraph from "@tiptap/extension-paragraph";
 import { Markdown } from "@tiptap/markdown";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -13,8 +14,22 @@ export const HEADING_LEVELS = [2, 3] as const;
 
 export const BODY_PLACEHOLDER = "Keep writing…";
 
+// Images are inline, as markdown has them: two side by side in the editor are two in one
+// paragraph in body_md, so the post shows them side by side too. Tiptap's paragraph lifts
+// a lone image out of its paragraph for a block image; here it must stay inside.
+const InlineImageParagraph = Paragraph.extend({
+  parseMarkdown(token, helpers) {
+    const tokens = token.tokens ?? [];
+    if (tokens.length === 1 && tokens[0]?.type === "image") {
+      return helpers.createNode("paragraph", undefined, helpers.parseInline(tokens));
+    }
+    return Paragraph.config.parseMarkdown?.call(this, token, helpers) ?? [];
+  },
+});
+
 export const EDITOR_EXTENSIONS: Extensions = [
   StarterKit.configure({
+    paragraph: false,
     underline: false,
     heading: { levels: [...HEADING_LEVELS] },
     link: {
@@ -24,7 +39,8 @@ export const EDITOR_EXTENSIONS: Extensions = [
       defaultProtocol: "https",
     },
   }),
-  Image.configure({ inline: false, allowBase64: false }),
+  InlineImageParagraph,
+  Image.configure({ inline: true, allowBase64: false }),
   Placeholder.configure({ placeholder: BODY_PLACEHOLDER }),
   Markdown.configure({ markedOptions: { gfm: true, breaks: false } }),
 ];
