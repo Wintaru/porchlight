@@ -140,6 +140,31 @@ describe("the editor schema round-trips markdown", () => {
     }
   });
 
+  test.each([
+    ["see ![a](https://example.com/a.png)", "**see** ![a](https://example.com/a.png)"],
+    [
+      "see ![a](https://example.com/a.png) after",
+      "**see** ![a](https://example.com/a.png) **after**",
+    ],
+    [
+      "## see ![a](https://example.com/a.png)",
+      "## **see** ![a](https://example.com/a.png)",
+    ],
+  ])("bold over text and an image closes around the image: %s", (markdown, expected) => {
+    const editor = new Editor({
+      extensions: EDITOR_EXTENSIONS,
+      content: markdown,
+      contentType: "markdown",
+    });
+    try {
+      editor.commands.selectAll();
+      editor.commands.toggleBold();
+      expect(trimBlankEnds(editor.getMarkdown())).toBe(expected);
+    } finally {
+      editor.destroy();
+    }
+  });
+
   test("underline is not in the schema and H1 is not a toolbar command, but survives", () => {
     const editor = new Editor({
       extensions: EDITOR_EXTENSIONS,

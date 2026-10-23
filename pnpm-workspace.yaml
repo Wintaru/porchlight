@@ -17,6 +17,7 @@ catalog:
   "@supabase/ssr": ^0.12.7
   "@supabase/supabase-js": ^2.116.0
   "@tiptap/core": ^3.31.3
+  "@tiptap/extension-heading": ^3.31.3
   "@tiptap/extension-image": ^3.31.3
   "@tiptap/extension-paragraph": ^3.31.3
   "@tiptap/extensions": ^3.31.3
